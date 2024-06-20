@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 
-import { SegmentsContext } from "@/app/SegmentsContext";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 const slicesCount = 5; // Adjust this based on your string array length
 

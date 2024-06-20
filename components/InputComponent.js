@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState, useContext  } from "react";
+import { useEffect, useState, useContext } from "react";
 
-import { SegmentsContext } from "@/app/SegmentsContext";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 function InputComponent() {
   const { segments, setSegments } = useContext(SegmentsContext);
-  const {userInputText, setUserInputText} = useContext(SegmentsContext);
+  const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   useEffect(() => {
     setSegments([]);
@@ -28,7 +28,7 @@ function InputComponent() {
     setSegments(segmentSectors);
   };
 
-  return (
+  return (<>
     <div className="flex flex-col gap-4">
       <textarea
         value={userInputText}
@@ -38,6 +38,10 @@ function InputComponent() {
         className="rounded-md border border-gray-300 p-2 h-24 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
+    <div>
+
+    </div>
+  </>
   );
 }
 

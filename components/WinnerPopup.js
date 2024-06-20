@@ -8,9 +8,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@components/ui/alert-dialog";
 import { useEffect, useState, useContext } from "react";
-import { SegmentsContext } from "@/app/SegmentsContext";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 const WinnerPopup = ({ winner, setWinner }) => {
   let [open, setOpen] = useState(false);

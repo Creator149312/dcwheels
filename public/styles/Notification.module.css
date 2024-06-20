@@ -1,0 +1,21 @@
+.notification {
+    margin: 10px;
+    padding: 10px 20px;
+    color: white;
+  }
+  
+  .success {
+    background-color: green;
+  }
+  
+  .failure {
+    background-color: red;
+  }
+  
+  .close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+  }
+  

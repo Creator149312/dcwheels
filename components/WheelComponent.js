@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useContext } from "react";
 
-import { SegmentsContext } from "@/app/SegmentsContext";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 // export interface WheelComponentProps {
 //   segments: string[]
