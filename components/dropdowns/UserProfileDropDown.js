@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-// import { HiOutlineUserCircle } from "react-icons/hi";
+import { HiOutlineUserCircle } from "react-icons/hi";
 
 import SignOut from "@components/user/SignOut"
 
@@ -17,10 +17,10 @@ function UserProfileDropDown(props) {
       }
     };
 
-    document.addEventListener("mousedown", handler);
+    document.addEventListener("mouseover", handler);
 
     return () => {
-      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("mouseover", handler);
     };
   });
 
@@ -28,16 +28,16 @@ function UserProfileDropDown(props) {
     <div className="menu-container" ref={menuRef}>
       <div
         className="menu-trigger"
-        onClick={() => {
+        onMouseOver={() => {
           setOpen(!open);
         }}
       >
         <div className="display-flex center-align x-large-text">
-          {/* <HiOutlineUserCircle /> */}
+          <HiOutlineUserCircle />
         </div>
       </div>
 
-      <div className={`dropdown-menu ${open ? "active" : "inactive"}`}>
+      <div className={`p-5 grid shadow-lg ${open ? "block" : "hidden"}`}>
         <ul>
           <li>{props.name}</li>
           <DropdownItem url={"/lists/addList"} text={"New List +"} />
@@ -54,7 +54,7 @@ function UserProfileDropDown(props) {
 
 function DropdownItem(props) {
   return (
-    <li className="dropdownItem dropdown-menu-border-gap">
+    <li className="text-lg my-3">
       <a href={props.url}> {props.text} </a>
     </li>
   );

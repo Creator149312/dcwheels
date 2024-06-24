@@ -1,6 +1,7 @@
-import ListDisplay from "@components/ListDisplay";
+// import ListDisplay from "@components/ListDisplay";
+import WheelWithInput from "@components/WheelWithInput";
 import { connectMongoDB } from "@lib/mongodb";
-import List from "@models/list";
+import Wheel from "@models/wheel";
 import { validateObjectID } from "@utils/Validator";
 
 let titleStr = "";
@@ -77,11 +78,7 @@ export default async function Page({ params }) {
   return (
     <div>
       {wordsList !== null && listerror == null && (
-        <ListDisplay
-          title={wordsList.title}
-          description={wordsList.description}
-          words={wordsList.data}
-        />
+        <WheelWithInput newSegments={wordsList.data}/>
       )}
       {listerror && (
         <div>We can't find the list. This has been deleted by the creator.</div>

@@ -37,31 +37,26 @@ const Navbar = () => {
           <ThemeToggle />
           <NavLinks />
           <li>
-            <Link href="/thesaurus" className="py-7 text-lg px-3 inline-block">
-              Thesaurus
-            </Link>
+
           </li>
-          <li>
-          <UserInfo name={session?.user?.name} status={status}/>
-        </li>
-      </ul>
-      {/* <div className="md:block hidden">
-                    <Button> Subscribe</Button>
-                </div> */}
-      {/* Mobile nav */}
-      <ul
-        className={`
+        </ul>
+        <div className="md:block hidden">
+          <UserInfo name={session?.user?.name} status={status} />
+        </div>
+        {/* Mobile nav */}
+        <ul
+          className={`
         md:hidden dark:bg-[#020817] bg-white fixed w-full top-0 overflow-y-auto bottom-0 py-10 pl-4
         duration-500 ${open ? "left-0" : "left-[-100%]"}
         `}
-      >
-        <NavLinks setOpen={setOpen} />
-        {/* 
-                    <div className="py-5">
-                        <Button />
-                    </div> */}
-      </ul>
-    </div>
+        >
+          <NavLinks setOpen={setOpen} />
+
+          <div className="py-5">
+            <UserInfo name={session?.user?.name} status={status} />
+          </div>
+        </ul>
+      </div>
     </nav >
   );
 };

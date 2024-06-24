@@ -3,6 +3,8 @@ import "./globals.css";
 import Navbar from "@components/navbar/Navbar";
 import { ThemeProvider } from "./ThemeProvider";
 import SearchBarNav from "@components/SearchNavBar";
+import { SegmentsProvider } from "./SegmentsContext";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +25,9 @@ export default function RootLayout({ children }) {
           >
         <Navbar />
         <SearchBarNav />
+        <SegmentsProvider>
         {children}
+        </SegmentsProvider>
         </ThemeProvider>
       </body>
     </html>
