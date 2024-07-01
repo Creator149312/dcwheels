@@ -2,6 +2,7 @@
 import { useEffect, useState, useContext } from "react";
 
 import { SegmentsContext } from "@app/SegmentsContext";
+import { Textarea } from "./ui/textarea";
 
 function InputComponent() {
   const { segments, setSegments } = useContext(SegmentsContext);
@@ -28,20 +29,18 @@ function InputComponent() {
     setSegments(segmentSectors);
   };
 
-  return (<>
-    <div className="flex flex-col gap-4">
-      <textarea
-        value={userInputText}
-        onChange={handleTextAreaChange}
-        placeholder="Enter your text here..."
-        rows={15} // Adjust rows as needed
-        className="rounded-md border border-gray-300 p-2 h-24 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-    </div>
-    <div>
-
-    </div>
-  </>
+  return (
+    <>
+      <div className="flex flex-col gap-4">
+        <Textarea
+          value={userInputText}
+          onChange={handleTextAreaChange}
+          placeholder="Enter your text here..." // Adjust rows as needed
+          rows={10}
+          className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+    </>
   );
 }
 

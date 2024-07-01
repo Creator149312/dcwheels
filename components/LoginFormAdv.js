@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import SignInBtn from "@components/SignInBtn"
 import Notification from "@components/Notification"
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
 
 export default function LoginFormAdv() {
   const [formData, setFormData] = useState({
@@ -77,15 +79,15 @@ export default function LoginFormAdv() {
 
   return (
     <div className="text-center">
-      <div className="card form-50">
-        <h1 className="card-title mb-2">Login</h1>
-        <form onSubmit={handleSubmit} className="card-content ">
+      <Card className="max-w-md mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Login</h1>
+        <form onSubmit={handleSubmit} className="">
           <div>
             <label htmlFor="email">Email Address:</label>
             <input
               type="email"
               id="email"
-              className="form-control mt-2 mb-3"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -99,20 +101,20 @@ export default function LoginFormAdv() {
               type="password"
               id="password"
               name="password"
-              className="form-control mt-2 mb-2"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-2"
               value={formData.password}
               onChange={handleChange}
               required
             />
             {errors.password && <p className="error">{errors.password}</p>}
             <div>
-            <Link className="m-4 p-3" href={"/reset-password"}>
+            <Link className="m-4 p-2" href={"/reset-password"}>
               Forgot password
             </Link>
             </div>
           </div>
-          <div className="">
-            <button className="custom-button m-3">Login</button>
+          <div className="p-2">
+            <Button size={"lg"} variant={"default"} className="m-2">Login</Button>
           </div>
           {isSigning && <p>Checking Your Credentials....</p>}
           {error && (
@@ -121,7 +123,7 @@ export default function LoginFormAdv() {
               state={"failed"}
             />
           )}
-          <div className="">
+          <div className="p-2">
             <Link className="m-4 p-3" href={"/register"}>
               Don't have an account? <span className="underline">Register</span>
             </Link>
@@ -130,7 +132,7 @@ export default function LoginFormAdv() {
         <div className="">
           <SignInBtn />
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

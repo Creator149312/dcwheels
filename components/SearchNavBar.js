@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "./ui/button"
+import { getWheelsByTitle } from "./actions/actions";
 
 //usage of SessionStore is causing website to load slowly
 const SearchBarNav = () => {
@@ -11,7 +12,7 @@ const SearchBarNav = () => {
   const pathname = usePathname();
   const [inputError, setInputError] = useState(false);
   const [placeholder, setPlaceHolder] = useState(
-    "Enter Word to Find Definitions"
+    "Find New Wheels to Explore"
   );
 
 //   //add placeholder key also in this
@@ -83,7 +84,7 @@ const SearchBarNav = () => {
   };
 
   const handleLoadUrl = () => {
-    if (selectedOption && word) {
+    if (word) {
       // let encodedWord = decodeURIComponent(word.toLowerCase()).split(' ').join('-');
       let encodedWord = "";
 
@@ -97,7 +98,7 @@ const SearchBarNav = () => {
         encodedWord = "";
       }
 
-      window.location.href = selectedOption + encodedWord;
+      window.location.href = "/search/" + encodedWord;
     }
   };
 
@@ -129,12 +130,12 @@ const SearchBarNav = () => {
 
   return (
       <div className="grid md:grid-cols-6 w-[100%] md:w-[60%] m-auto p-2">
-        <div className="md:col-span-4 grid border-2 md:rounded-r-lg grid-cols-5">
+        <div className="md:col-span-6 grid border-2 md:rounded-r-lg grid-cols-6">
         <input
           className={
             inputError
-              ? "px-2 py-2 text-lg col-span-4"
-              : "text-lg px-2 py-2 col-span-4"
+              ? "px-2 py-2 text-lg col-span-5"
+              : "text-lg px-2 py-2 col-span-5"
           }
           type="text"
           placeholder={placeholder}
@@ -148,9 +149,10 @@ const SearchBarNav = () => {
           onKeyPress={handleKeyPress}
         />
         <Button
-          variant="searchcustom"
+          variant="default"
+          size="lg"
           onClick={handleLoadUrl}
-          className="cursor-pointer text-lg md:rounded-l-none rounded-none col-span-1 w-[100%] h-[100%]"
+          className="cursor-pointer text-lg p-2 md:rounded-l-none rounded-none col-span-1 w-[100%] h-[100%]"
           disabled={inputError ? true : false}
         >
           Search

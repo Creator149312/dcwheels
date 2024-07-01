@@ -17,29 +17,29 @@ function UserProfileDropDown(props) {
       }
     };
 
-    document.addEventListener("mouseover", handler);
+    document.addEventListener("click", handler);
 
     return () => {
-      document.removeEventListener("mouseover", handler);
+      document.removeEventListener("click", handler);
     };
   });
 
   return (
-    <div className="menu-container" ref={menuRef}>
+    <div className="flex px-5 mr-10 center-align" ref={menuRef}>
       <div
         className="menu-trigger"
-        onMouseOver={() => {
+        onClick={() => {
           setOpen(!open);
         }}
       >
-        <div className="display-flex center-align x-large-text">
-          <HiOutlineUserCircle />
+        <div className="flex center-align">
+          <HiOutlineUserCircle size={36}/>
         </div>
       </div>
 
-      <div className={`p-5 grid shadow-lg ${open ? "block" : "hidden"}`}>
+      <div className={`top-12 px-4 absolute shadow-lg flex ${open ? "block" : "hidden"}`}>
         <ul>
-          <li>{props.name}</li>
+          <li className="my-4">{props.name}</li>
           <DropdownItem url={"/lists/addList"} text={"New List +"} />
           <DropdownItem url={"/dashboard"} text={"Dashboard"} />
           <DropdownItem url={"/settings"} text={"Settings"} />
@@ -54,7 +54,7 @@ function UserProfileDropDown(props) {
 
 function DropdownItem(props) {
   return (
-    <li className="text-lg my-3">
+    <li className="my-4">
       <a href={props.url}> {props.text} </a>
     </li>
   );

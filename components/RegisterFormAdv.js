@@ -10,6 +10,8 @@ import {
 } from "@utils/Validator";
 import { registerUser } from "@components/actions/actions"
 import toast from "react-hot-toast";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
 export default function RegisterFormAdv() {
   const [formData, setFormData] = useState({
@@ -73,16 +75,15 @@ export default function RegisterFormAdv() {
   };
 
   return (
-    <div className="">
-      <h1 className="card-title text-center">Register</h1>
-      <div className="card form-50">
-        <form action={validateFormAdv} className="">
+    <Card className="text-center max-w-md mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-4 text-center">Register</h1>
+        <form action={validateFormAdv} className="max-w-md mx-auto p-4">
           <div>
             <label htmlFor="username">Username:</label>
             <input
               type="text"
               id="username"
-              className="form-control mb-3 mt-2"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
               name="username"
               value={formData.username}
               onChange={handleChange}
@@ -94,7 +95,7 @@ export default function RegisterFormAdv() {
             <input
               type="email"
               id="email"
-              className="form-control mb-3 mt-2"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -107,22 +108,24 @@ export default function RegisterFormAdv() {
               type="password"
               id="password"
               name="password"
-              className="form-control mb-3 mt-2"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
               value={formData.password}
               onChange={handleChange}
             />
             {errors.password && <p className="error">{errors.password}</p>}
           </div>
-          <button className="custom-button p-3">Register</button>
+          <Button size={"lg"} variant={"default"} className="p-3">Register</Button>
           {/* {error && <Notification message={error} state={"failed"} />} */}
           {isRegistering && (
             <p>Checking Details and Creating Your Account...</p>
           )}
+          <div className="p-2">
           <Link className="text-sm mt-3 text-right" href={"/login"}>
             Already have an account? <span className="underline">Login</span>
           </Link>
+          </div>
         </form>
-      </div>
-    </div>
+      </Card>
+
   );
 }

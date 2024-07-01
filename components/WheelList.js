@@ -5,7 +5,8 @@ import RemoveListBtn from "./RemoveListBtn";
 import { HiPencilAlt } from "react-icons/hi";
 import { HiOutlineEye } from "react-icons/hi";
 import { useState, useEffect } from "react";
-// import apiConfig from "@utils/apiUrlConfig";
+import apiConfig from "@utils/ApiUrlConfig";
+import { Card } from "./ui/card";
 
 export default function WordLists({ createdBy }) {
   const [data, setData] = useState([]);
@@ -17,7 +18,7 @@ export default function WordLists({ createdBy }) {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          `https://ominous-engine-q766v6jx45r34qx9-3000.app.github.dev/api/wheel/user/${createdBy}`,
+          `${apiConfig.apiUrl}/wheel/user/${createdBy}`,
           { cache: "no-store" }
         ); 
 
@@ -44,24 +45,24 @@ export default function WordLists({ createdBy }) {
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (
-          <div key={index} className="card p-2 m-3">
-            <div className="card-content m-2 list-heading-container">
+          <Card key={index} className="p-2 mt-3">
+            <div className="text-base leading-normal m-2 flex justify-between items-center">
               <div>
-                <h2 className="card-title">{item.title}</h2>
+                <h2 className="text-xl font-bold mb-2">{item.title}</h2>
                 <p>{item.description}</p>
               </div>
               <div>{item.data.length} Words</div>
             </div>
-            <div className="card-footer">
-              <Link href={`/wheels/${item._id}`}>
+            <div className="flex items-center">
+              <Link href={`/wheels/${item._id}`} className="p-2">
                 <HiOutlineEye size={24} />
               </Link>
-              <Link href={`/wheels/${item._id}`}>
+              <Link href={`/wheels/${item._id}`} className="p-2">
                 <HiPencilAlt size={24} />
               </Link>
-              <RemoveListBtn id={item._id} />
+              <RemoveListBtn id={item._id} className="p-2" />
             </div>
-          </div>
+          </Card>
         ))}
       {/* if data is loading is finished and data array is still empty  */}
       {!isLoading && data.length === 0 && (

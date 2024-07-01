@@ -12,6 +12,7 @@ import {
   validateUsername,
   validateEmail,
 } from "@utils/Validator";
+import Wheel from "@models/wheel";
 
 export const updateNewPassword = async (formData) => {
   let errorData = { error: "" };
@@ -66,6 +67,16 @@ export const updateNewPassword = async (formData) => {
   //   redirect("/login");
   // }
 };
+
+// export const getWheelsByTitle = async (titleSearch) =>{
+//   try {
+//     // Find Wheels with matching title using async/await
+//     const books = await Wheel.find({ title: titleSearch });
+//     console.log("Found books:", books);
+//   } catch (err) {
+//     console.error("Error finding books:", err);
+//   }
+// }
 
 export const updateNewPasswordbyToken = async (formData, token) => {
   let errorData = { error: "" };

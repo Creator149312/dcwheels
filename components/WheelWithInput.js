@@ -15,8 +15,9 @@ import SaveWheelBtn from "@components/SaveWheelBtn";
 export default function WheelWithInput({ newSegments }) {
   const [result, setResult] = useState("");
   let [winner, setWinner] = useState("");
-  const options = ["1", "2", "3", "4", "5", "6"];
-  const { segments, setSegments } = useContext(SegmentsContext);
+  const { setSegments } = useContext(SegmentsContext);
+  const { setUserInputText } = useContext(SegmentsContext);
+
   console.log("New Segments, ", newSegments);
   const segColors = [
     "#EE4040",
@@ -35,6 +36,7 @@ export default function WheelWithInput({ newSegments }) {
 
   useEffect(() => {
     setSegments(newSegments);
+    setUserInputText(newSegments.join("\n"));
   }, []);
 
   useEffect(() => {
@@ -45,42 +47,41 @@ export default function WheelWithInput({ newSegments }) {
   }, [winner]);
 
   return (
-      <div className="grid md:grid-cols-12 gap-x-2 m-2">
-        <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 p-2 md:p-5 md:col-span-7">
-          <WinnerPopup winner={winner} setWinner={setWinner} />
-          <WheelComponent
-            segColors={segColors}
-            // winningSegment='won 10'
-            onFinished={(winner) => onFinished(winner)}
-            primaryColor="black"
-            contrastColor="white"
-            buttonText="Spin"
-            isOnlyOnce={false}
-            size={250}
-            upDuration={100}
-            downDuration={1000}
-            fontFamily="Arial"
-            winner={winner}
-            deceleration={0.01}
-          />
-          {/* <CustomSpinWheel colors={segColors}  setWinner={setWinner}/> */}
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 md:col-span-5">
-          <Tabs defaultValue="list">
-            <TabsList className="w-full">
-              <TabsTrigger value="list">List</TabsTrigger>
-              <TabsTrigger value="result">Result</TabsTrigger>
-            </TabsList>
-            <TabsContent value="list">
-              <InputComponent />
-            </TabsContent>
-            <TabsContent value="result">
-              <ResultList result={result} />
-            </TabsContent>
-          </Tabs>
-          <SaveWheelBtn />
-        </div>
+    <div className="grid md:grid-cols-12 gap-x-2 m-2">
+      <div className="bg-card text-card-foreground md:m-2 mb-2 p-2 md:col-span-8">
+        <WinnerPopup winner={winner} setWinner={setWinner} />
+        <WheelComponent
+          segColors={segColors}
+          // winningSegment='won 10'
+          onFinished={(winner) => onFinished(winner)}
+          primaryColor="black"
+          contrastColor="white"
+          buttonText="Spin"
+          isOnlyOnce={false}
+          size={200}
+          upDuration={100}
+          downDuration={1000}
+          fontFamily="Arial"
+          winner={winner}
+          deceleration={0.01}
+        />
+        {/* <CustomSpinWheel colors={segColors}  setWinner={setWinner}/> */}
       </div>
-
+      <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 md:col-span-4">
+        <Tabs defaultValue="list">
+          <TabsList className="w-full">
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="result">Result</TabsTrigger>
+          </TabsList>
+          <TabsContent value="list">
+            <InputComponent />
+          </TabsContent>
+          <TabsContent value="result">
+            <ResultList result={result} />
+          </TabsContent>
+        </Tabs>
+        <SaveWheelBtn />
+      </div>
+    </div>
   );
 }
