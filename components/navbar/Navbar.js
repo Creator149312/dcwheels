@@ -77,7 +77,7 @@ const Navbar = () => {
             </div>
           </li>
           <li>
-            <a href="/search" class="inline-flex">
+            <a href="/search" className="inline-flex">
               <span className="align-middle mr-2 hover:font-semibold">
                 <HiSearch size={28} />
               </span>

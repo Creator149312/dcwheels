@@ -3,6 +3,7 @@ import WheelWithInput from "@components/WheelWithInput";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { validateObjectID } from "@utils/Validator";
+import apiConfig from "@utils/ApiUrlConfig";
 
 let titleStr = "";
 let listerror = null;
@@ -13,7 +14,7 @@ export async function generateMetadata({ params }, parent) {
   if (validateObjectID(params.wheelId)) {
     const id = params.wheelId;
     try {
-      const response = await fetch(`http://localhost:3000/api/wheel/${id}`, {
+      const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
         cache: "no-store",
       }); // Replace with your actual API endpoint
 
@@ -53,7 +54,7 @@ export default async function Page({ params }) {
   if (IfIdValid) {
     const id = params.wheelId;
     try {
-      const response = await fetch(`http://localhost:3000/api/wheel/${id}`, {
+      const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
         cache: "no-store",
       }); // Replace with your actual API endpoint
 

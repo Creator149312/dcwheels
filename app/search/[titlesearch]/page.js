@@ -8,6 +8,7 @@ import Wheel from "@models/wheel";
 import { validateObjectID } from "@utils/Validator";
 import Link from "next/link";
 import { HiOutlineEye, HiPencilAlt } from "react-icons/hi";
+import apiConfig from "@utils/ApiUrlConfig";
 
 let titleStr = "";
 let listerror = null;
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }, parent) {
   const searchtitle = params.titlesearch;
   try {
     const response = await fetch(
-      `http://localhost:3000/api/wheel/search/${searchtitle}`,
+      `${apiConfig.apiUrl}/wheel/search/${searchtitle}`,
       {
         cache: "no-store",
       }
@@ -58,7 +59,7 @@ export default async function Page({ params }) {
   const searchtitle = params.titlesearch;
   try {
     const response = await fetch(
-      `http://localhost:3000/api/wheel/search/${searchtitle}`,
+      `${apiConfig.apiUrl}/wheel/search/${searchtitle}`,
       {
         cache: "no-store",
       }
