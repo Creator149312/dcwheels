@@ -125,7 +125,7 @@ export default function LoginFormAdv() {
           )}
           <div className="p-2">
             <Link className="m-4 p-3" href={"/register"}>
-              Don't have an account? <span className="underline">Register</span>
+              Dont have an account? <span className="underline">Register</span>
             </Link>
           </div>
         </form>
