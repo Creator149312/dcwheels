@@ -10,6 +10,6 @@ export default function UserInfo({ name, status }) {
       </div>
     );
   } else {
-    return <Button className="cursor-pointer" size={"lg"} variant={"default"}><a className="gap-5" href="/login">Login</a></Button>;
+    return <a className="gap-5" href="/login"><Button className="cursor-pointer" size={"lg"} variant={"default"}>Login</Button></a>;
   }
 }
