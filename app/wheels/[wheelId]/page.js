@@ -81,7 +81,7 @@ export default async function Page({ params }) {
         <WheelWithInput newSegments={wordsList.data}/>
       )}
       {listerror && (
-        <div>We can't find the list. This has been deleted by the creator.</div>
+        <div>We cannot find the list. This has been deleted by the creator.</div>
       )}
     </div>
   );

@@ -112,7 +112,7 @@ export default async function Page({ params }) {
           ))}
         {listerror && (
           <div>
-            We can't find the list. This has been deleted by the creator.
+            We cant find the list. This has been deleted by the creator.
           </div>
         )}
       </div>

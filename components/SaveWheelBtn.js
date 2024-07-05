@@ -120,7 +120,7 @@ export default function SaveWheelBtn() {
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you're done.
+            Add your wheel description
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
