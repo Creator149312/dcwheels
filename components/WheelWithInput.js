@@ -11,14 +11,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import ResultList from "@components/ResultList";
 import { Button } from "@components/ui/button";
 import SaveWheelBtn from "@components/SaveWheelBtn";
+import useScreenSize from "@utils/useScreenSize";
+import { useSession } from "next-auth/react";
 
 export default function WheelWithInput({ newSegments }) {
   const [result, setResult] = useState("");
   let [winner, setWinner] = useState("");
-  const { setSegments } = useContext(SegmentsContext);
+  const { segments, setSegments } = useContext(SegmentsContext);
   const { setUserInputText } = useContext(SegmentsContext);
-
+  const { width, height } = useScreenSize();
+  const { status, data: session } = useSession();
   console.log("New Segments, ", newSegments);
+
+  let wheelSize = Math.min(width, height) * 0.39;
   const segColors = [
     "#EE4040",
     "#F0CF50",
@@ -47,8 +52,8 @@ export default function WheelWithInput({ newSegments }) {
   }, [winner]);
 
   return (
-    <div className="grid md:grid-cols-12 gap-x-2 m-2">
-      <div className="bg-card text-card-foreground md:m-2 mb-2 p-2 md:col-span-8">
+    <div className="grid md:grid-cols-12 gap-x-2 m-2 mt-0">
+      <div className="bg-card text-card-foreground md:m-2 mb-2 mt-0 p-2 pt-0 md:col-span-8">
         <WinnerPopup winner={winner} setWinner={setWinner} />
         <WheelComponent
           segColors={segColors}
@@ -58,20 +63,23 @@ export default function WheelWithInput({ newSegments }) {
           contrastColor="white"
           buttonText="Spin"
           isOnlyOnce={false}
-          size={200}
+          size={wheelSize}
           upDuration={100}
           downDuration={1000}
           fontFamily="Arial"
           winner={winner}
           deceleration={0.01}
         />
-        {/* <CustomSpinWheel colors={segColors}  setWinner={setWinner}/> */}
       </div>
-      <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 md:col-span-4">
+      <div className="bg-card text-card-foreground md:m-2 mb-2 mt-2 md:col-span-4">
         <Tabs defaultValue="list">
           <TabsList className="w-full">
-            <TabsTrigger value="list">List</TabsTrigger>
-            <TabsTrigger value="result">Result</TabsTrigger>
+            <TabsTrigger value="list">
+              List <span className="ml-2">{segments.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="result">
+              Result <span className="ml-2">{result.length === 0 ? 0 : result.split("\n").length}</span>
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="list">
             <InputComponent />
@@ -80,7 +88,7 @@ export default function WheelWithInput({ newSegments }) {
             <ResultList result={result} />
           </TabsContent>
         </Tabs>
-        <SaveWheelBtn />
+        {session !== null && <SaveWheelBtn /> }
       </div>
     </div>
   );

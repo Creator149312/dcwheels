@@ -1,5 +1,6 @@
 // import ListDisplay from "@components/ListDisplay";
 import RemoveListBtn from "@components/RemoveListBtn";
+import SearchBarNav from "@components/SearchNavBar";
 import WheelWithInput from "@components/WheelWithInput";
 import { Card } from "@components/ui/card";
 import { connectMongoDB } from "@lib/mongodb";
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }, parent) {
 
   if (listdata !== null) {
     // read route params
-    titleStr =  searchtitle + " Wheels";
+    titleStr = searchtitle + " Wheels";
     const descriptionStr =
       "Explore list of " + searchtitle + " and practice using flashcards.";
     return {
@@ -81,33 +82,40 @@ export default async function Page({ params }) {
   }
 
   return (
-    <div>
-      {wordsList !== null &&
-        listerror == null &&
-        wordsList.length > 0 &&
-        wordsList.map((item, index) => (
-          <Card key={index} className="p-2 mt-3">
-            <div className="text-base leading-normal m-2 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold mb-2">{item.title}</h2>
-                <p>{item.description}</p>
+    <>
+      <div className="bg-card text-card-foreground w-full">
+        <SearchBarNav />
+      </div>
+      <div>
+        {wordsList !== null &&
+          listerror == null &&
+          wordsList.length > 0 &&
+          wordsList.map((item, index) => (
+            <Card key={index} className="p-2 mt-3">
+              <div className="text-base leading-normal m-2 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold mb-2">{item.title}</h2>
+                  <p>{item.description}</p>
+                </div>
+                <div>{item.data.length} Words</div>
               </div>
-              <div>{item.data.length} Words</div>
-            </div>
-            <div className="flex items-center">
-              <Link href={`/wheels/${item._id}`} className="p-2">
-                <HiOutlineEye size={24} />
-              </Link>
-              <Link href={`/wheels/${item._id}`} className="p-2">
-                <HiPencilAlt size={24} />
-              </Link>
-              <RemoveListBtn id={item._id} className="p-2" />
-            </div>
-          </Card>
-        ))}
-      {listerror && (
-        <div>We can't find the list. This has been deleted by the creator.</div>
-      )}
-    </div>
+              <div className="flex items-center">
+                <Link href={`/wheels/${item._id}`} className="p-2">
+                  <HiOutlineEye size={24} />
+                </Link>
+                <Link href={`/wheels/${item._id}`} className="p-2">
+                  <HiPencilAlt size={24} />
+                </Link>
+                <RemoveListBtn id={item._id} className="p-2" />
+              </div>
+            </Card>
+          ))}
+        {listerror && (
+          <div>
+            We can't find the list. This has been deleted by the creator.
+          </div>
+        )}
+      </div>
+    </>
   );
 }

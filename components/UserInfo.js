@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 export default function UserInfo({ name, status }) {
   if (status === 'authenticated') {
     return (
-      <div className="cursor-pointer	rounded-md flex flex-col gap-5">
+      <div className="cursor-pointer flex flex-col gap-5 align-middle items-center">
         <UserProfileDropdown name={name} />
       </div>
     );

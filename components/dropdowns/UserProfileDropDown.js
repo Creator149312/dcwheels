@@ -25,7 +25,7 @@ function UserProfileDropDown(props) {
   });
 
   return (
-    <div className="flex px-5 mr-10 center-align" ref={menuRef}>
+    <div className="flex gap-5 center-align" ref={menuRef}>
       <div
         className="menu-trigger"
         onClick={() => {
@@ -33,16 +33,16 @@ function UserProfileDropDown(props) {
         }}
       >
         <div className="flex center-align">
-          <HiOutlineUserCircle size={36}/>
+          <HiOutlineUserCircle size={38}/>
         </div>
       </div>
 
-      <div className={`top-12 px-4 absolute shadow-lg flex ${open ? "block" : "hidden"}`}>
+      <div className={`top-12 px-5 absolute bg-white border-2 shadow-lg flex ${open ? "block" : "hidden"}`}>
         <ul>
           <li className="my-4">{props.name}</li>
-          <DropdownItem url={"/lists/addList"} text={"New List +"} />
+          <DropdownItem url={"/"} text={"New Wheel +"} />
           <DropdownItem url={"/dashboard"} text={"Dashboard"} />
-          <DropdownItem url={"/settings"} text={"Settings"} />
+          {/* <DropdownItem url={"/settings"} text={"Settings"} /> */}
           <li className="dropdownItem">
             <SignOut />
           </li>

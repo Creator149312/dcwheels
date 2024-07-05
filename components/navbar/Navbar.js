@@ -8,6 +8,7 @@ import ThemeToggle from "@components/ThemeToggle";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
 import SearchBarNav from "@components/SearchNavBar";
+import { HiSearch } from "react-icons/hi";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -16,10 +17,10 @@ const Navbar = () => {
   // console.log("Data is here \n", session);
 
   return (
-    <nav className="mr-2 ml-2 text-center">
+    <nav className="pr-2 pl-2 text-center shadow">
       <div className="flex items-center font-medium justify-between">
         <div className="z-50 p-3 md:w-auto w-full flex justify-between">
-          <a href="/" className="text-3xl font-bold flex items-center">
+          <a href="/" className="text-2xl font-semibold flex items-center">
             <img
               src={"/spin-wheel-logo.png"}
               alt="logo"
@@ -27,7 +28,7 @@ const Navbar = () => {
             />
             WheelMaster
           </a>
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <div className="md:hidden">
               <ThemeToggle />
             </div>
@@ -36,28 +37,58 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-        <ul className="md:flex hidden items-center gap-2">
+        <ul className="md:flex hidden p-3 justify-between align-middle gap-10 pr-5">
           <ThemeToggle />
           {/* <NavLinks /> */}
           <li>
-            <div className="md:block hidden">
+            <div className="md:flex hidden">
               <UserInfo name={session?.user?.name} status={status} />
             </div>
           </li>
+          <li>
+            <a
+              href="/search"
+              className="inline-flex align-middle items-center text-lg"
+            >
+              <span className="mr-2 hover:font-semibold">
+                <HiSearch size={38} />
+              </span>
+              Find Wheels
+            </a>
+          </li>
+          {/* <li className="items-center">
+            <a href="/" className="hover:font-semibold text-lg items-center align-middle">
+              Help
+            </a>
+          </li> */}
         </ul>
 
         {/* Mobile nav */}
         <ul
           className={`
         md:hidden dark:bg-[#020817] bg-white fixed w-full top-0 overflow-y-auto bottom-0 py-10 pl-4
-        duration-500 ${open ? "left-0" : "left-[-100%]"}
+        duration-500 align-middle ${open ? "left-0" : "left-[-100%]"}
         `}
         >
           {/* <NavLinks setOpen={setOpen} /> */}
-
-          <div className="py-5">
-            <UserInfo name={session?.user?.name} status={status} />
-          </div>
+          <li>
+            <div className="py-5 mr-2">
+              <UserInfo name={session?.user?.name} status={status} />
+            </div>
+          </li>
+          <li>
+            <a href="/search" class="inline-flex">
+              <span className="align-middle mr-2 hover:font-semibold">
+                <HiSearch size={28} />
+              </span>
+              <span>Find Wheels</span>
+            </a>
+          </li>
+          {/* <li>
+            <a href="" className="hover:font-semibold">
+              Help
+            </a>
+          </li> */}
         </ul>
       </div>
     </nav>

@@ -29,7 +29,7 @@ function ResultList({ result }) {
       <textarea
         defaultValue={result}
         placeholder="Enter your text here..."
-        rows={10} // Adjust rows as needed
+        rows={14} // Adjust rows as needed
         className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
