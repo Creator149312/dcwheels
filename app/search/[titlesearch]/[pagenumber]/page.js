@@ -15,11 +15,12 @@ import BottomPagination from "@components/BottomPagination";
 let titleStr = "";
 let listerror = null;
 const perPage = 3;
-const start = 0;
+let start = 0;
 
 export async function generateMetadata({ params }, parent) {
   let listdata = null;
   //check if ID is valid
+
   const searchtitle = params.titlesearch;
   try {
     const response = await fetch(
@@ -93,6 +94,7 @@ const printSearchData = (wheelList) => {
 
 export default async function Page({ params }) {
   const searchtitle = params.titlesearch;
+  start = (params.pagenumber - 1) * perPage;
   try {
     const response = await fetch(
       `${apiConfig.apiUrl}/wheel/search/${searchtitle}`,
@@ -122,32 +124,31 @@ export default async function Page({ params }) {
     <>
       <div className="bg-card text-card-foreground w-full">
         <SearchBarNav />
-        <h1 className="text-3xl font-semibold mt-2 mb-2">Search Results for {searchtitle}</h1>
       </div>
-     <div>
+      <div>
         {wordsList !== null &&
           listerror == null &&
           wordsList.length > 0 &&
-          // wordsList.map((item, index) => (
-          //   <Card key={index} className="p-2 mt-3">
-          //     <div className="text-base leading-normal m-2 flex justify-between items-center">
-          //       <div>
-          //         <h2 className="text-xl font-bold mb-2">{item.title}</h2>
-          //         <p>{item.description}</p>
+          //   wordsList.map((item, index) => (
+          //     <Card key={index} className="p-2 mt-3">
+          //       <div className="text-base leading-normal m-2 flex justify-between items-center">
+          //         <div>
+          //           <h2 className="text-xl font-bold mb-2">{item.title}</h2>
+          //           <p>{item.description}</p>
+          //         </div>
+          //         <div>{item.data.length} Words</div>
           //       </div>
-          //       <div>{item.data.length} Words</div>
-          //     </div>
-          //     <div className="flex items-center">
-          //       <Link href={`/wheels/${item._id}`} className="p-2">
-          //         <HiOutlineEye size={24} />
-          //       </Link>
-          //       <Link href={`/wheels/${item._id}`} className="p-2">
-          //         <HiPencilAlt size={24} />
-          //       </Link>
-          //       <RemoveListBtn id={item._id} className="p-2" />
-          //     </div>
-          //   </Card>
-          // ))
+          //       <div className="flex items-center">
+          //         <Link href={`/wheels/${item._id}`} className="p-2">
+          //           <HiOutlineEye size={24} />
+          //         </Link>
+          //         <Link href={`/wheels/${item._id}`} className="p-2">
+          //           <HiPencilAlt size={24} />
+          //         </Link>
+          //         <RemoveListBtn id={item._id} className="p-2" />
+          //       </div>
+          //     </Card>
+          //   ))
           printSearchData(wordsList).map((item, index) => item)}
         {listerror && (
           <div>
@@ -155,7 +156,7 @@ export default async function Page({ params }) {
           </div>
         )}
       </div>
-      <BottomPagination data={wordsList} perPage={perPage} searchValue={searchtitle} pagenumber={1}/>
+      <BottomPagination data={wordsList} perPage={perPage} searchValue={searchtitle} pagenumber={params.pagenumber}/>
     </>
   );
 }

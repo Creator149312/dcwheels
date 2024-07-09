@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
           <Navbar />
           {/* <SearchBarNav /> */}
           <SegmentsProvider>
-            <div className="grid md:grid-cols-12 gap-x-2 m-2">
+            <div className="grid md:grid-cols-12 gap-x-2 m-2 min-h-screen">
               <div className="bg-card text-card-foreground md:m-2 mb-2 p-2 grid md:col-span-9 rounded-xl shadow border">
                 {children}
               </div>
