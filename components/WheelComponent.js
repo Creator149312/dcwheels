@@ -280,7 +280,7 @@ const WheelComponent = ({
     ctx.clearRect(0, 0, dimension, dimension);
   };
  
-  initCanvas(); // calling it again so that if I click on canvas to the first time the wheel should start spinning
+  // initCanvas(); // calling it again so that if I click on canvas to the first time the wheel should start spinning
   return (
     <div id={wheelId} className="w-[90vw] h-[90vh]">
       <canvas
