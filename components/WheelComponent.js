@@ -36,7 +36,7 @@ const WheelComponent = ({
   // let maxSpeed = Math.PI / segments.length;
   // const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
   // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
-  let maxSpeed = 1.5;
+  let maxSpeed = 1;
   const upTime = upDuration + upDuration * Math.random(0, 1);
   const downTime = downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
@@ -84,7 +84,6 @@ const WheelComponent = ({
   };
 
   const initCanvas = () => {
-    console.log("Canvas is ready......");
     let canvas = document.getElementById(canvasId);
 
     if (navigator.userAgent.indexOf("MSIE") !== -1) {
@@ -105,8 +104,7 @@ const WheelComponent = ({
     setIsClicked(true);
     if (timerHandle === 0) {
       spinStart = new Date().getTime();
-      // maxSpeed = Math.PI / segments.length;
-      maxSpeed = 1.5;
+      maxSpeed = Math.max(1, Math.PI * 2/ segments.length);
       frames = 0;
       timerHandle = window.setInterval(onTimerTick, timerDelay);
       //  timerHandle = setInterval(onTimerTick, timerDelay);
@@ -114,7 +112,6 @@ const WheelComponent = ({
   };
 
   const onTimerTick = () => {
-    console.log("Inside onTimer Tick");
     frames++;
     draw();
     const duration = new Date().getTime() - spinStart;
@@ -123,10 +120,7 @@ const WheelComponent = ({
     if (duration < upTime) {
       progress = duration / upTime;
       angleDelta = maxSpeed * Math.sin((progress * Math.PI) / 2);
-      console.log("I am inside If and running");
     } else {
-      console.log("I am stopped");
-
       if (winningSegment) {
         if (currentSegment === winningSegment && frames > segments.length) {
           progress = duration / upTime;
@@ -173,10 +167,8 @@ const WheelComponent = ({
 
   const drawSegment = (key, lastAngle, angle) => {
     if (!canvasContext) {
-      console.log("CanvasContext is NULL");
       return false;
     }
-    console.log("I am drawing segment");
     const ctx = canvasContext;
     const value = segments[key];
     ctx.save();
@@ -199,10 +191,9 @@ const WheelComponent = ({
 
   const drawWheel = () => {
     if (!canvasContext) {
-      console.log("CanvasContext is NULL");
       return false;
     }
-    console.log("Drawing Wheel");
+    // console.log("Drawing Wheel");
     const ctx = canvasContext;
     let lastAngle = angleCurrent;
     const len = segments.length;
@@ -282,7 +273,7 @@ const WheelComponent = ({
  
   // initCanvas(); // calling it again so that if I click on canvas to the first time the wheel should start spinning
   return (
-    <div id={wheelId} className="w-[90vw] h-[90vh]">
+    <div id={wheelId} className="w-[95vw]">
       <canvas
         id={canvasId}
         width={dimension}
