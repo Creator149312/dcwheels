@@ -3,23 +3,6 @@ import { useEffect, useState, useContext } from "react";
 
 import { SegmentsContext } from "@app/SegmentsContext";
 
-// export interface WheelComponentProps {
-//   segments: string[]
-//   segColors: string[]
-//   winningSegment: string
-//   onFinished: (segment: string) => void
-//   primaryColor?: string
-//   contrastColor?: string
-//   buttonText?: string
-//   isOnlyOnce?: boolean
-//   size?: number
-//   upDuration?: number
-//   downDuration?: number
-//   fontFamily?: string
-//   fontSize?: string
-//   outlineWidth?: number
-// }
-
 const WheelComponent = ({
   segColors,
   winningSegment,
@@ -36,7 +19,7 @@ const WheelComponent = ({
   outlineWidth = 10,
   winner,
 }) => {
-  const { segments } = useContext(SegmentsContext);
+  const { segments, setSegments } = useContext(SegmentsContext);
   const [isClicked, setIsClicked] = useState(false);
   const canvasId = "canvasId";
   const wheelId = "wheelId";
@@ -45,7 +28,8 @@ const WheelComponent = ({
   let isStarted = false;
   const [isFinished, setFinished] = useState(false);
   let timerHandle = 0;
-  const timerDelay = segments.length % 10;
+  // const timerDelay = segments.length % 10;
+  const timerDelay = 5; // reducing timer delay so that wheel movement is smooth
   let angleCurrent = 0;
   let angleDelta = 0;
   let canvasContext = null;
@@ -53,33 +37,54 @@ const WheelComponent = ({
   // const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
   // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
   let maxSpeed = 1.5;
-  const upTime = (upDuration + upDuration * Math.random(0, 1));
-  const downTime = (downDuration + downDuration * Math.random(0, 1));
+  const upTime = upDuration + upDuration * Math.random(0, 1);
+  const downTime = downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
   let frames = 0;
   const centerX = size + 20;
   const centerY = size + 20;
 
-  useEffect(() => {
-    initCanvas();
-    wheelInit();
-    setTimeout(() => {
-      window.scrollTo(0, 1);
-    }, 0);
-  }, [segments]);
+  console.log("Segments in Main Object", segments.length);
 
   useEffect(() => {
     initCanvas();
-    setTimeout(() => {
-      window.scrollTo(0, 1);
-    }, 0);
+    // setTimeout(() => {
+    //   window.scrollTo(0, 1);
+    // }, 0);
   }, [winner]);
+
+  useEffect(() => {
+    initCanvas();
+    wheelInit();
+    // setTimeout(() => {
+    //   window.scrollTo(0, 1);
+    // }, 0);
+  }, [segments, size]);
+
+  useEffect(() => {
+    if (isClicked === true) {
+      initCanvas();
+      wheelInit();
+      setTimeout(() => {
+        window.scrollTo(0, 1);
+      }, 0);
+    }
+  }, [isClicked]);
+
+  useEffect(() => {
+    initCanvas();
+    wheelInit();
+    // setTimeout(() => {
+    //   window.scrollTo(0, 1);
+    // }, 0);
+  }, []);
 
   const wheelInit = () => {
     wheelDraw();
   };
 
   const initCanvas = () => {
+    console.log("Canvas is ready......");
     let canvas = document.getElementById(canvasId);
 
     if (navigator.userAgent.indexOf("MSIE") !== -1) {
@@ -94,17 +99,22 @@ const WheelComponent = ({
   };
 
   const spin = () => {
+    console.log("Wheel Clicked...... and timerHandler = ", timerHandle);
     isStarted = true;
-    setIsClicked(!isClicked);
+    // setIsClicked(!isClicked);
+    setIsClicked(true);
     if (timerHandle === 0) {
       spinStart = new Date().getTime();
-      maxSpeed = Math.PI / segments.length;
+      // maxSpeed = Math.PI / segments.length;
+      maxSpeed = 1.5;
       frames = 0;
       timerHandle = window.setInterval(onTimerTick, timerDelay);
+      //  timerHandle = setInterval(onTimerTick, timerDelay);
     }
   };
 
   const onTimerTick = () => {
+    console.log("Inside onTimer Tick");
     frames++;
     draw();
     const duration = new Date().getTime() - spinStart;
@@ -113,7 +123,10 @@ const WheelComponent = ({
     if (duration < upTime) {
       progress = duration / upTime;
       angleDelta = maxSpeed * Math.sin((progress * Math.PI) / 2);
+      console.log("I am inside If and running");
     } else {
+      console.log("I am stopped");
+
       if (winningSegment) {
         if (currentSegment === winningSegment && frames > segments.length) {
           progress = duration / upTime;
@@ -126,6 +139,7 @@ const WheelComponent = ({
             maxSpeed * Math.sin((progress * Math.PI) / 2 + Math.PI / 2);
         }
         isStarted = false;
+        setIsClicked(false);
       } else {
         progress = duration / downTime;
         angleDelta =
@@ -145,49 +159,6 @@ const WheelComponent = ({
     }
   };
 
-  // experimental timer tick
-  // const onTimerTick = () => {
-  //   frames++;
-  //   draw();
-  //   const duration = new Date().getTime() - spinStart;
-  //   let speed = maxSpeed - ((duration / upTime) * maxSpeed);
-  //   let progress = 0;
-  //   let finished = false;
-  //   if (duration < upTime) {
-  //     progress = duration / upTime;
-  //     angleDelta = speed * Math.sin((progress * Math.PI) / 2);
-  //   } else {
-  //     if (winningSegment) {
-  //       if (currentSegment === winningSegment && frames > segments.length) {
-  //         progress = duration / upTime;
-  //         angleDelta =
-  //         speed * Math.sin((progress * Math.PI) / 2 + Math.PI / 2);
-  //         progress = 1;
-  //       } else {
-  //         progress = duration / downTime;
-  //         angleDelta =
-  //         speed * Math.sin((progress * Math.PI) / 2 + Math.PI / 2);
-  //       }
-  //       isStarted = false;
-  //     } else {
-  //       progress = duration / downTime;
-  //       angleDelta =
-  //       speed * Math.sin((progress * Math.PI) / 2 + Math.PI / 2);
-  //     }
-  //     if (progress >= 1) finished = true;
-  //   }
-
-  //   angleCurrent += angleDelta;
-  //   while (angleCurrent >= Math.PI * 2) angleCurrent -= Math.PI * 2;
-  //   if (finished) {
-  //     setFinished(true);
-  //     onFinished(currentSegment);
-  //     clearInterval(timerHandle);
-  //     timerHandle = 0;
-  //     angleDelta = 0;
-  //   }
-  // };
-
   const wheelDraw = () => {
     clear();
     drawWheel();
@@ -202,8 +173,10 @@ const WheelComponent = ({
 
   const drawSegment = (key, lastAngle, angle) => {
     if (!canvasContext) {
+      console.log("CanvasContext is NULL");
       return false;
     }
+    console.log("I am drawing segment");
     const ctx = canvasContext;
     const value = segments[key];
     ctx.save();
@@ -226,8 +199,10 @@ const WheelComponent = ({
 
   const drawWheel = () => {
     if (!canvasContext) {
+      console.log("CanvasContext is NULL");
       return false;
     }
+    console.log("Drawing Wheel");
     const ctx = canvasContext;
     let lastAngle = angleCurrent;
     const len = segments.length;
@@ -237,6 +212,7 @@ const WheelComponent = ({
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.font = "1em " + fontFamily;
+    console.log("length = ", len);
     for (let i = 1; i <= len; i++) {
       const angle = PI2 * (i / len) + angleCurrent;
       drawSegment(i - 1, lastAngle, angle);
@@ -303,9 +279,10 @@ const WheelComponent = ({
     const ctx = canvasContext;
     ctx.clearRect(0, 0, dimension, dimension);
   };
-
+ 
+  initCanvas(); // calling it again so that if I click on canvas to the first time the wheel should start spinning
   return (
-    <div id={wheelId}>
+    <div id={wheelId} className="w-[90vw] h-[90vh]">
       <canvas
         id={canvasId}
         width={dimension}

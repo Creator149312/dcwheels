@@ -28,7 +28,7 @@ function ResultList({ result }) {
     <div className="flex flex-col gap-4">
       <textarea
         defaultValue={result}
-        placeholder="Enter your text here..."
+        placeholder="You'll see your winners here"
         rows={14} // Adjust rows as needed
         className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />

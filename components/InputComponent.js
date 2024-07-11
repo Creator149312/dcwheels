@@ -13,8 +13,9 @@ function InputComponent() {
 
   const handleTextAreaChange = (event) => {
     setSegments([]);
+    console.log("event.target.value = ", event.target.value);
     setUserInputText(event.target.value);
-    processText();
+    processText(); //this was extra calling 
   };
 
   const processText = () => {
@@ -33,7 +34,7 @@ function InputComponent() {
         <textarea
           value={userInputText}
           onChange={handleTextAreaChange}
-          placeholder="You'll see your winners here" // Adjust rows as needed
+          placeholder="Add Your List Data....." // Adjust rows as needed
           rows={14}
           className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />

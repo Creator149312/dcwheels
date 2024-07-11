@@ -31,19 +31,24 @@ const WinnerPopup = ({ winner, setWinner }) => {
 
   function joinWithNewlines(stringArray) {
     // Handle empty array case
-    if (!stringArray) {
+    if (!stringArray || stringArray.length === 0) {
       return "";
     }
 
-    // Join all elements except the last with newlines
-    const joinedWithNewlines = stringArray.slice(0, -1).join("\n");
+    if (stringArray.length > 1) {
+      // Join all elements except the last with newlines
+      const joinedWithNewlines = stringArray.slice(0, -1).join("\n");
 
-    // Concatenate with the last element and another newline
-    return joinedWithNewlines + "\n" + stringArray[stringArray.length - 1];
+      // Concatenate with the last element and another newline
+      return joinedWithNewlines + "\n" + stringArray[stringArray.length - 1];
+    } else {
+      return stringArray[0] + "\n";
+    }
   }
 
   const removeWinner = () => {
     let updatedArray = segments.filter((element) => element !== winner); // Filter out element with value 3
+    console.log("Array After Removing Winner = ", updatedArray);
     setUserInputText(joinWithNewlines(updatedArray));
     // console.log("Updated Segments after Removing Winner", updatedArray);
     setOpen(!open);
@@ -55,7 +60,7 @@ const WinnerPopup = ({ winner, setWinner }) => {
         <AlertDialogHeader>
           <AlertDialogTitle>The Winner is...</AlertDialogTitle>
           <AlertDialogDescription>
-            <span className="font-bold font-large">{winner}</span>
+            <span className="font-bold text-xl">{winner}</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

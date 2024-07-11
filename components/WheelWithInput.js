@@ -6,10 +6,8 @@ import WheelComponent from "@components/WheelComponent";
 import WinnerPopup from "@components/WinnerPopup";
 import { SegmentsProvider } from "@app/SegmentsContext";
 import { SegmentsContext } from "@app/SegmentsContext";
-import CustomSpinWheel from "@components/CustomSpinWheel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import ResultList from "@components/ResultList";
-import { Button } from "@components/ui/button";
 import SaveWheelBtn from "@components/SaveWheelBtn";
 import useScreenSize from "@utils/useScreenSize";
 import { useSession } from "next-auth/react";
@@ -19,11 +17,10 @@ export default function WheelWithInput({ newSegments }) {
   let [winner, setWinner] = useState("");
   const { segments, setSegments } = useContext(SegmentsContext);
   const { setUserInputText } = useContext(SegmentsContext);
-  const { width, height } = useScreenSize();
   const { status, data: session } = useSession();
-  console.log("New Segments, ", newSegments);
+  const { width, height } = useScreenSize();
 
-  let wheelSize = Math.min(width, height) * 0.39;
+  let wheelSize = Math.min(width, height) * 0.4;
   const segColors = [
     "#EE4040",
     "#F0CF50",
@@ -38,6 +35,12 @@ export default function WheelWithInput({ newSegments }) {
   const onFinished = (winner) => {
     setWinner(winner);
   };
+
+  
+  useEffect(() => {
+    setSegments(segments);
+    setUserInputText(segments.join("\n"));
+  }, [width]);
 
   useEffect(() => {
     setSegments(newSegments);
@@ -78,7 +81,10 @@ export default function WheelWithInput({ newSegments }) {
               List <span className="ml-2">{segments.length}</span>
             </TabsTrigger>
             <TabsTrigger value="result">
-              Result <span className="ml-2">{result.length === 0 ? 0 : result.split("\n").length}</span>
+              Result
+              <span className="ml-2">
+                {result.length === 0 ? 0 : result.split("\n").length}
+              </span>
             </TabsTrigger>
           </TabsList>
           <TabsContent value="list">
@@ -88,7 +94,7 @@ export default function WheelWithInput({ newSegments }) {
             <ResultList result={result} />
           </TabsContent>
         </Tabs>
-        {session !== null && <SaveWheelBtn /> }
+        {session !== null && <SaveWheelBtn />}
       </div>
     </div>
   );
