@@ -19,7 +19,7 @@ const Navbar = () => {
   return (
     <nav className="pr-2 pl-2 text-center shadow">
       <div className="flex items-center font-medium justify-between">
-        <div className="z-50 p-3 md:w-auto w-full flex justify-between">
+        <div className="z-50 p-2 md:w-auto w-full flex justify-between">
           <a href="/" className="text-2xl font-semibold flex items-center">
             <img
               src={"/spin-wheel-logo.png"}
@@ -37,7 +37,7 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-        <ul className="md:flex hidden p-3 justify-between align-middle gap-10 pr-5">
+        <ul className="md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
           <ThemeToggle />
           {/* <NavLinks /> */}
           <li>

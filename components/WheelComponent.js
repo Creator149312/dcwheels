@@ -13,7 +13,7 @@ const WheelComponent = ({
   isOnlyOnce = false,
   size = window.innerWidth,
   upDuration = 200,
-  downDuration = 200,
+  downDuration = 700,
   fontFamily = "proxima-nova",
   fontSize = "1.5em",
   outlineWidth = 10,
@@ -29,21 +29,23 @@ const WheelComponent = ({
   const [isFinished, setFinished] = useState(false);
   let timerHandle = 0;
   // const timerDelay = segments.length % 10;
-  const timerDelay = 5; // reducing timer delay so that wheel movement is smooth
+  const timerDelay = 10; // reducing timer delay so that wheel movement is smooth
   let angleCurrent = 0;
   let angleDelta = 0;
   let canvasContext = null;
-  // let maxSpeed = Math.PI / segments.length;
+  //  let maxSpeed = Math.PI / segments.length;
   // const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
   // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
-  let maxSpeed = 1;
+  let maxSpeed = 0.6;
   const upTime = upDuration + upDuration * Math.random(0, 1);
   const downTime = downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
   let frames = 0;
   const centerX = size + 20;
   const centerY = size + 20;
-
+  const totalSpinTime = 5000;
+  const speedFactor = 4;
+  fontSize = Math.min((2 * Math.PI * Math.PI) / segments.length, 2.5) + "em";
   console.log("Segments in Main Object", segments.length);
 
   useEffect(() => {
@@ -65,9 +67,11 @@ const WheelComponent = ({
     if (isClicked === true) {
       initCanvas();
       wheelInit();
-      setTimeout(() => {
-        window.scrollTo(0, 1);
-      }, 0);
+      spin();
+
+      // setTimeout(() => {
+      //   window.scrollTo(0, 1);
+      // }, 0);
     }
   }, [isClicked]);
 
@@ -104,12 +108,41 @@ const WheelComponent = ({
     setIsClicked(true);
     if (timerHandle === 0) {
       spinStart = new Date().getTime();
-      maxSpeed = Math.max(1, Math.PI * 2/ segments.length);
+      // maxSpeed = Math.PI / segments.length;
+      maxSpeed = 0.6;
       frames = 0;
       timerHandle = window.setInterval(onTimerTick, timerDelay);
       //  timerHandle = setInterval(onTimerTick, timerDelay);
     }
   };
+
+  // modified using a specified time to spin the wheel
+  // const onTimerTick = () => {
+  //   let finished = false;
+  //   frames++;
+  //   draw();
+
+  //   const duration = new Date().getTime() - spinStart;
+  //   const progress = Math.min(duration / totalSpinTime, 1); // Clamp progress to 1
+
+  //   // Ease function for smooth acceleration and deceleration
+  //   const ease = progress * (1 - progress); // Cubic ease function
+
+  //   angleDelta = maxSpeed * ease * Math.sin((progress * Math.PI) / 2);
+
+  //   angleCurrent += angleDelta;
+  //   while (angleCurrent >= Math.PI * 2) angleCurrent -= Math.PI * 2;
+
+  //   finished = progress >= 0.99;
+
+  //   if (finished) {
+  //     setFinished(true);
+  //     onFinished(currentSegment);
+  //     clearInterval(timerHandle);
+  //     timerHandle = 0;
+  //     angleDelta = 0;
+  //   }
+  // };
 
   const onTimerTick = () => {
     frames++;
@@ -139,9 +172,14 @@ const WheelComponent = ({
         angleDelta =
           maxSpeed * Math.sin((progress * Math.PI) / 2 + Math.PI / 2);
       }
+      // Ease function for smooth stopping (applied conditionally)
+      if (progress >= 0.25) {
+        const ease = 1 - (progress - 1) * (progress - 1); // Ease function for deceleration
+        angleDelta *= ease;
+      }
       if (progress >= 1) finished = true;
     }
-
+    // console.log("Angle delta = ", angleDelta);
     angleCurrent += angleDelta;
     while (angleCurrent >= Math.PI * 2) angleCurrent -= Math.PI * 2;
     if (finished) {
@@ -270,9 +308,8 @@ const WheelComponent = ({
     const ctx = canvasContext;
     ctx.clearRect(0, 0, dimension, dimension);
   };
- 
-  // initCanvas(); // calling it again so that if I click on canvas to the first time the wheel should start spinning
-  return (
+
+return (
     <div id={wheelId} className="w-[95vw]">
       <canvas
         id={canvasId}
@@ -281,7 +318,7 @@ const WheelComponent = ({
         style={{
           pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
         }}
-        onClick={spin}
+        onClick={()=>{setIsClicked(!isClicked); spin();}}
       />
     </div>
   );

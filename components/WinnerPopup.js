@@ -60,7 +60,7 @@ const WinnerPopup = ({ winner, setWinner }) => {
         <AlertDialogHeader>
           <AlertDialogTitle>The Winner is...</AlertDialogTitle>
           <AlertDialogDescription>
-            <span className="font-bold text-xl">{winner}</span>
+            <span className="font-extrabold text-xl">{winner}</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
