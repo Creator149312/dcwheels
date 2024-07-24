@@ -4,6 +4,7 @@ import Navbar from "@components/navbar/Navbar";
 import { ThemeProvider } from "./ThemeProvider";
 import SearchBarNav from "@components/SearchNavBar";
 import { SegmentsProvider } from "./SegmentsContext";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
+        <Toaster />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

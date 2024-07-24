@@ -57,7 +57,7 @@ export default function RegisterFormAdv() {
         if (results?.error) {
           toast.error(results.error);
         } else {
-          toast.success("User registration successful!");
+          toast.success("Verification Email Sent, Please Verify!");
           setFormData({
             username: "",
             email: "",

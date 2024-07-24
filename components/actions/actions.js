@@ -13,6 +13,11 @@ import {
   validateEmail,
 } from "@utils/Validator";
 import Wheel from "@models/wheel";
+import { Resend } from "resend";
+import Registration from "@app/email/registration";
+import uuid4 from "uuid4";
+
+const resend = new Resend(process.env.EMAIL_API_KEY);
 
 export const updateNewPassword = async (formData) => {
   let errorData = { error: "" };
@@ -146,6 +151,39 @@ export const deleteUserAccount = async (formData) => {
 //   return errorData;
 // };
 
+const getVerificationTokenByEmail = async (email) => {
+  try {
+    const result = await EmailVerificationToken.findOne({ email: email });
+    console.log(result); // Log the result of the delete operation
+  } catch (error) {
+    return { error: "Please login to delete your Account" };
+  }
+};
+
+const deleteExistingTokenByEmail = async (email) => {
+  try {
+    const result = await EmailVerificationToken.findOneAndDelete({
+      email: email,
+    });
+    console.log(result); // Log the result of the delete operation
+  } catch (error) {
+    return { error: "Please login to delete your Account" };
+  }
+};
+
+const sendAccountVerificationEmail = async (email, token) => {
+  try {
+    resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "gauravsingh9314@gmail.com",
+      subject: "SpinPapa",
+      react: <Registration email={email} token={token} />,
+    });
+  } catch (error) {
+    return { error: "Failed to send account verification email" };
+  }
+};
+
 export const registerUser = async (formData) => {
   let errorData = { error: "" };
 
@@ -158,7 +196,7 @@ export const registerUser = async (formData) => {
   if (vp.length !== 0) errorData.error = vp;
 
   try {
-    console.log("form Data is Server,", formData);
+    // console.log("form Data is Server,", formData);
 
     if (errorData.error.length !== 0) {
       console.log("Found Errors in Form Validation");
@@ -190,10 +228,19 @@ export const registerUser = async (formData) => {
 
       let timeNow = new Date();
       let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
+    
       //TODO: send Email for verification
-      let token = `Thisistokenfor${email}`; // we want a unique token on 16 characters
+      let token = uuid4(); // we want a unique token of 16 characters
+      console.log(token);
       console.log("User created, Now creating verification Token");
-      await EmailVerificationToken.create({ email, token, expires: expriringTime })
+
+      await EmailVerificationToken.create({
+        email,
+        token,
+        expires: expriringTime,
+      });
+
+      await sendAccountVerificationEmail(email, token);
       console.log(res);
     }
   } catch (error) {
@@ -251,7 +298,7 @@ export const verifyUserEmailbyToken = async (token) => {
 
   await connectMongoDB();
 
-   const record = await EmailVerificationToken.findOne({ token });
+  const record = await EmailVerificationToken.findOne({ token });
 
   console.log("Record Data of Email Verification", record);
   if (record) {
@@ -261,18 +308,36 @@ export const verifyUserEmailbyToken = async (token) => {
     console.log("Time Now : ", currentTime);
     if (record.expires > currentTime) {
       //finally set the emailVerified field in user table to current date.
-      await User.findOneAndUpdate({ email: record.email }, { emailVerified: true });
-      return { success: "Email Verified Successfully" };
+
+      let ifUserExists = await User.findOne({ email: record.email });
+
+      if (ifUserExists) {
+        await User.findOneAndUpdate(
+          { email: record.email },
+          { emailVerified: true }
+        );
+
+        await deleteExistingTokenByEmail(record.email); //delete token after being verified
+        return { success: "Email Verified Successfully" };
+      }else{
+        return {error: "User doesn't Exist"}
+      }
     } else {
       //token expired
-      let newToken = "kjaouad820380812";
+      let newToken = uuid4();
 
       let verificationLink = `https://humble-computing-machine-97ww6wrxr6x37x7x.github.dev/new-email?token=${newToken}`;
 
-      await EmailVerificationToken.findOneAndUpdate({ email: record.email, token: newToken, expires: (new Date() + 3600 * 1000) })
+      await EmailVerificationToken.findOneAndUpdate({
+        email: record.email,
+        token: newToken,
+        expires: new Date() + 3600 * 1000,
+      });
+
+      await sendAccountVerificationEmail(record.email, newToken);
       return { success: "Verification Token has been sent Successfully" };
     }
   } else {
     return { error: "Invalid Token" };
   }
-}
+};

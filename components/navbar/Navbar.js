@@ -26,7 +26,7 @@ const Navbar = () => {
               alt="logo"
               className="md:cursor-pointer h-9 pr-2"
             />
-            WheelMaster
+            SpinPapa
           </a>
           <div className="flex gap-4">
             <div className="md:hidden">
