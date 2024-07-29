@@ -25,7 +25,7 @@ export default function Page() {
     );
   } else {
     if (session !== null) { //if is used till the time browser fetches the session data
-      return <p>Fetching Your Lists ...</p>
+      return <p>Fetching Your Wheels ...</p>
     } else {
       return <a className="cursor-pointer custom-button" href="/login">Login</a>;
     }

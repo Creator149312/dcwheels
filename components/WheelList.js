@@ -40,8 +40,8 @@ export default function WordLists({ createdBy }) {
 
   return (
     <div>
-      {isLoading && <p>Fetching Your Lists ...</p>}
-      {error && <p>Failed to Load Your Lists</p>}
+      {isLoading && <p>Fetching Your Wheels ...</p>}
+      {error && <p>Failed to Load Your Wheels</p>}
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (
@@ -67,7 +67,7 @@ export default function WordLists({ createdBy }) {
       {/* if data is loading is finished and data array is still empty  */}
       {!isLoading && data.length === 0 && (
         <p className="text-center">
-          No Lists Found. Create Your Lists and Starting Learning!
+          No Wheels Found. Create Your Wheels and Start Exploring Randomness!
         </p>
       )}
     </div>
