@@ -4,15 +4,16 @@ import React, { useCallback, useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { verifyUserEmailbyToken } from "./actions/actions";
 import Link from "next/link";
-import { Card } from "./ui/card";
+import { Suspense } from 'react'
 
 const AccountEmailVerification = () => {
   const [error, setError] = useState(undefined);
   const [success, setSuccess] = useState(undefined);
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
 
   const onSubmit = useCallback(() => {
+    const searchParams = useSearchParams();
+    const token = searchParams.get("token");
+
     if (success || error) {
       return;
     }
