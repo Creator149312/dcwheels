@@ -10,7 +10,7 @@ export default function Page() {
   const { status, data: session } = useSession();
   const router = useRouter();
 
-  console.log("Session Inside Dashboard", session);
+  // console.log("Session Inside Dashboard", session);
 
   if (status === "authenticated" || session?.user?.email !== undefined) {
     return (

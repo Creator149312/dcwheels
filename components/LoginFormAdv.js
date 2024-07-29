@@ -64,7 +64,7 @@ export default function LoginFormAdv() {
           return;
         }
 
-        console.log("Login done redirecting to Dashboard");
+        // console.log("Login done redirecting to Dashboard");
 
         router.replace("dashboard");
       } catch (error) {

@@ -35,15 +35,15 @@ export default function SaveWheelBtn() {
   const router = useRouter();
 
   const WheelDataDialog = () => {
-    console.log(
-      "Inside Wheel Data, Where Show Data Dialog is ",
-      showDataDialog
-    );
+    // console.log(
+    //   "Inside Wheel Data, Where Show Data Dialog is ",
+    //   showDataDialog
+    // );
   };
 
   const handleSubmit = async (e) => {
-    console.log("title ", title);
-    console.log("Description", description)
+    // console.log("title ", title);
+    // console.log("Description", description)
 
     setError("");
     e.preventDefault();
@@ -66,7 +66,7 @@ export default function SaveWheelBtn() {
       return;
     }
 
-    console.log(apiConfig);
+    // console.log(apiConfig);
 
     try {
       const data = [...segments];
@@ -83,11 +83,11 @@ export default function SaveWheelBtn() {
 
       if (resObj?.error) {
         //if there is error
-        console.log("error in frontend", res);
+        // console.log("error in frontend", res);
         toast.error("Failed to Create Wheel");
         setError("Failed to create a wheel");
       } else {
-        console.log("Redirecting to Dashboard...");
+        // console.log("Redirecting to Dashboard...");
         router.push("/dashboard");
       }
     } catch (error) {

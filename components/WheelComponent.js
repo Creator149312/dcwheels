@@ -46,7 +46,7 @@ const WheelComponent = ({
   const totalSpinTime = 5000;
   const speedFactor = 4;
   fontSize = Math.min((2 * Math.PI * Math.PI) / segments.length, 2.5) + "em";
-  console.log("Segments in Main Object", segments.length);
+  // console.log("Segments in Main Object", segments.length);
 
   useEffect(() => {
     initCanvas();
@@ -102,7 +102,7 @@ const WheelComponent = ({
   };
 
   const spin = () => {
-    console.log("Wheel Clicked...... and timerHandler = ", timerHandle);
+    // console.log("Wheel Clicked...... and timerHandler = ", timerHandle);
     isStarted = true;
     // setIsClicked(!isClicked);
     setIsClicked(true);
@@ -241,7 +241,7 @@ const WheelComponent = ({
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.font = "1em " + fontFamily;
-    console.log("length = ", len);
+    // console.log("length = ", len);
     for (let i = 1; i <= len; i++) {
       const angle = PI2 * (i / len) + angleCurrent;
       drawSegment(i - 1, lastAngle, angle);

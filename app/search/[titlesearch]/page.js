@@ -65,7 +65,7 @@ const printSearchData = (wheelList) => {
   for (var i = start; i < end; i++) {
     let item = wheelList[i];
 
-    console.log("Title of Wheel = ", item.title);
+    // console.log("Title of Wheel = ", item.title);
     wheelData.push(
       <Card key={i} className="p-2 mt-3">
         <div className="text-base leading-normal m-2 flex justify-between items-center">

@@ -44,9 +44,9 @@ const printPaginationItem = (numOfPages, searchValue) => {
   }
 
   let nextPage = parseInt(currentPage) + 1;
-  console.log("Next Page = ", nextPage);
-  console.log("Current Page = ", currentPage);
-  console.log("Number Of Pages = ", numOfPages);
+  // console.log("Next Page = ", nextPage);
+  // console.log("Current Page = ", currentPage);
+  // console.log("Number Of Pages = ", numOfPages);
 
   paginationLinkItems.push(
     <>

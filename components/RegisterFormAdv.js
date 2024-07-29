@@ -51,7 +51,7 @@ export default function RegisterFormAdv() {
     if (Object.keys(errors).length === 0) {
       setIsRegistering(true);
       try {
-        console.log("Form Data in Client, ", dataFromFrom);
+        // console.log("Form Data in Client, ", dataFromFrom);
         let results = await registerUser(dataFromFrom);
 
         if (results?.error) {

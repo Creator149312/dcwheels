@@ -31,7 +31,7 @@ const AccountEmailVerification = () => {
         }
       })
       .catch((error) => {
-        console.error(error);
+        // console.error(error);
         setError("An unexpected error occurred");
       });
   }, [token, success, error]);

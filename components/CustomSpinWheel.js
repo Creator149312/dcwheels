@@ -176,7 +176,7 @@ function CustomSpinWheel({ colors, setWinner }) {
       spinSpeed.current -= Math.min(deceleration, spinSpeed.current);
       rotateDeg.current += spinSpeed.current; // Adjust spin speed
 
-      console.log("running Spin again");
+      // console.log("running Spin again");
       if (spinSpeed.current < deceleration) {
         // Spin for a few rotations
         setIsSpinning(false);
@@ -191,20 +191,20 @@ function CustomSpinWheel({ colors, setWinner }) {
 
         let index = 0;
         for (const { startAngle, endAngle } of slicePositions) {
-          console.log(
-            "start angle " +
-              startAngle +
-              " End Angle = " +
-              endAngle +
-              " Index = " +
-              slicePositions.indexOf({ startAngle, endAngle })
-          );
+          // console.log(
+          //   "start angle " +
+          //     startAngle +
+          //     " End Angle = " +
+          //     endAngle +
+          //     " Index = " +
+          //     slicePositions.indexOf({ startAngle, endAngle })
+          // );
           // Check if needle tip falls within slice angles (considering wrap-around)
           if (
             isArcSegmentInsideAnother(needleAngles, { startAngle, endAngle })
           ) {
             winningSegment = segments[index];
-            console.log("Winning Segment = " + segments[index]);
+            // console.log("Winning Segment = " + segments[index]);
             setWinner(segments[index]);
             break;
           }

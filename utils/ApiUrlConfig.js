@@ -1,7 +1,7 @@
 let apiConfig;
 
 console.log("Node Env - ", process.env.NODE_ENV);
-console.log("Vercel Env - " ,process.env.VERCEL_ENV);
+// console.log("Vercel Env - " ,process.env.VERCEL_ENV); //there is no variable as VERCEL_ENV
 
 if (process.env.NODE_ENV === "production") {
   apiConfig = {

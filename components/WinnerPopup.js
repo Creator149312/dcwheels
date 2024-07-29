@@ -48,7 +48,7 @@ const WinnerPopup = ({ winner, setWinner }) => {
 
   const removeWinner = () => {
     let updatedArray = segments.filter((element) => element !== winner); // Filter out element with value 3
-    console.log("Array After Removing Winner = ", updatedArray);
+    // console.log("Array After Removing Winner = ", updatedArray);
     setUserInputText(joinWithNewlines(updatedArray));
     // console.log("Updated Segments after Removing Winner", updatedArray);
     setOpen(!open);

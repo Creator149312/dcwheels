@@ -53,7 +53,7 @@ export const validateEmail = (email) => {
   
     const inputRegex = /[^a-zA-Z0-9\s-]/;
   
-    console.log("validating description")
+    // console.log("validating description")
     if (!input.trim()) {
       err = "List name is required!";
     } else if (inputRegex.test(input)) {
