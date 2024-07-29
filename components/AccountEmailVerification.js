@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { verifyUserEmailbyToken } from "./actions/actions";
 import Link from "next/link";
+import { Card } from "./ui/card";
 
 const AccountEmailVerification = () => {
   const [error, setError] = useState(undefined);
@@ -42,15 +43,20 @@ const AccountEmailVerification = () => {
 
   return (
     <>
-      {error && <div>{error}</div>}
-      {success && (
-        <>
-          <div>You Email verified Successfully, Please login!</div>
-          <Link href="/login">
-            <Button> Login to Continue</Button>
-          </Link>
-        </>
-      )}
+      <div className="text-center">
+      <h1 className="text-3xl font-bold text-center">
+        Checking Your Email, Please Wait!
+      </h1>
+        {error && <div>{error}</div>}
+        {success && (
+          <>
+            <div>Your Email verified Successfully, Please login!</div>
+            <Link href="/login">
+              <Button> Login to Continue</Button>
+            </Link>
+          </>
+        )}
+      </div>
     </>
   );
 };
