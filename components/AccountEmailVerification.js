@@ -49,7 +49,7 @@ const AccountEmailVerification = () => {
         {error && <div>{error}</div>}
         {success && (
           <>
-            <div>Your Email verified Successfully, Please login!</div>
+            <div className="text-lg">Your Email verified Successfully, Please login!</div>
             <Link href="/login">
               <Button> Login to Continue</Button>
             </Link>
