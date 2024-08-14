@@ -41,7 +41,7 @@ const Registration = ({ email, token }) => {
               purposes.
             </Text>
             <Text className="text-base leading-6">
-              Whether it's deciding on a restaurant, assigning chores, or
+              Whether it is deciding on a restaurant, assigning chores, or
               generating random ideas, Spinpapa offers a simple and entertaining
               way to make choices..
             </Text>
