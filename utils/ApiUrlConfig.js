@@ -5,7 +5,7 @@ console.log("Node Env - ", process.env.NODE_ENV);
 
 if (process.env.NODE_ENV === "production") {
   apiConfig = {
-    apiUrl: "https://dcwheels.vercel.app/api", // Example production API URL
+    apiUrl: "https://www.spinpapa.com/api", // Example production API URL
   };
 } else if (process.env.NODE_ENV === "test") {
   apiConfig = {
