@@ -1,0 +1,9 @@
+# Block all crawlers for
+User-agent: *
+Disallow: /login
+Disallow: /register
+Disallow: /search
+Disallow: /dashboard
+Disallow: /wheels
+Disallow: /email
+Disallow: /verify
