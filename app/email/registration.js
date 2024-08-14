@@ -17,7 +17,7 @@ const baseUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "";
 
-const Registration = ({ email , token}) => {
+const Registration = ({ email, token }) => {
   return (
     <Html>
       <Head />
@@ -36,12 +36,18 @@ const Registration = ({ email , token}) => {
             />
             <Text className="text-base leading-6">Hi {email},</Text>
             <Text className="text-base leading-6">
-              Welcome to Koala, the sales intelligence platform that helps you
-              uncover qualified leads and close deals faster.
+              Welcome to Spinpapa, fun and interactive online platform that
+              allows users to create and spin custom wheels for various
+              purposes.
+            </Text>
+            <Text className="text-base leading-6">
+              Whether it's deciding on a restaurant, assigning chores, or
+              generating random ideas, Spinpapa offers a simple and entertaining
+              way to make choices..
             </Text>
             <Section className="text-center">
               <Button
-                className="bg-indigo-600 rounded-md text-white text-base py-4 px-4 block"
+                className="bg-slate-600 rounded-md text-white text-base py-4 px-4 block"
                 href={`https://dcwheels.vercel.app/verify/new-email?token=${token}&email=${email}`}
               >
                 Verify Email
@@ -50,12 +56,9 @@ const Registration = ({ email , token}) => {
             <Text className="text-base leading-6">
               Best,
               <br />
-              The Koala team
+              The Spinpapa team
             </Text>
             <Hr className="border-gray-300 border-t border-b my-4" />
-            <Text className="text-gray-500 text-sm">
-              470 Noor Ave STE B #1148, South San Francisco, CA 94080
-            </Text>
           </Container>
         </Body>
       </Tailwind>
