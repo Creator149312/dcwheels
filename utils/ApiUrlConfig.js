@@ -6,14 +6,17 @@ console.log("Node Env - ", process.env.NODE_ENV);
 if (process.env.NODE_ENV === "production") {
   apiConfig = {
     apiUrl: "https://www.spinpapa.com/api", // Example production API URL
+    baseUrl: "https://www.spinpapa.com",
   };
 } else if (process.env.NODE_ENV === "test") {
   apiConfig = {
     apiUrl: "https://ominous-engine-q766v6jx45r34qx9-3000.app.github.dev/api", // Example production API URL
+    baseUrl: "https://ominous-engine-q766v6jx45r34qx9-3000.app.github.dev",
   };
 } else {
   apiConfig = {
     apiUrl: "http://localhost:3000/api", // Example local API URL
+    baseUrl: "http://localhost:3000",
   };
 }
 
