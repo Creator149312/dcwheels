@@ -22,7 +22,8 @@ const Registration = ({ email, token }) => {
     <Html>
       <Head />
       <Preview>
-        The sales intelligence platform that helps you uncover qualified leads.
+        The interactive online platform 
+        for users to create and spin custom wheels.
       </Preview>
       <Tailwind>
         <Body className="bg-white">
