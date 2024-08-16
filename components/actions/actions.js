@@ -17,8 +17,6 @@ import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
 
-const resend = new Resend(process.env.EMAIL_API_KEY);
-
 export const updateNewPassword = async (formData) => {
   let errorData = { error: "" };
   const session = await getServerSession(authOptions);
@@ -172,13 +170,16 @@ const deleteExistingTokenByEmail = async (email) => {
 };
 
 const sendAccountVerificationEmail = async (email, token) => {
+  const resend = new Resend(process.env.EMAIL_API_KEY);
   try {
-    resend.emails.send({
+    const { error } = resend.emails.send({
       from: "onboarding@spinpapa.com",
       to: [`${email}`],
       subject: "SpinPapa",
       react: <Registration email={email} token={token} />,
     });
+
+    console.log("Failed sending email = ", error);
   } catch (error) {
     return { error: "Failed to send account verification email" };
   }
@@ -228,7 +229,7 @@ export const registerUser = async (formData) => {
 
       let timeNow = new Date();
       let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
-    
+
       //TODO: send Email for verification
       let token = uuid4(); // we want a unique token of 16 characters
       console.log(token);
@@ -319,8 +320,8 @@ export const verifyUserEmailbyToken = async (token) => {
 
         await deleteExistingTokenByEmail(record.email); //delete token after being verified
         return { success: "Email Verified Successfully" };
-      }else{
-        return {error: "User doesn't Exist"}
+      } else {
+        return { error: "User doesn't Exist" };
       }
     } else {
       //token expired
