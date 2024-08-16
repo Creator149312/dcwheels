@@ -6,7 +6,6 @@ import {
   Head,
   Hr,
   Html,
-  Img,
   Preview,
   Section,
   Text,
@@ -42,9 +41,7 @@ const Registration = ({ email, token }) => {
               purposes.
             </Text>
             <Text className="text-base leading-6">
-              Whether it is deciding on a restaurant, assigning chores, or
-              generating random ideas, Spinpapa offers a simple and entertaining
-              way to make choices..
+              Verify your accounts and start creating your wheels.
             </Text>
             <Section className="text-center">
               <Button
