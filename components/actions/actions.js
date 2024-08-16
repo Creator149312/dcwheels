@@ -172,8 +172,8 @@ const deleteExistingTokenByEmail = async (email) => {
 const sendAccountVerificationEmail = async (email, token) => {
   const resend = new Resend(process.env.EMAIL_API_KEY);
   try {
-    const { error } = resend.emails.send({
-      from: "spinpapa.com",
+    const { error } = await resend.emails.send({
+      from: "onboarding@spinpapa.com",
       to: [`${email}`],
       subject: "SpinPapa",
       react: <Registration email={email} token={token} />,
