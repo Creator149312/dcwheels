@@ -129,9 +129,9 @@ export default function LoginFormAdv() {
             </Link>
           </div>
         </form>
-        <div className="">
+        {/* <div className="">
           <SignInBtn />
-        </div>
+        </div> */}
       </Card>
     </div>
   );

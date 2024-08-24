@@ -24,7 +24,7 @@ const UserDropDownMenu = ({ name }) => {
         <DropdownMenuItem>
         <Link href="/">New Wheel + </Link></DropdownMenuItem>
         <DropdownMenuItem><Link href="/dashboard">Dashboard</Link></DropdownMenuItem>
-        <DropdownMenuItem><Link href="/settings">Settings</Link></DropdownMenuItem>
+        {/* <DropdownMenuItem><Link href="/settings">Settings</Link></DropdownMenuItem> */}
         <DropdownMenuItem><SignOut /></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
