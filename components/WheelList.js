@@ -40,15 +40,15 @@ export default function WordLists({ createdBy }) {
 
   return (
     <div>
-      {isLoading && <p>Fetching Your Wheels ...</p>}
-      {error && <p>Failed to Load Your Wheels</p>}
+      {isLoading && <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>}
+      {error && <p className="text-xl font-bold m-2">Failed to Load Your Wheels</p>}
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (
           <Card key={index} className="p-2 mt-3">
-            <div className="text-base leading-normal m-2 flex justify-between items-center">
+            <div className="leading-normal m-2 flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold mb-2">{item.title}</h2>
+                <h2 className="text-2xl font-bold m-2">{item.title}</h2>
                 <p>{item.description}</p>
               </div>
               <div>{item.data.length} Words</div>
@@ -66,7 +66,7 @@ export default function WordLists({ createdBy }) {
         ))}
       {/* if data is loading is finished and data array is still empty  */}
       {!isLoading && data.length === 0 && (
-        <p className="text-center">
+        <p className="text-center text-xl m-4">
           No Wheels Found. Create Your Wheels and Start Exploring Randomness!
         </p>
       )}

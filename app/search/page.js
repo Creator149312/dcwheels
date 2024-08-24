@@ -20,20 +20,19 @@ export default function Page() {
       <div className="bg-card text-card-foreground w-full">
         <SearchBarNav />
         <div className="text-center p-3">
-        <div className="text-lg pt-2">
-          search Wheels to see the list of wheels here
+        <div className="text-lg p-2">
+          Search wheels to see the list of wheels here
         </div>
         <div className="text-lg pt-2">
           You can create your own wheels by{" "}
           <a href="/register">
-            <Button variant={"default"} size={"lg"}>
+            <Button variant={"default"} size={"lg"} className="m-3">
               Creating an Account
             </Button>
           </a>
         </div>
       </div>
       </div>
-     
     </>
   );
 }

@@ -37,7 +37,7 @@ export default function RootLayout({ children }) {
                 {children}
               </div>
               <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 md:col-span-3">
-                This is the sidebar It will contain the ads
+                {/* here we will have a ad of Wordpapa */}
               </div>
             </div>
           </SegmentsProvider>
