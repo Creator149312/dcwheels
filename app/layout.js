@@ -9,8 +9,12 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "SpinPapa ",
-  description: "Create Your Spin Wheel and make decision",
+  title: {
+    default: "Spin Wheel – Your Random Choice Picker to Decide",
+    template: "%s - Spinpapa",
+  },
+  description:
+    "Use Spinpapa to create your custom spin wheel and pick a random choice for making decisions",
 };
 
 export default function RootLayout({ children }) {

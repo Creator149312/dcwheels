@@ -10,7 +10,7 @@ export default function Home() {
       <div className="blog-main mt-4">
         <h1 className="text-4xl mb-2">Spin Wheel – Your Random Choice Picker to Decide</h1>
         <p className="mb-3">
-          A Spin Wheel is a an Online spinner tool that is designed to help
+          Spinpapa is a an Online spinner tool that is designed to help
           individuals make decisions in a fun and random way. It is a virtual
           wheel that can be spun to determine a random outcome. The wheel is
           divided into various sections out of a circle, each with a different
@@ -65,7 +65,7 @@ export default function Home() {
         <p className="mb-3">
           2. Create New Wheel: to create new wheel you can just clear all the
           elements in the textarea, this will remove all sectors of wheel and
-          all you'll have is a blank wheel with no sectors. Then you can start
+          all you will have is a blank wheel with no sectors. Then you can start
           adding your own custom input data.
         </p>
         <p className="mb-3">
@@ -85,7 +85,7 @@ export default function Home() {
           The user interface is intuitive and user-friendly, allowing anyone to
           create a wheel in just a few minutes. Simply input the values in
           textarea you want to add to wheel and customize the wheel to your
-          liking, and you're ready to spin.
+          liking, and you are ready to spin.
         </p>
         <p className="mb-3">
           There are variety of customization options available. Users can
@@ -98,7 +98,7 @@ export default function Home() {
         <p className="mb-5">
           In addition, Spin Wheel is accessible from anywhere with an internet
           connection, making it a convenient tool to have at your disposal.
-          Whether you're at home, at work, or on the go, you can access your
+          Whether you are at home, at work, or on the go, you can access your
           custom wheel and make decisions in a quick, simple, and fair way.
         </p>
         <h2 className="text-3xl mb-2">Using Spin Wheel in Classroom for Teaching</h2>
@@ -135,7 +135,7 @@ export default function Home() {
         <p className="mb-5">
           Using picker wheel can help to make learning more engaging and
           enjoyable for students, particularly those who struggle to stay
-          focused. Whether you're teaching a large class or a small group, a
+          focused. Whether you are teaching a large class or a small group, a
           classroom spinner wheel is a great tool to have in your arsenal.
         </p>
         <h2 className="text-3xl mb-2">Usage of Wheel Spinner in Everyday Activities</h2>
