@@ -20,7 +20,7 @@ export default function WheelWithInput({ newSegments }) {
   const { status, data: session } = useSession();
   const { width, height } = useScreenSize();
 
-  let wheelSize = Math.min(width, height) * 0.4;
+  let wheelSize = Math.min(width, height) * 0.42;
   const segColors = [
     "#EE4040",
     "#F0CF50",
@@ -55,8 +55,8 @@ export default function WheelWithInput({ newSegments }) {
   }, [winner]);
 
   return (
-    <div className="grid md:grid-cols-12 gap-x-2 m-2 mt-0">
-      <div className="bg-card text-card-foreground md:m-2 mb-2 mt-0 p-2 pt-0 md:col-span-8">
+    <div className="grid md:grid-cols-12 gap-x-2">
+      <div className="bg-card text-card-foreground md:mb-2 pt-0 md:col-span-8">
         <WinnerPopup winner={winner} setWinner={setWinner} />
         <WheelComponent
           segColors={segColors}
@@ -74,7 +74,7 @@ export default function WheelWithInput({ newSegments }) {
           deceleration={0.01}
         />
       </div>
-      <div className="bg-card text-card-foreground md:m-2 mb-2 mt-2 md:col-span-4">
+      <div className="bg-card text-card-foreground md:p-2 mb-2 mt-2 md:col-span-4">
         <Tabs defaultValue="list">
           <TabsList className="w-full">
             <TabsTrigger value="list">

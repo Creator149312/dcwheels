@@ -45,7 +45,7 @@ const WheelComponent = ({
   const centerY = size + 20;
   const totalSpinTime = 5000;
   const speedFactor = 4;
-  fontSize = Math.min((2 * Math.PI * Math.PI) / segments.length, 2.5) + "em";
+  fontSize = Math.min((3.14 * Math.PI * Math.PI) / segments.length, 2.5) + "em";
   // console.log("Segments in Main Object", segments.length);
 
   useEffect(() => {

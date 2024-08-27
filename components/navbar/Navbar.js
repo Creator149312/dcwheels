@@ -17,7 +17,7 @@ const Navbar = () => {
   // console.log("Data is here \n", session);
 
   return (
-    <nav className="pr-2 pl-2 text-center shadow">
+    <div className="pr-2 pl-2 text-center bg-card text-card-foreground shadow">
       <div className="flex items-center font-medium justify-between">
         <div className="z-50 p-2 md:w-auto w-full flex justify-between">
           <a href="/" className="text-2xl font-semibold flex items-center">
@@ -91,7 +91,7 @@ const Navbar = () => {
           </li> */}
         </ul>
       </div>
-    </nav>
+    </div>
   );
 };
 

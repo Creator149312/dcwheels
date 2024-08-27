@@ -20,7 +20,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="min-h-screen bg-slate-100 dark:bg-slate-900 font-sans antialiased">
         <Toaster />
         <ThemeProvider
           attribute="class"
@@ -32,11 +32,11 @@ export default function RootLayout({ children }) {
           <Navbar />
           {/* <SearchBarNav /> */}
           <SegmentsProvider>
-            <div className="grid md:grid-cols-12 gap-x-2 m-2 min-h-screen">
-              <div className="bg-card text-card-foreground md:m-2 mb-2 p-2 grid md:col-span-9 rounded-xl shadow border">
+            <div className="grid md:grid-cols-12 gap-x-2 mt-2 min-h-screen">
+              <div className="bg-card text-card-foreground grid md:col-span-9 rounded-xl shadow border">
                 {children}
               </div>
-              <div className="rounded-xl border bg-card text-card-foreground shadow md:m-2 mb-2 mt-2 md:col-span-3">
+              <div className="rounded-xl border bg-card text-card-foreground shadow md:p-2 mb-2 md:col-span-3">
                 {/* here we will have a ad of Wordpapa */}
               </div>
             </div>
