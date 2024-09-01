@@ -310,10 +310,10 @@ const WheelComponent = ({
   };
 
 return (
-    <div id={wheelId} className="w-[95vw]">
+    <div id={wheelId} className="mx-auto">
       <canvas
         id={canvasId}
-        width={dimension}
+        width={dimension} 
         height={dimension}
         style={{
           pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
