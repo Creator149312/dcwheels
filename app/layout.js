@@ -25,10 +25,7 @@ export default function RootLayout({ children }) {
         <GAnalytics />
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        {/* <meta
-          name="google-site-verification"
-          content="eRHE29e6-yFJJ0WUWShysLxHV_QJkOyv_ZpPc00pzYA"
-        /> */}
+        <meta name="google-site-verification" content="jOUYj2ZPgFjwawSzgYTh7nlTcJdWdDCgSczbT1Rk-hQ" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="min-h-screen bg-slate-100 dark:bg-slate-900 font-sans antialiased">
