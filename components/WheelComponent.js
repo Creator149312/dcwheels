@@ -310,7 +310,7 @@ const WheelComponent = ({
   };
 
 return (
-    <div id={wheelId} className="mx-auto">
+    <div id={wheelId} className="mx-auto min-h-96 max-h-screen">
       <canvas
         id={canvasId}
         width={dimension} 

@@ -56,8 +56,8 @@ export default function WheelWithInput({ newSegments }) {
   }, [winner]);
 
   return (
-    <div className="grid md:grid-cols-12 gap-x-2">
-      <div className="bg-card text-card-foreground md:mb-2 pt-0 md:col-span-8 mx-auto">
+    <div className="grid lg:grid-cols-12 gap-x-2">
+      <div className="bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto">
         <WinnerPopup winner={winner} setWinner={setWinner} />
         <WheelComponent
           segColors={segColors}
@@ -75,8 +75,8 @@ export default function WheelWithInput({ newSegments }) {
           deceleration={0.01}
         />
       </div>
-      <div className="bg-card text-card-foreground md:p-2 mx-1 mb-2 mt-2 md:col-span-4">
-        <Tabs defaultValue="list">
+      <div className="bg-card text-card-foreground lg:p-2 mx-1 mb-2 mt-2 lg:col-span-4">
+        <Tabs defaultValue="list w-full">
           <TabsList className="w-full">
             <TabsTrigger value="list">
               List <span className="ml-2">{segments.length}</span>
