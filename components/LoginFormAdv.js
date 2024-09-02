@@ -108,9 +108,9 @@ export default function LoginFormAdv() {
             />
             {errors.password && <p className="error">{errors.password}</p>}
             <div>
-            <Link className="m-4 p-2" href={"/reset-password"}>
+            {/* <Link className="m-4 p-2" href={"/reset-password"}>
               Forgot password
-            </Link>
+            </Link> */}
             </div>
           </div>
           <div className="p-2">

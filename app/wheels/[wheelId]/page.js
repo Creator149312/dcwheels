@@ -18,7 +18,7 @@ export async function generateMetadata({ params }, parent) {
         cache: "no-store",
       }); // Replace with your actual API endpoint
 
-      if (!response.ok) throw new Error("Failed to fetch lists");
+      if (!response.ok) throw new Error("Failed to fetch Wheels");
 
       listdata = (await response.json()).list;
     } catch (error) {
@@ -32,17 +32,17 @@ export async function generateMetadata({ params }, parent) {
 
   if (listdata !== null) {
     // read route params
-    titleStr = listdata.title + " Learning Flashcards";
+    titleStr = listdata.title + " Spin Wheel";
     const descriptionStr =
-      "Explore list of " + listdata.title + " and practice using flashcards.";
+      "Explore " + listdata.title + " and spin to pick a random choice.";
     return {
       title: titleStr,
       description: descriptionStr,
     };
   } else {
     return {
-      title: "No List Found",
-      description: "No List Found",
+      title: "No Wheels Found",
+      description: "No Wheels Found",
     };
   }
 }
@@ -59,7 +59,7 @@ export default async function Page({ params }) {
       }); // Replace with your actual API endpoint
 
       if (!response.ok) {
-        throw new Error("Failed to fetch lists");
+        throw new Error("Failed to fetch Wheels");
       }
 
       const data = await response.json();
@@ -71,7 +71,7 @@ export default async function Page({ params }) {
       listerror = error;
     } finally {
       if (wordsList === null) {
-        listerror = { message: "No records Found" };
+        listerror = { message: "No Wheels Found" };
       }
     }
   }
@@ -82,7 +82,7 @@ export default async function Page({ params }) {
         <WheelWithInput newSegments={wordsList.data}/>
       )}
       {listerror && (
-        <div>We cannot find the list. This has been deleted by the creator.</div>
+        <div>We cannot find any Wheel. This has been deleted by the creator.</div>
       )}
     </div>
   );

@@ -29,14 +29,14 @@ export async function generateMetadata({ params }, parent) {
       }
     ); // Replace with your actual API endpoint
 
-    if (!response.ok) throw new Error("Failed to fetch lists");
+    if (!response.ok) throw new Error("Failed to fetch Wheels");
 
     listdata = (await response.json()).list;
   } catch (error) {
     listerror = error;
   } finally {
     if (listdata === null) {
-      listerror = { message: "No records Found" };
+      listerror = { message: "No Wheels Found" };
     }
   }
 
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }, parent) {
     // read route params
     titleStr = searchtitle + " Wheels";
     const descriptionStr =
-      "Explore list of " + searchtitle + " and practice using flashcards.";
+      "Explore the list of spin wheels related to " + searchtitle + ".";
     return {
       title: titleStr,
       description: descriptionStr,
@@ -102,7 +102,7 @@ export default async function Page({ params }) {
     ); // Replace with your actual API endpoint
 
     if (!response.ok) {
-      throw new Error("Failed to fetch lists");
+      throw new Error("Failed to fetch Wheels");
     }
 
     const data = await response.json();
@@ -114,7 +114,7 @@ export default async function Page({ params }) {
     listerror = error;
   } finally {
     if (wordsList === null) {
-      listerror = { message: "No records Found" };
+      listerror = { message: "No Wheels Found" };
     }
   }
 

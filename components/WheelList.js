@@ -40,8 +40,8 @@ export default function WordLists({ createdBy }) {
 
   return (
     <div>
-      {isLoading && <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>}
-      {error && <p className="text-xl font-bold m-2">Failed to Load Your Wheels</p>}
+      {isLoading && <div className="flex justify-center items-center"><p className="text-xl font-bold m-2">Fetching Your Wheels ...</p></div>}
+      {error && <div className="flex justify-center items-center"><p className="text-xl font-bold m-2">Failed to Load Your Wheels</p></div>}
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (

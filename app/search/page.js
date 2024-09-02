@@ -14,16 +14,18 @@ let titleStr = "";
 let listerror = null;
 let wordsList = null;
 
+export const metadata = {
+  title: "Find Spin Wheels",
+  description:
+    "Find the spin wheels you are looking for",
+};
+
 export default function Page() {
   return (
     <>
       <div className="bg-card text-card-foreground w-full">
         <SearchBarNav />
-        <div className="text-center p-3">
-        <div className="text-lg p-2">
-          Search wheels to see the list of wheels here
-        </div>
-        <div className="text-lg pt-2">
+        <div className="text-lg pt-2 flex justify-center items-center">
           You can create your own wheels by{" "}
           <a href="/register">
             <Button variant={"default"} size={"lg"} className="m-3">
@@ -31,7 +33,6 @@ export default function Page() {
             </Button>
           </a>
         </div>
-      </div>
       </div>
     </>
   );

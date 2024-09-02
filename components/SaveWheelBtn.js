@@ -114,7 +114,7 @@ export default function SaveWheelBtn() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button size={"lg"} variant={"default"} className="p-3 m-3">Save Wheel</Button>
+        <Button size={"lg"} variant={"default"} className="p-3 mt-2 w-full">Save Wheel</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

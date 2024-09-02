@@ -77,7 +77,7 @@ export default function WheelWithInput({ newSegments }) {
       </div>
       <div className="bg-card text-card-foreground lg:p-2 mx-1 mb-2 mt-2 lg:col-span-4">
         <Tabs defaultValue="list">
-          <TabsList>
+          <TabsList className="w-full">
             <TabsTrigger value="list">
               List <span className="ml-2">{segments.length}</span>
             </TabsTrigger>
