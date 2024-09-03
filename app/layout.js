@@ -40,12 +40,13 @@ export default function RootLayout({ children }) {
           <Navbar />
           {/* <SearchBarNav /> */}
           <SegmentsProvider>
-            <div className="grid lg:grid-cols-12 gap-x-2 mt-2 min-h-screen">
-              <div className="bg-card text-card-foreground grid lg:col-span-9 rounded-xl shadow border">
+            <div className="grid xl:grid-cols-12 gap-x-2 mt-2 min-h-screen">
+              <div className="rounded-xl bg-card mb-2 text-card-foreground grid xl:col-span-9 shadow border">
                 {children}
               </div>
-              <div className="rounded-xl border bg-card text-card-foreground shadow lg:p-2 mb-2 md:col-span-3">
+              <div className="rounded-xl border bg-card text-card-foreground shadow text-center xl:col-span-3">
                 {/* here we will have a ad of Wordpapa */}
+                <p className="text-lg">Advertisement</p>
               </div>
             </div>
           </SegmentsProvider>

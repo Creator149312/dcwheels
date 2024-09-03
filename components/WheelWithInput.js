@@ -21,7 +21,7 @@ export default function WheelWithInput({ newSegments }) {
   const { status, data: session } = useSession();
   const { width, height } = useScreenSize();
 
-  let wheelSize = Math.min(width, height) * 0.42;
+  let wheelSize = Math.min(Math.min(width, height) * 0.41, 250);
   const segColors = [
     "#EE4040",
     "#F0CF50",
@@ -74,6 +74,8 @@ export default function WheelWithInput({ newSegments }) {
           winner={winner}
           deceleration={0.01}
         />
+{/*         
+        <div className="bg-slate-300 min-h-22"> For Advertisement </div> */}
       </div>
       <div className="bg-card text-card-foreground lg:p-2 mx-1 mb-2 mt-2 lg:col-span-4">
         <Tabs defaultValue="list">

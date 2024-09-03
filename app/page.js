@@ -1,11 +1,10 @@
-import ReactCustomRoulette from "@components/ReactCustomRoulette";
 import WheelWithInput from "@components/WheelWithInput";
 
 export default function Home() {
   return (
     <div className="mx-auto">
       <WheelWithInput
-        newSegments={["Karna", "Arjun", "Robert", "Alfredo", "Nathalie"]}
+        newSegments={["Karna", "Arjun", "Peter", "Rob", "Kate"]}
       />
       <div className="blog-main mt-4 p-3">
         <h1 className="text-4xl mb-2">Spin Wheel – Your Random Choice Picker to Decide</h1>
