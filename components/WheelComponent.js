@@ -57,7 +57,7 @@ const WheelComponent = ({
     Math.min(
       (2.1 * Math.PI * Math.PI) /
         Math.max(segments.length, maxlengthOfSegmentText),
-      2.5
+      2.35
     ) + "em";
 
   // console.log("max length of Segment Text = ", maxlengthOfSegmentText);
