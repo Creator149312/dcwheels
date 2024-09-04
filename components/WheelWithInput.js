@@ -15,7 +15,7 @@ import { Button } from "./ui/button";
 
 export default function WheelWithInput({ newSegments }) {
   const [result, setResult] = useState("");
-  let [winner, setWinner] = useState("");
+  const [winner, setWinner] = useState("");
   const { segments, setSegments } = useContext(SegmentsContext);
   const { setUserInputText } = useContext(SegmentsContext);
   const { status, data: session } = useSession();
@@ -32,11 +32,6 @@ export default function WheelWithInput({ newSegments }) {
     "#EC3F3F",
     "#FF9000",
   ];
-
-  const onFinished = (winner) => {
-    setWinner(winner);
-  };
-
   
   useEffect(() => {
     setSegments(segments);
@@ -62,7 +57,7 @@ export default function WheelWithInput({ newSegments }) {
         <WheelComponent
           segColors={segColors}
           // winningSegment='won 10'
-          onFinished={(winner) => onFinished(winner)}
+          onFinished={(winner) => setWinner(winner)}
           primaryColor="black"
           contrastColor="white"
           buttonText="Spin"

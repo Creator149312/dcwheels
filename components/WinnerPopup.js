@@ -18,16 +18,16 @@ const WinnerPopup = ({ winner, setWinner }) => {
   const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   useEffect(() => {
-    if (winner !== "" && winner !== undefined) {
-      setOpen(true);
-    } else {
-      setOpen(false);
-    }
-  }, [winner]);
+    const timeoutId = setTimeout(() => {
+      if (winner !== "" && winner !== undefined) {
+        setOpen(true);
+      } else {
+        setOpen(false);
+      }
+    }, 200);
 
-  function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
-  }
+    return () => clearTimeout(timeoutId);
+  }, [winner]);
 
   function joinWithNewlines(stringArray) {
     // Handle empty array case

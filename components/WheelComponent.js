@@ -24,12 +24,13 @@ const WheelComponent = ({
   const canvasId = "canvasId";
   const wheelId = "wheelId";
   const dimension = (size + 20) * 2;
+
   let currentSegment = "";
   let isStarted = false;
   const [isFinished, setFinished] = useState(false);
   let timerHandle = 0;
   // const timerDelay = segments.length % 10;
-  const timerDelay = 10; // reducing timer delay so that wheel movement is smooth
+  const timerDelay = 6; // reducing timer delay so that wheel movement is smooth
   let angleCurrent = 0;
   let angleDelta = 0;
   let canvasContext = null;
@@ -38,15 +39,29 @@ const WheelComponent = ({
   // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
   let maxSpeed = 0.6;
   const upTime = upDuration + upDuration * Math.random(0, 1);
-  const downTime = downDuration + downDuration * Math.random(0, 1);
+  const downTime = 2 * downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
   let frames = 0;
   const centerX = size + 20;
   const centerY = size + 20;
   const totalSpinTime = 5000;
   const speedFactor = 4;
-  fontSize = Math.min((3.14 * Math.PI * Math.PI) / segments.length, 2.5) + "em";
-  // console.log("Segments in Main Object", segments.length);
+  let maxlengthOfSegmentText = Math.min(
+    segments.reduce((acc, word) => {
+      return word.length > acc.length ? word : acc;
+    }, "").length,
+    18
+  );
+
+  fontSize =
+    Math.min(
+      (2.1 * Math.PI * Math.PI) /
+        Math.max(segments.length, maxlengthOfSegmentText),
+      2.5
+    ) + "em";
+
+  // console.log("max length of Segment Text = ", maxlengthOfSegmentText);
+  // console.log("Font Size = ", fontSize);
 
   useEffect(() => {
     initCanvas();
@@ -209,6 +224,8 @@ const WheelComponent = ({
     }
     const ctx = canvasContext;
     const value = segments[key];
+    let segmentTexttoDisplay =
+      value.length > 18 ? value.substring(0, 17) + "..." : value;
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
@@ -222,8 +239,9 @@ const WheelComponent = ({
     ctx.translate(centerX, centerY);
     ctx.rotate((lastAngle + angle) / 2);
     ctx.fillStyle = contrastColor;
-    ctx.font = `bold ${fontSize} ${fontFamily}`;
-    ctx.fillText(value.substring(0, 21), size / 2 + 20, 0);
+    ctx.font = `${fontSize} ${fontFamily}`;
+    // ctx.fillText(value.substring(0, 15), size / 2 + 20, 0); //prev code
+    ctx.fillText(segmentTexttoDisplay, size / 1.6, 0);
     ctx.restore();
   };
 
@@ -309,16 +327,19 @@ const WheelComponent = ({
     ctx.clearRect(0, 0, dimension, dimension);
   };
 
-return (
+  return (
     <div id={wheelId} className="mx-auto min-h-[412px] sm:min-h-[572px]">
       <canvas
         id={canvasId}
-        width={dimension} 
+        width={dimension}
         height={dimension}
         style={{
           pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
         }}
-        onClick={()=>{setIsClicked(!isClicked); spin();}}
+        onClick={() => {
+          setIsClicked(!isClicked);
+          spin();
+        }}
       />
     </div>
   );
