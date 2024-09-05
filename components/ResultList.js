@@ -25,7 +25,7 @@ function ResultList({ result }) {
   //   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-h-40 lg:min-h-80">
       <textarea
         defaultValue={result}
         placeholder="You'll see your winners here"

@@ -30,7 +30,7 @@ function InputComponent() {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-h-40 lg:min-h-80">
         <textarea
           value={userInputText}
           onChange={handleTextAreaChange}

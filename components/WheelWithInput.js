@@ -32,7 +32,7 @@ export default function WheelWithInput({ newSegments }) {
     "#EC3F3F",
     "#FF9000",
   ];
-  
+
   useEffect(() => {
     setSegments(segments);
     setUserInputText(segments.join("\n"));
@@ -72,7 +72,7 @@ export default function WheelWithInput({ newSegments }) {
 {/*         
         <div className="bg-slate-300 min-h-22"> For Advertisement </div> */}
       </div>
-      <div className="bg-card text-card-foreground lg:p-2 mx-1 mb-2 mt-2 lg:col-span-4">
+      <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:my-2 lg:col-span-4">
         <Tabs defaultValue="list">
           <TabsList className="w-full">
             <TabsTrigger value="list">
@@ -92,7 +92,9 @@ export default function WheelWithInput({ newSegments }) {
             <ResultList result={result} />
           </TabsContent>
         </Tabs>
-        {session !== null ? <SaveWheelBtn /> : <p className="mt-3"><a href="/register"><Button>Register Here</Button> </a> to Save Your Wheels</p>}
+        <div >
+        {session !== null ? <SaveWheelBtn /> : <p className="mt-1 flex justify-center items-center"><a href="/register"><Button className="mx-2" size={"lg"} variant={"default"}>Register Here</Button> </a> to Save Your Wheels</p>}
+        </div>
       </div>
     </div>
   );
