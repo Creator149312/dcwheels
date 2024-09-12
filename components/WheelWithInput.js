@@ -12,6 +12,7 @@ import SaveWheelBtn from "@components/SaveWheelBtn";
 import useScreenSize from "@utils/useScreenSize";
 import { useSession } from "next-auth/react";
 import { Button } from "./ui/button";
+import FireworksConfetti from "./FireworksConfetti";
 
 export default function WheelWithInput({ newSegments }) {
   const [result, setResult] = useState("");
@@ -93,9 +94,10 @@ export default function WheelWithInput({ newSegments }) {
           </TabsContent>
         </Tabs>
         <div >
-        {session !== null ? <SaveWheelBtn /> : <p className="mt-1 flex justify-center items-center"><a href="/register"><Button className="mx-2" size={"lg"} variant={"default"}>Register Here</Button> </a> to Save Your Wheels</p>}
+        {session !== null ? <SaveWheelBtn /> : <p className="my-2 flex justify-center items-center"><a href="/register"><Button className="mx-2" size={"lg"} variant={"default"}>Register Here</Button> </a> to Save Your Wheels</p>}
         </div>
       </div>
+      { winner && <FireworksConfetti />}
     </div>
   );
 }

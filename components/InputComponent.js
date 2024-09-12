@@ -30,13 +30,12 @@ function InputComponent() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 max-h-40 lg:min-h-80">
+      <div className="flex flex-col gap-4">
         <textarea
           value={userInputText}
           onChange={handleTextAreaChange}
           placeholder="Add Your List Data....." // Adjust rows as needed
-          rows={14}
-          className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="md:h-80 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
     </>

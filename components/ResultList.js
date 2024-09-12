@@ -25,12 +25,11 @@ function ResultList({ result }) {
   //   };
 
   return (
-    <div className="flex flex-col gap-4 max-h-40 lg:min-h-80">
+    <div className="flex flex-col gap-4">
       <textarea
         defaultValue={result}
         placeholder="You'll see your winners here"
-        rows={14} // Adjust rows as needed
-        className="rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="md:h-80 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
   );
