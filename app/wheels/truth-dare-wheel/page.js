@@ -49,35 +49,31 @@ export default async function Page({ params }) {
         <h1 className="text-4xl mb-2">{titleStr}</h1>
         <div className="text-lg">
           <p className="mb-3">
-            A wheel of dares is a game that involves spinning a wheel to
-            determine a dare that players must perform. The wheel is divided
-            into sections, each of which represents a different dare.{" "}
+            The Truth and Dare Wheel is a game that involves spinning a wheel to
+            determine a truth or dare that players must perform. The wheel is
+            divided into sections, each representing a different truth or dare.
           </p>
           <p className="mb-3">
             The dares can range from silly and lighthearted tasks, such as
-            singing a song or doing a silly dance, to more challenging, daring
-            and dirty actions, like eating something unusual or performing a
-            stunt.
+            singing a song or doing a silly dance, to more challenging and
+            daring actions, like eating something unusual or performing a stunt.
+            Truths can involve answering personal questions or revealing
+            secrets.
           </p>
           <p className="mb-3">
             This game is often played by groups of friends or family members and
             is a fun way to add excitement and unpredictability to social
-            gatherings. It can also be a great icebreaker for people who don't
-            know each other well, as performing dares together can help build
-            camaraderie and create a more relaxed and enjoyable atmosphere.
-            Additionally, the wheel of dares can also be used as a party game,
-            as a tool for team-building activities or for extreme adventure
-            exploration.
+            gatherings. It can also be a great icebreaker for people who do not
+            know each other well, as performing dares and sharing truths
+            together can help build camaraderie and create a more relaxed and
+            enjoyable atmosphere.
           </p>
           <p className="mb-3">
-            You can also turn the above wheel into a mystery wheel of dares,
-            where the dares are hidden behind a layer of mystery. Players must
-            spin the wheel and then perform the dare without knowing what it is
-            beforehand.
-          </p>
-          <p className="mb-3">
-            This adds an element of excitement and unpredictability to the game,
-            as players have no idea what they will be asked to do.{" "}
+            You can also turn the wheel into a mystery wheel of dares, where the
+            dares are hidden behind a layer of mystery. Players must spin the
+            wheel and then perform the dare without knowing what it is
+            beforehand. This adds an element of excitement and unpredictability
+            to the game, as players have no idea what they will be asked to do.
           </p>
         </div>
       </div>

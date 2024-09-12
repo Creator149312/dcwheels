@@ -54,13 +54,13 @@ export default async function Page({ params }) {
           <p className="mb-3">
             The NFL Teams Picker Wheel features a spinning wheel with all 32 NFL
             teams. Simply spin the wheel to randomly select a team for your bet.
-            It’s a fun and unpredictable way to choose your bets, adding a new
+            It is a fun and unpredictable way to choose your bets, adding a new
             dimension to the excitement of NFL wagering, especially during the
             NFL playoffs.
           </p>
           <p>
             NFL wheel spinners are widely used in online fantasy football
-            games, online pick'em pools, or other similar games where a random
+            games and other similar games where a random
             selection of a team is needed. They are convenient and can save a
             lot of time compared to the physical spinner, as the user does not
             have to physically spin the wheel.
