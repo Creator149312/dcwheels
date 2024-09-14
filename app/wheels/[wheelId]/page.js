@@ -79,7 +79,12 @@ export default async function Page({ params }) {
   return (
     <div>
       {wordsList !== null && listerror == null && (
+        <>
         <WheelWithInput newSegments={wordsList.data}/>
+        {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
+        <p>{wordsList.description}</p>
+        </div> */}
+        </>
       )}
       {listerror && (
         <div>We cannot find any Wheel. This has been deleted by the creator.</div>

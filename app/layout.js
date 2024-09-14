@@ -26,6 +26,7 @@ export default function RootLayout({ children }) {
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="google-site-verification" content="jOUYj2ZPgFjwawSzgYTh7nlTcJdWdDCgSczbT1Rk-hQ" />
+        <meta name="msvalidate.01" content="A8182827FD82081B73F2EB1024F9C2C9" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="min-h-screen bg-slate-100 dark:bg-slate-900 font-sans antialiased">
