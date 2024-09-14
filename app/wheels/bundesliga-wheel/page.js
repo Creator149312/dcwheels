@@ -43,8 +43,8 @@ export default async function Page({ params }) {
             A Bundesliga spin wheel is a fun game where you randomly select a
             Bundesliga team or player. Perfect for football fans or just a
             casual game night, it adds an element of surprise and excitement to
-            your Bundesliga experience. Spin the wheel and see who you'll draft
-            or which team you'll play.
+            your Bundesliga experience. Spin the wheel and see who you&#39;ll draft
+            or which team you&#39;ll play.
           </p>
         </div>
       </div>

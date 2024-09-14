@@ -50,19 +50,18 @@ export default async function Page({ params }) {
         <div className="text-lg">
           <p className="mb-3">
             An eye color wheel is a visual tool used in makeup artistry,
-            especially for eyeshadow application. It's based on color theory,
+            especially for eyeshadow application. It&#39;s based on color theory,
             which explains how different colors interact and complement each
-            other. By spinning the color wheel, makeup artists can choose
-            eyeshadow shades that flatter their clients' eye color.
+            other. 
+          </p>
+          <p className="mb-3">
+          By spinning the color wheel, makeup artists can choose
+          eyeshadow shades that flatter their clients&#39; eye color.
           </p>
           <p className="mb-3">
             For example, people with brown eyes are often considered versatile
             and can wear a wide range of colors. However, shades of green,
             purple, and blue can be particularly flattering.
-          </p>
-          <p>
-            The eye color wheel provides a visual guide to help artists select
-            the best eyeshadow colors to enhance their clients' natural beauty.
           </p>
         </div>
       </div>

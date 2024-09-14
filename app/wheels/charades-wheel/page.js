@@ -47,15 +47,15 @@ export default async function Page({ params }) {
         <div className="text-lg">
           <p className="mb-3">
             A charades wheel is a family-friendly game that provides a random
-            selection of topics for your next charade session. Whether you're an
+            selection of topics for your next charade session. Whether you&#39;re an
             adult or a child, this wheel offers a variety of ideas, from naughty
             to nice. 
           </p>
-          <p className="mb-3">Spin the wheel to reveal a random topic, whether it's a
+          <p className="mb-3">Spin the wheel to reveal a random topic, whether it&#39;s a
             movie, a famous person, or an action. This generator ensures endless
             fun and laughter for your next game night.</p>
           <p className="mb-3">
-            Each topic is displayed as a word or phrase around the wheel's
+            Each topic is displayed as a word or phrase around the wheel&#39;s
             circumference. This design provides a quick and easy way to choose a
             new charade topic, adding an element of surprise and excitement to
             the game.

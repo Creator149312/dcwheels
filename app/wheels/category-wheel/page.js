@@ -46,7 +46,7 @@ export default async function Page({ params }) {
             category from the surrounding options.
           </p>
           <p className="mb-3">
-            Each category is displayed as a label or icon around the wheel's
+            Each category is displayed as a label or icon around the wheel&#39;s
             circumference. This design provides a compact and intuitive way for
             users to navigate through and choose their preferred category.
           </p>
