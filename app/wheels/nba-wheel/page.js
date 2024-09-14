@@ -53,8 +53,8 @@ export default async function Page({ params }) {
             An NBA spin wheel is a fun game where you randomly select an NBA
             team or player. Perfect for basketball fans or just a casual game
             night, it adds an element of surprise and excitement to your NBA
-            experience. Spin the wheel and see who you'll draft or which team
-            you'll play.
+            experience. Spin the wheel and see who you will draft or which team
+            you will play.
           </p>
         </div>
       </div>

@@ -48,8 +48,8 @@ export default async function Page({ params }) {
             A WWE spin wheel is a fun game where you randomly select a WWE
             wrestler or event. Perfect for WWE 2K22 matches or just a casual
             game night, it adds an element of surprise and excitement to your
-            WWE experience. Spin the wheel and see who you'll face or what match
-            you'll create.
+            WWE experience. Spin the wheel and see who you will face or what match
+            you will create.
           </p>
         </div>
       </div>

@@ -53,8 +53,8 @@ export default async function Page({ params }) {
             An MLB spin wheel is a fun game where you randomly select an MLB
             team or player. Perfect for baseball fans or just a casual game
             night, it adds an element of surprise and excitement to your MLB
-            experience. Spin the wheel and see who you'll draft or which team
-            you'll play out of 30 teams.
+            experience. Spin the wheel and see who you will draft or which team
+            you will play out of 30 teams.
           </p>
         </div>
       </div>
