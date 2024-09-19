@@ -61,7 +61,7 @@ export default async function Page({ params }) {
             and a difficulty level associated with completing it.
           </p>
           <p className="mb-3">
-            By completing these challenges, you'll gain valuable experience,
+            By completing these challenges, you will gain valuable experience,
             boost your confidence, and become a more skilled Minecraft player.
           </p>
         </div>

@@ -60,7 +60,7 @@ export default async function Page({ params }) {
             gameplay.
           </p>
           <p className="mb-3">
-            By completing these challenges, you'll unlock rewards and gain
+            By completing these challenges, you will unlock rewards and gain
             valuable experience, helping you become a more skilled Fortnite
             player.
           </p>

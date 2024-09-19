@@ -48,11 +48,11 @@ export default async function Page({ params }) {
           <p className="mb-3">
             A relationship spin wheel is a fun and interactive tool that can be
             used to explore different types of relationships in a family or with
-            outside world. It's a circular board with various relationship types
+            outside world. It is a circular board with various relationship types
             written on it, allowing you to randomly select one.
           </p>
           <p className="mb-3">
-            Whether you're playing a game, making a random decision, or simply
+            Whether you are playing a game, making a random decision, or simply
             looking for a new perspective on relationships, a relationship spin
             wheel can provide a unique and entertaining experience.
           </p>

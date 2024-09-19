@@ -45,8 +45,8 @@ export default async function Page({ params }) {
         <div className="text-lg">
           <p className="mb-3">
             An age spin wheel is a fun and interactive tool that can be used for
-            various purposes. It's a circular board with different ages written
-            on it, allowing you to randomly select an age. Whether you're
+            various purposes. It is a circular board with different ages written
+            on it, allowing you to randomly select an age. Whether you are
             playing a game, making a random decision, or simply looking for a
             fun way to pass the time, an age spin wheel can provide a unique and
             entertaining experience.

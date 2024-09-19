@@ -46,7 +46,7 @@ export default async function Page({ params }) {
         <div className="text-lg">
           <p className="mb-3">
             A drinking wheel is a fun and chaotic game that adds a twist to your
-            drinking parties. It's a circular board with various challenges
+            drinking parties. It is a circular board with various challenges
             written on it, ranging from harmless dares to outrageous stunts.
           </p>
           <p className="mb-3">

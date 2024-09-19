@@ -36,8 +36,8 @@ export default async function Page({ params }) {
         <h1 className="text-4xl mb-2">{titleStr}</h1>
         <div className="text-lg">
           <p className="mb-3">
-            A twister spin wheel is a circular game board that's used to play
-            the popular game Twister. It's typically made of a large, colorful
+            A twister spin wheel is a circular game board that is used to play
+            the popular game Twister. It is typically made of a large, colorful
             mat with circles of different colors arranged in rows and columns.
           </p>
           <p className="mb-3">
@@ -45,7 +45,7 @@ export default async function Page({ params }) {
             (left hand, right hand, left foot, or right foot) and a color. They
             must then place that body part on the corresponding colored circle
             on the mat, creating increasingly challenging and often hilarious
-            poses. It's a fun and energetic game that's perfect for parties and
+            poses. It is a fun and energetic game that is perfect for parties and
             gatherings with friends.
           </p>
         </div>
