@@ -1,7 +1,7 @@
 import WheelWithInput from "@components/WheelWithInput";
 
-let titleStr = "Truth and Dare Picker Wheel";
-let descriptionStr = "Explore " + titleStr + " and spin to pick a random task.";
+let titleStr = "Truth and Dare: Challenge Picker Wheel";
+let descriptionStr = "Explore Truth or dare wheel and spin to pick a random challenge to your game.";
 
 let segmentsData = [
   "What's your biggest fear?",

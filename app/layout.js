@@ -11,11 +11,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: {
-    default: "Spin Wheel – Your Random Choice Picker to Decide",
+    default: "Spin Wheel – Random Choice Picker to Decide",
     template: "%s - Spinpapa",
   },
   description:
-    "Use Spinpapa to create your custom spin wheel and pick a random choice for making decisions",
+    "Spinpapa is your custom wheel spinner for a random decision picker. Fill choices or names, spin the wheel to decide a random winner.",
 };
 
 export default function RootLayout({ children }) {
@@ -25,7 +25,10 @@ export default function RootLayout({ children }) {
         <GAnalytics />
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="google-site-verification" content="jOUYj2ZPgFjwawSzgYTh7nlTcJdWdDCgSczbT1Rk-hQ" />
+        <meta
+          name="google-site-verification"
+          content="jOUYj2ZPgFjwawSzgYTh7nlTcJdWdDCgSczbT1Rk-hQ"
+        />
         <meta name="msvalidate.01" content="A8182827FD82081B73F2EB1024F9C2C9" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>

@@ -76,13 +76,13 @@ const printSearchData = (wheelList) => {
           <div>{item.data.length} Words</div>
         </div>
         <div className="flex items-center">
-          <Link href={`/wheels/${item._id}`} className="p-2">
+          <Link href={`/uwheels/${item._id}`} className="p-2">
             <HiOutlineEye size={24} />
           </Link>
-          <Link href={`/wheels/${item._id}`} className="p-2">
+          {/* <Link href={`/uwheels/${item._id}`} className="p-2">
             <HiPencilAlt size={24} />
           </Link>
-          <RemoveListBtn id={item._id} className="p-2" />
+          <RemoveListBtn id={item._id} className="p-2" /> */}
         </div>
       </Card>
     );

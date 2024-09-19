@@ -8,6 +8,10 @@ import apiConfig from "@utils/ApiUrlConfig";
 let titleStr = "";
 let listerror = null;
 
+/*
+*  This file is user for user generated wheels which are saved in database.
+*/
+
 export async function generateMetadata({ params }, parent) {
   let listdata = null;
   //check if ID is valid
@@ -32,17 +36,19 @@ export async function generateMetadata({ params }, parent) {
 
   if (listdata !== null) {
     // read route params
-    titleStr = listdata.title + " Spin Wheel";
+    titleStr = listdata.title;
     const descriptionStr =
       "Explore " + listdata.title + " and spin to pick a random choice.";
     return {
       title: titleStr,
       description: descriptionStr,
+      // robots: 'noindex'
     };
   } else {
     return {
       title: "No Wheels Found",
       description: "No Wheels Found",
+      robots: 'noindex'
     };
   }
 }

@@ -4,8 +4,8 @@ Disallow: /login
 Disallow: /register
 Disallow: /search
 Disallow: /dashboard
-Disallow: /wheels
 Disallow: /email
 Disallow: /verify
+Disallow: /uwheels
 
 Allow: /sitemap.xml
