@@ -57,7 +57,7 @@ export default function WheelWithInput({ newSegments }) {
         <WinnerPopup winner={winner} setWinner={setWinner} />
         <WheelComponent
           segColors={segColors}
-          // winningSegment='won 10'
+          // winningSegment={segments[Math.floor(Math.random() * segments.length)]}
           onFinished={(winner) => setWinner(winner)}
           primaryColor="black"
           contrastColor="white"

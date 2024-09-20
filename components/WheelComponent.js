@@ -30,16 +30,16 @@ const WheelComponent = ({
   const [isFinished, setFinished] = useState(false);
   let timerHandle = 0;
   // const timerDelay = segments.length % 10;
-  const timerDelay = 6; // reducing timer delay so that wheel movement is smooth
+  const timerDelay = 5; // reducing timer delay so that wheel movement is smooth
   let angleCurrent = 0;
   let angleDelta = 0;
   let canvasContext = null;
-  //  let maxSpeed = Math.PI / segments.length;
-  // const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
-  // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
-  let maxSpeed = 0.6;
-  const upTime = upDuration + upDuration * Math.random(0, 1);
-  const downTime = 2 * downDuration + downDuration * Math.random(0, 1);
+   let maxSpeed = Math.PI / segments.length;
+  const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
+  const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
+  // let maxSpeed = 0.6;
+  // const upTime = upDuration + upDuration * Math.random(0, 1);
+  // const downTime = 2 * downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
   let frames = 0;
   const centerX = size + 20;
@@ -339,6 +339,8 @@ const WheelComponent = ({
         onClick={() => {
           setIsClicked(!isClicked);
           spin();
+          winningSegment = segments[Math.floor(Math.random() * segments.length)];
+          console.log("Winning Segment = ", winningSegment);
         }}
       />
     </div>
