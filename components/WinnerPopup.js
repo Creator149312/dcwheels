@@ -14,8 +14,8 @@ import { SegmentsContext } from "@app/SegmentsContext";
 
 const WinnerPopup = ({ winner, setWinner }) => {
   let [open, setOpen] = useState(false);
-  const { segments, setSegments } = useContext(SegmentsContext);
-  const { userInputText, setUserInputText } = useContext(SegmentsContext);
+  // const { segments, setSegments } = useContext(SegmentsContext);
+  // const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -66,10 +66,10 @@ const WinnerPopup = ({ winner, setWinner }) => {
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={() => {
-              const duplicateOfSegments = [...segments];
+              // const duplicateOfSegments = [...segments];
               setOpen(!open);
-              setWinner("");
-              setUserInputText(joinWithNewlines(duplicateOfSegments));
+              // setWinner("");
+              // setUserInputText(joinWithNewlines(duplicateOfSegments));
             }}
           >
             Close

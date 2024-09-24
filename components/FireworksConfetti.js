@@ -5,7 +5,7 @@ function FireworksOverlay() {
   const canvasRef = useRef(null);
   const animationIdRef = useRef(null);
   const [showConfetti, setShowConfetti] = useState(true);
-  const [animationDuration, setAnimationDuration] = useState(6000); // Adjust the duration as needed
+  const [animationDuration, setAnimationDuration] = useState(5000); // Adjust the duration as needed
 
   useEffect(() => {
     if (showConfetti) {
@@ -74,9 +74,9 @@ function FireworksOverlay() {
     }
   }, [showConfetti, animationDuration]);
 
-  return (
+  return (showConfetti &&
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 999 }}>
-      {showConfetti && <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />}
+      <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
     </div>
   );
 }

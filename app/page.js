@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="mx-auto">
       <WheelWithInput
-        newSegments={["Karna", "Arjun", "Peter", "Rob", "Ram","Paul", "Siya", "Duke"]}
+        newSegments={["Karna", "Arjun", "Peter", "Rob", "Ram","Paul", "Siya", "Duke", `<img src="/spin-wheel-logo.png" alt="logo" />`, `<img  src="/spin-wheel-logo.png" alt="logo" />`]}
       />
       <div className="blog-main mt-4 p-3">
         <h1 className="text-4xl mb-2">Spin Wheel – Your Random Choice Picker to Decide</h1>
