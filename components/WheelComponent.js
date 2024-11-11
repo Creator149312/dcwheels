@@ -34,12 +34,12 @@ const WheelComponent = ({
   let angleCurrent = 0;
   let angleDelta = 0;
   let canvasContext = null;
-   let maxSpeed = Math.PI / segments.length;
-  const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
-  const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
-  // let maxSpeed = 0.6;
-  // const upTime = upDuration + upDuration * Math.random(0, 1);
-  // const downTime = 2 * downDuration + downDuration * Math.random(0, 1);
+  // let maxSpeed = Math.PI / segments.length;
+  // const upTime = segments.length * (upDuration + upDuration * Math.random(0, 1));
+  // const downTime = segments.length * (downDuration + downDuration * Math.random(0, 1));
+  let maxSpeed = 0.6;
+  const upTime = upDuration + upDuration * Math.random(0, 1);
+  const downTime = 2 * downDuration + downDuration * Math.random(0, 1);
   let spinStart = 0;
   let frames = 0;
   const centerX = size + 20;
@@ -56,7 +56,7 @@ const WheelComponent = ({
   fontSize =
     Math.min(
       (2.1 * Math.PI * Math.PI) /
-        Math.max(segments.length, maxlengthOfSegmentText),
+      Math.max(segments.length, maxlengthOfSegmentText),
       2.35
     ) + "em";
 
@@ -98,6 +98,8 @@ const WheelComponent = ({
     // }, 0);
   }, []);
 
+
+
   const wheelInit = () => {
     wheelDraw();
   };
@@ -130,34 +132,6 @@ const WheelComponent = ({
       //  timerHandle = setInterval(onTimerTick, timerDelay);
     }
   };
-
-  // modified using a specified time to spin the wheel
-  // const onTimerTick = () => {
-  //   let finished = false;
-  //   frames++;
-  //   draw();
-
-  //   const duration = new Date().getTime() - spinStart;
-  //   const progress = Math.min(duration / totalSpinTime, 1); // Clamp progress to 1
-
-  //   // Ease function for smooth acceleration and deceleration
-  //   const ease = progress * (1 - progress); // Cubic ease function
-
-  //   angleDelta = maxSpeed * ease * Math.sin((progress * Math.PI) / 2);
-
-  //   angleCurrent += angleDelta;
-  //   while (angleCurrent >= Math.PI * 2) angleCurrent -= Math.PI * 2;
-
-  //   finished = progress >= 0.99;
-
-  //   if (finished) {
-  //     setFinished(true);
-  //     onFinished(currentSegment);
-  //     clearInterval(timerHandle);
-  //     timerHandle = 0;
-  //     angleDelta = 0;
-  //   }
-  // };
 
   const onTimerTick = () => {
     frames++;
@@ -224,26 +198,53 @@ const WheelComponent = ({
     }
     const ctx = canvasContext;
     const value = segments[key];
-    let segmentTexttoDisplay =
-      value.length > 18 ? value.substring(0, 17) + "..." : value;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, size, lastAngle, angle, false);
-    ctx.lineTo(centerX, centerY);
-    ctx.closePath();
-    ctx.fillStyle = segColors[key % segColors.length];
-    ctx.fill();
-    ctx.stroke();
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate((lastAngle + angle) / 2);
-    ctx.fillStyle = contrastColor;
-    ctx.font = `${fontSize} ${fontFamily}`;
-    // ctx.fillText(value.substring(0, 15), size / 2 + 20, 0); //prev code
-    ctx.fillText(segmentTexttoDisplay, size / 1.6, 0);
-    ctx.restore();
-  };
+    let segmentTextToDisplay = value.includes('<img') ? value :
+      (value.length > 18 ? value.substring(0, 17) + "..." : value);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, size, lastAngle, angle, false);
+      ctx.lineTo(centerX, centerY);
+      ctx.closePath();
+      ctx.fillStyle = segColors[key % segColors.length];
+      ctx.fill();
+      ctx.stroke();   
+    
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate((lastAngle + angle) / 2);
+    
+      if (segmentTextToDisplay.includes('<img')) {
+        // Extract image details from segment text
+        const imageData = segmentTextToDisplay.match(/<img.+src="(.+?)".+alt="(.+?)".*\/?>/);
+    
+        if (imageData) {
+          const imageSrc = imageData[1];
+          const imageAlt = imageData[2] || ""; // Handle missing alt attribute
+    
+          const image = new Image();
+          console.log('Drawing image....');
+          image.onload = () => {
+            const imageWidth = image.naturalWidth || 50; // Use natural width if available
+            const imageHeight = image.naturalHeight || 45; // Use natural height if available
+            ctx.drawImage(image, size/1.6 + 50 , 50 , 50, 50);
+          };
+          image.src = imageSrc;
+          image.alt = imageAlt; // Set alt attribute for accessibility
+        } else {
+          // Handle case where image data is invalid or missing
+          console.warn("Invalid image data in segment:", value);
+          ctx.fillText(segmentTextToDisplay, size / 1.6, 0);
+        }
+      }
+    
+      ctx.fillStyle = contrastColor;
+      ctx.font = `${fontSize} ${fontFamily}`;
+      ctx.fillText(segmentTextToDisplay, size / 1.6, 0);
+      ctx.restore();
+    };
+
 
   const drawWheel = () => {
     if (!canvasContext) {
@@ -290,6 +291,7 @@ const WheelComponent = ({
     ctx.stroke();
   };
 
+  // used to draw needle 
   const drawNeedle = () => {
     if (!canvasContext) {
       return false;
@@ -327,6 +329,16 @@ const WheelComponent = ({
     ctx.clearRect(0, 0, dimension, dimension);
   };
 
+  const handleClick = (event) => {
+    if (!isStarted) {
+      setIsClicked(true);
+      spin();
+      // winningSegment = segments[Math.floor(Math.random() * segments.length)];
+      // console.log("Winning Segment = ", winningSegment);
+      console.log("Clicking...")
+    }
+  };
+
   return (
     <div id={wheelId} className="mx-auto min-h-[412px] sm:min-h-[572px]">
       <canvas
@@ -336,11 +348,13 @@ const WheelComponent = ({
         style={{
           pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
         }}
-        onClick={() => {
-          setIsClicked(!isClicked);
-          spin();
-          winningSegment = segments[Math.floor(Math.random() * segments.length)];
-          console.log("Winning Segment = ", winningSegment);
+        onClick={handleClick}
+        tabIndex={0} // Make the canvas tabbable
+        aria-label="Spin the wheel to win a prize"
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === 'Space') {
+            handleClick();
+          }
         }}
       />
     </div>
