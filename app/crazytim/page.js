@@ -1,7 +1,7 @@
 'use client'
 import ContentEditableDiv from '@components/ContentEditableDiv';
 import WinnerPopup from '@components/WinnerPopup';
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef , useEffect} from 'react'
 import { Wheel } from 'react-custom-roulette'
 import FireworksConfetti from "@components/FireworksConfetti";
 import ImageUploadAsSegment from '@components/ImageUploadAsSegment';
