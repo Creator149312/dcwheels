@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react';
 import ContentEditable from 'react-contenteditable';
+import { Button } from './ui/button';
 
 const ContentEditableDiv = ({ segData, setSegData }) => {
 
@@ -27,7 +28,7 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
     // }
     html.current = event.target.value;
 
-    console.log("HTML TextData", html.current);
+    // console.log("HTML TextData", html.current);
     setSegData(refactorDataFromHTML(html));
   };
 
@@ -39,52 +40,25 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
 
       reader.onload = (event) => {
         setImageSrc(event.target.result);
-        const newHtml = `<div><img src="${event.target.result}" width='50' height='50'></div>`;
-        html.current = html.current + newHtml;
-        // const div = document.createElement('div');
-        // const img = document.createElement('img');
-        // img.src = event.target.result;
-        // img.width = '50';
-        // img.height = '50';
-        // div.appendChild(img);
-        // console.log('Div = ', div);
-        // document.getElementById('canvasDiv').appendChild(div);
+        // const newHtml = `\n<div><img src="${event.target.result}" width='50' height='50'></div>`;
+        // html.current = html.current + newHtml;
+        const div = document.createElement('div');
+        const img = document.createElement('img');
+        img.src = event.target.result;
+        img.width = '50';
+        img.height = '50';
+        div.appendChild(img);
+        console.log('Div = ', div);
+        let masterDiv = document.getElementById('canvasDiv');
+        masterDiv.appendChild(div);
+        html.current = masterDiv.innerHTML;
+        // console.log("HTML TextData", html.current);
+        setSegData(refactorDataFromHTML(html));
       };
 
       reader.readAsDataURL(file);
     }
   };
-
-  // const handleOnPaste = (event) =>{
-  //   console.log("Clipboard Data = ", event.clipboardData.getData('text/plain'));
-  //   let copiedTextArray = event.clipboardData.getData('text/plain').split('\n');
-  //   html.current = html.current + copiedTextArray.map(element => `<div>${element}</div>`).join('');
-  //   getLinesFromTextEditor()
-  //   setSegData(refactorDataFromHTML(html));
-  // }
-
-  // const handlePaste = (event) =>{
-  //   event.preventDefault();
-  //   const pastedHtml = (event.originalEvent || event).clipboardData.getData('text/html');
-
-  //   const parser = new DOMParser();
-  //   const doc = parser.parseFromString(pastedHtml, 'text/html');
-
-  //   // Extract images and plain text
-  //   const images = Array.from(doc.querySelectorAll('img'));
-  //   const texts = doc.body.innerText.split('\n');
-
-  //   console.log("Copied Text", texts);
-
-  //   // Append images and text nodes
-  //   const div = event.target;
-  //   for (const image of images) {
-  //     div.appendChild(image.cloneNode(true)); // Clone for safety
-  //   }
-  //   for (const txt of texts) {
-  //     div.appendChild(document.createTextNode(txt)); //safety
-  //   }
-  // }
 
   const handlePaste = (event) => {
     event.preventDefault();
@@ -109,29 +83,73 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
         masterDiv.appendChild(wrapperDiv);
       }
     }
+
+    html.current = masterDiv.innerHTML;
+    setSegData(refactorDataFromHTML(masterDiv.innerHTML));
   }
 
-  // const handleKeyUp = (event) => {
-  //   if (event.key === 'Enter') {
-  //     html.current = html.current + "\n";
-  //   } else {
-  //     html.current = processNodes(getAllTextNodesAndImagesFromHTML(html.current)).join('');
-  //   }
-  //   setSegData(refactorDataFromHTML(html));
-  // }
+  const shuffleSegments = () => {
+    let masterDiv = document.getElementById('canvasDiv');
+    const divs = Array.from(masterDiv.children);
+    divs.sort(() => Math.random() - 0.5);
+    divs.forEach(div => masterDiv.appendChild(div));
+    html.current = masterDiv.innerHTML;
+
+    setSegData(refactorDataFromHTML(masterDiv.innerHTML));
+  }
+
+  function deleteSegmentFromHTML(segmentToDelete) {
+    let masterDiv = document.getElementById('canvasDiv');
+    const divs = Array.from(masterDiv.children);
+    let updatedDivs = divs.filter((element) => !element.innerHTML.includes(segmentToDelete)); // Filter out element with value 3
+    divs.forEach(div => masterDiv.appendChild(div));
+    html.current = masterDiv.innerHTML;
+
+    setSegData(refactorDataFromHTML(masterDiv.innerHTML));
+  }
+
+  const sortSegments = () => {
+    let masterDiv = document.getElementById('canvasDiv');
+    const divs = Array.from(masterDiv.children);
+
+    divs.sort((a, b) => {
+      const aHasImage = a.querySelector('img') !== null;
+      const bHasImage = b.querySelector('img') !== null;
+
+      if (aHasImage && !bHasImage) {
+        return -1; // a has image, b doesn't: a goes first
+      } else if (!aHasImage && bHasImage) {
+        return 1; // a doesn't have image, b does: b goes first
+      } else {
+        return a.innerText.localeCompare(b.innerText);
+      }
+    });
+
+    divs.forEach(div => masterDiv.appendChild(div));
+    html.current = masterDiv.innerHTML;
+
+    setSegData(refactorDataFromHTML(masterDiv.innerHTML));
+  }
 
   useEffect(() => {
     setSegData(refactorDataFromHTML(html));
   }, [imageSrc]);
 
+  useEffect(() => {
+   html.current = segData.map((perSegData) => (
+    <div>{perSegData}</div>
+  )).join('')
+  }, [segData]);
+
   return (<>
     <div>
       <input type="file" onChange={handleImageUpload} />
+      <Button onClick={shuffleSegments}>Shuffle</Button>
+      <Button onClick={sortSegments} >Sort</Button>
     </div>
     <ContentEditable
       html={html.current}
       onChange={handleInputChange}
-      // onKeyUp={handleKeyUp}
       onPaste={handlePaste}
       disabled={false}
       ref={editableDivRef}
@@ -141,9 +159,8 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   </>
   );
 };
-
+export { refactorDataFromHTML };
 export default ContentEditableDiv;
-
 
 function refactorDataFromHTML(html) {
   if (html.current === '') {
