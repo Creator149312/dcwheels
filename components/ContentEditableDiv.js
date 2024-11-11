@@ -47,21 +47,21 @@ const ContentEditableDiv = () => {
         const newText = text + '\n';
         setText(newText);
 
-           // Manually put cursor at the end of the text
-      const selection = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(editableDiv);   
+      
+        // Manually move cursor to the beginning of the new line
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editableDiv);
+        range.collapse(false);   
 
-      range.collapse(false);   
-
-      selection.removeAllRanges();
-      selection.addRange(range);
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
     });
   }, []);
 
   return (
-    <div ref={editableDivRef} contentEditable="true">{text}</div>
+    <div ref={editableDivRef} contentEditable="true" dangerouslySetInnerHTML={{ __html: text }} ></div>
   );
 };
 
