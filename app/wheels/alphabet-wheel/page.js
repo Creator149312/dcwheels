@@ -1,4 +1,5 @@
 import WheelWithInput from "@components/WheelWithInput";
+import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 let titleStr = "Alphabet Wheel - Pick a Random Letter";
 let descriptionStr =
@@ -41,7 +42,8 @@ export const metadata = {
 export default async function Page({ params }) {
   return (
     <>
-      <WheelWithInput newSegments={segmentsData} />
+      {/* <WheelWithInput newSegments={segmentsData} /> */}
+      <WheelWithInputContentEditable newSegments={segmentsData} />
       <div className="p-3">
         <h1 className="text-4xl mb-2">{titleStr}</h1>
         <div className="text-lg">

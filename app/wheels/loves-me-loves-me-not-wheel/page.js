@@ -24,7 +24,7 @@ export const metadata = {
 export default async function Page({ params }) {
   return (
     <>
-      <WheelWithInputContentEditable segTempData={segmentsData} />
+      <WheelWithInputContentEditable newSegments={segmentsData} />
       <div className="p-3">
         <h1 className="text-4xl mb-2">{titleStr}</h1>
         <div className="text-lg">

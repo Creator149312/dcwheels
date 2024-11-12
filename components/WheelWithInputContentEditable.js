@@ -1,10 +1,16 @@
-'use client'
-import ContentEditableDiv from '@components/ContentEditableDiv';
-import WinnerPopup from '@components/WinnerPopup';
-import React, { useState, useRef , useEffect} from 'react'
-import { Wheel } from 'react-custom-roulette'
+"use client";
+import ContentEditableDiv from "@components/ContentEditableDiv";
+import WinnerPopup from "@components/WinnerPopup";
+import React, { useState, useRef, useEffect, useContext } from "react";
+import { Wheel } from "react-custom-roulette";
 import FireworksConfetti from "@components/FireworksConfetti";
-import ImageUploadAsSegment from '@components/ImageUploadAsSegment';
+import ImageUploadAsSegment from "@components/ImageUploadAsSegment";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
+import SaveWheelBtn from "./SaveWheelBtn";
+import { useSession } from "next-auth/react";
+import ContentEditableDivResult from "./ContentEditableDivResult";
+import { Button } from "./ui/button";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 const processString = (str) => {
   const first15Chars = str.substring(0, 15); // Get the first 15 characters
@@ -17,9 +23,9 @@ const processString = (str) => {
 
   return {
     first15Chars,
-    variableValue
+    variableValue,
   };
-}
+};
 
 const prepareData = (segData, colData, maxlengthOfSegmentText) => {
   const result = [];
@@ -29,7 +35,7 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
     const colIndex = i % colDataLength;
     const col = colData[colIndex];
 
-    if (seg.includes('<img')) {
+    if (seg.includes("<img")) {
       const regex = /src="([^"]+)"/;
       const imgUrl = regex.exec(seg)[1];
       result.push({
@@ -39,7 +45,9 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
       });
     } else {
       result.push({
-        option: seg.substring(0, maxlengthOfSegmentText) + (seg.length > maxlengthOfSegmentText ? ".." : ''),
+        option:
+          seg.substring(0, maxlengthOfSegmentText) +
+          (seg.length > maxlengthOfSegmentText ? ".." : ""),
         style: { backgroundColor: col },
       });
     }
@@ -59,27 +67,28 @@ const segColors = [
   "#FF9000",
 ];
 
-const WheelWithInputContentEditable = ({segTempData}) => {
-  const maxSpinDuration = 0.90;
+const WheelWithInputContentEditable = ({ newSegments }) => {
+  const maxSpinDuration = 0.9;
   const minSpinDuration = 0.15;
+  const {resultList, setResultList} = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
+  // const [resultList, setResultList] = useState([]);
+
+  const { status, data: session } = useSession();
   const [prizeNumber, setPrizeNumber] = useState(0);
-  const [segData, setSegData] = useState(segTempData);
+  const [segData, setSegData] = useState(newSegments);
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
   let maxlengthOfSegmentText = Math.min(
     segData.reduce((acc, word) => {
       return word.length > acc.length ? word : acc;
     }, "").length,
-    15)
-    ;
-
-  let segTxtfontSize =
-    Math.min(
-      (32 * Math.PI * Math.PI) /
-      Math.max(segData.length, maxlengthOfSegmentText),
-      42
-    );
+    15
+  );
+  let segTxtfontSize = Math.min(
+    (32 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
+    42
+  );
 
   let data = prepareData(segData, segColors, maxlengthOfSegmentText);
 
@@ -90,51 +99,100 @@ const WheelWithInputContentEditable = ({segTempData}) => {
       setMustSpin(true);
       // setShowCelebration(false);
     }
-  }
+  };
 
   useEffect(() => {
     data = prepareData(segData, segColors, maxlengthOfSegmentText);
   }, [segData]);
 
-  return (<>
-    <div className="grid lg:grid-cols-12 gap-x-2">
-      <div className="bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto">
-        <WinnerPopup winner={winner} setWinner={setWinner} segData={segData} setSegData={setSegData} />
-        <div onClick={handleSpinClick}>
-          <Wheel
-            mustStartSpinning={mustSpin}
-            prizeNumber={prizeNumber}
-            data={data}
-            textDistance={(60 + (segData.length / 8)) < 95 ? (60 + (segData.length / 8)) : 95}
-            radiusLineWidth={0}
-            outerBorderWidth={2}
-            onStopSpinning={() => {
-              setMustSpin(false);
-              setWinner(segData[prizeNumber]);
-              setShowCelebration(true);
-            }}
-            fontWeight={'normal'}
-            disableInitialAnimation='true'
-            spinDuration={Math.random() * (maxSpinDuration - minSpinDuration) + minSpinDuration}
-            fontSize={segTxtfontSize}
-            pointerProps={{
-              src: '/pointer.png',
-              style: {
-                transform: 'rotate(50deg)',
-                right: '15px',
-                top: '28px'
-              }
-            }}
+  useEffect(() => {
+    if (winner !== "" && winner !== undefined) {
+      setResultList([...resultList, winner]);
+    }
+  }, [winner]);
+
+  return (
+    <>
+      <div className="grid lg:grid-cols-12 gap-x-2">
+        <div className="bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto">
+          <WinnerPopup
+            winner={winner}
+            setWinner={setWinner}
+            segData={segData}
+            setSegData={setSegData}
           />
+          <div onClick={handleSpinClick}>
+            <Wheel
+              mustStartSpinning={mustSpin}
+              prizeNumber={prizeNumber}
+              data={data}
+              textDistance={
+                60 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
+              }
+              radiusLineWidth={0}
+              outerBorderWidth={2}
+              onStopSpinning={() => {
+                setMustSpin(false);
+                setWinner(segData[prizeNumber]);
+                setShowCelebration(true);
+              }}
+              fontWeight={"normal"}
+              disableInitialAnimation="true"
+              spinDuration={
+                Math.random() * (maxSpinDuration - minSpinDuration) +
+                minSpinDuration
+              }
+              fontSize={segTxtfontSize}
+              pointerProps={{
+                src: "/pointer.png",
+                style: {
+                  transform: "rotate(50deg)",
+                  right: "15px",
+                  top: "28px",
+                },
+              }}
+            />
+          </div>
+        </div>
+        <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:my-2 lg:col-span-4 shadow-md">
+          <Tabs defaultValue="list">
+            <TabsList className="w-full">
+              <TabsTrigger value="list">
+                List <span className="ml-2">{segData.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="result">
+                Result
+                <span className="ml-2">
+                  {resultList.length === 0 ? 0 : resultList.length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="list">
+              <ContentEditableDiv segData={segData} setSegData={setSegData} />
+            </TabsContent>
+            <TabsContent value="result">
+              <ContentEditableDivResult resultList={resultList} />
+            </TabsContent>
+          </Tabs>
+          <div>
+            {session !== null ? (
+              <SaveWheelBtn />
+            ) : (
+              <p className="my-2 flex justify-center items-center">
+                <a href="/register">
+                  <Button className="mx-2" size={"lg"} variant={"default"}>
+                    Register Here
+                  </Button>
+                </a>
+                to Save Your Wheels
+              </p>
+            )}
+          </div>
+          {showCelebration && <FireworksConfetti />}
         </div>
       </div>
-      <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:my-2 lg:col-span-4">
-        <ContentEditableDiv segData={segData} setSegData={setSegData} />
-        {showCelebration && <FireworksConfetti />}
-      </div>
-    </div>
-  </>
-  )
-}
+    </>
+  );
+};
 
 export default WheelWithInputContentEditable;
