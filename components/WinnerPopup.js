@@ -75,10 +75,7 @@ const WinnerPopup = ({ winner, setWinner, segData, setSegData }) => {
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={() => {
-              // const duplicateOfSegments = [...segments];
               setOpen(!open);
-              // setWinner("");
-              // setUserInputText(joinWithNewlines(duplicateOfSegments));
             }}
           >
             Close

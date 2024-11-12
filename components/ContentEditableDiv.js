@@ -1,7 +1,7 @@
-'use client'
-import React, { useEffect, useState, useRef, useContext } from 'react';
-import ContentEditable from 'react-contenteditable';
-import { Button } from './ui/button';
+"use client";
+import React, { useEffect, useState, useRef, useContext } from "react";
+import ContentEditable from "react-contenteditable";
+import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 
 const ContentEditableDiv = ({ segData, setSegData }) => {
@@ -9,10 +9,10 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   const [imageSrc, setImageSrc] = useState(null);
   const editableDivRef = useRef(null);
 
-  useEffect(()=>{
-    html.current = segData.map((perSegData)=>`<div>${perSegData}</div>`).join('');
-    setSegData(refactorDataFromHTML(segData.map((perSegData)=>`<div>${perSegData}</div>`).join('')));
-  }, []);
+  //this is used to set initial Value of segData to html.current
+  html.current = html.current === `<div>TestData</div>` ? segData
+  .map((perSegData) => `<div>${perSegData}</div>`)
+  .join("") : html.current;
 
   const handleInputChange = (event) => {
     // if (event.clipboardData) {
@@ -47,14 +47,14 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
         setImageSrc(event.target.result);
         // const newHtml = `\n<div><img src="${event.target.result}" width='50' height='50'></div>`;
         // html.current = html.current + newHtml;
-        const div = document.createElement('div');
-        const img = document.createElement('img');
+        const div = document.createElement("div");
+        const img = document.createElement("img");
         img.src = event.target.result;
-        img.width = '50';
-        img.height = '50';
+        img.width = "50";
+        img.height = "50";
         div.appendChild(img);
-        console.log('Div = ', div);
-        let masterDiv = document.getElementById('canvasDiv');
+        // console.log("Div = ", div);
+        let masterDiv = document.getElementById("canvasDiv");
         masterDiv.appendChild(div);
         html.current = masterDiv.innerHTML;
         // console.log("HTML TextData", html.current);
@@ -68,22 +68,26 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   const handlePaste = (event) => {
     event.preventDefault();
 
-    const pastedHtml = (event.originalEvent || event).clipboardData.getData('text/html');
-    const pastedText = (event.originalEvent || event).clipboardData.getData('text/plain');
+    const pastedHtml = (event.originalEvent || event).clipboardData.getData(
+      "text/html"
+    );
+    const pastedText = (event.originalEvent || event).clipboardData.getData(
+      "text/plain"
+    );
 
     const targetDiv = event.target;
     let extractedNodes = getAllTextNodesAndImagesFromHTML(pastedHtml);
-    let masterDiv = document.getElementById('canvasDiv');
+    let masterDiv = document.getElementById("canvasDiv");
 
     if (extractedNodes.length > 0) {
       // Append child nodes to the target div
       processNodes(extractedNodes, masterDiv);
-      console.log("Extracted Nodes and Dom Creation Done");
+      // console.log("Extracted Nodes and Dom Creation Done");
     } else if (pastedText) {
       // Create a text node and append it
-      const pastedTextinArray = pastedText.split('\n');
+      const pastedTextinArray = pastedText.split("\n");
       for (const txtNodeContent of pastedTextinArray) {
-        const wrapperDiv = document.createElement('div');
+        const wrapperDiv = document.createElement("div");
         wrapperDiv.appendChild(document.createTextNode(txtNodeContent));
         masterDiv.appendChild(wrapperDiv);
       }
@@ -91,25 +95,25 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
 
     html.current = masterDiv.innerHTML;
     setSegData(refactorDataFromHTML(masterDiv.innerHTML));
-  }
+  };
 
   const shuffleSegments = () => {
-    let masterDiv = document.getElementById('canvasDiv');
+    let masterDiv = document.getElementById("canvasDiv");
     const divs = Array.from(masterDiv.children);
     divs.sort(() => Math.random() - 0.5);
-    divs.forEach(div => masterDiv.appendChild(div));
+    divs.forEach((div) => masterDiv.appendChild(div));
     html.current = masterDiv.innerHTML;
 
     setSegData(refactorDataFromHTML(masterDiv.innerHTML));
-  }
+  };
 
   const sortSegments = () => {
-    let masterDiv = document.getElementById('canvasDiv');
+    let masterDiv = document.getElementById("canvasDiv");
     const divs = Array.from(masterDiv.children);
 
     divs.sort((a, b) => {
-      const aHasImage = a.querySelector('img') !== null;
-      const bHasImage = b.querySelector('img') !== null;
+      const aHasImage = a.querySelector("img") !== null;
+      const bHasImage = b.querySelector("img") !== null;
 
       if (aHasImage && !bHasImage) {
         return -1; // a has image, b doesn't: a goes first
@@ -120,57 +124,64 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
       }
     });
 
-    divs.forEach(div => masterDiv.appendChild(div));
+    divs.forEach((div) => masterDiv.appendChild(div));
     html.current = masterDiv.innerHTML;
 
     setSegData(refactorDataFromHTML(masterDiv.innerHTML));
-  }
+  };
 
-  useEffect(() => {
-    setSegData(refactorDataFromHTML(html));
-  }, [imageSrc]);
+  // useEffect(() => {
+  //   setSegData(refactorDataFromHTML(html));
+  // }, [imageSrc]);
 
+  // useEffect(() => {  
+  //   html.current = segData
+  //   .map((perSegData) => `<div>${perSegData}</div>`)
+  //   .join("");
 
-  return (<>
-    <div>
-      <input type="file" onChange={handleImageUpload} />
-      <Button onClick={shuffleSegments}>Shuffle</Button>
-      <Button onClick={sortSegments} >Sort</Button>
-    </div>
-    <ContentEditable
-      html={html.current}
-      onChange={handleInputChange}
-      onPaste={handlePaste}
-      disabled={false}
-      ref={editableDivRef}
-      className='segmentsDiv w-full h-5/6 shadow'
-      id='canvasDiv'
-    />
-  </>
+  //   setSegData(refactorDataFromHTML(html));
+  // }, []);
+
+  return (
+    <>
+      <div>
+        <input type="file" onChange={handleImageUpload} />
+        <Button onClick={shuffleSegments}>Shuffle</Button>
+        <Button onClick={sortSegments}>Sort</Button>
+      </div>
+      <ContentEditable
+        html={html.current}
+        onChange={handleInputChange}
+        onPaste={handlePaste}
+        disabled={false}
+        ref={editableDivRef}
+        className="segmentsDiv w-full h-5/6 shadow"
+        id="canvasDiv"
+      />
+    </>
   );
 };
 export { refactorDataFromHTML };
 export default ContentEditableDiv;
 
 function refactorDataFromHTML(html) {
-  if (html.current === '') {
-    return ['Add your text here'];
+  if (html.current === "") {
+    return ["Add your text here"];
   } else {
-    const masterDiv = document.querySelector('.segmentsDiv');
-    const contentDivs = masterDiv.querySelectorAll('div');
+    const masterDiv = document.querySelector(".segmentsDiv");
+    const contentDivs = masterDiv.querySelectorAll("div");
     const textArray = [];
 
-    contentDivs.forEach(div => {
-      let text = '';
-      if (div.innerHTML.includes('<img')) {
+    contentDivs.forEach((div) => {
+      let text = "";
+      if (div.innerHTML.includes("<img")) {
         text = div.innerHTML; // Remove all HTML tags
       } else {
         text = div.innerText;
       }
 
       // Add trimmed text to the array
-      if (div.innerHTML !== '<br>' && text.length !== 0)
-        textArray.push(text);
+      if (div.innerHTML !== "<br>" && text.length !== 0) textArray.push(text);
     });
 
     return textArray;
@@ -197,13 +208,25 @@ function getAllTextNodesAndImagesFromHTML(html) {
 
 function getAllTextNodesAndImages(element) {
   const nodes = [];
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, null, false);
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+    null,
+    false
+  );
 
   let node;
-  while (node = walker.nextNode()) {
-    if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'img') {
+  while ((node = walker.nextNode())) {
+    if (
+      node.nodeType === Node.ELEMENT_NODE &&
+      node.tagName.toLowerCase() === "img"
+    ) {
       nodes.push(node);
-    } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '' && !node.textContent.includes('\n')) {
+    } else if (
+      node.nodeType === Node.TEXT_NODE &&
+      node.textContent.trim() !== "" &&
+      !node.textContent.includes("\n")
+    ) {
       nodes.push(node);
     }
   }
@@ -223,10 +246,16 @@ function processNodes(nodes, editorDiv) {
   // }
 
   for (const childNode of nodes) {
-    const wrapperDiv = document.createElement('div');
-    if (childNode.nodeType === Node.ELEMENT_NODE && childNode.tagName.toLowerCase() === 'img') {
+    const wrapperDiv = document.createElement("div");
+    if (
+      childNode.nodeType === Node.ELEMENT_NODE &&
+      childNode.tagName.toLowerCase() === "img"
+    ) {
       wrapperDiv.appendChild(childNode.cloneNode(true));
-    } else if (childNode.nodeType === Node.TEXT_NODE && childNode.textContent.trim() !== '') {
+    } else if (
+      childNode.nodeType === Node.TEXT_NODE &&
+      childNode.textContent.trim() !== ""
+    ) {
       wrapperDiv.appendChild(document.createTextNode(childNode.textContent));
     }
     editorDiv.appendChild(wrapperDiv);
@@ -234,6 +263,7 @@ function processNodes(nodes, editorDiv) {
 
   // return processedNodes;
 }
+
 // function extractTextAndImageNodes(element, wrapperTag) {
 //   const wrapper = document.createElement(wrapperTag);
 

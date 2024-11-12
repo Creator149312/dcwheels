@@ -4,7 +4,7 @@ import { createContext, useRef, useState } from 'react';
 export const SegmentsContext = createContext();
 
 export const SegmentsProvider = ({ children }) => {
-  const html = useRef(`<div> This is a paragraph.</div>`);
+  const html = useRef(`<div>TestData</div>`);
   const [segments, setSegments] = useState([]);
   const [userInputText, setUserInputText] = useState("Purple\nView\nViolot\nVulgar\nBowl\nPile");
   

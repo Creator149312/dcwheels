@@ -76,7 +76,7 @@ const WheelWithInputContentEditable = ({segTempData}) => {
 
   let segTxtfontSize =
     Math.min(
-      (36 * Math.PI * Math.PI) /
+      (32 * Math.PI * Math.PI) /
       Math.max(segData.length, maxlengthOfSegmentText),
       42
     );
