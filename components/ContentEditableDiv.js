@@ -1,13 +1,18 @@
 'use client'
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import ContentEditable from 'react-contenteditable';
 import { Button } from './ui/button';
+import { SegmentsContext } from "@app/SegmentsContext";
 
 const ContentEditableDiv = ({ segData, setSegData }) => {
-
+  const { html } = useContext(SegmentsContext);
   const [imageSrc, setImageSrc] = useState(null);
   const editableDivRef = useRef(null);
-  const html = useRef(`<div> This is a paragraph.</div>`);
+
+  useEffect(()=>{
+    html.current = segData.map((perSegData)=>`<div>${perSegData}</div>`).join('');
+    setSegData(refactorDataFromHTML(segData.map((perSegData)=>`<div>${perSegData}</div>`).join('')));
+  }, []);
 
   const handleInputChange = (event) => {
     // if (event.clipboardData) {
@@ -98,16 +103,6 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
     setSegData(refactorDataFromHTML(masterDiv.innerHTML));
   }
 
-  function deleteSegmentFromHTML(segmentToDelete) {
-    let masterDiv = document.getElementById('canvasDiv');
-    const divs = Array.from(masterDiv.children);
-    let updatedDivs = divs.filter((element) => !element.innerHTML.includes(segmentToDelete)); // Filter out element with value 3
-    divs.forEach(div => masterDiv.appendChild(div));
-    html.current = masterDiv.innerHTML;
-
-    setSegData(refactorDataFromHTML(masterDiv.innerHTML));
-  }
-
   const sortSegments = () => {
     let masterDiv = document.getElementById('canvasDiv');
     const divs = Array.from(masterDiv.children);
@@ -135,11 +130,6 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
     setSegData(refactorDataFromHTML(html));
   }, [imageSrc]);
 
-  useEffect(() => {
-   html.current = segData.map((perSegData) => (
-    <div>{perSegData}</div>
-  )).join('')
-  }, [segData]);
 
   return (<>
     <div>

@@ -47,7 +47,7 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
   return result;
 };
 
-const segTempData = ["Eighty-nine", "Ninety", "Ninety-one", "Ninety-two", "Ninety-three", "Ninety-four", "Ninety-five", "Ninety-six", "Ninety-seven", "Ninety-eight", "Ninety-nine", "One hundred", "Sources and related content", "Ram", "Paul", "Siya", "Duke", `<img src="/spin-wheel-logo.png" alt="logo" />`, `<img  src="/spin-wheel-logo.png" alt="logo" />`];
+// const segTempData = ["Eighty-nine", "Ninety", "Ninety-one", "Ninety-two", "Ninety-three", "Ninety-four", "Ninety-five", "Ninety-six", "Ninety-seven", "Ninety-eight", "Ninety-nine", "One hundred", "Sources and related content", "Ram", "Paul", "Siya", "Duke", `<img src="/spin-wheel-logo.png" alt="logo" />`, `<img  src="/spin-wheel-logo.png" alt="logo" />`];
 const segColors = [
   "#EE4040",
   "#F0CF50",
@@ -59,7 +59,7 @@ const segColors = [
   "#FF9000",
 ];
 
-export default () => {
+const WheelWithInputContentEditable = ({segTempData}) => {
   const maxSpinDuration = 0.90;
   const minSpinDuration = 0.15;
   const [mustSpin, setMustSpin] = useState(false);
@@ -136,3 +136,5 @@ export default () => {
   </>
   )
 }
+
+export default WheelWithInputContentEditable;
