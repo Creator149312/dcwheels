@@ -11,18 +11,24 @@ import {
 } from "@components/ui/alert-dialog";
 import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
+import {
+  deleteSegmentFromHTML,
+  refactorDataFromHTML,
+} from "./ContentEditableDiv";
 
-const WinnerPopup = ({ winner, setWinner }) => {
+const WinnerPopup = ({ winner, setWinner, segData, setSegData, setShowCelebration }) => {
   let [open, setOpen] = useState(false);
-  const { segments, setSegments } = useContext(SegmentsContext);
-  const { userInputText, setUserInputText } = useContext(SegmentsContext);
+  const { html } = useContext(SegmentsContext);
+  // const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (winner !== "" && winner !== undefined) {
         setOpen(true);
+        setShowCelebration(true);
       } else {
         setOpen(false);
+        setShowCelebration(false);
       }
     }, 200);
 
@@ -47,11 +53,14 @@ const WinnerPopup = ({ winner, setWinner }) => {
   }
 
   const removeWinner = () => {
-    let updatedArray = segments.filter((element) => element !== winner); // Filter out element with value 3
-    // console.log("Array After Removing Winner = ", updatedArray);
-    setUserInputText(joinWithNewlines(updatedArray));
-    // console.log("Updated Segments after Removing Winner", updatedArray);
+    let updatedSegData = segData.filter((element) => element !== winner); // Filter out element with value 3
+    setSegData(updatedSegData);
+
+    html.current = updatedSegData
+      .map((perSegData) => `<div>${perSegData}</div>`)
+      .join("");
     setOpen(!open);
+    setShowCelebration(!open);
   };
 
   return (
@@ -60,16 +69,17 @@ const WinnerPopup = ({ winner, setWinner }) => {
         <AlertDialogHeader>
           <AlertDialogTitle>The Winner is...</AlertDialogTitle>
           <AlertDialogDescription>
-            <span className="font-extrabold text-xl">{winner}</span>
+            <span
+              className="font-extrabold text-xl"
+              dangerouslySetInnerHTML={{ __html: winner }}
+            ></span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={() => {
-              const duplicateOfSegments = [...segments];
               setOpen(!open);
-              setWinner("");
-              setUserInputText(joinWithNewlines(duplicateOfSegments));
+              setShowCelebration(!open)
             }}
           >
             Close
