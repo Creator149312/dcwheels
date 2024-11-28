@@ -1,4 +1,3 @@
-import WheelWithInput from "@components/WheelWithInput";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 let titleStr = "Age Spin Wheel - Pick Age Groups";

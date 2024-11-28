@@ -56,7 +56,7 @@ const ContentEditableDivResult = () => {
         html={result.current}
         disabled={false}
         ref={editableResultDivRef}
-        className="segmentsDiv w-full overflow-y-scroll md:h-80 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="segmentsDiv w-full overflow-y-scroll md:h-72 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         id="resultDiv"
       />
     </>

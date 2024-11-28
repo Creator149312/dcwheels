@@ -1,4 +1,3 @@
-import WheelWithInput from "@components/WheelWithInput";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 let titleStr = "Alphabet Wheel - Pick a Random Letter";

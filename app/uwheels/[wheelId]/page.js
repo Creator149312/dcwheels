@@ -86,7 +86,8 @@ export default async function Page({ params }) {
     <div>
       {wordsList !== null && listerror == null && (
         <>
-        <WheelWithInput newSegments={wordsList.data}/>
+        {/* <WheelWithInput newSegments={wordsList.data}/> */}
+        <WheelWithInputContentEditable newSegments={pageData.segments} />
         {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
         <p>{wordsList.description}</p>
         </div> */}

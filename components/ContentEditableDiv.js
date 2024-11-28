@@ -145,7 +145,7 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   return (
     <>
       <div className="">
-        <input type="file" onChange={handleImageUpload} className="cursor-pointer my-1 rounded border border-solid border-secondary-500 bg-transparent bg-clip-padding px-3 py-[0.32rem] text-xs font-normal text-surface transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:me-3 file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-e file:border-solid file:border-inherit file:bg-transparent file:px-3  file:py-[0.32rem] file:text-surface focus:border-primary focus:text-gray-700 focus:shadow-inset focus:outline-none dark:border-white/70 dark:text-white  file:dark:text-white"/>
+        {/* <input type="file" onChange={handleImageUpload} className="cursor-pointer my-1 rounded border border-solid border-secondary-500 bg-transparent bg-clip-padding px-3 py-[0.32rem] text-xs font-normal text-surface transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:me-3 file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-e file:border-solid file:border-inherit file:bg-transparent file:px-3  file:py-[0.32rem] file:text-surface focus:border-primary focus:text-gray-700 focus:shadow-inset focus:outline-none dark:border-white/70 dark:text-white  file:dark:text-white"/> */}
         <Button onClick={shuffleSegments} className="mx-1 my-1 py-0 h-7 text-xs">Shuffle</Button>
         <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">Sort</Button>
       </div>
@@ -155,7 +155,7 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
         onPaste={handlePaste}
         disabled={false}
         ref={editableDivRef}
-        className="segmentsDiv w-full overflow-y-scroll md:h-80 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="segmentsDiv w-full overflow-y-scroll md:h-72 h-64 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         id="canvasDiv"
       />
     </>

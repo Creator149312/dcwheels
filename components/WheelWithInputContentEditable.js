@@ -1,10 +1,12 @@
 "use client";
+import dynamic from 'next/dynamic';
+import { useState, useEffect, useContext } from "react";
 import ContentEditableDiv from "@components/ContentEditableDiv";
 import WinnerPopup from "@components/WinnerPopup";
-import React, { useState, useRef, useEffect, useContext } from "react";
-import { Wheel } from "react-custom-roulette";
+// import { Wheel } from "react-custom-roulette";  
+// we are not using above import because it causes ReferenceError: window is not defined , workaround is the following import
+const Wheel = dynamic(() => import('react-custom-roulette').then((mod) => mod.Wheel), { ssr: false, });
 import FireworksConfetti from "@components/FireworksConfetti";
-import ImageUploadAsSegment from "@components/ImageUploadAsSegment";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import SaveWheelBtn from "./SaveWheelBtn";
 import { useSession } from "next-auth/react";
@@ -69,7 +71,7 @@ const segColors = [
 
 const WheelWithInputContentEditable = ({ newSegments }) => {
   const maxSpinDuration = 0.9;
-  const minSpinDuration = 0.15;
+  const minSpinDuration = 0.35;
   const {resultList, setResultList} = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   // const [resultList, setResultList] = useState([]);
@@ -120,6 +122,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             setWinner={setWinner}
             segData={segData}
             setSegData={setSegData}
+            setShowCelebration={setShowCelebration}
           />
           <div onClick={handleSpinClick}>
             <Wheel
@@ -130,12 +133,16 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
                 60 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
               }
               radiusLineWidth={0}
-              outerBorderWidth={2}
+              outerBorderWidth={0}
+              outerBorderColor='white'
               onStopSpinning={() => {
                 setMustSpin(false);
                 setWinner(segData[prizeNumber]);
-                setShowCelebration(true);
+                // setShowCelebration(true);
               }}
+              innerRadius={15}
+              innerBorderWidth={4}
+              innerBorderColor='white'
               fontWeight={"normal"}
               disableInitialAnimation="true"
               spinDuration={
@@ -144,17 +151,18 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               }
               fontSize={segTxtfontSize}
               pointerProps={{
-                src: "/pointer.png",
+                src: "/smallredpointer.png",
                 style: {
                   transform: "rotate(50deg)",
                   right: "15px",
                   top: "28px",
+                  scale: '60%'
                 },
               }}
             />
           </div>
         </div>
-        <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:my-2 lg:col-span-4 shadow-md">
+        <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 shadow-md">
           <Tabs defaultValue="list">
             <TabsList className="w-full">
               <TabsTrigger value="list">

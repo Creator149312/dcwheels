@@ -16,7 +16,7 @@ import {
   refactorDataFromHTML,
 } from "./ContentEditableDiv";
 
-const WinnerPopup = ({ winner, setWinner, segData, setSegData }) => {
+const WinnerPopup = ({ winner, setWinner, segData, setSegData, setShowCelebration }) => {
   let [open, setOpen] = useState(false);
   const { html } = useContext(SegmentsContext);
   // const { userInputText, setUserInputText } = useContext(SegmentsContext);
@@ -25,8 +25,10 @@ const WinnerPopup = ({ winner, setWinner, segData, setSegData }) => {
     const timeoutId = setTimeout(() => {
       if (winner !== "" && winner !== undefined) {
         setOpen(true);
+        setShowCelebration(true);
       } else {
         setOpen(false);
+        setShowCelebration(false);
       }
     }, 200);
 
@@ -58,6 +60,7 @@ const WinnerPopup = ({ winner, setWinner, segData, setSegData }) => {
       .map((perSegData) => `<div>${perSegData}</div>`)
       .join("");
     setOpen(!open);
+    setShowCelebration(!open);
   };
 
   return (
@@ -76,6 +79,7 @@ const WinnerPopup = ({ winner, setWinner, segData, setSegData }) => {
           <AlertDialogCancel
             onClick={() => {
               setOpen(!open);
+              setShowCelebration(!open)
             }}
           >
             Close
