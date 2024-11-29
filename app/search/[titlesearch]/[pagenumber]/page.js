@@ -14,7 +14,7 @@ import BottomPagination from "@components/BottomPagination";
 
 let titleStr = "";
 let listerror = null;
-const perPage = 3;
+const perPage = 10;
 let start = 0;
 
 export async function generateMetadata({ params }, parent) {
@@ -68,11 +68,11 @@ const printSearchData = (wheelList) => {
 
     // console.log("Title of Wheel = ", item.title);
     wheelData.push(
-      <Card key={i} className="p-2 mt-3">
+      <Card key={i} className="p-2 mt-3 mx-4">
         <div className="text-base leading-normal m-2 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold mb-2">{item.title}</h2>
-            <p>{item.description}</p>
+            {/* <p>{item.description}</p> */}
           </div>
           <div>{item.data.length} Words</div>
         </div>

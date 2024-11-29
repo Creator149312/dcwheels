@@ -124,7 +124,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             setSegData={setSegData}
             setShowCelebration={setShowCelebration}
           />
-          <div onClick={handleSpinClick}>
+          <div onClick={handleSpinClick} className='min-h-96 sm:h-[450px]'>
             <Wheel
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber}
@@ -184,7 +184,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
           </Tabs>
           <div>
             {session !== null ? (
-              <SaveWheelBtn />
+              <SaveWheelBtn segmentsData={segData}/>
             ) : (
               <p className="my-2 flex justify-center items-center">
                 <a href="/register">

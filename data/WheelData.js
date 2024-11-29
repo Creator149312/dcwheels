@@ -4,6 +4,7 @@ const WheelData = {
     description:
       "Spin this finger generator spin wheel to pick fingers randomly from Thumb, Index, Middle, Ring and Pinky.",
     heading: "Random Finger Generator - Pick Fingers Randomly",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -27,7 +28,7 @@ const WheelData = {
     description:
       "Spin this random adjective generator to quickly pick one or more random adjectives (eg.'angry', 'jealous'  etc..) from the list of over 100+ popular ones with just the click of a button.",
     heading: "Random Adjective Generator - Spin & Pick Perfect Adjectives",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -183,7 +184,7 @@ const WheelData = {
     description:
       "Spin this bird generator to pick one or more random birds from the list of 100+ well known bird species found around the world with just click of a button.",
     heading: "Random Bird Generator Wheel - Spin & Pick Popular Birds",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -227,7 +228,7 @@ const WheelData = {
     description:
       "Spin this body part generator to randomly select one or more body parts from a list of common and unique body parts found on the human body with just a click of a button.",
     heading: "Random Body Part Generator Wheel - Spin & Pick a Body Part",
-
+category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -304,7 +305,7 @@ const WheelData = {
     description:
       "Spin this generator to randomly select a throw (rock, paper, or scissors) for the game of rock-paper-scissors with just the click of a button.",
     heading: "Random Rock Paper Scissors Generator - Spin & Pick Your Throw",
-
+category: "Games",
     content: [
       {
         type: "paragraph",
@@ -327,7 +328,7 @@ const WheelData = {
     description:
       "Spin this random city generator to pick your next travel destination from a list of popular cities around the world.",
     heading: "Random City Generator - Spin & Find Your Next City",
-
+category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -394,7 +395,7 @@ const WheelData = {
     description:
       "Spin this random day generator to pick a day of the week for your activity or event and stay organized.",
     heading: "Random Day Generator - Spin & Find Your Day",
-
+    category: "Time & Seasons",
     content: [
       {
         type: "paragraph",
@@ -421,7 +422,7 @@ const WheelData = {
     description:
       "Use this random sports generator to pick a sport to play or try a new one, whether you are with friends or looking for a new challenge.",
     heading: "Random Sports Generator - Spin & Find Your Next Sport",
-
+category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -475,7 +476,7 @@ const WheelData = {
     description:
       "Spin this random ice cream flavor generator to pick a yummy list of random flavors, perfect for satisfying your ice cream cravings.",
     heading: "Random Ice Cream Flavor Generator - Spin & Find Your Next Flavor",
-
+category:"Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -532,7 +533,7 @@ const WheelData = {
     description:
       "Spin this random Indian city generator to pick a city from over 350+ cities in India for your next adventure, project, or research.",
     heading: "Random Indian City Name Generator - Spin & Pick Towns",
-
+category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -610,7 +611,7 @@ const WheelData = {
     description:
       "Spin this random Indian states generator to pick a state from the 29 states of India and learn more about the country’s geographical diversity.",
     heading: "Random Indian States Generator - Spin & Find Your State",
-
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -662,7 +663,7 @@ const WheelData = {
     description:
       "Use this heads or tails wheel to randomly flip a coin and make quick decisions for any situation, be it for fun or serious decisions.",
     heading: "Heads or Tails Wheel - Spin & Make Your Decision",
-
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -685,7 +686,7 @@ const WheelData = {
     description:
       "Spin this random One Piece character wheel to pick a character from the popular One Piece anime and manga series for fun, trivia, or roleplay.",
     heading: "Random One Piece Character Wheel - Spin & Discover a Character",
-
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -743,7 +744,7 @@ const WheelData = {
     description:
       "Spin this language randomizer to pick random languages from a list of 100+ real languages spoken across the world.",
     heading: "Random Language Generator - Spin & Discover a Language",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -848,7 +849,7 @@ const WheelData = {
     description:
       "Spin this random month generator to pick a month from the 12 months of the year for planning, organizing, or fun.",
     heading: "Random Month Generator - Spin & Find Your Month",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -884,7 +885,7 @@ const WheelData = {
     description:
       "Spin this random athlete generator to pick a famous athlete from a list of 100+ top sportspersons around the world.",
     heading: "Random Athlete Generator - Spin & Discover a Top Sportsperson",
-
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -968,7 +969,7 @@ const WheelData = {
     description:
       "Spin this random phobia generator to help you pick and explore different phobias from a list of 50+ common fears and aversions.",
     heading: "Random Phobia Generator - Spin & Uncover a Fear",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1041,7 +1042,7 @@ const WheelData = {
     description:
       "Spin this random planet generator to randomly pick a planet from our solar system or explore fictional planets from popular sci-fi universes.",
     heading: "Random Planet Generator - Spin & Explore a New Planet",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1114,7 +1115,7 @@ const WheelData = {
     description:
       "Spin this random vowel generator to pick a random vowel from the set of English vowels: A, E, I, O, U.",
     heading: "Random Vowel Generator - Spin & Discover a Vowel",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -1137,7 +1138,7 @@ const WheelData = {
     description:
       "Spin this random continent generator to pick a random continent from the 7 continents on Earth.",
     heading: "Random Continent Generator - Spin & Explore a Continent",
-
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -1168,7 +1169,7 @@ const WheelData = {
     description:
       "Use this random noun generator to pick a random noun from a diverse list of objects, animals, places, and more.",
     heading: "Random Noun Generator - Spin & Find a New Noun",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -1246,7 +1247,7 @@ const WheelData = {
       "Spin this random musical instrument generator to pick and explore various musical instruments from around the world.",
     heading:
       "Random Musical Instrument Generator - Spin & Pick a New Instrument",
-
+      category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1336,7 +1337,7 @@ const WheelData = {
     description:
       "Spin this random neopronouns generator to pick a variety of gender-neutral and personalized pronouns that are used by some individuals to express their gender identity.",
     heading: "Random Neopronouns Generator - Spin & Find a Neopronoun",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -1402,7 +1403,7 @@ const WheelData = {
       "Spin this random constellation and galaxy generator to pick from various constellations and galaxies of the universe, complete with names, mythology, and their locations in the night sky.",
     heading:
       "Random Constellation and Galaxy Generator - Spin & Explore a New Constellation or Galaxy",
-
+      category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1484,7 +1485,7 @@ const WheelData = {
       "Use this Marvel movie character spinner to randomly select a character from the Marvel Cinematic Universe (MCU). Whether you're a fan of superheroes, villains, or sidekicks, this spinner has it all.",
     heading:
       "Marvel Movie Character Spinner - Spin & Find Your Marvel Hero or Villain",
-
+      category: "Movie",
     content: [
       {
         type: "paragraph",
@@ -1561,7 +1562,7 @@ const WheelData = {
       "Spin this Encanto character picker to randomly select a character from the magical world of Disney's *Encanto*. Whether you're a fan of the Madrigal family or other magical characters, this spinner is for you!",
     heading:
       "Random Encanto Character Picker - Spin & Find Your Encanto Character",
-
+      category: "Movie",
     content: [
       {
         type: "paragraph",
@@ -1611,7 +1612,7 @@ const WheelData = {
     description:
       "Spin this vehicle picker tool to randomly select a vehicle from a list of 100+ vehicles commonly used in daily life. From cars to buses, bicycles to airplanes, this tool covers a wide variety of transport options.",
     heading: "Random Vehicle Generator - Spin & Find Your Next Vehicle",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1700,7 +1701,7 @@ const WheelData = {
     description:
       "Use this random website picker tool to explore amazing websites you may not have discovered yet. Whether you're looking for entertainment, educational content, or something new, this tool has you covered.",
     heading: "Random Website Generator - Spin & Find a New Website",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1954,7 +1955,7 @@ const WheelData = {
     description:
       "Spin this Halloween costume picker to randomly select a spooky or fun costume for your Halloween celebrations. Whether you're going for scary, funny, or creative, this tool will help you pick the perfect costume.",
     heading: "Halloween Costume Picker - Spin & Choose Your Costume",
-
+    category: "Beauty & Fashion",
     content: [
       {
         type: "paragraph",
@@ -2042,7 +2043,7 @@ const WheelData = {
     description:
       "Spin this career picker tool to randomly select a career from a diverse range of professions. Whether you're exploring new job opportunities or simply curious about different fields, this tool helps you discover a random career path.",
     heading: "Random Career Picker - Spin & Explore Career Options",
-
+    category: "Personal Development",
     content: [
       {
         type: "paragraph",
@@ -2131,7 +2132,7 @@ const WheelData = {
     description:
       "Spin this periodic element picker tool to randomly select an element from the periodic table. Whether you're studying chemistry or just curious about the elements that make up our world, this tool will help you learn more about the periodic table.",
     heading: "Random Periodic Element Picker - Spin & Explore the Elements",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -2273,7 +2274,7 @@ const WheelData = {
     description:
       "Spin this parts of speech picker tool to randomly select and explore different parts of speech, such as noun, verb, adjective, and more. Learn about the different roles words play in sentences and how they interact with other words.",
     heading: "Random Parts of Speech Generator - Spin & Pick",
-
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -2321,7 +2322,7 @@ const WheelData = {
     description:
       "Spin this random US states generator to randomly pick a state from the list of all 50 US states. Explore, learn, or choose your next destination in the USA.",
     heading: "Random US States Generator - Spin & Pick a US State",
-
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -2396,7 +2397,7 @@ const WheelData = {
       "Spin this random US city generator to randomly select a city from the list of over 300 cities across the United States. Explore new places or find your next destination.",
     heading:
       "Random US City Generator - Spin to Pick American Cities and Towns",
-
+      category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -2532,7 +2533,7 @@ const WheelData = {
     description:
       "Spin this random fish generator to pick a fish name from a list of popular and diverse fish species. Perfect for fishing enthusiasts who want a fun way to decide which fish to catch next.",
     heading: "Random Fish Generator - Spin & Pick Your Fish",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -2630,7 +2631,7 @@ const WheelData = {
     description:
       "Spin this horse breed generator to randomly pick a breed from a list of 100+ horse breeds, including well-known and lesser-known varieties. Perfect for selecting a horse for any purpose or creative project.",
     heading: "Horse Breed Generator - Spin & Pick Your Horse Breed",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -2772,7 +2773,7 @@ const WheelData = {
     description:
       "Generate random star names, both real and fictional, with this tool. Perfect for creative projects, games, or just exploring the universe!",
     heading: "Random Star Name Generator - Spin & Discover New Stars",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -2881,7 +2882,7 @@ const WheelData = {
     description:
       "Pick a random flower from a list of common flowers. Perfect for gardening, floral arrangements, or creative projects!",
     heading: "Random Flowers Generator - Spin & Pick a Set for Bouquet",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -2972,7 +2973,7 @@ const WheelData = {
     description:
       "Spin and Pick a random celebrity name from a list of well-known celebrities from various fields like movies, sports, music, and more, from around the world.",
     heading: "Random Celebrities Generator - Spin & Meet the Stars",
-
+    category: "Social",
     content: [
       {
         type: "paragraph",
@@ -3094,7 +3095,7 @@ const WheelData = {
     description:
       "Use this tool to generate a random European country from a list of 40+ countries across Europe. Learn more about the culture, geography, and history of various European nations.",
     heading: "Random European Country Generator - Spin & Explore",
-
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -3174,7 +3175,7 @@ const WheelData = {
     description:
       "Spin the dessert wheel to pick a random dessert recipe from a list of 100+ Indian and Western dessert options. Get inspiration for your next sweet course or meal-ending treat.",
     heading: "Random Dessert Generator Wheel - Spin & Find Your Sweet Delight",
-
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -3267,7 +3268,7 @@ const WheelData = {
     description:
       "Spin the candy wheel to randomly select different jelly beans and candy types! Explore a fun and colorful variety of candy flavors and discover your favorites in this sweet adventure.",
     heading: "Random Jelly Beans & Candy Wheel Picker",
-
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -3317,7 +3318,7 @@ const WheelData = {
     description:
       "Spin the birthday cake wheel to randomly select from a delicious variety of cakes perfect for any celebration. Whether it's chocolate, vanilla, or something unique, find the perfect birthday cake with just a spin!",
     heading: "Random Birthday Cake Picker",
-
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -3367,7 +3368,7 @@ const WheelData = {
     description:
       "Spin the dog breed wheel to randomly select a breed! Whether you're looking for a playful puppy, a loyal companion, or a unique dog breed, this tool helps you discover your next furry friend.",
     heading: "Random Dog Breed Picker Wheel",
-
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -3423,7 +3424,7 @@ const WheelData = {
     description:
       "Spin the golf club wheel to randomly select a golf club! Whether you're practicing at the driving range or out on the course, this tool helps you pick the perfect club for your next shot.",
     heading: "Random Golf Club Picker",
-
+    category: "Lifestyle",
     content: [
       {
         type: "paragraph",
@@ -3474,7 +3475,7 @@ const WheelData = {
     description:
       "Spin the wheel to discover a random sex position! Whether you want to try something new, add variety, or spice things up, this fun tool helps you explore different intimate positions with your partner.",
     heading: "Random Sex Position Picker Wheel",
-
+    category: "Fun",
     content: [
       {
         type: "paragraph",
@@ -3523,6 +3524,7 @@ const WheelData = {
     description:
       "Explore Age wheel and spin to pick a random age group for a task.",
     heading: "Age Spin Wheel - Spin & Discover New Age Groups",
+    category: "Personal Development",
     content: [
       {
         type: "paragraph",
@@ -3561,6 +3563,7 @@ const WheelData = {
     description:
       "Explore alphabet wheel and spin to pick from 26 letters of English Alphabet",
     heading: "Alphabet Wheel - Spin & Discover a New Letter",
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -3601,6 +3604,7 @@ const WheelData = {
     description:
       "Explore Animal Picker Wheel and spin to pick a random animal to adopt as pet or see.",
     heading: "Animal Picker Wheel - Spin & Discover a New Animal",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -3631,6 +3635,7 @@ const WheelData = {
     description:
       "Explore Art wheel and spin to pick a random drawing challenge daily.",
     heading: "Art Spinner Wheel - Spin & Discover a New Drawing Challenge",
+    category: "Personal Development",
     content: [
       {
         type: "paragraph",
@@ -3680,6 +3685,7 @@ const WheelData = {
     description:
       "Explore Bundesliga wheel and spin to pick a random team or player to bet on.",
     heading: "Bundesliga Spin Wheel - Spin & Discover a New Team or Player",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -3715,6 +3721,7 @@ const WheelData = {
     description:
       "Explore category spinner and spin to pick a random category from the list.",
     heading: "Category Wheel - Spin & Discover a New Category",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -3754,6 +3761,7 @@ const WheelData = {
     description:
       "Explore Charades wheel and spin to pick a random word or topic for next game session with your family.",
     heading: "Charades Wheel - Spin & Discover a New Topic",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -3803,6 +3811,7 @@ const WheelData = {
     description:
       "Explore Countries Picker Wheel and spin to pick a random country of the world.",
     heading: "Countries Picker Wheel - Spin & Discover a New Country",
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -4014,6 +4023,7 @@ const WheelData = {
     description:
       "Explore Dice Wheel and spin to pick a random outcome of dice.",
     heading: "Dice Wheel - Spin and Roll",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -4022,12 +4032,12 @@ const WheelData = {
     ],
     segments: ["1", "2", "3", "4", "5", "6"],
   },
-
   drinking_wheel: {
     title: "Drinking Spin Wheel - Pick Drink Challenges",
     description:
       "Explore Drinking wheel and spin to pick a random drink challenge with your friends.",
     heading: "Drinking Spin Wheel - Spin for a Random Drink Challenge",
+    category: "Social",
     content: [
       {
         type: "paragraph",
@@ -4066,11 +4076,11 @@ const WheelData = {
       "Play a game: Choose a game and play it with the other players.",
     ],
   },
-
   emoji_wheel: {
     title: "Emoji Picker Wheel",
     description: "Explore Emoji Picker Wheel and spin to pick a random emoji.",
     heading: "Emoji Picker Wheel - Spin to Pick a Random Emoji",
+    category: "Fun",
     content: [
       {
         type: "paragraph",
@@ -4095,12 +4105,12 @@ const WheelData = {
       "🥱 (Yawning face)",
     ],
   },
-
   emotions_wheel: {
     title: "Emotions Picker Wheel",
     description:
       "Explore Emotions Picker Wheel and spin to pick a random emotion.",
     heading: "Emotions Picker Wheel - Spin to Pick a Random Emotion",
+    category: "Personal Development",
     content: [
       {
         type: "paragraph",
@@ -4135,12 +4145,12 @@ const WheelData = {
       "Dread",
     ],
   },
-
   eye_color_wheel: {
     title: "Eye Color Wheel: Random Picker",
     description:
       "Spin the eye color wheel to quickly and easily find the perfect eyeshadow or eyeliner color to complement your eye color.",
     heading: "Eye Color Wheel: Spin to Pick the Perfect Eyeshadow or Eyeliner",
+    category: "Beauty & Fashion",
     content: [
       {
         type: "paragraph",
@@ -4188,12 +4198,12 @@ const WheelData = {
       "Navy",
     ],
   },
-
   f1_tracks: {
     title: "F1 Wheel - Pick a Random F1 Track",
     description:
       "Explore F1 wheel and spin to pick a random track for your next race.",
     heading: "F1 Wheel: Spin to Pick a Random F1 Track for Your Next Race",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -4218,12 +4228,12 @@ const WheelData = {
       "Abu Dhabi Grand Prix",
     ],
   },
-
   food_wheel: {
     title: "Food Wheel - Pick a Random Food Choice",
     description:
       "Explore Food wheel and spin to pick a random food item out of multiple choices.",
     heading: "Food Wheel: Spin to Pick a Random Food Item",
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -4276,12 +4286,12 @@ const WheelData = {
       "Apple Pie: A sweet dessert made with apples, pastry crust, and often topped with vanilla ice cream.",
     ],
   },
-
   fortnite_wheel: {
     title: "Fortnite Challenges Wheel for Fun",
     description:
       "Explore Fortnite challenges wheel and spin to pick a random challenge for your next game.",
     heading: "Fortnite Challenge Wheel: Spin to Pick Your Next Challenge",
+    category: "Gaming",
     content: [
       {
         type: "paragraph",
@@ -4329,11 +4339,11 @@ const WheelData = {
       "Win a match without taking damage, building, or using healing items (Legendary)",
     ],
   },
-
   fruit_wheel: {
     title: "Fruit Picker Wheel",
     description: "Explore Fruit Picker Wheel and spin to pick a random fruit.",
     heading: "Fruit Picker Wheel: Spin to Pick a Random Fruit",
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -4363,6 +4373,7 @@ const WheelData = {
     description:
       "Explore Gender Picker Wheel and spin to pick a random gender.",
     heading: "Gender Picker Wheel: Spin to Pick a Random Gender",
+    category: "Identity",
     content: [
       {
         type: "paragraph",
@@ -4384,6 +4395,7 @@ const WheelData = {
     description:
       "Explore Height Picker Wheel and spin to pick a random height.",
     heading: "Height Picker Wheel: Spin to Pick a Random Height",
+    category: "Physical Traits",
     content: [
       {
         type: "paragraph",
@@ -4406,6 +4418,7 @@ const WheelData = {
     description:
       "Explore Irregular Verbs Picker Wheel and spin to pick a random task.",
     heading: "Irregular Verbs Picker Wheel: Spin to Pick a Random Verb",
+    category: "Language Learning",
     content: [
       {
         type: "paragraph",
@@ -4445,6 +4458,7 @@ const WheelData = {
     description:
       "Explore Age wheel and spin to pick a random age group for a task.",
     heading: "Loves Me Loves Me Not Wheel: Spin to Pick a Random Outcome",
+    category: "Fun",
     content: [
       {
         type: "paragraph",
@@ -4472,6 +4486,7 @@ const WheelData = {
       "Explore Minecraft challenges wheel and spin to pick a random challenge to test your skills.",
     heading:
       "Minecraft Challenges Spin Wheel: Spin to Pick Your Next Challenge",
+    category: "Gaming",
     content: [
       {
         type: "paragraph",
@@ -4524,6 +4539,7 @@ const WheelData = {
     description:
       "Explore MLB wheel and spin to pick a random team or player to bet on.",
     heading: "MLB Spin Wheel: Spin to Pick Your Next Team or Player",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -4568,6 +4584,7 @@ const WheelData = {
     description:
       "Explore Months Picker Wheel and spin to pick a random month of the year.",
     heading: "Months Picker Wheel: Spin to Pick Your Random Month",
+    category: "Time & Seasons",
     content: [
       {
         type: "paragraph",
@@ -4594,6 +4611,7 @@ const WheelData = {
     description:
       "Explore NBA wheel and spin to pick a random team or player to bet on.",
     heading: "NBA Spin Wheel: Spin to Pick Your Random Team or Player",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -4638,6 +4656,7 @@ const WheelData = {
     description:
       "Explore NFL Teams Picker Wheel and spin to pick a random team from NFL league.",
     heading: "NFL Teams Picker Wheel: Spin to Pick a Random Team",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -4688,6 +4707,7 @@ const WheelData = {
     description:
       "Explore Personality Picker Wheel and spin to pick a random personality.",
     heading: "Personality Picker Wheel: Spin to Pick a Random Personality",
+    category: "Entertainment",
     content: [
       {
         type: "paragraph",
@@ -4722,6 +4742,7 @@ const WheelData = {
     description:
       "Explore Pokemon Picker Wheel and spin to pick a random pokemon.",
     heading: "Pokemon Picker Wheel: Spin to Pick a Random Pokemon",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -4786,6 +4807,7 @@ const WheelData = {
     description:
       "Explore Random Number Picker Wheel and spin to pick a random number from 1 to 100.",
     heading: "Random Number Picker Wheel: Spin to Pick a Random Number",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -4900,6 +4922,7 @@ const WheelData = {
     description:
       "Explore relationship wheel and spin to pick a random relation.",
     heading: "Relationship Spin Wheel: Spin to Pick a Random Relationship",
+    category: "Lifestyle",
     content: [
       {
         type: "paragraph",
@@ -4944,6 +4967,7 @@ const WheelData = {
     description:
       "Explore sexuality wheel for LGBTQ community and spin to pick a random sexual orientation and identity.",
     heading: "Sexuality Spin Wheel: Random LGBTQ Orientations",
+    category: "LGBTQ+",
     content: [
       {
         type: "paragraph",
@@ -4972,11 +4996,13 @@ const WheelData = {
       "Neutrophiles",
     ],
   },
+
   travel_wheel: {
     title: "Travel Wheel - Pick Destinations for Vacation",
     description:
       "Explore Travel wheel and spin to pick a random destination around the world to spend your vacation.",
     heading: "Travel Wheel - Pick Destinations for Vacation",
+    category: "Travel",
     content: [
       {
         type: "paragraph",
@@ -5025,12 +5051,12 @@ const WheelData = {
       "Rishikesh, India",
     ],
   },
-
-  truth_and_dare_wheel: {
+  truth_dare_wheel: {
     title: "Truth and Dare: Challenge Picker Wheel",
     description:
       "Explore Truth or dare wheel and spin to pick a random challenge to your game.",
     heading: "Truth and Dare: Challenge Picker Wheel",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -5087,6 +5113,7 @@ const WheelData = {
     description:
       "Explore Twister spinner wheel and spin to pick a random move for a player.",
     heading: "Twister Spinner Wheel - Generate Random Moves",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -5121,6 +5148,7 @@ const WheelData = {
     description:
       "Explore WWE wheel and spin to pick a random wrestler from WWE universe.",
     heading: "WWE Spin Wheel: Pick Random Wrestler",
+    category: "Entertainment",
     content: [
       {
         type: "paragraph",
@@ -5160,6 +5188,7 @@ const WheelData = {
     description:
       "Explore Yes or No Decision Picker Wheel and spin to pick a random yes or no choice.",
     heading: "Yes or No Decision Picker Wheel",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -5181,6 +5210,7 @@ const WheelData = {
     description:
       "Explore Zodiac Picker Wheel and spin to pick a random zodiac sign.",
     heading: "Zodiac Picker Wheel",
+    category: "Astrology",
     content: [
       {
         type: "paragraph",

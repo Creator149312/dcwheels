@@ -4,13 +4,14 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { validateObjectID } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
+import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 let titleStr = "";
 let listerror = null;
 
 /*
-*  This file is user for user generated wheels which are saved in database.
-*/
+ *  This file is user for user generated wheels which are saved in database.
+ */
 
 export async function generateMetadata({ params }, parent) {
   let listdata = null;
@@ -48,7 +49,7 @@ export async function generateMetadata({ params }, parent) {
     return {
       title: "No Wheels Found",
       description: "No Wheels Found",
-      robots: 'noindex'
+      robots: "noindex",
     };
   }
 }
@@ -86,15 +87,17 @@ export default async function Page({ params }) {
     <div>
       {wordsList !== null && listerror == null && (
         <>
-        {/* <WheelWithInput newSegments={wordsList.data}/> */}
-        <WheelWithInputContentEditable newSegments={pageData.segments} />
-        {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
+          {/* <WheelWithInput newSegments={wordsList.data}/> */}
+          <WheelWithInputContentEditable newSegments={wordsList.data} />
+          {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
         <p>{wordsList.description}</p>
         </div> */}
         </>
       )}
       {listerror && (
-        <div>We cannot find any Wheel. This has been deleted by the creator.</div>
+        <div>
+          We cannot find any Wheel. This has been deleted by the creator.
+        </div>
       )}
     </div>
   );

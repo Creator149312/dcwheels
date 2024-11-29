@@ -2,6 +2,7 @@
 
 import { HiOutlineTrash } from "react-icons/hi";
 import { useRouter } from "next/navigation";
+import apiConfig from "@utils/ApiUrlConfig";
 // import apiConfig from "@utils/apiUrlConfig";
 
 export default function RemoveListBtn({ id }) {
@@ -16,7 +17,7 @@ export default function RemoveListBtn({ id }) {
     const confirmed = confirm("Are you sure?");
 
     if (confirmed) {
-      const res = await fetch(`https://ominous-engine-q766v6jx45r34qx9-3000.app.github.dev/api/wheel?id=${id}`, {
+      const res = await fetch(`${apiConfig.apiUrl}/wheel?id=${id}`, {
         method: "DELETE",
       });
 

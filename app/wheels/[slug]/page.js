@@ -1,21 +1,26 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import WheelData from "@data/WheelData";
 import { replaceDashWithUnderscore } from "@utils/HelperFunctions";
+import { redirect } from "next/navigation";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const pageData = WheelData[replaceDashWithUnderscore(slug)];
 
+  if (pageData === undefined) redirect("/"); //this is done to ensure only valid urls are loaded and all others are redirected to homepage.
+
   return {
     title: pageData.title,
-    description: pageData.description
-  }
+    description: pageData.description,
+  };
 }
 
 export default async function Home({ params }) {
   const slug = await params.slug;
 
   const pageData = WheelData[replaceDashWithUnderscore(slug)];
+
+  if (pageData === undefined) redirect("/");
 
   return (
     <div className="p-3">
@@ -28,7 +33,11 @@ export default async function Home({ params }) {
         {pageData.content.map((item, index) => {
           switch (item.type) {
             case "paragraph":
-              return <p key={index} className="mb-3">{item.text}</p>;
+              return (
+                <p key={index} className="mb-3">
+                  {item.text}
+                </p>
+              );
             case "image":
               return <img key={index} src={item.src} alt={item.alt} />;
             case "link":

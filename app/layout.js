@@ -2,7 +2,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@components/navbar/Navbar";
 import { ThemeProvider } from "./ThemeProvider";
-import SearchBarNav from "@components/SearchNavBar";
 import { SegmentsProvider } from "./SegmentsContext";
 import { Toaster } from "react-hot-toast";
 import GAnalytics from "./GAnalytics";
@@ -11,11 +10,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: {
-    default: "Spin Wheel – Random Choice Picker to Decide",
+    default: "Spin Wheel – Random Name Picker to Decide Winner",
     template: "%s - Spinpapa",
   },
   description:
-    "Spinpapa is your custom wheel spinner for a random decision picker. Fill choices or names, spin the wheel to decide a random winner.",
+    "Spinpapa is your custom wheel spinner for a random decision picker. Fill multiple choices or names, spin the wheel to decide a random winner.",
 };
 
 export default function RootLayout({ children }) {

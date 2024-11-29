@@ -20,11 +20,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
-import { Title } from "@radix-ui/react-alert-dialog";
 
-export default function SaveWheelBtn() {
+export default function SaveWheelBtn({segmentsData}) {
   const [title, setTitle] = useState("My first Wheel");
-  const [description, setDescription] = useState("What to write I am not busy");
+  const [description, setDescription] = useState("What to write I am really busy");
   const createdBy = useSession().data?.user?.email;
   const { segments, setSegments } = useContext(SegmentsContext);
 
@@ -69,7 +68,7 @@ export default function SaveWheelBtn() {
     // console.log(apiConfig);
 
     try {
-      const data = [...segments];
+      const data = [...segmentsData];
       const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
         method: "POST",
         headers: {

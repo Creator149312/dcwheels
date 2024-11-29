@@ -24,7 +24,7 @@ function FireworksOverlay() {
           y: Math.random() * canvas.height,
           vx: (Math.random() - 0.5) * 5,
           vy: -Math.random() * 10,
-          size: Math.random() * 7,
+          size: Math.random() * 5,
           color: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.random()})`,
         });
       }
