@@ -20,14 +20,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
+import { FaCloudUploadAlt } from "react-icons/fa";
+import Tooltip from "./Tooltip";
 
-export default function SaveWheelBtn({segmentsData}) {
+export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("My first Wheel");
-  const [description, setDescription] = useState("What to write I am really busy");
+  const [description, setDescription] = useState(
+    "What to write I am really busy"
+  );
   const createdBy = useSession().data?.user?.email;
   const { segments, setSegments } = useContext(SegmentsContext);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setisSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showDataDialog, setShowDataDialog] = useState(true);
 
@@ -41,12 +45,9 @@ export default function SaveWheelBtn({segmentsData}) {
   };
 
   const handleSubmit = async (e) => {
-    // console.log("title ", title);
-    // console.log("Description", description)
-
     setError("");
     e.preventDefault();
-    setIsLoading(true);
+    setisSaving(true);
 
     if (!title || !description || !segments) {
       setError("Title, description and Data are required.");
@@ -92,7 +93,7 @@ export default function SaveWheelBtn({segmentsData}) {
     } catch (error) {
       setError(error);
     } finally {
-      setIsLoading(false);
+      setisSaving(false);
     }
   };
 
@@ -113,14 +114,23 @@ export default function SaveWheelBtn({segmentsData}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button size={"lg"} variant={"default"} className="p-3 mt-2 w-full">Save Wheel</Button>
+      <div className="flex flex-col items-center justify-center p-4">
+        <Tooltip text="Save Wheel on Cloud" >
+        <Button
+          size={"lg"}
+          variant={"default"}
+          disabled={isSaving}
+          className="mx-1 p-3 rounded-md focus:outline-none"
+        >
+          {isSaving ? "Saving..." : <FaCloudUploadAlt size={20} />}
+        </Button>
+        </Tooltip>
+        </div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
-          <DialogDescription>
-            Add your wheel description
-          </DialogDescription>
+          <DialogTitle>Wheel Data</DialogTitle>
+          <DialogDescription>Add wheel title and description</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -148,7 +158,9 @@ export default function SaveWheelBtn({segmentsData}) {
           </div>
 
           <DialogFooter>
-            <Button type="submit" size={"lg"} variant={"default"}>Save Wheel</Button>
+            <Button type="submit" size={"lg"} variant={"default"}>
+              {isSaving ? "Saving..." : "Save Wheel"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

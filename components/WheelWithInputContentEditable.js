@@ -1,11 +1,14 @@
 "use client";
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 import { useState, useEffect, useContext } from "react";
 import ContentEditableDiv from "@components/ContentEditableDiv";
 import WinnerPopup from "@components/WinnerPopup";
-// import { Wheel } from "react-custom-roulette";  
+// import { Wheel } from "react-custom-roulette";
 // we are not using above import because it causes ReferenceError: window is not defined , workaround is the following import
-const Wheel = dynamic(() => import('react-custom-roulette').then((mod) => mod.Wheel), { ssr: false, });
+const Wheel = dynamic(
+  () => import("react-custom-roulette").then((mod) => mod.Wheel),
+  { ssr: false }
+);
 import FireworksConfetti from "@components/FireworksConfetti";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import SaveWheelBtn from "./SaveWheelBtn";
@@ -13,6 +16,9 @@ import { useSession } from "next-auth/react";
 import ContentEditableDivResult from "./ContentEditableDivResult";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
+import SaveWheelLocally from "./SaveWheelLocally";
+import ImportLocalWheel from "./ImportLocalWheel";
+import SaveImportComponent from "./SaveImportComponent";
 
 const processString = (str) => {
   const first15Chars = str.substring(0, 15); // Get the first 15 characters
@@ -54,7 +60,15 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
       });
     }
   }
-  return result;
+
+  return result.length > 0
+    ? result
+    : [
+        {
+          option: "Options",
+          style: { backgroundColor: "#EE4040" },
+        },
+      ];
 };
 
 // const segTempData = ["Eighty-nine", "Ninety", "Ninety-one", "Ninety-two", "Ninety-three", "Ninety-four", "Ninety-five", "Ninety-six", "Ninety-seven", "Ninety-eight", "Ninety-nine", "One hundred", "Sources and related content", "Ram", "Paul", "Siya", "Duke", `<img src="/spin-wheel-logo.png" alt="logo" />`, `<img  src="/spin-wheel-logo.png" alt="logo" />`];
@@ -72,11 +86,12 @@ const segColors = [
 const WheelWithInputContentEditable = ({ newSegments }) => {
   const maxSpinDuration = 0.9;
   const minSpinDuration = 0.35;
-  const {resultList, setResultList} = useContext(SegmentsContext);
+  const { resultList, setResultList } = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
-  // const [resultList, setResultList] = useState([]);
-
   const { status, data: session } = useSession();
+  // using the following prizeNumber causes error due to newSegments when wheel is imported.
+  // const [prizeNumber, setPrizeNumber] = useState( Math.floor(Math.random() * newSegments.length));
+
   const [prizeNumber, setPrizeNumber] = useState(0);
   const [segData, setSegData] = useState(newSegments);
   const [winner, setWinner] = useState();
@@ -96,22 +111,28 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
 
   const handleSpinClick = () => {
     if (!mustSpin) {
-      const newPrizeNumber = Math.floor(Math.random() * data.length);
-      setPrizeNumber(newPrizeNumber);
       setMustSpin(true);
       // setShowCelebration(false);
     }
   };
 
   useEffect(() => {
+    setPrizeNumber( Math.floor(Math.random() * newSegments.length));
+  }, []);
+
+  useEffect(() => {
     data = prepareData(segData, segColors, maxlengthOfSegmentText);
   }, [segData]);
 
   useEffect(() => {
-    if (winner !== "" && winner !== undefined) {
-      setResultList([...resultList, winner]);
+    if (!mustSpin) {
+      if (winner !== "" && winner !== undefined) {
+        let newPrizeNumber = Math.floor(Math.random() * data.length);
+        setPrizeNumber(newPrizeNumber);
+        setResultList([...resultList, winner]);
+      }
     }
-  }, [winner]);
+  }, [winner, mustSpin]);
 
   return (
     <>
@@ -123,31 +144,32 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             segData={segData}
             setSegData={setSegData}
             setShowCelebration={setShowCelebration}
+            mustSpin={mustSpin}
           />
-          <div onClick={handleSpinClick} className='min-h-96 sm:h-[450px]'>
+          <div onClick={handleSpinClick} className="min-h-96 sm:h-[450px]">
             <Wheel
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber}
               data={data}
               textDistance={
-                60 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
+                65 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
               }
               radiusLineWidth={0}
               outerBorderWidth={0}
-              outerBorderColor='white'
+              outerBorderColor="white"
               onStopSpinning={() => {
                 setMustSpin(false);
                 setWinner(segData[prizeNumber]);
-                // setShowCelebration(true);
               }}
               innerRadius={15}
               innerBorderWidth={4}
-              innerBorderColor='white'
+              innerBorderColor="white"
               fontWeight={"normal"}
               disableInitialAnimation="true"
               spinDuration={
-                Math.random() * (maxSpinDuration - minSpinDuration) +
-                minSpinDuration
+                // Math.random() * (maxSpinDuration - minSpinDuration) +
+                // minSpinDuration
+                0.6
               }
               fontSize={segTxtfontSize}
               pointerProps={{
@@ -156,7 +178,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
                   transform: "rotate(50deg)",
                   right: "15px",
                   top: "28px",
-                  scale: '60%'
+                  scale: "60%",
                 },
               }}
             />
@@ -183,18 +205,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             </TabsContent>
           </Tabs>
           <div>
-            {session !== null ? (
-              <SaveWheelBtn segmentsData={segData}/>
-            ) : (
-              <p className="my-2 flex justify-center items-center">
-                <a href="/register">
-                  <Button className="mx-2" size={"lg"} variant={"default"}>
-                    Register Here
-                  </Button>
-                </a>
-                to Save Your Wheels
-              </p>
-            )}
+            <SaveImportComponent segments={segData} onImport={setSegData} />
           </div>
           {showCelebration && <FireworksConfetti />}
         </div>

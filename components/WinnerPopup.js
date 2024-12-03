@@ -11,29 +11,34 @@ import {
 } from "@components/ui/alert-dialog";
 import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
-import {
-  deleteSegmentFromHTML,
-  refactorDataFromHTML,
-} from "./ContentEditableDiv";
 
-const WinnerPopup = ({ winner, setWinner, segData, setSegData, setShowCelebration }) => {
+const WinnerPopup = ({
+  winner,
+  setWinner,
+  segData,
+  setSegData,
+  setShowCelebration,
+  mustSpin,
+}) => {
   let [open, setOpen] = useState(false);
   const { html } = useContext(SegmentsContext);
   // const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (winner !== "" && winner !== undefined) {
-        setOpen(true);
-        setShowCelebration(true);
-      } else {
-        setOpen(false);
-        setShowCelebration(false);
-      }
-    }, 200);
+    if (!mustSpin) {
+      const timeoutId = setTimeout(() => {
+        if (winner !== "" && winner !== undefined) {
+          setOpen(true);
+          setShowCelebration(true);
+        } else {
+          setOpen(false);
+          setShowCelebration(false);
+        }
+      }, 200);
 
-    return () => clearTimeout(timeoutId);
-  }, [winner]);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [winner, mustSpin]);
 
   function joinWithNewlines(stringArray) {
     // Handle empty array case
@@ -79,7 +84,7 @@ const WinnerPopup = ({ winner, setWinner, segData, setSegData, setShowCelebratio
           <AlertDialogCancel
             onClick={() => {
               setOpen(!open);
-              setShowCelebration(!open)
+              setShowCelebration(!open);
             }}
           >
             Close

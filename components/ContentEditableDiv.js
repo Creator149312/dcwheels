@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import ContentEditable from "react-contenteditable";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
+import { FaRandom, FaSortAlphaDown } from "react-icons/fa";
 
 const ContentEditableDiv = ({ segData, setSegData }) => {
   const { html } = useContext(SegmentsContext);
@@ -10,9 +11,16 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   const editableDivRef = useRef(null);
 
   //this is used to set initial Value of segData to html.current
-  html.current = html.current === `<div>TestData</div>` ? segData
-  .map((perSegData) => `<div>${perSegData}</div>`)
-  .join("") : html.current;
+  html.current =
+    html.current === `<div>TestData</div>`
+      ? segData.map((perSegData) => `<div>${perSegData}</div>`).join("")
+      : html.current;
+
+  // useEffect(() => {
+  //   html.current = segData
+  //     .map((perSegData) => `<div>${perSegData}</div>`)
+  //     .join("");
+  // }, [segData]);
 
   const handleInputChange = (event) => {
     // if (event.clipboardData) {
@@ -134,7 +142,7 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
   //   setSegData(refactorDataFromHTML(html));
   // }, [imageSrc]);
 
-  // useEffect(() => {  
+  // useEffect(() => {
   //   html.current = segData
   //   .map((perSegData) => `<div>${perSegData}</div>`)
   //   .join("");
@@ -146,8 +154,15 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
     <>
       <div className="">
         {/* <input type="file" onChange={handleImageUpload} className="cursor-pointer my-1 rounded border border-solid border-secondary-500 bg-transparent bg-clip-padding px-3 py-[0.32rem] text-xs font-normal text-surface transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:me-3 file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-e file:border-solid file:border-inherit file:bg-transparent file:px-3  file:py-[0.32rem] file:text-surface focus:border-primary focus:text-gray-700 focus:shadow-inset focus:outline-none dark:border-white/70 dark:text-white  file:dark:text-white"/> */}
-        <Button onClick={shuffleSegments} className="mx-1 my-1 py-0 h-7 text-xs">Shuffle</Button>
-        <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">Sort</Button>
+        <Button
+          onClick={shuffleSegments}
+          className="mx-1 my-1 py-0 h-7 text-xs"
+        >
+          <FaRandom size={20} />
+        </Button>
+        <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">
+        <FaSortAlphaDown size={20} />
+        </Button>
       </div>
       <ContentEditable
         html={html.current}
