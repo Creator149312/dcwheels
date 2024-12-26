@@ -1,18 +1,16 @@
 import { useContext, useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import { Button } from "./ui/button";
-import Tooltip from "./Tooltip";
 import { SegmentsContext } from "@app/SegmentsContext";
 
-const SaveWheelLocally = () => {
+const SaveWheelLocally = ({segmentsData}) => {
   // State to manage modal visibility and form data
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   // const [data, setData] = useState(segmentsData);
-  const { data, wheelData } = useContext(SegmentsContext);
-
+  const { wheelData } = useContext(SegmentsContext);
 
   // Show modal when user wants to save
   const handleOpenModal = () => {
@@ -32,8 +30,8 @@ const SaveWheelLocally = () => {
     const pageData = {
       title: title || "Default Title", // Default title if no input
       description: description || "Default Description", // Default description if no input
-      data: data.map(item => item.option),
-      wheelData: wheelData
+      data: segmentsData,
+      wheelData: wheelData,
     };
 
     // Convert the page data to a JSON string
@@ -67,20 +65,20 @@ const SaveWheelLocally = () => {
       >
         Save Wheel Locally
       </button> */}
-        <Button
-          size={"lg"}
-          className="mr-1 p-3 rounded-md text-sm focus:outline-none"
-          onClick={handleOpenModal}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <span>Downloading...</span>
-          ) : (
-            <>
-              Download <FaDownload size={15} className="ml-1" />
-            </>
-          )}
-        </Button>
+      <Button
+        size={"lg"}
+        className="mr-1 p-3 rounded-md text-sm focus:outline-none"
+        onClick={handleOpenModal}
+        disabled={isSaving}
+      >
+        {isSaving ? (
+          <span>Downloading...</span>
+        ) : (
+          <>
+            Download <FaDownload size={15} className="ml-1" />
+          </>
+        )}
+      </Button>
       {/* Modal for title and description input */}
       {isModalOpen && (
         <div className="z-10 fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">

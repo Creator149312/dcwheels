@@ -132,9 +132,9 @@ export default async function Home() {
         <p className="mb-3">
           Spin the wheel tool can be used by teachers to engage students and add
           some excitement to learning. It is a virtual wheel that can be spun to
-          determine an outcome, such as a student to answer a question, a group
+          determine an outcome, such as name of a student to answer a question, a group
           for a group project, or a topic for discussion. The wheel can be
-          customized to include any options that the teacher desires, making it
+          customized to include names, any options that the teacher desires, making it
           a versatile tool that can be used in a wide range of educational
           settings.
         </p>
@@ -142,7 +142,7 @@ export default async function Home() {
           Simply spin the wheel and watch as it comes to a stop on one of the
           options. The outcome is random, making it a fair and impartial way to
           choose a student or a topic. This can help to keep students engaged
-          and motivated, as they never know when they will be called upon to
+          and motivated, as they never know when their name will be called upon to
           participate.
         </p>
         <p className="mb-3">
@@ -249,7 +249,7 @@ export default async function Home() {
         </p>
         <h3 className="text-2xl">Education</h3>
         <p className="mb-3">
-          It can be used to randomly select students for participation or to
+          It can be used to randomly select student names for participation or to
           choose the order in which they present their work. Encourages fairness
           and helps to eliminate any potential for bias in the selection
           process, making the educational experience more enjoyable for all
@@ -261,7 +261,7 @@ export default async function Home() {
         </p>
         <h3 className="text-2xl">Gaming</h3>
         <p className="mb-3">
-          It can be used to randomly select players or determine the order in
+          It can be used to randomly select player name or determine the order in
           which they play. Adds excitement and unpredictability to the game,
           making it more enjoyable for everyone involved. Try <a href="/wheels/minecraft-wheel" className="text-lg ">
                   Minecraft Wheel
@@ -281,7 +281,7 @@ export default async function Home() {
         </p>
         <h3 className="text-2xl"> Sales and promotions</h3>
         <p className="mb-3">
-          It can be used to randomly select customers for special offers or
+          It can be used to randomly select name of customers for special offers or
           promotions, which further helps in improving customer satisfaction and
           effectiveness of sales and marketing efforts.
         </p>
