@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaWeightHanging } from "react-icons/fa";
 
 const WeightSelector = () => {
   const [isVisible, setIsVisible] = useState(false); // State to toggle visibility
