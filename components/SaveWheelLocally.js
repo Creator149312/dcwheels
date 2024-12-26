@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import { Button } from "./ui/button";
 import Tooltip from "./Tooltip";
+import { SegmentsContext } from "@app/SegmentsContext";
 
-const SaveWheelLocally = ({ segmentsData }) => {
+const SaveWheelLocally = () => {
   // State to manage modal visibility and form data
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [data, setData] = useState(segmentsData);
+  // const [data, setData] = useState(segmentsData);
+  const { data, wheelData } = useContext(SegmentsContext);
 
-  useEffect(() => {
-    setData(segmentsData);
-  }, [segmentsData]);
 
   // Show modal when user wants to save
   const handleOpenModal = () => {
@@ -33,7 +32,8 @@ const SaveWheelLocally = ({ segmentsData }) => {
     const pageData = {
       title: title || "Default Title", // Default title if no input
       description: description || "Default Description", // Default description if no input
-      data: data,
+      data: data.map(item => item.option),
+      wheelData: wheelData
     };
 
     // Convert the page data to a JSON string
@@ -48,7 +48,7 @@ const SaveWheelLocally = ({ segmentsData }) => {
     // Create a temporary anchor element to trigger the download
     const a = document.createElement("a");
     a.href = url;
-    a.download = "pageData.json"; // Set the filename for the download
+    a.download = `${title}.json`; // Set the filename for the download
     a.click(); // Programmatically click the anchor to trigger the download
 
     // Release the object URL after triggering the download
@@ -60,23 +60,27 @@ const SaveWheelLocally = ({ segmentsData }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
+    <div className="flex flex-col items-center justify-center py-2">
       {/* <button
         className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none"
         onClick={handleOpenModal}
       >
         Save Wheel Locally
       </button> */}
-      <Tooltip text="Download Wheel">
         <Button
           size={"lg"}
-          className="mx-1 p-3 rounded-md focus:outline-none"
+          className="mr-1 p-3 rounded-md text-sm focus:outline-none"
           onClick={handleOpenModal}
           disabled={isSaving}
         >
-          {isSaving ? <span>Downloading...</span> : <FaDownload size={20} />}
+          {isSaving ? (
+            <span>Downloading...</span>
+          ) : (
+            <>
+              Download <FaDownload size={15} className="ml-1" />
+            </>
+          )}
         </Button>
-      </Tooltip>
       {/* Modal for title and description input */}
       {isModalOpen && (
         <div className="z-10 fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">

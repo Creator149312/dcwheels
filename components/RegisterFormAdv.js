@@ -8,7 +8,7 @@ import {
   validatePassword,
   validateUsername,
 } from "@utils/Validator";
-import { registerUser } from "@components/actions/actions"
+import { registerUser } from "@components/actions/actions";
 import toast from "react-hot-toast";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -75,8 +75,9 @@ export default function RegisterFormAdv() {
   };
 
   return (
-    <Card className="text-center max-w-md mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4 text-center">Register</h1>
+    <div className="flex items-center justify-center min-h-screen">
+      <Card className="text-center max-w-md mx-auto p-4 ">
+        <h1 className="text-3xl font-bold mb-4 text-center">Register</h1>
         <form action={validateFormAdv} className="max-w-md mx-auto p-4">
           <div>
             <label htmlFor="username">Username:</label>
@@ -114,18 +115,20 @@ export default function RegisterFormAdv() {
             />
             {errors.password && <p className="error">{errors.password}</p>}
           </div>
-          <Button size={"lg"} variant={"default"} className="p-3">Register</Button>
+          <Button size={"lg"} variant={"default"} className="p-3">
+            Register
+          </Button>
           {/* {error && <Notification message={error} state={"failed"} />} */}
           {isRegistering && (
             <p>Checking Details and Creating Your Account...</p>
           )}
           <div className="p-2">
-          <Link className="text-sm mt-3 text-right" href={"/login"}>
-            Already have an account? <span className="underline">Login</span>
-          </Link>
+            <Link className="text-sm mt-3 text-right" href={"/login"}>
+              Already have an account? <span className="underline">Login</span>
+            </Link>
           </div>
         </form>
       </Card>
-
+    </div>
   );
 }

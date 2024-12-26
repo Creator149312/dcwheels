@@ -38,12 +38,19 @@ const Navbar = () => {
           </div>
         </div>
         <ul className="z-10 md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
-        <li>
+          <li>
+            <a
+              href="/"
+              className="inline-flex align-middle items-center text-lg"
+            >
+            New Wheel +
+            </a>
+          </li>
+          <li>
             <a
               href="/wheels"
               className="inline-flex align-middle items-center text-lg"
             >
-             
               All Wheels
             </a>
           </li>
@@ -82,10 +89,17 @@ const Navbar = () => {
           {/* <NavLinks setOpen={setOpen} /> */}
           <li>
             <a
+              href="/"
+              className="inline-flex align-middle items-center text-lg"
+            >
+            New Wheel +
+            </a>
+          </li>
+          <li>
+            <a
               href="/wheels"
               className="inline-flex align-middle items-center text-lg"
             >
-             
               All Wheels
             </a>
           </li>

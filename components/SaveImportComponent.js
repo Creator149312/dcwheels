@@ -8,19 +8,15 @@ import ImportLocalWheel from "./ImportLocalWheel";
 const SaveImportComponent = ({ onImport, segments }) => {
   const { status, data: session } = useSession();
   return (
-    <div className="flex flex-row justify-between items-center gap-4">
+    <div className="flex flex-wrap justify-between items-center gap-x-0.5">
       {/* Save Button */}
       {session !== null ? (
         <>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap">
             {/* Save on Cloud Button */}
             <SaveWheelLocally segmentsData={segments} />
-
             {/* Save on Cloud Button */}
             <SaveWheelBtn segmentsData={segments} />
-          </div>
-
-          <div className="flex gap-4">
             <ImportLocalWheel afterImport={onImport} />
           </div>
         </>

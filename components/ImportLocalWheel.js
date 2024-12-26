@@ -2,11 +2,10 @@
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useContext, useState } from "react";
 import { FaUpload } from "react-icons/fa";
-import Tooltip from "./Tooltip";
 
 const ImportLocalWheel = ({ afterImport }) => {
   const [error, setError] = useState(null);
-  const { html } = useContext(SegmentsContext);
+  const { html, setWheelData } = useContext(SegmentsContext);
 
   // Handle importing JSON file
   const handleImport = (e) => {
@@ -22,6 +21,8 @@ const ImportLocalWheel = ({ afterImport }) => {
           html.current = importedData.data
             .map((perSegData) => `<div>${perSegData}</div>`)
             .join("");
+
+          setWheelData(importedData.wheelData);
         } catch (error) {
           setError("Invalid JSON file. Please upload a valid JSON.");
         }
@@ -33,15 +34,17 @@ const ImportLocalWheel = ({ afterImport }) => {
   };
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center py-2">
       <label
         htmlFor="file-upload"
-        className="cursor-pointer mx-1 bg-gray-900 dark:bg-slate-200 dark:text-black text-white p-3 rounded-md hover:bg-gray-900 focus:outline-none"
+        className="flex h-10 items-center mx-1 text-sm font-medium cursor-pointer bg-gray-900 dark:bg-slate-200 dark:text-black text-white p-3 rounded-md hover:bg-gray-900 focus:outline-none"
       >
         {error ? (
           <span className="text-red-500">{error}</span>
         ) : (
-          <FaUpload size={20} />
+          <>
+            Import <FaUpload size={15} className="ml-1" />
+          </>
         )}
       </label>
       <input
@@ -51,7 +54,7 @@ const ImportLocalWheel = ({ afterImport }) => {
         onChange={handleImport}
         className="hidden"
       />
-    </>
+    </div>
   );
 };
 

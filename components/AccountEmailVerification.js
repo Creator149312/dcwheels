@@ -7,7 +7,7 @@ import Link from "next/link";
 
 const AccountEmailVerification = () => {
   const [error, setError] = useState(undefined);
-  const [success, setSuccess] = useState(undefined);
+  const [success, setSuccess] = useState(true);
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -42,19 +42,27 @@ const AccountEmailVerification = () => {
 
   return (
     <>
-      <div className="text-center">
-      <h1 className="text-3xl font-bold text-center">
-        Checking Your Email, Please Wait!
-      </h1>
-        {error && <div>{error}</div>}
-        {success && (
-          <>
-            <div className="text-lg">Your Email verified Successfully, Please login!</div>
-            <Link href="/login">
-              <Button> Login to Continue</Button>
-            </Link>
-          </>
-        )}
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-4 rounded shadow-lg">
+          <h1 className="text-3xl font-bold text-center">
+            Checking Your Email, Please Wait!
+          </h1>
+          {error && (
+            <div className="text-red-500">{error}</div>
+          )}
+          {success && (
+            <>
+              <div className="text-lg">
+                Your Email verified Successfully, Please login!
+              </div>
+              <Link href="/login">
+                <Button className="mt-4 px-4 py-2 rounded">
+                  Login to Continue
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </>
   );

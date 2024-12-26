@@ -114,15 +114,15 @@ export default function SaveWheelBtn({ segmentsData }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-center py-2">
         <Tooltip text="Save Wheel on Cloud" >
         <Button
           size={"lg"}
           variant={"default"}
           disabled={isSaving}
-          className="mx-1 p-3 rounded-md focus:outline-none"
+          className="mx-1 p-2 text-sm rounded-md focus:outline-none"
         >
-          {isSaving ? "Saving..." : <FaCloudUploadAlt size={20} />}
+          {isSaving ? "Saving..." : <>Save<FaCloudUploadAlt size={20} className="ml-1"/></>}
         </Button>
         </Tooltip>
         </div>

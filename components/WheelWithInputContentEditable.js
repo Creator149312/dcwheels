@@ -11,29 +11,16 @@ const Wheel = dynamic(
 );
 import FireworksConfetti from "@components/FireworksConfetti";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
-import SaveWheelBtn from "./SaveWheelBtn";
 import { useSession } from "next-auth/react";
 import ContentEditableDivResult from "./ContentEditableDivResult";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
-import SaveWheelLocally from "./SaveWheelLocally";
-import ImportLocalWheel from "./ImportLocalWheel";
 import SaveImportComponent from "./SaveImportComponent";
-
-const processString = (str) => {
-  const first15Chars = str.substring(0, 15); // Get the first 15 characters
-  let variableValue = 36;
-
-  if (str.length > 10) {
-    variableValue -= (str.length - 10) * 3; // Decrease by 3 for each character beyond 10
-    variableValue = Math.max(variableValue, 0); // Ensure it doesn't go below 0
-  }
-
-  return {
-    first15Chars,
-    variableValue,
-  };
-};
+import ScrollableSegmentsEditor from "./ScrollableSegmentsEditor";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Settings from "./Settings";
+import { AiOutlineClose, AiOutlineFullscreen } from "react-icons/ai"; // Import the necessary icons
+import Tooltip from "./Tooltip";
 
 const prepareData = (segData, colData, maxlengthOfSegmentText) => {
   const result = [];
@@ -50,6 +37,7 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
         option: seg,
         style: { backgroundColor: col },
         image: { uri: imgUrl, sizeMultiplier: 0.5 },
+        optionSize: 1,
       });
     } else {
       result.push({
@@ -57,6 +45,7 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
           seg.substring(0, maxlengthOfSegmentText) +
           (seg.length > maxlengthOfSegmentText ? ".." : ""),
         style: { backgroundColor: col },
+        optionSize: 1,
       });
     }
   }
@@ -71,22 +60,9 @@ const prepareData = (segData, colData, maxlengthOfSegmentText) => {
       ];
 };
 
-// const segTempData = ["Eighty-nine", "Ninety", "Ninety-one", "Ninety-two", "Ninety-three", "Ninety-four", "Ninety-five", "Ninety-six", "Ninety-seven", "Ninety-eight", "Ninety-nine", "One hundred", "Sources and related content", "Ram", "Paul", "Siya", "Duke", `<img src="/spin-wheel-logo.png" alt="logo" />`, `<img  src="/spin-wheel-logo.png" alt="logo" />`];
-const segColors = [
-  "#EE4040",
-  "#F0CF50",
-  "#815CD1",
-  "#3DA5E0",
-  "#34A24F",
-  "#F9AA1F",
-  "#EC3F3F",
-  "#FF9000",
-];
-
 const WheelWithInputContentEditable = ({ newSegments }) => {
-  const maxSpinDuration = 0.9;
-  const minSpinDuration = 0.35;
-  const { resultList, setResultList } = useContext(SegmentsContext);
+  const { resultList, setResultList, wheelData, data, setData } =
+    useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   const { status, data: session } = useSession();
   // using the following prizeNumber causes error due to newSegments when wheel is imported.
@@ -96,6 +72,8 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
   const [segData, setSegData] = useState(newSegments);
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
+  const [advancedOptions, setadvancedOptions] = useState(false);
+
   let maxlengthOfSegmentText = Math.min(
     segData.reduce((acc, word) => {
       return word.length > acc.length ? word : acc;
@@ -107,37 +85,89 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
     42
   );
 
-  let data = prepareData(segData, segColors, maxlengthOfSegmentText);
-
   const handleSpinClick = () => {
     if (!mustSpin) {
       setMustSpin(true);
       // setShowCelebration(false);
+
+      let newPrizeNumber = advancedOptions
+        ? pickRandomWinner()
+        : Math.floor(Math.random() * data.length);
+      // console.log("Prize Number = ", newPrizeNumber);
+      setPrizeNumber(newPrizeNumber);
+    }
+  };
+
+  // Function to pick a random element based on weights
+  const pickRandomWinner = () => {
+    const totalWeight = data.reduce(
+      (sum, element) => sum + parseInt(element.optionSize),
+      0
+    );
+    // console.log("Total Weight = ", totalWeight);
+
+    // Generate a random number between 0 and totalWeight
+    const randomValue = Math.floor(Math.random() * totalWeight);
+
+    let cumulativeWeight = 0;
+    for (let i = 0; i < data.length; i++) {
+      cumulativeWeight += parseInt(data[i].optionSize);
+      if (randomValue < cumulativeWeight) {
+        // console.log(`${randomValue} and ${cumulativeWeight} and ${i}`);
+        return i;
+      }
     }
   };
 
   useEffect(() => {
-    setPrizeNumber( Math.floor(Math.random() * newSegments.length));
+    setPrizeNumber(Math.floor(Math.random() * newSegments.length));
+    setData(prepareData(segData, wheelData.segColors, maxlengthOfSegmentText));
+    // setadvancedOptions(true);
   }, []);
 
   useEffect(() => {
-    data = prepareData(segData, segColors, maxlengthOfSegmentText);
-  }, [segData]);
+    // console.log("Updating Data with colors ", wheelData.segColors);
+    // console.log("Updating Data with spinduration ", wheelData.spinDuration);
+    if (!advancedOptions)
+      setData(
+        prepareData(segData, wheelData.segColors, maxlengthOfSegmentText)
+      );
+  }, [segData, wheelData]);
 
   useEffect(() => {
-    if (!mustSpin) {
-      if (winner !== "" && winner !== undefined) {
-        let newPrizeNumber = Math.floor(Math.random() * data.length);
-        setPrizeNumber(newPrizeNumber);
-        setResultList([...resultList, winner]);
-      }
+    if (winner !== "" && winner !== undefined) {
+      setResultList([...resultList, winner]);
     }
-  }, [winner, mustSpin]);
+  }, [winner]);
+
+  const [isVisible, setIsVisible] = useState(true); // state to control visibility
+
+  const toggleVisibility = () => {
+    setIsVisible((prevState) => !prevState); // toggle the state between true and false
+  };
+
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Function to handle toggling full screen mode
+  const handleToggle = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
+  // Function to handle canceling full screen mode
+  const handleCancel = () => {
+    setIsFullScreen(false);
+  };
 
   return (
     <>
       <div className="grid lg:grid-cols-12 gap-x-2">
-        <div className="bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto">
+        <div
+          className={`bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
+            isFullScreen
+              ? "absolute top-0 left-0 w-screen h-screen flex flex-col justify-center items-center"
+              : "relative"
+          }`}
+        >
           <WinnerPopup
             winner={winner}
             setWinner={setWinner}
@@ -146,7 +176,12 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             setShowCelebration={setShowCelebration}
             mustSpin={mustSpin}
           />
-          <div onClick={handleSpinClick} className="min-h-96 sm:h-[450px]">
+          <div
+            onClick={handleSpinClick}
+            className={`${
+              isFullScreen ? "sm:h-screen mt-10" : "min-h-96 sm:h-[450px]"
+            }`}
+          >
             <Wheel
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber}
@@ -165,12 +200,9 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               innerBorderWidth={4}
               innerBorderColor="white"
               fontWeight={"normal"}
-              disableInitialAnimation="true"
-              spinDuration={
-                // Math.random() * (maxSpinDuration - minSpinDuration) +
-                // minSpinDuration
-                0.6
-              }
+              disableInitialAnimation={"false"}
+              spinDuration={wheelData.spinDuration}
+              startingOptionIndex={prizeNumber}
               fontSize={segTxtfontSize}
               pointerProps={{
                 src: "/smallredpointer.png",
@@ -183,9 +215,36 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               }}
             />
           </div>
+          {/* Button to Handle FullScreen Toggle */}
+          {/* <button
+            onClick={handleToggle}
+            className={
+              isFullScreen
+                ? `absolute top-12 right-12 text-3xl bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-2 focus:outline-none transition`
+                : `absolute top-0 right-0 text-3xl bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-2 focus:outline-none transition`
+            }
+          >
+            {isFullScreen ? (
+              <AiOutlineClose className="text-2xl text-gray-900 dark:text-white" /> // Close icon
+            ) : (
+              <AiOutlineFullscreen className="text-2xl text-gray-900 dark:text-white" /> // Fullscreen expand icon
+            )}
+          </button> */}
         </div>
-        <div className="bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 shadow-md">
-          <Tabs defaultValue="list">
+        <div
+          className={`${
+            isFullScreen
+              ? "hidden"
+              : "bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 shadow-md"
+          }`}
+        >
+          <Tabs
+            defaultValue="list"
+            style={{
+              opacity: mustSpin ? 0.5 : 1, // Reduced opacity when isVisible is true
+              pointerEvents: mustSpin ? "none" : "auto", // Disable pointer events when isVisible is true
+            }}
+          >
             <TabsList className="w-full">
               <TabsTrigger value="list">
                 List <span className="ml-2">{segData.length}</span>
@@ -196,11 +255,51 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
                   {resultList.length === 0 ? 0 : resultList.length}
                 </span>
               </TabsTrigger>
+              <Tooltip text={isVisible ? "Hide Editor" : "Show Editor"} >
+              <Button
+                onClick={toggleVisibility}
+                className="mx-1 my-1 py-0 h-7 text-xs"
+              >
+                {isVisible ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+              </Button>
+              </Tooltip>
+
+              <Settings />
             </TabsList>
-            <TabsContent value="list">
-              <ContentEditableDiv segData={segData} setSegData={setSegData} />
+            <TabsContent
+              value="list"
+              style={{ display: isVisible ? "block" : "none" }}
+            >
+              {/* For Advanced Editor Selection */}
+              {/* <div className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  id="advanced-options"
+                  checked={advancedOptions}
+                  onChange={() => {
+                    setadvancedOptions(!advancedOptions);
+                  }}
+                  className="mr-2"
+                />
+                <label htmlFor="advanced-options" className="text-xs">
+                  Advanced Editor{" "}
+                  <FaPencilRuler size={20} className="ml-1 inline" />
+                </label>
+              </div> */}
+              {advancedOptions ? (
+                <ScrollableSegmentsEditor
+                  dataSegments={data}
+                  setSegmentsData={setData}
+                  setSegTxtData={setSegData}
+                />
+              ) : (
+                <ContentEditableDiv segData={segData} setSegData={setSegData} />
+              )}
             </TabsContent>
-            <TabsContent value="result">
+            <TabsContent
+              value="result"
+              style={{ display: isVisible ? "block" : "none" }}
+            >
               <ContentEditableDivResult resultList={resultList} />
             </TabsContent>
           </Tabs>

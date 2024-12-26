@@ -1,0 +1,27 @@
+{
+  "colorSettings": [
+    { "color": "#3369E8", "enabled": true },
+    { "color": "#D50F25", "enabled": true },
+    { "color": "#EEB211", "enabled": true },
+    { "color": "#009925", "enabled": true },
+    { "color": "#000000", "enabled": false },
+    { "color": "#000000", "enabled": false }
+  ],
+  "description": "",
+  "entries": [
+    { "text": "Ali" },
+    { "text": "Beatriz" },
+    { "text": "Charles" },
+    { "text": "Diya" },
+    { "text": "Eric" },
+    { "text": "Fatim" },
+    { "text": "Hanna" },
+    { "text": "Victor" },
+    { "text": "Albert" }
+  ],
+  "isAdvanced": false,
+  "maxDivs": 10,
+  "pageBackgroundColor": "#FFFFFF",
+  "showTitle": true,
+  "title": "simple"
+}

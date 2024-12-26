@@ -3,12 +3,24 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import ContentEditable from "react-contenteditable";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
-import { FaRandom, FaSortAlphaDown } from "react-icons/fa";
+import {
+  FaFileImage,
+  FaFileUpload,
+  FaPencilRuler,
+  FaRandom,
+  FaSortAlphaDown,
+  FaUpload,
+} from "react-icons/fa";
+import Settings from "./Settings";
 
-const ContentEditableDiv = ({ segData, setSegData }) => {
+const ContentEditableDiv = ({
+  segData,
+  setSegData,
+}) => {
   const { html } = useContext(SegmentsContext);
   const [imageSrc, setImageSrc] = useState(null);
   const editableDivRef = useRef(null);
+  let error = "";
 
   //this is used to set initial Value of segData to html.current
   html.current =
@@ -138,30 +150,40 @@ const ContentEditableDiv = ({ segData, setSegData }) => {
     setSegData(refactorDataFromHTML(masterDiv.innerHTML));
   };
 
-  // useEffect(() => {
-  //   setSegData(refactorDataFromHTML(html));
-  // }, [imageSrc]);
-
-  // useEffect(() => {
-  //   html.current = segData
-  //   .map((perSegData) => `<div>${perSegData}</div>`)
-  //   .join("");
-
-  //   setSegData(refactorDataFromHTML(html));
-  // }, []);
-
   return (
     <>
-      <div className="">
-        {/* <input type="file" onChange={handleImageUpload} className="cursor-pointer my-1 rounded border border-solid border-secondary-500 bg-transparent bg-clip-padding px-3 py-[0.32rem] text-xs font-normal text-surface transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:me-3 file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-e file:border-solid file:border-inherit file:bg-transparent file:px-3  file:py-[0.32rem] file:text-surface focus:border-primary focus:text-gray-700 focus:shadow-inset focus:outline-none dark:border-white/70 dark:text-white  file:dark:text-white"/> */}
+      <div className="flex flex-wrap">
+        <div className="flex gap-4">
+          <label
+            htmlFor="image-upload"
+            className="my-1 py-0 h-7 text-xs cursor-pointer mx-1 bg-primary text-primary-foreground hover:bg-primary/90 dark:text-black p-3 rounded-md focus:outline-none flex items-center"
+          >
+            {error ? (
+              <span className="text-red-500">{error}</span>
+            ) : (
+              <>
+                Add Image
+                <FaFileImage size={20} className="ml-1" />
+              </>
+            )}
+          </label>
+          <input
+            id="image-upload"
+            type="file"
+             accept="image/jpeg, image/png, image/jpg, image/gif, image/webp"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </div>
+
         <Button
           onClick={shuffleSegments}
           className="mx-1 my-1 py-0 h-7 text-xs"
         >
-          <FaRandom size={20} />
+          Shuffle <FaRandom size={20} className="ml-1" />
         </Button>
         <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">
-        <FaSortAlphaDown size={20} />
+          Sort <FaSortAlphaDown size={20} className="ml-1" />
         </Button>
       </div>
       <ContentEditable

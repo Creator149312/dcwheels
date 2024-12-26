@@ -40,7 +40,6 @@ function UserProfileDropDown(props) {
       <div className={`top-12 px-5 absolute bg-white border-2 shadow-lg flex ${open ? "block" : "hidden"}`}>
         <ul>
           <li className="my-4">{props.name}</li>
-          <DropdownItem url={"/"} text={"New Wheel +"} />
           <DropdownItem url={"/dashboard"} text={"Dashboard"} />
           {/* <DropdownItem url={"/settings"} text={"Settings"} /> */}
           <li className="dropdownItem">

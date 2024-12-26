@@ -78,8 +78,8 @@ export default function LoginFormAdv() {
   };
 
   return (
-    <div className="text-center">
-      <Card className="max-w-md mx-auto p-4">
+    <div className="flex items-center justify-center min-h-screen">
+      <Card className="max-w-md mx-auto text-center p-4 rounded shadow-lg">
         <h1 className="text-3xl font-bold mb-4">Login</h1>
         <form onSubmit={handleSubmit} className="">
           <div>
