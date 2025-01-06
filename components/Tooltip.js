@@ -7,7 +7,7 @@ const Tooltip = ({ text, children }) => {
       {children}
 
       {/* Tooltip text */}
-      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-max hidden group-hover:block bg-black text-white text-sm py-1 px-2 rounded-md shadow-lg">
+      <div className="z-10 absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-max hidden group-hover:block bg-black text-white text-sm py-1 px-2 rounded-md shadow-lg">
         {text}
       </div>
     </div>

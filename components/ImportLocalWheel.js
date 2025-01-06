@@ -37,7 +37,7 @@ const ImportLocalWheel = ({ afterImport }) => {
     <div className="flex flex-col items-center justify-center py-2">
       <label
         htmlFor="file-upload"
-        className="flex h-10 items-center mx-1 text-sm font-medium cursor-pointer bg-gray-900 dark:bg-slate-200 dark:text-black text-white p-3 rounded-md hover:bg-gray-900 focus:outline-none"
+        className="flex h-10 items-center ml-1 text-sm font-medium cursor-pointer bg-gray-900 dark:bg-slate-200 dark:text-black text-white p-3 rounded-md hover:bg-gray-900 focus:outline-none"
       >
         {error ? (
           <span className="text-red-500">{error}</span>

@@ -59,11 +59,16 @@ const themes = [
 ];
 
 const Settings = () => {
-  const { handleSpinDurationChange, handleSegColorsChange , wheelData} =
-  useContext(SegmentsContext);
+  const {
+    handleSpinDurationChange,
+    handleSegColorsChange,
+    handleMaxNumberOfOptionsChange,
+    wheelData,
+  } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(themes[0]);
   const [spinDuration, setSpinDuration] = useState(wheelData.spinDuration); // Size default to 1.0 (maximum size)
+  const [maxOptions, setMaxOptions] = useState(wheelData.maxNumberOfOptions);
 
   // Handle theme change
   const handleThemeChange = (theme) => {
@@ -76,6 +81,11 @@ const Settings = () => {
     setSpinDuration(parseFloat(e.target.value));
   };
 
+  // Handle options size change
+  const onMaxOptionsChange = (e) => {
+    setMaxOptions(parseInt(e.target.value));
+  };
+
   // Handle close modal
   const handleClose = () => setIsOpen(false);
 
@@ -83,13 +93,14 @@ const Settings = () => {
   const handleApply = () => {
     // Apply changes here (e.g., set the new theme and spin duration to context or global state)
     handleSpinDurationChange(spinDuration);
+    handleMaxNumberOfOptionsChange(maxOptions);
     setIsOpen(false); // Close the modal after applying changes
   };
 
   return (
     <Tooltip text="Customize Wheel">
       <Button
-        className="mx-1 my-1 py-0 h-7 text-xs"
+        className="my-1 px-2 py-0 h-7 text-xs"
         onClick={() => setIsOpen(true)}
       >
         <FaTools size={20} />
@@ -156,6 +167,26 @@ const Settings = () => {
               <div className="flex justify-between text-sm mt-2">
                 <span>Fast</span>
                 <span>Slow</span>
+              </div>
+            </div>
+
+            {/* Range Input for Size Adjustment */}
+            <div className="mt-4">
+              <h3 className="text-lg font-medium">
+                Max number of Options on Wheel - {maxOptions}
+              </h3>
+              <input
+                type="range"
+                min="4"
+                max="100"
+                step="1"
+                value={maxOptions}
+                onChange={onMaxOptionsChange}
+                className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
+              />
+              <div className="flex justify-between text-sm mt-2">
+                <span>4</span>
+                <span>100</span>
               </div>
             </div>
             {/* Cancel and Apply Buttons */}

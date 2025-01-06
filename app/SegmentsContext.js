@@ -18,7 +18,8 @@ export const SegmentsProvider = ({ children }) => {
       "#EC3F3F",
       "#FF9000",
     ],
-    spinDuration: 0.5
+    spinDuration: 0.5,
+    maxNumberOfOptions: 100, //this is max number of options to show on wheel
   });
   const [data, setData] = useState([]);
   const [segments, setSegments] = useState([]);
@@ -32,6 +33,10 @@ export const SegmentsProvider = ({ children }) => {
 
   const handleSegColorsChange = (newColorTheme) => {
     setWheelData({ ...wheelData, segColors: newColorTheme });
+  }
+
+  const handleMaxNumberOfOptionsChange = (newMax) =>{
+    setWheelData({ ...wheelData, maxNumberOfOptions: newMax });
   }
 
   return (
@@ -48,7 +53,8 @@ export const SegmentsProvider = ({ children }) => {
         wheelData,
         handleSpinDurationChange,
         handleSegColorsChange, 
-        setWheelData
+        setWheelData,
+        handleMaxNumberOfOptionsChange
       }}
     >
       {children}

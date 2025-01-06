@@ -9,7 +9,7 @@ const SaveImportComponent = ({ onImport, segments }) => {
   const { status, data: session } = useSession();
 
   return (
-    <div className="flex flex-wrap justify-between items-center gap-x-0.5">
+    <div className="flex flex-wrap justify-between items-center">
       {/* Save Button */}
       {session !== null ? (
         <>
@@ -24,12 +24,10 @@ const SaveImportComponent = ({ onImport, segments }) => {
       ) : (
         <>
           <p className="my-2 flex justify-center items-center">
-            <a href="/register">
-              <Button className="mx-2" size={"lg"} variant={"default"}>
-                Register Here
-              </Button>
+            <a href="/login" className="underline mx-2">
+              Login
             </a>
-            to Save Your Wheels
+            to save your wheels
           </p>
         </>
       )}

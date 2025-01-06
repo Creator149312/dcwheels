@@ -15,10 +15,19 @@ export async function POST(request) {
     if (vld.length !== 0) error = vld;
 
     if (error.length === 0) {
-      console.log("Inside Processing")
+      // console.log("Inside Processing and Trying to Create Wheel")
       await connectMongoDB();
-      await Wheel.create({ title, description, data, createdBy });
-      return NextResponse.json({ message: "Wheel Created Successfully" });
+      const creationData = await Wheel.create({
+        title,
+        description,
+        data,
+        createdBy,
+      });
+      // console.log("Creation Data", creationData);
+      return NextResponse.json({
+        message: "Wheel Created Successfully",
+        creationID: creationData._id,
+      });
     } else {
       return NextResponse.json({ error });
     }

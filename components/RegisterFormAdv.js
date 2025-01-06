@@ -115,8 +115,15 @@ export default function RegisterFormAdv() {
             />
             {errors.password && <p className="error">{errors.password}</p>}
           </div>
-          <Button size={"lg"} variant={"default"} className="p-3">
-            Register
+          <Button
+            size={"lg"}
+            variant={"default"}
+            className={`p-3 ${
+              isRegistering ? "cursor-not-allowed opacity-50" : ""
+            }`}
+            disabled={isRegistering}
+          >
+            {isRegistering ? "Registering..." : "Register"}
           </Button>
           {/* {error && <Notification message={error} state={"failed"} />} */}
           {isRegistering && (

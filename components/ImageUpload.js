@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { FaImage } from "react-icons/fa";
 
-const ImageUpload = ({ divId, setDivs }) => {
-  const [imageUrl, setImageUrl] = useState(null);
+const ImageUpload = ({ divId, setDivs, currentDivs }) => {
+  // console.log("Div id = ", divId);
+  const [imageUrl, setImageUrl] = useState(currentDivs[divId-1]?.image);
 
   // Handle image upload
   const handleImageUpload = (e) => {

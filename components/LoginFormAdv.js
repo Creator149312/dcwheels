@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import SignInBtn from "@components/SignInBtn"
-import Notification from "@components/Notification"
+import SignInBtn from "@components/SignInBtn";
+import Notification from "@components/Notification";
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -22,7 +22,7 @@ export default function LoginFormAdv() {
 
   const router = useRouter();
 
-  // whenever input changes in input fields 
+  // whenever input changes in input fields
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -38,9 +38,9 @@ export default function LoginFormAdv() {
     let ve = validateEmail(data.email);
     let vp = validatePasswordLength(data.password);
 
-    if(ve.length !== 0) err.email = ve;
-    if(vp.length !== 0) err.password = vp;
-    
+    if (ve.length !== 0) err.email = ve;
+    if (vp.length !== 0) err.password = vp;
+
     return err;
   };
 
@@ -108,13 +108,22 @@ export default function LoginFormAdv() {
             />
             {errors.password && <p className="error">{errors.password}</p>}
             <div>
-            {/* <Link className="m-4 p-2" href={"/reset-password"}>
+              {/* <Link className="m-4 p-2" href={"/reset-password"}>
               Forgot password
             </Link> */}
             </div>
           </div>
           <div className="p-2">
-            <Button size={"lg"} variant={"default"} className="m-2">Login</Button>
+            <Button
+              size={"lg"}
+              variant={"default"}
+              className={`m-2 ${
+                isSigning ? "cursor-not-allowed opacity-50" : ""
+              }`}
+              disabled={isSigning}
+            >
+              {isSigning ? 'Logging...' : 'Login'}
+            </Button>
           </div>
           {isSigning && <p>Checking Your Credentials....</p>}
           {error && (

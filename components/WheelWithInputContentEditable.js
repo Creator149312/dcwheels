@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, use } from "react";
 import ContentEditableDiv from "@components/ContentEditableDiv";
 import WinnerPopup from "@components/WinnerPopup";
 // import { Wheel } from "react-custom-roulette";
@@ -17,52 +17,31 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import SaveImportComponent from "./SaveImportComponent";
 import ScrollableSegmentsEditor from "./ScrollableSegmentsEditor";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  FaEye,
+  FaEyeSlash,
+  FaPencilRuler,
+  FaExpand,
+  FaRegWindowClose,
+} from "react-icons/fa";
 import Settings from "./Settings";
-import { AiOutlineClose, AiOutlineFullscreen } from "react-icons/ai"; // Import the necessary icons
 import Tooltip from "./Tooltip";
-
-const prepareData = (segData, colData, maxlengthOfSegmentText) => {
-  const result = [];
-  const colDataLength = colData.length;
-  for (let i = 0; i < segData.length; i++) {
-    const seg = segData[i];
-    const colIndex = i % colDataLength;
-    const col = colData[colIndex];
-
-    if (seg.includes("<img")) {
-      const regex = /src="([^"]+)"/;
-      const imgUrl = regex.exec(seg)[1];
-      result.push({
-        option: seg,
-        style: { backgroundColor: col },
-        image: { uri: imgUrl, sizeMultiplier: 0.5 },
-        optionSize: 1,
-      });
-    } else {
-      result.push({
-        option:
-          seg.substring(0, maxlengthOfSegmentText) +
-          (seg.length > maxlengthOfSegmentText ? ".." : ""),
-        style: { backgroundColor: col },
-        optionSize: 1,
-      });
-    }
-  }
-
-  return result.length > 0
-    ? result
-    : [
-        {
-          option: "Options",
-          style: { backgroundColor: "#EE4040" },
-        },
-      ];
-};
+import ContentEditableDivImageTest from "./ContentEditableDivImageTest";
+import EditorSwitchWithPopup from "./EditorSwitchWithPopup";
+import ShareButton from "./ShareButton";
+import TabsListOnEditor from "./TabsListOnEditor";
+import { prepareData } from "@utils/HelperFunctions";
+import ShareWheelBtn from "./ShareWheelBtn";
 
 const WheelWithInputContentEditable = ({ newSegments }) => {
-  const { resultList, setResultList, wheelData, data, setData } =
-    useContext(SegmentsContext);
+  const {
+    resultList,
+    setResultList,
+    wheelData,
+    data,
+    setData,
+    html,
+  } = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   const { status, data: session } = useSession();
   // using the following prizeNumber causes error due to newSegments when wheel is imported.
@@ -92,7 +71,12 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
 
       let newPrizeNumber = advancedOptions
         ? pickRandomWinner()
-        : Math.floor(Math.random() * data.length);
+        : Math.floor(
+            Math.random() *
+              (data.length < wheelData.maxNumberOfOptions
+                ? data.length
+                : wheelData.maxNumberOfOptions)
+          );
       // console.log("Prize Number = ", newPrizeNumber);
       setPrizeNumber(newPrizeNumber);
     }
@@ -128,11 +112,8 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
   useEffect(() => {
     // console.log("Updating Data with colors ", wheelData.segColors);
     // console.log("Updating Data with spinduration ", wheelData.spinDuration);
-    if (!advancedOptions)
-      setData(
-        prepareData(segData, wheelData.segColors, maxlengthOfSegmentText)
-      );
-  }, [segData, wheelData]);
+    if (!advancedOptions) setData(prepareData(segData, wheelData.segColors));
+  }, [segData, wheelData, advancedOptions]);
 
   useEffect(() => {
     if (winner !== "" && winner !== undefined) {
@@ -149,7 +130,13 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Function to handle toggling full screen mode
-  const handleToggle = () => {
+  const handleToggleFullScreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
+
     setIsFullScreen(!isFullScreen);
   };
 
@@ -178,14 +165,17 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
           />
           <div
             onClick={handleSpinClick}
-            className={`${
-              isFullScreen ? "sm:h-screen mt-10" : "min-h-96 sm:h-[450px]"
-            }`}
+            className={`${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
           >
             <Wheel
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber}
-              data={data}
+              data={data.slice(
+                0,
+                data.length < wheelData.maxNumberOfOptions
+                  ? data.length
+                  : wheelData.maxNumberOfOptions
+              )}
               textDistance={
                 65 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
               }
@@ -200,9 +190,9 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               innerBorderWidth={4}
               innerBorderColor="white"
               fontWeight={"normal"}
-              disableInitialAnimation={"false"}
+              // disableInitialAnimation={"false"}
               spinDuration={wheelData.spinDuration}
-              startingOptionIndex={prizeNumber}
+              // startingOptionIndex={prizeNumber}
               fontSize={segTxtfontSize}
               pointerProps={{
                 src: "/smallredpointer.png",
@@ -215,21 +205,13 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               }}
             />
           </div>
-          {/* Button to Handle FullScreen Toggle */}
-          {/* <button
-            onClick={handleToggle}
-            className={
-              isFullScreen
-                ? `absolute top-12 right-12 text-3xl bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-2 focus:outline-none transition`
-                : `absolute top-0 right-0 text-3xl bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-2 focus:outline-none transition`
-            }
-          >
-            {isFullScreen ? (
-              <AiOutlineClose className="text-2xl text-gray-900 dark:text-white" /> // Close icon
-            ) : (
-              <AiOutlineFullscreen className="text-2xl text-gray-900 dark:text-white" /> // Fullscreen expand icon
+          <div className="flex items-center space-x-4">
+            {/* <ShareButton segmentsData={segData}/> */}
+            <ShareWheelBtn segmentsData={segData} />
+            {isFullScreen && (
+              <Button onClick={handleToggleFullScreen}> Exit Fullscreen</Button>
             )}
-          </button> */}
+          </div>
         </div>
         <div
           className={`${
@@ -246,46 +228,25 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
             }}
           >
             <TabsList className="w-full">
-              <TabsTrigger value="list">
-                List <span className="ml-2">{segData.length}</span>
-              </TabsTrigger>
-              <TabsTrigger value="result">
-                Result
-                <span className="ml-2">
-                  {resultList.length === 0 ? 0 : resultList.length}
-                </span>
-              </TabsTrigger>
-              <Tooltip text={isVisible ? "Hide Editor" : "Show Editor"} >
-              <Button
-                onClick={toggleVisibility}
-                className="mx-1 my-1 py-0 h-7 text-xs"
-              >
-                {isVisible ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-              </Button>
-              </Tooltip>
-
-              <Settings />
+              <TabsListOnEditor
+                segData={segData}
+                resultList={resultList}
+                isVisible={isVisible}
+                toggleVisibility={toggleVisibility}
+                handleToggle={handleToggleFullScreen}
+                isFullScreen={isFullScreen}
+              />
             </TabsList>
             <TabsContent
               value="list"
               style={{ display: isVisible ? "block" : "none" }}
             >
               {/* For Advanced Editor Selection */}
-              {/* <div className="flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  id="advanced-options"
-                  checked={advancedOptions}
-                  onChange={() => {
-                    setadvancedOptions(!advancedOptions);
-                  }}
-                  className="mr-2"
-                />
-                <label htmlFor="advanced-options" className="text-xs">
-                  Advanced Editor{" "}
-                  <FaPencilRuler size={20} className="ml-1 inline" />
-                </label>
-              </div> */}
+              <EditorSwitchWithPopup
+                advOpt={advancedOptions}
+                setAdvOpt={setadvancedOptions}
+              />
+
               {advancedOptions ? (
                 <ScrollableSegmentsEditor
                   dataSegments={data}
@@ -293,7 +254,11 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
                   setSegTxtData={setSegData}
                 />
               ) : (
-                <ContentEditableDiv segData={segData} setSegData={setSegData} />
+                // <ContentEditableDiv segData={segData} setSegData={setSegData} />
+                <ContentEditableDivImageTest
+                  segData={segData}
+                  setSegData={setSegData}
+                />
               )}
             </TabsContent>
             <TabsContent

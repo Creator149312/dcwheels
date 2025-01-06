@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react';
 import ToggleFullScreen from './ToggleFullScreen';
+import InputTracker from './InputTracker';
 
 const Page = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -52,7 +53,8 @@ const Page = () => {
     //     )}
     //   </div>
     // </div>
-    <ToggleFullScreen />
+    // <ToggleFullScreen />
+    <InputTracker />
   );
 };
 

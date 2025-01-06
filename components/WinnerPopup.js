@@ -75,7 +75,7 @@ const WinnerPopup = ({
           <AlertDialogTitle>The Winner is...</AlertDialogTitle>
           <AlertDialogDescription>
             <span
-              className="font-extrabold text-xl"
+             className={`font-extrabold ${winner ? (winner.length > 50 ? 'text-xl' : 'text-2xl') : 'text-2xl'}`}
               dangerouslySetInnerHTML={{ __html: winner }}
             ></span>
           </AlertDialogDescription>
