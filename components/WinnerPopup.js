@@ -1,20 +1,11 @@
 "use client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@components/ui/alert-dialog";
 import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
+import { Button } from "./ui/button";
 
 const WinnerPopup = ({
   winner,
-  setWinner,
+  prizeNumber,
   segData,
   setSegData,
   setShowCelebration,
@@ -57,8 +48,16 @@ const WinnerPopup = ({
     }
   }
 
-  const removeWinner = () => {
-    let updatedSegData = segData.filter((element) => element !== winner); // Filter out element with value 3
+  const removeWinner = (ifRemoveAll) => {
+    let updatedSegData = null;
+    if (ifRemoveAll) {
+      updatedSegData = segData.filter((element) => element !== winner);
+      // Filter out element with value 3
+    } else {
+      updatedSegData = segData.filter(
+        (element, index) => !(element === winner && index === prizeNumber)
+      );
+    }
     setSegData(updatedSegData);
 
     html.current = updatedSegData
@@ -68,31 +67,80 @@ const WinnerPopup = ({
     setShowCelebration(!open);
   };
 
+  const setImgMaxWidth = (html) => {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const imgs = div.getElementsByTagName("img");
+    Array.from(imgs).forEach((img) => {
+      img.style.width = "100px";
+    });
+    return div.innerHTML;
+  };
+
+  function containsDuplicates(element) {
+    let count = segData.filter((item) => item === element).length;
+    return count > 1;
+  }
+
   return (
-    <AlertDialog open={open}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>The Winner is...</AlertDialogTitle>
-          <AlertDialogDescription>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center ${
+        open ? "block" : "hidden"
+      }`}
+    >
+      <div className="bg-gray-800 bg-opacity-75 fixed inset-0 pointer-events-none"></div>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-11/12 max-w-lg mx-auto p-6 relative z-10">
+        <div className="text-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            The Winner is...
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300">
             <span
-             className={`font-extrabold ${winner ? (winner.length > 50 ? 'text-xl' : 'text-2xl') : 'text-2xl'}`}
-              dangerouslySetInnerHTML={{ __html: winner }}
+              className={`font-extrabold ${
+                winner
+                  ? winner.length > 50
+                    ? "text-xl"
+                    : "text-2xl"
+                  : "text-2xl"
+              }`}
+              dangerouslySetInnerHTML={{ __html: setImgMaxWidth(winner) }}
             ></span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel
+          </p>
+        </div>
+        <div className="flex justify-end space-x-4">
+          <Button
             onClick={() => {
               setOpen(!open);
               setShowCelebration(!open);
             }}
+            variant={"secondary"}
+            className=""
           >
             Close
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={removeWinner}>Remove</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+          <Button
+            onClick={() => {
+              removeWinner(false);
+            }}
+            className=""
+            variant={"destructive"}
+          >
+            Remove
+          </Button>
+          {containsDuplicates(segData[prizeNumber]) && (
+            <Button
+              onClick={() => {
+                removeWinner(true);
+              }}
+              className=""
+              variant={"destructive"}
+            >
+              Remove All Instances
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

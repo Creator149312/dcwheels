@@ -34,7 +34,7 @@ const TabsListOnEditor = ({
         <Tooltip text={isVisible ? "Hide Editor" : "Show Editor"}>
           <Button
             onClick={toggleVisibility}
-            className="my-1 px-2  py-0 h-7 text-xs"
+            className="my-1 px-2 py-0 h-7 text-xs"
           >
             {isVisible ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
           </Button>

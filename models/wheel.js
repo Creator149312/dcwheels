@@ -4,26 +4,22 @@ const wheelSchema = new Schema(
   {
     title: {
       type: String,
-      required: true
+      required: true,
     },
     description: {
       type: String,
-      required: true
+      required: true,
     },
-    data:  {
+    data: {
       type: [String],
       default: [],
-      required: true
+      required: true,
     }, // Array of wordDataObjects
     createdBy: {
       type: String,
-      required: true
-    } //includes email of user who created the list
-    // userId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: 'User',
-    //   required: true
-    // }
+      required: true,
+    },
+    wheelData: { type: Object, default: {} },
   },
   {
     timestamps: true,

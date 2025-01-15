@@ -29,7 +29,7 @@ export default function SaveWheelBtn({ segmentsData }) {
     "What to write I am really busy"
   );
   const createdBy = useSession().data?.user?.email;
-  const { segments, setSegments } = useContext(SegmentsContext);
+  const { segments, setSegments, wheelData } = useContext(SegmentsContext);
 
   const [isSaving, setisSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -75,7 +75,7 @@ export default function SaveWheelBtn({ segmentsData }) {
         headers: {
           "Content-type": "application/json",
         },
-        body: JSON.stringify({ title, description, data, createdBy }),
+        body: JSON.stringify({ title, description, data, createdBy, wheelData }),
       });
 
       let resObj = await res.json();

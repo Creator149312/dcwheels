@@ -13,7 +13,6 @@ export function replaceUnderscoreWithSpace(str) {
   return str.replace(/_/g, " ");
 }
 
-
 export const prepareData = (segData, colData, maxlengthOfSegmentText) => {
   const result = [];
   const colDataLength = colData.length;
@@ -37,8 +36,9 @@ export const prepareData = (segData, colData, maxlengthOfSegmentText) => {
     } else {
       result.push({
         option:
-          seg.substring(0, maxlengthOfSegmentText) +
-          (seg.length > maxlengthOfSegmentText ? ".." : ""),
+          seg.length > maxlengthOfSegmentText
+            ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
+            : seg.substring(0, maxlengthOfSegmentText),
         style: { backgroundColor: col },
         optionSize: 1,
       });
@@ -76,3 +76,31 @@ export function isImageElement(str) {
 
   return { isValid: false, src: null };
 }
+
+//get the wheel data storage in browser localstorage
+export const getWheelData = () => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    console.log("Fetching Wheel Object....");
+    const data = window.localStorage.getItem("wheelObject");
+    return data ? JSON.parse(data) : null;
+  } else {
+    console.log("Local Storage or Window Object Now available");
+    return null;
+  }
+};
+
+export const calculateMaxLengthOfText = (segData) => {
+  return Math.min(
+    segData.reduce((acc, word) => {
+      return word.length > acc.length ? word : acc;
+    }, "").length,
+    18
+  );
+};
+
+export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
+  return Math.min(
+    (32 * Math.PI * Math.PI) / Math.max(segData.length, 1.21 * maxlengthOfSegmentText),
+    45
+  );
+};

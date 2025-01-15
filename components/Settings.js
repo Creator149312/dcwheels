@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AiOutlineClose } from "react-icons/ai"; // Close icon for modal
 import { FaTools } from "react-icons/fa";
 import { Button } from "./ui/button";
@@ -56,7 +56,104 @@ const themes = [
     name: "Tropical Sunset",
     colors: ["#F56B00", "#FF4500", "#FF6347", "#FFD700", "#FF8C00"], // A warm tropical sunset palette with oranges and reds
   },
+  {
+    name: "Argentina",
+    colors: ["#75AADB", "#FFFFFF"], // Light blue and white
+  },
+  {
+    name: "Australia",
+    colors: ["#002868", "#FFFFFF", "#EF3340"], // Blue, white, and red
+  },
+  {
+    name: "Brazil",
+    colors: ["#009C3B", "#FFDF00", "#002776"], // Green, yellow, and blue
+  },
+  {
+    name: "Canada",
+    colors: ["#FF0000", "#FFFFFF"], // Red and white
+  },
+  {
+    name: "China",
+    colors: ["#FF0000", "#FFD700"], // Red and gold
+  },
+  {
+    name: "France",
+    colors: ["#002395", "#FFFFFF", "#ED2939"], // Blue, white, and red
+  },
+  {
+    name: "Germany",
+    colors: ["#000000", "#FFCC00", "#FF0000"], // Black, gold, and red
+  },
+  {
+    name: "India",
+    colors: ["#FF9933", "#FFFFFF", "#138808"], // Orange, white, and green
+  },
+  {
+    name: "Indonesia",
+    colors: ["#FF0000", "#FFFFFF"], // Red and white
+  },
+  {
+    name: "Italy",
+    colors: ["#009246", "#FFFFFF", "#CE2B37"], // Green, white, and red
+  },
+  {
+    name: "Japan",
+    colors: ["#BC002D", "#FFFFFF"], // Red and white
+  },
+  {
+    name: "Republic of Korea",
+    colors: ["#003478", "#FFFFFF", "#C60C30"], // Blue, white, and red
+  },
+  {
+    name: "Mexico",
+    colors: ["#006847", "#FFFFFF", "#CE1126"], // Green, white, and red
+  },
+  {
+    name: "Russia",
+    colors: ["#0039A6", "#FFFFFF", "#D52B1E"], // Blue, white, and red
+  },
+  {
+    name: "Saudi Arabia",
+    colors: ["#006C35", "#FFFFFF"], // Green and white
+  },
+  {
+    name: "South Africa",
+    colors: ["#007847", "#FFC72C", "#EF2B2D", "#000000", "#FFFFFF"], // Green, yellow, red, black, and white
+  },
+  {
+    name: "Turkey",
+    colors: ["#E30A17", "#FFFFFF"], // Red and white
+  },
+  {
+    name: "United Kingdom",
+    colors: ["#00247D", "#FFFFFF", "#CF142B"], // Blue, white, and red
+  },
+  {
+    name: "United States",
+    colors: ["#B22234", "#FFFFFF", "#3C3B6E"], // Red, white, and blue
+  },
+  {
+    name: "European Union",
+    colors: ["#003399", "#FFD700"], // Blue and gold
+  },
+  {
+    name: "Medical Marvel",
+    colors: ["#FFFFFF", "#1E90FF", "#008000"], // White, dodger blue, green
+  },
+  {
+    name: "Corporate Office",
+    colors: ["#000080", "#808080", "#FFFFFF"], // Navy blue, grey, white
+  },
+  {
+    name: "Creative Studio",
+    colors: ["#FFFF00", "#FF00FF", "#00FFFF"], // Yellow, magenta, cyan
+  },
 ];
+
+/**
+ *
+ * @returns a popup window for all the wheel settings like theme, spin duration and max number of segments to show
+ */
 
 const Settings = () => {
   const {
@@ -64,21 +161,23 @@ const Settings = () => {
     handleSegColorsChange,
     handleMaxNumberOfOptionsChange,
     wheelData,
+    MAX_OPTIONS_ON_WHEEL,
+    MAX_SPIN_TIME,
   } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState(themes[0]);
+  const currentTheme = { name: "Current", colors: wheelData.segColors };
+  const [selectedTheme, setSelectedTheme] = useState(currentTheme);
   const [spinDuration, setSpinDuration] = useState(wheelData.spinDuration); // Size default to 1.0 (maximum size)
   const [maxOptions, setMaxOptions] = useState(wheelData.maxNumberOfOptions);
 
   // Handle theme change
   const handleThemeChange = (theme) => {
     setSelectedTheme(theme);
-    handleSegColorsChange(theme.colors);
   };
 
   // Handle size change
   const onSpinDurationChange = (e) => {
-    setSpinDuration(parseFloat(e.target.value));
+    setSpinDuration(parseInt(e.target.value));
   };
 
   // Handle options size change
@@ -92,10 +191,19 @@ const Settings = () => {
   // Handle apply changes
   const handleApply = () => {
     // Apply changes here (e.g., set the new theme and spin duration to context or global state)
-    handleSpinDurationChange(spinDuration);
+    handleSegColorsChange(selectedTheme.colors);
     handleMaxNumberOfOptionsChange(maxOptions);
+    handleSpinDurationChange(spinDuration);
+
     setIsOpen(false); // Close the modal after applying changes
   };
+
+  //this is used when we import a wheel with preset settings
+  useEffect(() => {
+    setMaxOptions(wheelData.maxNumberOfOptions);
+    setSelectedTheme({ name: "Current", colors: wheelData.segColors });
+    setSpinDuration(wheelData.spinDuration);
+  }, [wheelData]);
 
   return (
     <Tooltip text="Customize Wheel">
@@ -124,12 +232,19 @@ const Settings = () => {
               <h3 className="text-lg font-medium">Select Theme</h3>
               <select
                 onChange={(e) => {
-                  const theme = themes.find((t) => t.name === e.target.value);
+                  const theme =
+                    e.target.value === "Current"
+                      ? currentTheme
+                      : themes.find((t) => t.name === e.target.value);
                   handleThemeChange(theme);
                 }}
                 value={selectedTheme.name}
                 className="mt-2 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
               >
+                <option key={currentTheme.name} value={currentTheme.name}>
+                  {" "}
+                  {currentTheme.name}{" "}
+                </option>
                 {themes.map((theme) => (
                   <option key={theme.name} value={theme.name}>
                     {theme.name}
@@ -154,12 +269,14 @@ const Settings = () => {
 
             {/* Range Input for Size Adjustment */}
             <div className="mt-4">
-              <h3 className="text-lg font-medium">Spin Duration</h3>
+              <h3 className="text-lg font-medium">
+                Spin Duration - {spinDuration}
+              </h3>
               <input
                 type="range"
-                min="0.01"
-                max="1.0"
-                step="0.01"
+                min="1"
+                max={MAX_SPIN_TIME}
+                step="1"
                 value={spinDuration}
                 onChange={onSpinDurationChange}
                 className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
@@ -178,7 +295,7 @@ const Settings = () => {
               <input
                 type="range"
                 min="4"
-                max="100"
+                max={MAX_OPTIONS_ON_WHEEL}
                 step="1"
                 value={maxOptions}
                 onChange={onMaxOptionsChange}

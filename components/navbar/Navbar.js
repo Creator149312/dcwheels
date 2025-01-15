@@ -1,20 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import NavLinks from "./NavLinks";
 import ThemeToggle from "@components/ThemeToggle";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
-import SearchBarNav from "@components/SearchNavBar";
 import { HiSearch } from "react-icons/hi";
+import { useRouter, usePathname } from "next/navigation";
+import { Button } from "@components/ui/button";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const { status, data: session } = useSession();
+  const router = useRouter();
+  const currentPath = usePathname();
 
-  // console.log("Data is here \n", session);
+  const handleNewWheelClick = (event) => {
+    event.preventDefault();
+    // Clear the localStorage
+    localStorage.removeItem("wheelObject");
+    // Redirect to the homepage
+    if (currentPath === "/") {
+      window.location.reload();
+    } else router.push("/");
+  };
 
   return (
     <div className="pr-2 pl-2 text-center bg-card text-card-foreground shadow">
@@ -39,12 +48,15 @@ const Navbar = () => {
         </div>
         <ul className="z-10 md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
           <li>
-            <a
-              href="/"
-              className="inline-flex align-middle items-center text-lg"
-            >
-            New Wheel +
-            </a>
+        
+              <a
+                href="/"
+                className="inline-flex align-middle items-center text-lg"
+                onClick={handleNewWheelClick}
+              >
+                New Wheel +
+              </a>
+           
           </li>
           <li>
             <a
@@ -92,7 +104,7 @@ const Navbar = () => {
               href="/"
               className="inline-flex align-middle items-center text-lg"
             >
-            New Wheel +
+              New Wheel +
             </a>
           </li>
           <li>

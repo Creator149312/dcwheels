@@ -6,6 +6,10 @@ export const SegmentsContext = createContext();
 export const SegmentsProvider = ({ children }) => {
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
+  const [wheelTitle, setWheelTitle] = useState("New Wheel");
+  const [wheelDescription , setWheelDescription] = useState("This is a new spinpapa wheel");
+  const MAX_OPTIONS_ON_WHEEL = 100;
+  const MAX_SPIN_TIME = 10;
   //this wheelData will contain the default wheelData that we use
   const [wheelData, setWheelData] = useState({
     segColors: [
@@ -18,8 +22,8 @@ export const SegmentsProvider = ({ children }) => {
       "#EC3F3F",
       "#FF9000",
     ],
-    spinDuration: 0.5,
-    maxNumberOfOptions: 100, //this is max number of options to show on wheel
+    spinDuration: MAX_SPIN_TIME / 2,
+    maxNumberOfOptions: MAX_OPTIONS_ON_WHEEL, //this is max number of options to show on wheel
   });
   const [data, setData] = useState([]);
   const [segments, setSegments] = useState([]);
@@ -27,17 +31,26 @@ export const SegmentsProvider = ({ children }) => {
     "Purple\nView\nViolot\nVulgar\nBowl\nPile"
   );
 
-  const handleSpinDurationChange = (newDuration) => {
-    setWheelData({ ...wheelData, spinDuration: newDuration });
+  const handleSegColorsChange = (newColorTheme) => {
+    setWheelData((prevWheelData) => ({
+      ...prevWheelData,
+      segColors: newColorTheme,
+    }));
   };
 
-  const handleSegColorsChange = (newColorTheme) => {
-    setWheelData({ ...wheelData, segColors: newColorTheme });
-  }
+  const handleMaxNumberOfOptionsChange = (newMax) => {
+    setWheelData((prevWheelData) => ({
+      ...prevWheelData,
+      maxNumberOfOptions: newMax,
+    }));
+  };
 
-  const handleMaxNumberOfOptionsChange = (newMax) =>{
-    setWheelData({ ...wheelData, maxNumberOfOptions: newMax });
-  }
+  const handleSpinDurationChange = (newDuration) => {
+    setWheelData((prevWheelData) => ({
+      ...prevWheelData,
+      spinDuration: newDuration,
+    }));
+  };
 
   return (
     <SegmentsContext.Provider
@@ -52,9 +65,15 @@ export const SegmentsProvider = ({ children }) => {
         setData,
         wheelData,
         handleSpinDurationChange,
-        handleSegColorsChange, 
+        handleSegColorsChange,
         setWheelData,
-        handleMaxNumberOfOptionsChange
+        handleMaxNumberOfOptionsChange,
+        MAX_OPTIONS_ON_WHEEL,
+        MAX_SPIN_TIME,
+        setWheelDescription,
+        setWheelTitle,
+        wheelTitle,
+        wheelDescription
       }}
     >
       {children}

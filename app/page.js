@@ -5,14 +5,18 @@ export default async function Home() {
     <div className="mx-auto">
       <WheelWithInputContentEditable
         newSegments={[
-          "Karna",
-          "Arjun",
+          "Siddharth",
           "Peter",
           "Rob",
           "Ram",
           "Paul",
           "Siya",
-          "Duke",
+          "Livingston",
+          "Wei",
+          "Yang",
+          "Park",
+          "Lee",
+          "Wallace",
         ]}
       />
       <div className="blog-main mt-4 p-3">
@@ -132,18 +136,18 @@ export default async function Home() {
         <p className="mb-3">
           Spin the wheel tool can be used by teachers to engage students and add
           some excitement to learning. It is a virtual wheel that can be spun to
-          determine an outcome, such as name of a student to answer a question, a group
-          for a group project, or a topic for discussion. The wheel can be
-          customized to include names, any options that the teacher desires, making it
-          a versatile tool that can be used in a wide range of educational
-          settings.
+          determine an outcome, such as name of a student to answer a question,
+          a group for a group project, or a topic for discussion. The wheel can
+          be customized to include names, any options that the teacher desires,
+          making it a versatile tool that can be used in a wide range of
+          educational settings.
         </p>
         <p className="mb-3">
           Simply spin the wheel and watch as it comes to a stop on one of the
           options. The outcome is random, making it a fair and impartial way to
           choose a student or a topic. This can help to keep students engaged
-          and motivated, as they never know when their name will be called upon to
-          participate.
+          and motivated, as they never know when their name will be called upon
+          to participate.
         </p>
         <p className="mb-3">
           Spinner wheel can also be used to add an element of gamification to
@@ -193,9 +197,11 @@ export default async function Home() {
           <a href="/wheels/nfl-wheel" className="text-lg underline">
             NFL Wheel
           </a>{" "}
-          and <a href="/wheels/nba-wheel" className="text-lg underline">
+          and{" "}
+          <a href="/wheels/nba-wheel" className="text-lg underline">
             NBA Wheel
-          </a>.
+          </a>
+          .
         </p>
         <h3 className="text-2xl"> Giveaways</h3>
         <p className="mb-3">
@@ -249,25 +255,33 @@ export default async function Home() {
         </p>
         <h3 className="text-2xl">Education</h3>
         <p className="mb-3">
-          It can be used to randomly select student names for participation or to
-          choose the order in which they present their work. Encourages fairness
-          and helps to eliminate any potential for bias in the selection
-          process, making the educational experience more enjoyable for all
-          students involved. Try  <a href="/wheels/alphabet-wheel" className="text-lg underline">
-                  Alphabet Wheel
-                </a> and <a href="/wheels/animal-wheel" className="text-lg underline">
-                  Animal Wheel
-                </a>.
+          It can be used to randomly select student names for participation or
+          to choose the order in which they present their work. Encourages
+          fairness and helps to eliminate any potential for bias in the
+          selection process, making the educational experience more enjoyable
+          for all students involved. Try{" "}
+          <a href="/wheels/alphabet-wheel" className="text-lg underline">
+            Alphabet Wheel
+          </a>{" "}
+          and{" "}
+          <a href="/wheels/animal-wheel" className="text-lg underline">
+            Animal Wheel
+          </a>
+          .
         </p>
         <h3 className="text-2xl">Gaming</h3>
         <p className="mb-3">
-          It can be used to randomly select player name or determine the order in
-          which they play. Adds excitement and unpredictability to the game,
-          making it more enjoyable for everyone involved. Try <a href="/wheels/minecraft-wheel" className="text-lg ">
-                  Minecraft Wheel
-                </a> and <a href="/wheels/fortnite-wheel" className="text-lg ">
-                  Fortnite Wheel
-                </a>.
+          It can be used to randomly select player name or determine the order
+          in which they play. Adds excitement and unpredictability to the game,
+          making it more enjoyable for everyone involved. Try{" "}
+          <a href="/wheels/minecraft-wheel" className="text-lg ">
+            Minecraft Wheel
+          </a>{" "}
+          and{" "}
+          <a href="/wheels/fortnite-wheel" className="text-lg ">
+            Fortnite Wheel
+          </a>
+          .
         </p>
         <h3 className="text-2xl"> Product launches</h3>
         <p className="mb-3">
@@ -281,9 +295,9 @@ export default async function Home() {
         </p>
         <h3 className="text-2xl"> Sales and promotions</h3>
         <p className="mb-3">
-          It can be used to randomly select name of customers for special offers or
-          promotions, which further helps in improving customer satisfaction and
-          effectiveness of sales and marketing efforts.
+          It can be used to randomly select name of customers for special offers
+          or promotions, which further helps in improving customer satisfaction
+          and effectiveness of sales and marketing efforts.
         </p>
         <h3 className="text-2xl"> Community events</h3>
         <p className="mb-3">

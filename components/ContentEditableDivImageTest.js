@@ -1,17 +1,9 @@
 "use client";
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useState, useRef, useContext } from "react";
 import ContentEditable from "react-contenteditable";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
-import {
-  FaFileImage,
-  FaFileUpload,
-  FaPencilRuler,
-  FaRandom,
-  FaSortAlphaDown,
-  FaUpload,
-} from "react-icons/fa";
-import Settings from "./Settings";
+import { FaFileImage, FaRandom, FaSortAlphaDown } from "react-icons/fa";
 import imageCompression from "browser-image-compression";
 
 const ContentEditableDivImageTest = ({ segData, setSegData }) => {
@@ -75,7 +67,7 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
 
     const options = {
       maxSizeMB: 1,
-      maxWidthOrHeight: 100,
+      maxWidthOrHeight: maxWidth,
       useWebWorker: true,
     };
     try {
@@ -188,7 +180,7 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
         <div className="flex gap-4">
           <label
             htmlFor="image-upload"
-            className="my-1 py-0 h-7 text-xs cursor-pointer mx-1 bg-primary text-primary-foreground hover:bg-primary/90 dark:text-black p-3 rounded-md focus:outline-none flex items-center"
+            className="my-1 py-0 h-7 px-2 text-xs cursor-pointer mx-1 bg-primary text-primary-foreground hover:bg-primary/90 dark:text-black p-3 rounded-md focus:outline-none flex items-center"
           >
             {error ? (
               <span className="text-red-500">{error}</span>
@@ -210,11 +202,14 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
 
         <Button
           onClick={shuffleSegments}
-          className="mx-1 my-1 py-0 h-7 text-xs"
+          className="mx-1 my-1 py-0 h-7 text-xs px-2"
         >
           Shuffle <FaRandom size={20} className="ml-1" />
         </Button>
-        <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">
+        <Button
+          onClick={sortSegments}
+          className="mx-1 py-0 px-2 my-1 h-7 text-xs"
+        >
           Sort <FaSortAlphaDown size={20} className="ml-1" />
         </Button>
       </div>

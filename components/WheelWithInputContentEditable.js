@@ -1,7 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useState, useEffect, useContext, use } from "react";
-import ContentEditableDiv from "@components/ContentEditableDiv";
+import { useState, useEffect, useContext } from "react";
 import WinnerPopup from "@components/WinnerPopup";
 // import { Wheel } from "react-custom-roulette";
 // we are not using above import because it causes ReferenceError: window is not defined , workaround is the following import
@@ -17,23 +16,22 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import SaveImportComponent from "./SaveImportComponent";
 import ScrollableSegmentsEditor from "./ScrollableSegmentsEditor";
-import {
-  FaEye,
-  FaEyeSlash,
-  FaPencilRuler,
-  FaExpand,
-  FaRegWindowClose,
-} from "react-icons/fa";
-import Settings from "./Settings";
-import Tooltip from "./Tooltip";
 import ContentEditableDivImageTest from "./ContentEditableDivImageTest";
 import EditorSwitchWithPopup from "./EditorSwitchWithPopup";
-import ShareButton from "./ShareButton";
 import TabsListOnEditor from "./TabsListOnEditor";
-import { prepareData } from "@utils/HelperFunctions";
-import ShareWheelBtn from "./ShareWheelBtn";
+import {
+  prepareData,
+  getWheelData,
+  calculateMaxLengthOfText,
+  calculateFontSizeOfText,
+} from "@utils/HelperFunctions";
+import { usePathname, useRouter } from "next/navigation";
+import SharePopup from "./SharePopup";
 
-const WheelWithInputContentEditable = ({ newSegments }) => {
+const WheelWithInputContentEditable = ({
+  newSegments,
+  wheelPresetSettings,
+}) => {
   const {
     resultList,
     setResultList,
@@ -41,28 +39,30 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
     data,
     setData,
     html,
+    setWheelData,
+    MAX_SPIN_TIME,
+    setWheelDescription,
+    setWheelTitle,
+    wheelTitle,
+    wheelDescription,
   } = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   const { status, data: session } = useSession();
+  const currentPath = usePathname();
+  const router = useRouter();
+  const [localStorageWheel, setLocalStorageWheel] = useState(null);
+  const [prizeNumber, setPrizeNumber] = useState(-1);
   // using the following prizeNumber causes error due to newSegments when wheel is imported.
   // const [prizeNumber, setPrizeNumber] = useState( Math.floor(Math.random() * newSegments.length));
 
-  const [prizeNumber, setPrizeNumber] = useState(0);
-  const [segData, setSegData] = useState(newSegments);
+  const [segData, setSegData] = useState([]);
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
   const [advancedOptions, setadvancedOptions] = useState(false);
-
-  let maxlengthOfSegmentText = Math.min(
-    segData.reduce((acc, word) => {
-      return word.length > acc.length ? word : acc;
-    }, "").length,
-    15
-  );
-  let segTxtfontSize = Math.min(
-    (32 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
-    42
-  );
+  const [isVisible, setIsVisible] = useState(true); // state to control visibility
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
+  const [segTxtfontSize, setSegTxtfontSize] = useState(1);
 
   const handleSpinClick = () => {
     if (!mustSpin) {
@@ -79,6 +79,26 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
           );
       // console.log("Prize Number = ", newPrizeNumber);
       setPrizeNumber(newPrizeNumber);
+    }
+  };
+
+  const saveWheelData = (segData, wheelData) => {
+    // Prepare the page data with user input
+    const wheelObject = {
+      title: wheelTitle || "Default Title", // Default title if no input
+      description: wheelDescription || "Default Description", // Default description if no input
+      data: segData,
+      wheelData: wheelData,
+    };
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem("wheelObject", JSON.stringify(wheelObject));
+        // setLocalStorageWheel(wheelObject);
+        console.log("New Wheel Saved on Browser =", wheelObject);
+      } catch (e) {
+        console.error("Error saving to localStorage", e);
+      }
     }
   };
 
@@ -103,17 +123,148 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
     }
   };
 
-  useEffect(() => {
-    setPrizeNumber(Math.floor(Math.random() * newSegments.length));
-    setData(prepareData(segData, wheelData.segColors, maxlengthOfSegmentText));
-    // setadvancedOptions(true);
-  }, []);
+  // useEffect(() => {
+  //   if (currentPath === "/") {
+  //     //do this when we are in the homepage
+  //     let wheelFromBrowserStorage = getWheelData();
+  //     setLocalStorageWheel(wheelFromBrowserStorage);
+  //     console.log("browser saved wheel = ", wheelFromBrowserStorage);
+
+  //     if (wheelFromBrowserStorage !== null) {
+  //       setSegData(wheelFromBrowserStorage.data);
+  //       setWheelData(wheelFromBrowserStorage.wheelData);
+  //       // maxlengthOfSegmentText = calculateMaxLengthOfText(
+  //       //   wheelFromBrowserStorage.data
+  //       // );
+
+  //       // segTxtfontSize = calculateFontSizeOfText(
+  //       //   maxlengthOfSegmentText,
+  //       //   wheelFromBrowserStorage.data
+  //       // );
+
+  //       setMaxlengthOfSegmentText(
+  //         calculateMaxLengthOfText(wheelFromBrowserStorage.data)
+  //       );
+
+  //       setSegTxtfontSize(
+  //         calculateFontSizeOfText(
+  //           maxlengthOfSegmentText,
+  //           wheelFromBrowserStorage.data
+  //         )
+  //       );
+
+  //       html.current = wheelFromBrowserStorage.data
+  //         .map((perSegData) => `<div>${perSegData}</div>`)
+  //         .join("");
+  //     }
+  //   }
+
+  //   setPrizeNumber(Math.floor(Math.random() * newSegments.length));
+  //   setData(prepareData(segData, wheelData.segColors, maxlengthOfSegmentText));
+  //   // setadvancedOptions(true);
+
+  //   if (wheelPresetSettings !== null && wheelPresetSettings !== undefined)
+  //     setWheelData(wheelPresetSettings);
+  // }, []);
 
   useEffect(() => {
-    // console.log("Updating Data with colors ", wheelData.segColors);
-    // console.log("Updating Data with spinduration ", wheelData.spinDuration);
-    if (!advancedOptions) setData(prepareData(segData, wheelData.segColors));
+    console.log("Inside Parameterized User Effect");
+    if (!advancedOptions) {
+      setData(
+        prepareData(segData, wheelData.segColors, maxlengthOfSegmentText)
+      );
+
+      setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
+
+      setSegTxtfontSize(
+        calculateFontSizeOfText(maxlengthOfSegmentText, segData)
+      );
+
+      console.log("LocalStorageWheelData = ", localStorageWheel);
+      if (localStorageWheel !== null) saveWheelData(segData, wheelData);
+    }
   }, [segData, wheelData, advancedOptions]);
+
+  useEffect(() => {
+    console.log("Inside Blank User Effect");
+    if (currentPath === "/") {
+      //do this when we are in the homepage
+      let wheelFromBrowserStorage = getWheelData();
+      setLocalStorageWheel(wheelFromBrowserStorage);
+      console.log("browser saved wheel = ", wheelFromBrowserStorage);
+
+      if (wheelFromBrowserStorage !== null) {
+        let localSegData = wheelFromBrowserStorage.data;
+        let localWheelData = wheelFromBrowserStorage.wheelData;
+        setSegData(localSegData);
+        setWheelData(localWheelData);
+
+        let initialMaxLength = calculateMaxLengthOfText(localSegData);
+        setMaxlengthOfSegmentText(initialMaxLength);
+
+        setSegTxtfontSize(
+          calculateFontSizeOfText(initialMaxLength, localSegData)
+        );
+
+        setPrizeNumber(Math.floor(Math.random() * localSegData.length));
+        setData(
+          prepareData(
+            localSegData.length,
+            localWheelData.segColors,
+            initialMaxLength
+          )
+        );
+        // setadvancedOptions(true);
+
+        html.current = localSegData
+          .map((perSegData) => `<div>${perSegData}</div>`)
+          .join("");
+      } else {
+        let initialMaxLength = calculateMaxLengthOfText(newSegments);
+        setMaxlengthOfSegmentText(initialMaxLength);
+
+        setSegTxtfontSize(
+          calculateFontSizeOfText(initialMaxLength, newSegments)
+        );
+        setSegData(newSegments);
+        setPrizeNumber(Math.floor(Math.random() * newSegments.length));
+        setData(
+          prepareData(newSegments, wheelData.segColors, maxlengthOfSegmentText)
+        );
+
+        html.current = newSegments
+          .map((perSegData) => `<div>${perSegData}</div>`)
+          .join("");
+        saveWheelData(newSegments, wheelData);
+        // setadvancedOptions(true);
+      }
+    } else {
+      setSegData(newSegments);
+
+      let initialMaxLength = calculateMaxLengthOfText(newSegments);
+      setMaxlengthOfSegmentText(initialMaxLength);
+
+      setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, newSegments));
+      setPrizeNumber(Math.floor(Math.random() * newSegments.length));
+      setData(
+        prepareData(newSegments, wheelData.segColors, maxlengthOfSegmentText)
+      );
+
+      html.current = newSegments
+        .map((perSegData) => `<div>${perSegData}</div>`)
+        .join("");
+
+      if (wheelPresetSettings !== null && wheelPresetSettings !== undefined) {
+        setWheelData(wheelPresetSettings);
+        saveWheelData(newSegments, wheelPresetSettings);
+      } else {
+        saveWheelData(newSegments, wheelData);
+      }
+      // setadvancedOptions(true);
+    }
+    // if (wheelPresetSettings !== null && wheelPresetSettings !== undefined)
+    //   setWheelData(wheelPresetSettings);
+  }, []);
 
   useEffect(() => {
     if (winner !== "" && winner !== undefined) {
@@ -121,13 +272,9 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
     }
   }, [winner]);
 
-  const [isVisible, setIsVisible] = useState(true); // state to control visibility
-
   const toggleVisibility = () => {
     setIsVisible((prevState) => !prevState); // toggle the state between true and false
   };
-
-  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Function to handle toggling full screen mode
   const handleToggleFullScreen = () => {
@@ -157,6 +304,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
         >
           <WinnerPopup
             winner={winner}
+            prizeNumber={prizeNumber}
             setWinner={setWinner}
             segData={segData}
             setSegData={setSegData}
@@ -165,7 +313,8 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
           />
           <div
             onClick={handleSpinClick}
-            className={`${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
+            className={`flex items-center justify-center
+${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
           >
             <Wheel
               mustStartSpinning={mustSpin}
@@ -177,7 +326,8 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
                   : wheelData.maxNumberOfOptions
               )}
               textDistance={
-                65 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
+                // 65 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
+                50 + 0.4 * segData.length
               }
               radiusLineWidth={0}
               outerBorderWidth={0}
@@ -191,7 +341,7 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               innerBorderColor="white"
               fontWeight={"normal"}
               // disableInitialAnimation={"false"}
-              spinDuration={wheelData.spinDuration}
+              spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
               // startingOptionIndex={prizeNumber}
               fontSize={segTxtfontSize}
               pointerProps={{
@@ -207,12 +357,16 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
           </div>
           <div className="flex items-center space-x-4">
             {/* <ShareButton segmentsData={segData}/> */}
-            <ShareWheelBtn segmentsData={segData} />
-            {isFullScreen && (
+            {/* <ShareWheelBtn segmentsData={segData} /> */}
+            <SharePopup url={currentPath} />
+            {isFullScreen ? (
               <Button onClick={handleToggleFullScreen}> Exit Fullscreen</Button>
+            ) : (
+              <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
           </div>
         </div>
+
         <div
           className={`${
             isFullScreen
@@ -220,58 +374,71 @@ const WheelWithInputContentEditable = ({ newSegments }) => {
               : "bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 shadow-md"
           }`}
         >
-          <Tabs
-            defaultValue="list"
-            style={{
-              opacity: mustSpin ? 0.5 : 1, // Reduced opacity when isVisible is true
-              pointerEvents: mustSpin ? "none" : "auto", // Disable pointer events when isVisible is true
-            }}
-          >
-            <TabsList className="w-full">
-              <TabsListOnEditor
-                segData={segData}
-                resultList={resultList}
-                isVisible={isVisible}
-                toggleVisibility={toggleVisibility}
-                handleToggle={handleToggleFullScreen}
-                isFullScreen={isFullScreen}
-              />
-            </TabsList>
-            <TabsContent
-              value="list"
-              style={{ display: isVisible ? "block" : "none" }}
-            >
-              {/* For Advanced Editor Selection */}
-              <EditorSwitchWithPopup
-                advOpt={advancedOptions}
-                setAdvOpt={setadvancedOptions}
-              />
+          {currentPath === "/" ? (
+            <>
+              <Tabs
+                defaultValue="list"
+                style={{
+                  opacity: mustSpin ? 0.5 : 1, // Reduced opacity when isVisible is true
+                  pointerEvents: mustSpin ? "none" : "auto", // Disable pointer events when isVisible is true
+                }}
+              >
+                <TabsList className="w-full">
+                  <TabsListOnEditor
+                    segData={segData}
+                    resultList={resultList}
+                    isVisible={isVisible}
+                    toggleVisibility={toggleVisibility}
+                    handleToggle={handleToggleFullScreen}
+                    isFullScreen={isFullScreen}
+                  />
+                </TabsList>
+                <TabsContent
+                  value="list"
+                  style={{ display: isVisible ? "block" : "none" }}
+                >
+                  {/* For Advanced Editor Selection */}
+                  <EditorSwitchWithPopup
+                    advOpt={advancedOptions}
+                    setAdvOpt={setadvancedOptions}
+                  />
 
-              {advancedOptions ? (
-                <ScrollableSegmentsEditor
-                  dataSegments={data}
-                  setSegmentsData={setData}
-                  setSegTxtData={setSegData}
-                />
-              ) : (
-                // <ContentEditableDiv segData={segData} setSegData={setSegData} />
-                <ContentEditableDivImageTest
-                  segData={segData}
-                  setSegData={setSegData}
-                />
-              )}
-            </TabsContent>
-            <TabsContent
-              value="result"
-              style={{ display: isVisible ? "block" : "none" }}
+                  {advancedOptions ? (
+                    <ScrollableSegmentsEditor
+                      dataSegments={data}
+                      setSegmentsData={setData}
+                      setSegTxtData={setSegData}
+                    />
+                  ) : (
+                    // <ContentEditableDiv segData={segData} setSegData={setSegData} />
+                    <ContentEditableDivImageTest
+                      segData={segData}
+                      setSegData={setSegData}
+                    />
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="result"
+                  style={{ display: isVisible ? "block" : "none" }}
+                >
+                  <ContentEditableDivResult resultList={resultList} />
+                </TabsContent>
+              </Tabs>
+              <div>
+                <SaveImportComponent segments={segData} onImport={setSegData} />
+              </div>
+              {showCelebration && <FireworksConfetti />}
+            </>
+          ) : (
+            <Button
+              onClick={(e) => {
+                saveWheelData(segData, wheelData);
+                if (currentPath !== "/") router.push("/");
+              }}
             >
-              <ContentEditableDivResult resultList={resultList} />
-            </TabsContent>
-          </Tabs>
-          <div>
-            <SaveImportComponent segments={segData} onImport={setSegData} />
-          </div>
-          {showCelebration && <FireworksConfetti />}
+              Copy and Edit
+            </Button>
+          )}
         </div>
       </div>
     </>

@@ -7,6 +7,7 @@ import { HiOutlineEye } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import apiConfig from "@utils/ApiUrlConfig";
 import { Card } from "./ui/card";
+import SharePopup from "./SharePopup";
 
 export default function WordLists({ createdBy }) {
   const [data, setData] = useState([]);
@@ -20,7 +21,7 @@ export default function WordLists({ createdBy }) {
         const response = await fetch(
           `${apiConfig.apiUrl}/wheel/user/${createdBy}`,
           { cache: "no-store" }
-        ); 
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch lists");
@@ -40,8 +41,16 @@ export default function WordLists({ createdBy }) {
 
   return (
     <div>
-      {isLoading && <div className="flex justify-center items-center"><p className="text-xl font-bold m-2">Fetching Your Wheels ...</p></div>}
-      {error && <div className="flex justify-center items-center"><p className="text-xl font-bold m-2">Failed to Load Your Wheels</p></div>}
+      {isLoading && (
+        <div className="flex justify-center items-center">
+          <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>
+        </div>
+      )}
+      {error && (
+        <div className="flex justify-center items-center">
+          <p className="text-xl font-bold m-2">Failed to Load Your Wheels</p>
+        </div>
+      )}
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (
@@ -54,13 +63,14 @@ export default function WordLists({ createdBy }) {
               <div>{item.data.length} Words</div>
             </div>
             <div className="flex items-center">
-              <Link href={`/uwheels/${item._id}`} className="p-2">
+              <Link href={`/uwheels/${item._id}`} className="m-2">
                 <HiOutlineEye size={24} />
               </Link>
-              <Link href={`/uwheels/${item._id}`} className="p-2">
+              <Link href={`/uwheels/${item._id}`} className="m-2">
                 <HiPencilAlt size={24} />
               </Link>
-              <RemoveListBtn id={item._id} className="p-2" />
+              <SharePopup url={`/uwheels/${item._id}`} buttonVariant="simple"/>
+              <RemoveListBtn id={item._id} className="m-2" />
             </div>
           </Card>
         ))}

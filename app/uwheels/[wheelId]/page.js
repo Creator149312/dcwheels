@@ -88,7 +88,7 @@ export default async function Page({ params }) {
       {wordsList !== null && listerror == null && (
         <>
           {/* <WheelWithInput newSegments={wordsList.data}/> */}
-          <WheelWithInputContentEditable newSegments={wordsList.data} />
+          <WheelWithInputContentEditable newSegments={wordsList.data} wheelPresetSettings={wordsList?.wheelData  ? wordsList?.wheelData : null} />
           {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
         <p>{wordsList.description}</p>
         </div> */}
