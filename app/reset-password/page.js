@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 const Page = () => {
-  return <ResetPasswordForm />;
+  return <Suspense><ResetPasswordForm /></Suspense>;
 };
 
 export default Page;
