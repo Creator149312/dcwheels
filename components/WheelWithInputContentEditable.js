@@ -368,7 +368,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               }}
             />
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 mb-2">
             {/* <ShareButton segmentsData={segData}/> */}
             {/* <ShareWheelBtn segmentsData={segData} /> */}
             <SharePopup url={currentPath} />
@@ -440,19 +440,22 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               <div>
                 <SaveImportComponent segments={segData} onImport={setSegData} />
               </div>
-              {showCelebration && <FireworksConfetti />}
             </>
           ) : (
+            <div className="flex flex-col items-center">
             <Button
               onClick={(e) => {
                 saveWheelData(segData, wheelData);
                 if (currentPath !== "/") router.push("/");
               }}
+              className='mb-2'
             >
               Copy and Edit
             </Button>
+            </div>
           )}
         </div>
+        {showCelebration && <FireworksConfetti />}
       </div>
     </>
   );

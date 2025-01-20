@@ -220,7 +220,7 @@ export const registerUser = async (formData) => {
       };
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
-      let res = await User.create({ name, email, password: hashedPassword });
+      let res = await User.create({ name, email, password: hashedPassword, authMethod: 'emailPassword' });
 
       let timeNow = new Date();
       // let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
@@ -241,6 +241,7 @@ export const registerUser = async (formData) => {
     return { error: "Error Registering a User" };
   }
 };
+
 
 export const generatePasswordResetLink = async (formData) => {
   let errorData = { error: "" };
@@ -265,8 +266,8 @@ export const generatePasswordResetLink = async (formData) => {
 
       if (user) {
         let timeNow = new Date();
-        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
-
+        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000); //expire in 1 hr
+ 
         //TODO: send Email for verification
         token = uuid4(); // we want a unique token of 16 characters
 
@@ -276,7 +277,7 @@ export const generatePasswordResetLink = async (formData) => {
         let res = await PasswordReset.findOneAndUpdate(filter, update, expires);
       } else {
         let timeNow = new Date();
-        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
+        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000); //expire in 1 hr
         token = uuid4(); // we want a unique token of 16 characters
 
         let res = await PasswordReset.create({

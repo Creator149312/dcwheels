@@ -5,6 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
+import apiConfig from "@utils/ApiUrlConfig";
 
 const validateForm = async (data) => {
   let err = {};
@@ -79,7 +80,7 @@ export const authOptions = {
           const userExists = await User.findOne({ email });
 
           if (!userExists) {
-            const res = await fetch("http://localhost:3000/api/user", {
+            const res = await fetch(`${apiConfig.apiUrl}/user`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -87,6 +88,9 @@ export const authOptions = {
               body: JSON.stringify({
                 name,
                 email,
+                password: '',
+                emailVerified: true,
+                authMethod: 'google', 
               }),
             });
 

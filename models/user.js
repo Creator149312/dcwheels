@@ -9,17 +9,20 @@ const userSchema = new Schema(
     },
     name: {
       type: String,
-      required: true,
-      unique: true //enforces uniqueness for email
     }, 
     password: {
       type: String,
-      required: true
     },
     emailVerified: {
       type: Boolean,
       default: false,
-    }
+    },
+    authMethod: {
+      type: String,
+      enum: ['emailPassword', 'google'],
+      required: true,
+      default: 'emailPassword', // Set default value
+    },
   },
   { timestamps: true }
 );
