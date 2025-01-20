@@ -67,14 +67,22 @@ const WinnerPopup = ({
     setShowCelebration(!open);
   };
 
-  const setImgMaxWidth = (html) => {
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    const imgs = div.getElementsByTagName("img");
-    Array.from(imgs).forEach((img) => {
-      img.style.width = "100px";
-    });
-    return div.innerHTML;
+  const setImgMaxWidth = (temphtml) => {
+    if (typeof document !== "undefined" && temphtml) {
+      const div = document.createElement("div");
+      div.innerHTML = temphtml;
+
+      const imgs = div.getElementsByTagName("img");
+
+      Array.from(imgs).forEach((img) => {
+        if (img) {
+          img.style.width = "100px";
+        }
+      });
+      return div.innerHTML;
+    } else {
+      return temphtml;
+    }
   };
 
   function containsDuplicates(element) {
@@ -88,7 +96,7 @@ const WinnerPopup = ({
         open ? "block" : "hidden"
       }`}
     >
-      <div className="bg-gray-800 bg-opacity-75 fixed inset-0 pointer-events-none"></div>
+      <div className="bg-gray-800 bg-opacity-20 fixed inset-0 pointer-events-none"></div>
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-11/12 max-w-lg mx-auto p-6 relative z-10">
         <div className="text-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">

@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 function ResultList({ result }) {
 //   const [result, setResult] = useState("");
 
-//   console.log("winner is ", winner);
-//   console.log("Result Array \n", result);
-
 //   useEffect(() => {
 //     if (winner !== "" && winner !== undefined) {
 //       if (result.length === 0) setResult((prev) => prev + winner);

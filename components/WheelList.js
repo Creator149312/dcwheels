@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import RemoveListBtn from "./RemoveListBtn";
 import { HiPencilAlt } from "react-icons/hi";
 import { HiOutlineEye } from "react-icons/hi";
@@ -60,17 +59,17 @@ export default function WordLists({ createdBy }) {
                 <h2 className="text-2xl font-bold m-2">{item.title}</h2>
                 <p>{item.description}</p>
               </div>
-              <div>{item.data.length} Words</div>
+              <div>{item.data.length} Options</div>
             </div>
             <div className="flex items-center">
-              <Link href={`/uwheels/${item._id}`} className="m-2">
+              <a href={`/uwheels/${item._id}`} className="mx-2">
                 <HiOutlineEye size={24} />
-              </Link>
-              <Link href={`/uwheels/${item._id}`} className="m-2">
+              </a>
+              {/* <a href={`/uwheels/${item._id}`} className="m-2">
                 <HiPencilAlt size={24} />
-              </Link>
+              </a> */}
               <SharePopup url={`/uwheels/${item._id}`} buttonVariant="simple"/>
-              <RemoveListBtn id={item._id} className="m-2" />
+              <RemoveListBtn id={item._id} className="mx-2" />
             </div>
           </Card>
         ))}

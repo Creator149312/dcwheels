@@ -26,7 +26,7 @@ export const prepareData = (segData, colData, maxlengthOfSegmentText) => {
       const imgUrl = regex.exec(seg)[1];
       result.push({
         option: seg,
-        style: { backgroundColor: col },
+        style: { backgroundColor: col},
         image: {
           uri: imgUrl,
           sizeMultiplier: getImageSizeMultiplierValue(segData.length),
@@ -80,11 +80,11 @@ export function isImageElement(str) {
 //get the wheel data storage in browser localstorage
 export const getWheelData = () => {
   if (typeof window !== "undefined" && window.localStorage) {
-    console.log("Fetching Wheel Object....");
+    // console.log("Fetching Wheel Object....");
     const data = window.localStorage.getItem("wheelObject");
     return data ? JSON.parse(data) : null;
   } else {
-    console.log("Local Storage or Window Object Now available");
+    // console.log("Local Storage or Window Object Now available");
     return null;
   }
 };
@@ -94,13 +94,34 @@ export const calculateMaxLengthOfText = (segData) => {
     segData.reduce((acc, word) => {
       return word.length > acc.length ? word : acc;
     }, "").length,
-    18
+    14
   );
 };
 
 export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
-  return Math.min(
-    (32 * Math.PI * Math.PI) / Math.max(segData.length, 1.21 * maxlengthOfSegmentText),
-    45
+  let factor = 0.1;
+  // let calculatedFontSize = Math.min(
+  //   (16 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
+  //   36
+  // );
+
+  // let calculatedFontSize = Math.min(
+  //   (26 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
+  //   38
+  // );
+  // return calculatedFontSize;
+
+  // return (36 * (101 - segData.length) * (17 - maxlengthOfSegmentText)) / (100 * 15);
+  // return 60 * Math.PI / Math.max(maxlengthOfSegmentText, segData.length);
+  // let txtSize = Math.min(
+  //   (40 * Math.PI * Math.PI) / (1.8 * maxlengthOfSegmentText + segData.length),
+  //   40
+  // );
+
+  let txtSize = Math.min(
+    (40 * Math.PI * Math.PI) /
+      (Math.pow(maxlengthOfSegmentText, 1.3) + Math.pow(segData.length, 0.7)),
+    40
   );
+  return txtSize;
 };

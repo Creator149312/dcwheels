@@ -13,7 +13,6 @@ function InputComponent() {
 
   const handleTextAreaChange = (event) => {
     setSegments([]);
-    // console.log("event.target.value = ", event.target.value);
     setUserInputText(event.target.value);
     processText(); //this was extra calling 
   };

@@ -2,7 +2,6 @@
 import SaveWheelLocally from "./SaveWheelLocally";
 import { useSession } from "next-auth/react";
 import SaveWheelBtn from "./SaveWheelBtn";
-import { Button } from "./ui/button";
 import ImportLocalWheel from "./ImportLocalWheel";
 
 const SaveImportComponent = ({ onImport, segments }) => {

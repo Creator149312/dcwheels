@@ -6,8 +6,8 @@ import { verifyUserEmailbyToken } from "./actions/actions";
 import Link from "next/link";
 
 const AccountEmailVerification = () => {
-  const [error, setError] = useState(undefined);
-  const [success, setSuccess] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -31,7 +31,6 @@ const AccountEmailVerification = () => {
         }
       })
       .catch((error) => {
-        // console.error(error);
         setError("An unexpected error occurred");
       });
   }, [token, success, error]);
@@ -47,9 +46,7 @@ const AccountEmailVerification = () => {
           <h1 className="text-3xl font-bold text-center">
             Checking Your Email, Please Wait!
           </h1>
-          {error && (
-            <div className="text-red-500">{error}</div>
-          )}
+          {error && <div className="text-red-500">{error}</div>}
           {success && (
             <>
               <div className="text-lg">

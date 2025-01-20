@@ -5,16 +5,21 @@ const passwordReset = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true // Enforces uniqueness for email
+      unique: true, // Enforces uniqueness for email
     },
     token: {
       type: String,
       required: true,
-      unique: true //enforces uniqueness for email
+      unique: true, //enforces uniqueness for email
+    },
+    expires: {
+      type: Date,
+      required: true,
     },
   },
   { timestamps: true }
 );
 
-const PasswordReset = models.PasswordReset || mongoose.model("PasswordReset", passwordReset);
+const PasswordReset =
+  models.PasswordReset || mongoose.model("PasswordReset", passwordReset);
 export default PasswordReset;

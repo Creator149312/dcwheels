@@ -63,9 +63,7 @@ export default function LoginFormAdv() {
           setError("Invalid Credentials");
           return;
         }
-
-        // console.log("Login done redirecting to Dashboard");
-
+        
         router.replace("dashboard");
       } catch (error) {
         setError(error);
@@ -108,9 +106,9 @@ export default function LoginFormAdv() {
             />
             {errors.password && <p className="error">{errors.password}</p>}
             <div>
-              {/* <Link className="m-4 p-2" href={"/reset-password"}>
-              Forgot password
-            </Link> */}
+              <a className="m-4 p-2 underline" href={"/forgot-password"}>
+                Forgot password
+              </a>
             </div>
           </div>
           <div className="p-2">
@@ -122,7 +120,7 @@ export default function LoginFormAdv() {
               }`}
               disabled={isSigning}
             >
-              {isSigning ? 'Logging...' : 'Login'}
+              {isSigning ? "Logging..." : "Login"}
             </Button>
           </div>
           {isSigning && <p>Checking Your Credentials....</p>}
@@ -138,9 +136,9 @@ export default function LoginFormAdv() {
             </Link>
           </div>
         </form>
-        {/* <div className="">
+        <div className="">
           <SignInBtn />
-        </div> */}
+        </div>
       </Card>
     </div>
   );

@@ -21,8 +21,8 @@ function ImageUploadAsSegment({ html }) {
         if (imageSrc !== null) {
             const newHtml = html.current + `\n<div><img src="${imageSrc}"></div>`;
             html.current = newHtml;
-            console.log("Loaded Image = ", imageSrc);
-            console.log("Updated HTML", html.current);
+            // console.log("Loaded Image = ", imageSrc);
+            // console.log("Updated HTML", html.current);
         }
     }, [imageSrc]);
 

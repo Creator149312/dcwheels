@@ -1,14 +1,15 @@
 import { Suspense } from "react";
+import AccountEmailVerificationByToken from "@components/AccountEmailVerificationByToken";
 import AccountEmailVerification from "@components/AccountEmailVerification";
 
 export const metadata = {
   title: "Email Verification",
   description:
-    "Register using a unique username and password to save your custom made wheels",
+    "Email Verification",
 };
 
 const page = () => {
-  return <Suspense><AccountEmailVerification /></Suspense>;
+  return <Suspense><AccountEmailVerificationByToken /></Suspense>;
 };
 
 export default page;

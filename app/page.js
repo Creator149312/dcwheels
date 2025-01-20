@@ -80,13 +80,12 @@ export default async function Home() {
         <p className="mb-2">You have to follow some steps:</p>
         <p className="mb-3">
           1. Update Wheel: To update the wheel just type the value you want to
-          appear. Every line in the textarea is treated as sector in a spin
-          wheel.
+          appear in the editable section. Each line in the editor is treated as sector in a spin wheel.
         </p>
         <p className="mb-3">
-          2. Create New Wheel: to create new wheel you can just clear all the
-          elements in the textarea, this will remove all sectors of wheel and
-          all you will have is a blank wheel with no sectors. Then you can start
+          2. Create New Wheel: To create new wheel you can just clear all the
+          elements in the editor, this will remove all sectors of wheel and all
+          you will have is a blank wheel with no sectors. Then you can start
           adding your own custom input data.
         </p>
         <p className="mb-3">
@@ -100,7 +99,21 @@ export default async function Home() {
           registered users.
         </p>
         <p className="mb-5">
-          5. Sharing Wheel: We are working hard to create this feature.
+          5. Sharing Wheel: It provides users with a unique link to share their
+          saved wheels. Note: You can only share saved wheels.
+        </p>
+        <p className="mb-5">
+          6. Wheel Settings: Customizable wheels rely on settings. You can
+          modify spin duration, the number of segments displayed, and select an
+          appropriate theme.
+        </p>
+        <p className="mb-5">
+          7. Weighted wheel: Each segment on the wheel is assigned a weight.
+          The weight represents the probability of that segment being selected. The
+          weights on the segments create a probability distribution. For
+          example, if a segment has a weight of 5 and another has a weight of 1,
+          the first segment is five times more likely to be selected than the
+          second.
         </p>
         <h2 className="text-3xl mb-2">Make Your Own Custom Spin the Wheel</h2>
         <p className="mb-3">
@@ -112,8 +125,8 @@ export default async function Home() {
         </p>
         <p className="mb-3">
           The user interface is intuitive and user-friendly, allowing anyone to
-          create a wheel in just a few minutes. Simply input the values in
-          textarea you want to add to wheel and customize the wheel to your
+          create a digital wheel in just a few minutes. Simply input the values
+          in editable textarea you want to add to wheel and customize the wheel to your
           liking, and you are ready to spin.
         </p>
         <p className="mb-3">
@@ -126,9 +139,10 @@ export default async function Home() {
         </p>
         <p className="mb-5">
           In addition, Spin Wheel is accessible from anywhere with an internet
-          connection, making it a convenient tool to have at your disposal.
-          Whether you are at home, at work, or on the go, you can access your
-          custom wheel and make decisions in a quick, simple, and fair way.
+          connection, making it a convenient digital tool to have at your
+          disposal. Whether you are at home, at work, or on the go, you can
+          access your custom wheel and make decisions in a quick, simple, and
+          fair way.
         </p>
         <h2 className="text-3xl mb-2">
           Using Spin Wheel in Classroom for Teaching

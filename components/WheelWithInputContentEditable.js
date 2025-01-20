@@ -27,6 +27,7 @@ import {
 } from "@utils/HelperFunctions";
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
+import { useTheme } from "next-themes";
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -64,8 +65,11 @@ const WheelWithInputContentEditable = ({
   const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
   const [segTxtfontSize, setSegTxtfontSize] = useState(1);
 
+  const [showOverlay, setShowOverlay] = useState(true);
+
   const handleSpinClick = () => {
     if (!mustSpin) {
+      setShowOverlay(false);
       setMustSpin(true);
       // setShowCelebration(false);
 
@@ -95,7 +99,7 @@ const WheelWithInputContentEditable = ({
       try {
         window.localStorage.setItem("wheelObject", JSON.stringify(wheelObject));
         // setLocalStorageWheel(wheelObject);
-        console.log("New Wheel Saved on Browser =", wheelObject);
+        // console.log("New Wheel Saved on Browser =", wheelObject);
       } catch (e) {
         console.error("Error saving to localStorage", e);
       }
@@ -168,7 +172,7 @@ const WheelWithInputContentEditable = ({
   // }, []);
 
   useEffect(() => {
-    console.log("Inside Parameterized User Effect");
+    // console.log("Inside Parameterized User Effect");
     if (!advancedOptions) {
       setData(
         prepareData(segData, wheelData.segColors, maxlengthOfSegmentText)
@@ -180,18 +184,18 @@ const WheelWithInputContentEditable = ({
         calculateFontSizeOfText(maxlengthOfSegmentText, segData)
       );
 
-      console.log("LocalStorageWheelData = ", localStorageWheel);
+      // console.log("LocalStorageWheelData = ", localStorageWheel);
       if (localStorageWheel !== null) saveWheelData(segData, wheelData);
     }
   }, [segData, wheelData, advancedOptions]);
 
   useEffect(() => {
-    console.log("Inside Blank User Effect");
+    // console.log("Inside Blank User Effect");
     if (currentPath === "/") {
       //do this when we are in the homepage
       let wheelFromBrowserStorage = getWheelData();
       setLocalStorageWheel(wheelFromBrowserStorage);
-      console.log("browser saved wheel = ", wheelFromBrowserStorage);
+      // console.log("browser saved wheel = ", wheelFromBrowserStorage);
 
       if (wheelFromBrowserStorage !== null) {
         let localSegData = wheelFromBrowserStorage.data;
@@ -256,9 +260,9 @@ const WheelWithInputContentEditable = ({
 
       if (wheelPresetSettings !== null && wheelPresetSettings !== undefined) {
         setWheelData(wheelPresetSettings);
-        saveWheelData(newSegments, wheelPresetSettings);
+        // saveWheelData(newSegments, wheelPresetSettings);
       } else {
-        saveWheelData(newSegments, wheelData);
+        // saveWheelData(newSegments, wheelData);
       }
       // setadvancedOptions(true);
     }
@@ -296,7 +300,7 @@ const WheelWithInputContentEditable = ({
     <>
       <div className="grid lg:grid-cols-12 gap-x-2">
         <div
-          className={`bg-card text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
+          className={`bg-card flex flex-col justify-center items-center text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
             isFullScreen
               ? "absolute top-0 left-0 w-screen h-screen flex flex-col justify-center items-center"
               : "relative"
@@ -311,6 +315,15 @@ const WheelWithInputContentEditable = ({
             setShowCelebration={setShowCelebration}
             mustSpin={mustSpin}
           />
+          {showOverlay && (
+            <div
+              onClick={handleSpinClick}
+              className="z-10 absolute h-[450px] inset-0 flex items-center justify-center rounded-full text-center text-4xl font-bold dark:text-white text-gray-800"
+              style={{ textShadow: "2px 2px 0 rgba(0, 0, 0, 0.2)" }}
+            >
+              Click to Spin
+            </div>
+          )}
           <div
             onClick={handleSpinClick}
             className={`flex items-center justify-center
@@ -326,8 +339,8 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   : wheelData.maxNumberOfOptions
               )}
               textDistance={
-                // 65 + segData.length / 8 < 95 ? 60 + segData.length / 8 : 95
-                50 + 0.4 * segData.length
+                Math.min(60 + 0.5 * segData.length, 72)
+                // Math.min(segData.length > wheelData.maxNumberOfOptions ? wheelData.maxNumberOfOptions - maxlengthOfSegmentText : 50 + segData.length + maxlengthOfSegmentText, 90 - maxlengthOfSegmentText)
               }
               radiusLineWidth={0}
               outerBorderWidth={0}
@@ -398,10 +411,10 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   style={{ display: isVisible ? "block" : "none" }}
                 >
                   {/* For Advanced Editor Selection */}
-                  <EditorSwitchWithPopup
+                  {/* <EditorSwitchWithPopup
                     advOpt={advancedOptions}
                     setAdvOpt={setadvancedOptions}
-                  />
+                  /> */}
 
                   {advancedOptions ? (
                     <ScrollableSegmentsEditor

@@ -22,9 +22,9 @@ function FireworksOverlay() {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 5,
+          vx: (Math.random() - 0.5) * 10,
           vy: -Math.random() * 10,
-          size: Math.random() * 5,
+          size: Math.random() * 10,
           color: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.random()})`,
         });
       }
@@ -75,7 +75,7 @@ function FireworksOverlay() {
   }, [showConfetti, animationDuration]);
 
   return (showConfetti &&
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 999 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 40 }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
     </div>
   );

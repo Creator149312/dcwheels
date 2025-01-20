@@ -79,8 +79,6 @@ export default function ShareWheelBtn({ segmentsData }) {
       return;
     }
 
-    // console.log(apiConfig);
-
     try {
       const data = [...segmentsData];
       const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
@@ -92,13 +90,11 @@ export default function ShareWheelBtn({ segmentsData }) {
       });
 
       let resObj = await res.json();
-      console.log("Response Object = ", resObj);
 
       if (resObj?.error) {
         // toast.error("Failed to Create Wheel");
         setError("Failed to create a wheel");
       } else {
-        // console.log("Redirecting to Dashboard...");
         // router.push("/dashboard");
         handleNext(resObj.creationID);
       }

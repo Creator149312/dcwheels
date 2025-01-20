@@ -1,24 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  validateEmail,
-  validatePassword,
-  validateUsername,
-} from "@utils/Validator";
-import { registerUser } from "@components/actions/actions";
+import { validatePassword } from "@utils/Validator";
+import { updateNewPasswordbyToken } from "@components/actions/actions";
 import toast from "react-hot-toast";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { useSearchParams } from "next/navigation";
 import { FormSubmitButton } from "./FormSubmitButton";
 
-export default function RegisterFormAdv() {
+export default function ResetPasswordForm() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
+    retypeNewPassword: "",
+    newPassword: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -41,31 +39,29 @@ export default function RegisterFormAdv() {
     setErrors({});
     setError("");
 
-    let vu = validateUsername(formData.username);
-    let ve = validateEmail(formData.email);
-    let vp = validatePassword(formData.password);
+    let vnp = validatePassword(formData.newPassword);
+    let vtp = validatePassword(formData.retypeNewPassword);
 
-    if (vu.length !== 0) errors.username = vu;
-    if (ve.length !== 0) errors.email = ve;
-    if (vp.length !== 0) errors.password = vp;
+    if (vnp.length !== 0) errors.newPassword = vnp;
+    if (vtp.length !== 0) errors.retypeNewPassword = vtp;
 
     if (Object.keys(errors).length === 0) {
       setIsRegistering(true);
       try {
-        let results = await registerUser(dataFromFrom);
+        let results = await updateNewPasswordbyToken(dataFromFrom, token);
 
         if (results?.error) {
           toast.error(results.error);
         } else {
-          toast.success("Verification Email Sent, Please Verify!");
+          toast.success("Password successfully changed!");
           setFormData({
-            username: "",
-            email: "",
-            password: "",
+            retypeNewPassword: "",
+            newPassword: "",
           });
+          router.push("/login");
         }
       } catch (error) {
-        setError("Registration Failed!");
+        setError("Password Reset Failed!");
       } finally {
         setIsRegistering(false);
       }
@@ -77,43 +73,35 @@ export default function RegisterFormAdv() {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <Card className="text-center max-w-md mx-auto p-4 ">
-        <h1 className="text-3xl font-bold mb-4 text-center">Register</h1>
+        <h1 className="text-3xl font-bold mb-4 text-center">Update Password</h1>
         <form action={validateFormAdv} className="max-w-md mx-auto p-4">
           <div>
-            <label htmlFor="username">Username:</label>
-            <input
-              type="text"
-              id="username"
-              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-            />
-            {errors.username && <p className="error">{errors.username}</p>}
-          </div>
-          <div>
-            <label htmlFor="email">Email Address:</label>
-            <input
-              type="email"
-              id="email"
-              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && <p className="error">{errors.email}</p>}
-          </div>
-          <div>
-            <label htmlFor="password">Password:</label>
+            <label htmlFor="newPassword">New Password:</label>
             <input
               type="password"
-              id="password"
-              name="password"
+              id="newPassword"
               className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
-              value={formData.password}
+              name="newPassword"
+              value={formData.newPassword}
               onChange={handleChange}
             />
-            {errors.password && <p className="error">{errors.password}</p>}
+            {errors.newPassword && (
+              <p className="error">{errors.newPassword}</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="retypeNewPassword">Retype Password:</label>
+            <input
+              type="password"
+              id="retypeNewPassword"
+              name="retypeNewPassword"
+              className="w-full p-2 text-base border border-gray-300 rounded-sm mt-2 mb-3"
+              value={formData.retypeNewPassword}
+              onChange={handleChange}
+            />
+            {errors.retypeNewPassword && (
+              <p className="error">{errors.retypeNewPassword}</p>
+            )}
           </div>
           {/* <Button
             size={"lg"}
@@ -123,19 +111,16 @@ export default function RegisterFormAdv() {
             }`}
             disabled={isRegistering}
           >
-            {isRegistering ? "Registering..." : "Register"}
+            {isRegistering ? "Updating Password..." : "Update Password"}
           </Button> */}
-           <FormSubmitButton btnTxt={"Register"} btnTxtDisabled={"Registering.."}/>
-                  
+          <FormSubmitButton
+            btnTxt={"Update Password"}
+            btnTxtDisabled={"Updating Password.."}
+          />
           {/* {error && <Notification message={error} state={"failed"} />} */}
           {isRegistering && (
             <p>Checking Details and Creating Your Account...</p>
           )}
-          <div className="p-2">
-            <Link className="text-sm mt-3 text-right" href={"/login"}>
-              Already have an account? <span className="underline">Login</span>
-            </Link>
-          </div>
         </form>
       </Card>
     </div>

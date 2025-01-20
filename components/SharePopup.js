@@ -42,7 +42,7 @@ const SharePopup = ({ url, buttonVariant = 'blue' }) => {
                     onClick={togglePopup}
                     className="flex items-center"
                 >
-                    <FaShareAlt className="mr-2" size={24}/>
+                    <FaShareAlt className="mx-2 my-2" size={24}/>
                 </button>
             )}
 

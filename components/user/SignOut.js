@@ -1,14 +1,22 @@
 // components/SignOut.js
-import { signOut } from 'next-auth/react';
+import { signOut } from "next-auth/react";
+
 
 const SignOut = () => {
   const handleSignOut = async (e) => {
-    e.preventDefault();
-    await signOut({ redirect: false });
+    try {
+      e.preventDefault();
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      console.error("Sign-out failed:", error);
+      // Handle the error, e.g., display an error message to the user
+    }
   };
 
   return (
-    <a href="#" onClick={handleSignOut}>Sign out</a>
+    <a href="#" onClick={handleSignOut}>
+      Sign Out
+    </a>
   );
 };
 

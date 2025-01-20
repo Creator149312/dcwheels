@@ -28,7 +28,7 @@ const Navbar = () => {
   return (
     <div className="pr-2 pl-2 text-center bg-card text-card-foreground shadow">
       <div className="flex items-center font-medium justify-between">
-        <div className="z-20 p-2 md:w-auto w-full flex justify-between">
+        <div className="z-30 p-2 md:w-auto w-full flex justify-between">
           <a href="/" className="text-2xl font-semibold flex items-center">
             <img
               src={"/spin-wheel-logo.png"}
@@ -48,7 +48,6 @@ const Navbar = () => {
         </div>
         <ul className="z-10 md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
           <li>
-        
               <a
                 href="/"
                 className="inline-flex align-middle items-center text-lg"
@@ -56,7 +55,6 @@ const Navbar = () => {
               >
                 New Wheel +
               </a>
-           
           </li>
           <li>
             <a
@@ -93,7 +91,7 @@ const Navbar = () => {
 
         {/* Mobile nav */}
         <ul
-          className={`z-10
+          className={`z-20
         md:hidden dark:bg-[#020817] bg-white fixed w-full top-0 overflow-y-auto bottom-0 py-10 pl-4
         duration-500 align-middle ${open ? "left-0" : "left-[-100%]"}
         `}
@@ -117,7 +115,7 @@ const Navbar = () => {
           </li>
           <li>
             <div className="py-5 mr-2">
-              <UserInfo name={session?.user?.name} status={status} />
+              <UserInfo name={session?.user?.name} status={status} setOpen={setOpen}/>
             </div>
           </li>
           <li>

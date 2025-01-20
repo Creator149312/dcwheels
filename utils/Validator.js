@@ -53,16 +53,15 @@ export const validateEmail = (email) => {
   
     const inputRegex = /[^a-zA-Z0-9\s-]/;
   
-    // console.log("validating description")
     if (!input.trim()) {
-      err = "List name is required!";
+      err = "Wheel name is required!";
     } else if (inputRegex.test(input)) {
-      err = "Invalid list name please remove invalid characters!";
+      err = "Invalid name, please remove invalid characters!";
     }
   
   
-    if (input.length < 4) err = "List title must be at least 4 characters long";
-    if (input.length > 256) err = "List title be of atmost 256 characters long";
+    if (input.length < 4) err = "Wheel title must be at least 4 characters long";
+    if (input.length > 256) err = "Wheel title be of atmost 256 characters long";
   
     return err.length === 0 ? "" : err;
   };
@@ -72,13 +71,13 @@ export const validateEmail = (email) => {
   
     const inputRegex = /[^a-zA-Z0-9.\s-]/;
     if (!input.trim()) {
-      err = "List description is required!";
+      err = "Wheel description is required!";
     } else if (inputRegex.test(input)) {
-      err = "Invalid list description, Please remove invalid characters!";
+      err = "Invalid Wheel description, Please remove invalid characters!";
     }
   
-    if (input.length < 8) err = "List description must be at least 8 characters long";
-    if (input.length > 512) err = "List description be of atmost 256 characters long";
+    if (input.length < 8) err = "Wheel description must be at least 8 characters long";
+    if (input.length > 512) err = "Wheel description must be of atmost 512 characters long";
   
     return err.length === 0 ? "" : err;
   };

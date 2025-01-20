@@ -62,8 +62,8 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
   const handleImageUploadAsSegment = async (event) => {
     const maxWidth = 100;
     const imageFile = event.target.files[0];
-    console.log("originalFile instanceof Blob", imageFile instanceof Blob); // true
-    console.log(`originalFile size ${imageFile.size / 1024 / 1024} MB`);
+    // console.log("originalFile instanceof Blob", imageFile instanceof Blob); // true
+    // console.log(`originalFile size ${imageFile.size / 1024 / 1024} MB`);
 
     const options = {
       maxSizeMB: 1,
@@ -72,19 +72,19 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
     };
     try {
       const compressedFile = await imageCompression(imageFile, options);
-      console.log(
-        "compressedFile instanceof Blob",
-        compressedFile instanceof Blob
-      ); // true
-      console.log(
-        `compressedFile size ${compressedFile.size / 1024 / 1024} MB`
-      ); // smaller than maxSizeMB
+      // console.log(
+      //   "compressedFile instanceof Blob",
+      //   compressedFile instanceof Blob
+      // ); // true
+      // console.log(
+      //   `compressedFile size ${compressedFile.size / 1024 / 1024} MB`
+      // ); // smaller than maxSizeMB
 
       //   await uploadToServer(compressedFile); // write your own logic
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64Image = e.target.result;
-        console.log(base64Image);
+        // console.log(base64Image);
         // This will be your image/jpeg;base64 string
 
         setImageSrc(base64Image);

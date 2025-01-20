@@ -23,7 +23,6 @@ const ShareButton = () => {
 
   const handleCreateLink = () => {
     // Logic to create link based on wheelDetails and privacy settings
-    console.log("Creating link with details:", wheelDetails);
     setIsSecondPopupOpen(false);
   };
 

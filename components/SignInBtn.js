@@ -4,11 +4,22 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { Button } from "./ui/button";
 import {googleLogo} from "@public/google-logo.png"
+import {useRouter} from "next/navigation"
 
 export default function SignInBtn() {
+  
+  const handleGoogleSignIn = async () => {
+    try {
+      await signIn('google', { callbackUrl: '/dashboard' }); 
+    } catch (error) {
+      console.error("Google Sign-in failed:", error);
+      // Handle the error, e.g., display an error message to the user
+    }
+  };
+
   return (
     <Button
-      onClick={() => signIn("google")}
+      onClick={handleGoogleSignIn}
       className="m-2 p-2"
       size={"lg"}
       variant={"secondary"}

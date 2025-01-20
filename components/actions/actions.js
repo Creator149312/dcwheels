@@ -16,7 +16,9 @@ import Wheel from "@models/wheel";
 import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
+import PasswordResetEmail from "@app/email/PasswordResetEmail";
 
+//this method is used when user is logged in
 export const updateNewPassword = async (formData) => {
   let errorData = { error: "" };
   const session = await getServerSession(authOptions);
@@ -29,7 +31,6 @@ export const updateNewPassword = async (formData) => {
     errorData.error = "Passwords do not match";
 
   if (errorData.error.length !== 0) {
-    console.log("Found Errors");
     return errorData;
   }
   let ifPasswordsMatch = false;
@@ -71,54 +72,50 @@ export const updateNewPassword = async (formData) => {
   // }
 };
 
-// export const getWheelsByTitle = async (titleSearch) =>{
-//   try {
-//     // Find Wheels with matching title using async/await
-//     const books = await Wheel.find({ title: titleSearch });
-//     console.log("Found books:", books);
-//   } catch (err) {
-//     console.error("Error finding books:", err);
-//   }
-// }
-
+//this method is used when user has forgot his current password
 export const updateNewPasswordbyToken = async (formData, token) => {
   let errorData = { error: "" };
+  await connectMongoDB();
+  let record = await PasswordReset.findOne({ token: token });
 
-  let record = await PasswordReset.findOne({ token });
+  if (record) {
+    errorData.error = validatePassword(formData.get("newPassword"));
+    errorData.error = validatePassword(formData.get("retypeNewPassword"));
 
-  console.log(record.email);
+    if (formData.get("newPassword") !== formData.get("retypeNewPassword"))
+      errorData.error = "Passwords do not match";
 
-  errorData.error = validatePassword(formData.get("newPassword"));
-  errorData.error = validatePassword(formData.get("retypeNewPassword"));
-
-  if (formData.get("newPassword") !== formData.get("retypeNewPassword"))
-    errorData.error = "Passwords do not match";
-
-  if (errorData.error.length !== 0) {
-    console.log("Found Errors");
-    return errorData;
-  }
-
-  try {
-    if (errorData.error.length === 0) {
-      await connectMongoDB();
-
-      const newhashedPassword = await bcrypt.hash(
-        formData.get("newPassword"),
-        10
-      );
-
-      const filter = { email: record.email };
-      const update = { password: newhashedPassword };
-      await User.findOneAndUpdate(filter, update);
-    } else {
-      //send error message to client
+    if (errorData.error.length !== 0) {
       return {
-        error: "Please login to change Password!",
+        error: errorData.error,
       };
     }
-  } catch (error) {
-    return { error: "Error resetting password" };
+
+    try {
+      if (errorData.error.length === 0) {
+        await connectMongoDB();
+
+        const newhashedPassword = await bcrypt.hash(
+          formData.get("newPassword"),
+          10
+        );
+
+        const filter = { email: record.email };
+        const update = { password: newhashedPassword };
+        await User.findOneAndUpdate(filter, update);
+        await PasswordReset.deleteOne({ email: record.email });
+      } else {
+        //send error message to client
+        return {
+          error: "Please login to change Password!",
+        };
+      }
+    } catch (error) {
+      // console.log(error);
+      return { error: "Error resetting password" };
+    }
+  } else {
+    return { error: "InValid Password Reset Request" };
   }
 
   // if (ifPasswordsMatch) {
@@ -132,7 +129,6 @@ export const deleteUserAccount = async (formData) => {
     if (session) {
       //delete user record from database
       const result = await User.deleteOne({ email: session.user.email });
-      //  console.log(result); // Log the result of the delete operation
     }
   } catch (error) {
     return { error: "Please login to delete your Account" };
@@ -143,16 +139,9 @@ export const deleteUserAccount = async (formData) => {
   // }
 };
 
-// const validateRegistrationForm = (formData) => {
-
-//   console.log("Error Validation in Server ", errorData);
-//   return errorData;
-// };
-
 const getVerificationTokenByEmail = async (email) => {
   try {
     const result = await EmailVerificationToken.findOne({ email: email });
-    console.log(result); // Log the result of the delete operation
   } catch (error) {
     return { error: "Please login to delete your Account" };
   }
@@ -163,7 +152,6 @@ const deleteExistingTokenByEmail = async (email) => {
     const result = await EmailVerificationToken.findOneAndDelete({
       email: email,
     });
-    console.log(result); // Log the result of the delete operation
   } catch (error) {
     return { error: "Please login to delete your Account" };
   }
@@ -173,13 +161,25 @@ const sendAccountVerificationEmail = async (email, token) => {
   const resend = new Resend(process.env.EMAIL_API_KEY);
   try {
     const { error } = await resend.emails.send({
-      from: "onboarding@spinpapa.com",
+      from: "Spinpapa <onboarding@spinpapa.com>",
       to: [`${email}`],
-      subject: "SpinPapa",
+      subject: "Account Verification",
       react: <Registration email={email} token={token} />,
     });
+  } catch (error) {
+    return { error: "Failed to send account verification email" };
+  }
+};
 
-    console.log("Failed sending email = ", error);
+const sendPasswordResetLinkEmail = async (email, token) => {
+  const resend = new Resend(process.env.EMAIL_API_KEY);
+  try {
+    const { error } = await resend.emails.send({
+      from: "Spinpapa <onboarding@spinpapa.com>",
+      to: [`${email}`],
+      subject: "Password Reset Request",
+      react: <PasswordResetEmail email={email} token={token} />,
+    });
   } catch (error) {
     return { error: "Failed to send account verification email" };
   }
@@ -197,13 +197,8 @@ export const registerUser = async (formData) => {
   if (vp.length !== 0) errorData.error = vp;
 
   try {
-    // console.log("form Data is Server,", formData);
-
     if (errorData.error.length !== 0) {
-      console.log("Found Errors in Form Validation");
-      return errorData;
-    } else {
-      console.log("Validated");
+      return { error: errorData };
     }
 
     await connectMongoDB();
@@ -228,21 +223,19 @@ export const registerUser = async (formData) => {
       let res = await User.create({ name, email, password: hashedPassword });
 
       let timeNow = new Date();
-      let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
+      // let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
+      let expiringTime = new Date(timeNow.getTime() + 2 * 24 * 60 * 60 * 1000); //2 days after registration email is sent
 
       //TODO: send Email for verification
       let token = uuid4(); // we want a unique token of 16 characters
-      console.log(token);
-      console.log("User created, Now creating verification Token");
 
       await EmailVerificationToken.create({
         email,
         token,
-        expires: expriringTime,
+        expires: expiringTime,
       });
 
       await sendAccountVerificationEmail(email, token);
-      console.log(res);
     }
   } catch (error) {
     return { error: "Error Registering a User" };
@@ -258,55 +251,62 @@ export const generatePasswordResetLink = async (formData) => {
   if (ve.length !== 0) errorData.error = ve;
 
   try {
-    console.log("form Data in Server,", formData);
-
     if (errorData.error.length !== 0) {
-      console.log("Found Errors in Form Validation");
-      return errorData;
-    } else {
-      console.log("Validated");
+      return { error: errorData };
     }
 
     await connectMongoDB();
 
     let email = formData.get("email");
+    const ifUserExists = await User.findOne({ email });
 
-    //const user = await PasswordReset.findOne({ email }).select("_id");
-    const user = false;
-    if (user) {
-      console.log("Existing rows found");
+    if (ifUserExists) {
+      const user = await PasswordReset.findOne({ email }).select("_id");
 
-      token = "Whalksjdl fjaldjfaidf"; // we want a unique token on 16 characters
+      if (user) {
+        let timeNow = new Date();
+        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
 
-      const filter = { email: email };
-      const update = { token: token };
-      let res = await PasswordReset.findOneAndUpdate(filter, update);
+        //TODO: send Email for verification
+        token = uuid4(); // we want a unique token of 16 characters
+
+        const filter = { email: email };
+        const update = { token: token };
+        const expires = { expires: expriringTime };
+        let res = await PasswordReset.findOneAndUpdate(filter, update, expires);
+      } else {
+        let timeNow = new Date();
+        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
+        token = uuid4(); // we want a unique token of 16 characters
+
+        let res = await PasswordReset.create({
+          email,
+          token,
+          expires: expriringTime,
+        });
+      }
+
+      // console.log(`http://localhost:3000/reset-password?token=${token}`);
+
+      await sendPasswordResetLinkEmail(email, token);
+
+      return { success: "Check your email for password reset link!" };
     } else {
-      token = "kjadslfjalduf9202i398239jalkdja9dj"; // we want a unique token on 16 characters
-
-      console.log("No existing rows found");
-      let res = await PasswordReset.create({ email, token });
+      return { error: "User not found!" };
     }
-
-    console.log(`http://localhost:3000/new-password?token=${token}`);
   } catch (error) {
-    return { error: "Error Registering a User" };
+    return { error: "Unexpected Error Occured!" };
   }
 };
 
 export const verifyUserEmailbyToken = async (token) => {
   //check if token is valid
-
   await connectMongoDB();
 
   const record = await EmailVerificationToken.findOne({ token });
 
-  console.log("Record Data of Email Verification", record);
   if (record) {
     const currentTime = new Date();
-    //check if token is not expired
-    console.log("Time in Expires: ", record.expires);
-    console.log("Time Now : ", currentTime);
     if (record.expires > currentTime) {
       //finally set the emailVerified field in user table to current date.
 
@@ -318,10 +318,14 @@ export const verifyUserEmailbyToken = async (token) => {
           { emailVerified: true }
         );
 
-        await deleteExistingTokenByEmail(record.email); //delete token after being verified
-        return { success: "Email Verified Successfully" };
+        // Schedule token deletion after a delay
+        setTimeout(async () => {
+          await deleteExistingTokenByEmail(record.email); //delete token after being verified
+        }, 1000 * 60 * 5); // Delete token after 5 minutes
+
+        return { success: "Email Verified Successfully!" };
       } else {
-        return { error: "User doesn't Exist" };
+        return { error: "User doesn't Exist!" };
       }
     } else {
       //token expired
@@ -336,7 +340,7 @@ export const verifyUserEmailbyToken = async (token) => {
       });
 
       await sendAccountVerificationEmail(record.email, newToken);
-      return { success: "Verification Token has been sent Successfully" };
+      return { success: "Verification Email has been sent Successfully" };
     }
   } else {
     return { error: "Invalid Token" };

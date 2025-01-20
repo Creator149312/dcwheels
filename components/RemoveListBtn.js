@@ -29,7 +29,7 @@ export default function RemoveListBtn({ id }) {
   };
 
   return (
-    <a onClick={handleRemoveList} >
+    <a onClick={handleRemoveList} className="mx-2 my-2">
       <HiOutlineTrash size={24} />
     </a>
   );

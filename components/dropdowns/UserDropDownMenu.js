@@ -7,10 +7,9 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import SignOut from "@components/user/SignOut";
-import Link from "next/link";
 import { HiOutlineUserCircle } from "react-icons/hi";
 
-const UserDropDownMenu = ({ name }) => {
+const UserDropDownMenu = ({ name, setOpen}) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -22,8 +21,8 @@ const UserDropDownMenu = ({ name }) => {
         <DropdownMenuLabel>{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-        <Link href="/">New Wheel + </Link></DropdownMenuItem>
-        <DropdownMenuItem><Link href="/dashboard">Dashboard</Link></DropdownMenuItem>
+        <a href="/">New Wheel + </a></DropdownMenuItem>
+        <DropdownMenuItem><a href="/dashboard">Dashboard</a></DropdownMenuItem>
         {/* <DropdownMenuItem><Link href="/settings">Settings</Link></DropdownMenuItem> */}
         <DropdownMenuItem><SignOut /></DropdownMenuItem>
       </DropdownMenuContent>

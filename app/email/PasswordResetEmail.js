@@ -17,13 +17,12 @@ import apiConfig from "@utils/ApiUrlConfig";
 //   ? `https://${process.env.VERCEL_URL}`
 //   : "";
 
-const Registration = ({ email, token }) => {
+const PasswordResetEmail = ({ email, token }) => {
   return (
     <Html>
       <Head />
-      <Preview>
-       Please complete your registration by verifying your email address..
-      </Preview>
+      <Preview> You recently requested a password reset for your account
+      associated....</Preview>
       <Tailwind>
         <Body className="bg-white">
           <Container className="mx-auto px-0 py-4 pb-12">
@@ -34,25 +33,37 @@ const Registration = ({ email, token }) => {
               alt="Koala"
               className="mx-auto"
             /> */}
-            <Text className="text-base leading-6">Welcome to Spinpapa!</Text>
             <Text className="text-base leading-6">Hi {email},</Text>
             <Text className="text-base leading-6">
-              To complete your registration and start using Spinpapa, please
-              click the button below to verify your email address:
+              You recently requested a password reset for your account
+              associated with {email}.
+            </Text>
+            <Text className="text-base leading-6">
+              To reset your password, please click on the following link:
             </Text>
             <Section className="text-center">
               <Button
                 className="bg-slate-600 rounded-md text-white text-base py-4 px-4 block"
-                href={`${apiConfig.baseUrl}/verify/new-email?token=${token}&email=${email}`}
+                href={`${apiConfig.baseUrl}/reset-password?token=${token}`}
               >
-                Verify Email
+                Reset Password
               </Button>
             </Section>
-            <Text className="text-base leading-6">
-              Sincerely,
-              <br />
-              The Spinpapa Team
-            </Text>
+            <Section>
+              <Text>Important:</Text>
+              <Text>1. This link is valid for 1 hour.</Text>
+              <Text>
+                2. If you did not request a password reset, please ignore this
+                email.
+              </Text>
+            </Section>
+            <Section>
+              <Text className="text-base leading-6">
+                Best,
+                <br />
+                The Spinpapa team
+              </Text>
+            </Section>
             <Hr className="border-gray-300 border-t border-b my-4" />
           </Container>
         </Body>
@@ -61,4 +72,4 @@ const Registration = ({ email, token }) => {
   );
 };
 
-export default Registration;
+export default PasswordResetEmail;

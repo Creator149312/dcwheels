@@ -10,8 +10,6 @@ export default function UserDashboard() {
   const { status, data: session } = useSession();
   const router = useRouter();
 
-  // console.log("Session Inside Dashboard", session);
-
   if (status === "authenticated" || session?.user?.email !== undefined) {
     return (
       <div className="m-3 p-10">
