@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useContext } from "react";
+import { useState, useRef, useContext } from "react";
 import ContentEditable from "react-contenteditable";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";

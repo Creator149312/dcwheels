@@ -10,8 +10,8 @@ export async function POST(req) {
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: `Generate an array of ${wordCount} words without numbering related to: "${prompt}".` }],
-      max_tokens: 100,
+      messages: [{ role: 'user', content: `Generate comma separated ${wordCount} words related to: "${prompt}"` }],
+      max_tokens: 200,
     });
 
     const words = response.choices[0].message.content

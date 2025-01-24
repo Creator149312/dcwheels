@@ -27,7 +27,7 @@ import {
 } from "@utils/HelperFunctions";
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
-import { useTheme } from "next-themes";
+import AIListGenerator from "./AIListGenerator";
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -377,6 +377,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             ) : (
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
+            <AIListGenerator setSegData={setSegData}/>
           </div>
         </div>
 
@@ -443,15 +444,15 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             </>
           ) : (
             <div className="flex flex-col items-center">
-            <Button
-              onClick={(e) => {
-                saveWheelData(segData, wheelData);
-                if (currentPath !== "/") router.push("/");
-              }}
-              className='mb-2'
-            >
-              Copy and Edit
-            </Button>
+              <Button
+                onClick={(e) => {
+                  saveWheelData(segData, wheelData);
+                  if (currentPath !== "/") router.push("/");
+                }}
+                className="mb-2"
+              >
+                Copy and Edit
+              </Button>
             </div>
           )}
         </div>
