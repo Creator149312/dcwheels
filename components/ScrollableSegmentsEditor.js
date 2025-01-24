@@ -7,6 +7,7 @@ import { FaTrash, FaTrashAlt } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { isImageElement } from "@utils/HelperFunctions";
+import SegmentPropertiesEditorPopup from "./SegmentPropertiesEditorPopup";
 
 const ScrollableSegmentsEditor = ({
   dataSegments,
@@ -15,7 +16,11 @@ const ScrollableSegmentsEditor = ({
 }) => {
   // console.log("Data Segments");
   // console.log(dataSegments);
-  const {html} = useContext(SegmentsContext);
+  const { html } = useContext(SegmentsContext);
+
+
+
+
 
   // Function to extract data from the given array and update divs
   const updateDivsFromJson = (jsonArray) => {
@@ -70,23 +75,16 @@ const ScrollableSegmentsEditor = ({
 
   const [divs, setDivs] = useState(updateDivsFromJson(dataSegments));
 
-  // useEffect(() => {
-  //   // Call the function with the JSON input (you can call this function based on some event like button click)
-  //   setDivs(updateDivsFromJson(dataSegments));
-  // }, []);
-
   const updateEditorContents = (updateSegmentsData) => {
-    let updatedHTML = '';
+    let updatedHTML = "";
     setSegTxtData(
       updateSegmentsData.map((item) => {
-        if (item.option === "") {
-          if (item.image.uri !== null) {
-            let imageComp = `<img src="${item.image.uri}" width="50" height="50" />`;
-            updatedHTML += `<div>${imageComp}</div>`
-            return imageComp;
-          }
+        if (item.option === null) {
+          let imageComp = `<img src="${item.image.uri}" width="50" height="50" />`;
+          updatedHTML += `<div>${imageComp}</div>`;
+          return imageComp;
         } else {
-          updatedHTML += `<div>${item.option}</div>`
+          updatedHTML += `<div>${item.option}</div>`;
           return item.option;
         }
       })
@@ -102,6 +100,7 @@ const ScrollableSegmentsEditor = ({
     // console.log("Update Segments Data = ", updateSegmentsData);
     setSegmentsData(updateSegmentsData);
     updateEditorContents(updateSegmentsData);
+    setTotalWeight(calculateTotalWeight(divs));
   }, [divs]);
 
   // Handle text changes for a specific div
@@ -135,10 +134,20 @@ const ScrollableSegmentsEditor = ({
     setDivs((prevDivs) => prevDivs.filter((div) => div.id !== id)); // Remove the div with the matching ID
   };
 
+    
+  const calculateTotalWeight = (DataDivs) => {
+    return DataDivs.reduce((totalWgt, CurrentObject) => {
+      return totalWgt + Number(CurrentObject.size);
+    }, 0);
+  };
+
+  const [totalWeight, setTotalWeight] = useState(calculateTotalWeight(divs));
+  console.log("Total Weight = ",calculateTotalWeight(divs));
+
   return (
     <div className="space-y-4">
       {/* Scrollable area for editing divs */}
-      <div className="overflow-y-auto md:h-72 h-64 pr-2 bg-white dark:bg-gray-800 rounded-sm shadow-md">
+      <div className="overflow-y-auto md:h-72 h-64 bg-white dark:bg-gray-800 rounded-sm shadow-md">
         {/* <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
           Edit Div Settings
         </h2> */}
@@ -152,7 +161,7 @@ const ScrollableSegmentsEditor = ({
               type="text"
               value={div.text}
               onChange={(e) => handleTextChange(div.id, e.target.value)} // Update the text for the div with matching id
-              className="w-full px-1 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
+              className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
               placeholder="Enter text"
             />
 
@@ -161,7 +170,7 @@ const ScrollableSegmentsEditor = ({
               type="color"
               value={div.color}
               onChange={(e) => handleColorChange(div.id, e.target.value)} // Update the color for the div with matching id
-              className="w-10 h-5 border border-gray-300 dark:border-gray-600"
+              className="min-w-5 h-6 border border-gray-300 dark:border-gray-600"
             />
             <input
               type="input"
@@ -171,11 +180,20 @@ const ScrollableSegmentsEditor = ({
             />
             {/* Image Upload Button */}
             <ImageUpload divId={div.id} setDivs={setDivs} currentDivs={divs} />
-
+            <SegmentPropertiesEditorPopup
+              divId={div.id}
+              setDivs={setDivs}
+              currentDivs={divs}
+              handleDeleteDiv={handleDeleteDiv}
+              handleColorChange={handleColorChange}
+              handleTextChange={handleTextChange}
+              handleWeightChange={handleWeightChange}
+              totalWeight={totalWeight}
+            />
             {/* Delete Button */}
             <button
               onClick={() => handleDeleteDiv(div.id)} // Delete the div with the matching id
-              className="text-red-500 hover:text-red-700"
+              className="text-red-500 min-w-7 hover:text-red-700"
             >
               <FaTrashAlt size={20} />
             </button>

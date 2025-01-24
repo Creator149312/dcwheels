@@ -36,7 +36,7 @@ const ImageUpload = ({ divId, setDivs, currentDivs }) => {
       />
      <label
         htmlFor={`image-upload-${divId}`}
-        className="h-5 px-1 rounded-md cursor-pointer"
+        className="h-5 min-w-7 px-1 rounded-md cursor-pointer"
       >
         {imageUrl ? (
           <img

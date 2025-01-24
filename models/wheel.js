@@ -20,6 +20,8 @@ const wheelSchema = new Schema(
       required: true,
     },
     wheelData: { type: Object, default: {} },
+    content: { type: Object, default: {} },
+    category: { type: String },
   },
   {
     timestamps: true,

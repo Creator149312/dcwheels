@@ -127,50 +127,6 @@ const WheelWithInputContentEditable = ({
     }
   };
 
-  // useEffect(() => {
-  //   if (currentPath === "/") {
-  //     //do this when we are in the homepage
-  //     let wheelFromBrowserStorage = getWheelData();
-  //     setLocalStorageWheel(wheelFromBrowserStorage);
-  //     console.log("browser saved wheel = ", wheelFromBrowserStorage);
-
-  //     if (wheelFromBrowserStorage !== null) {
-  //       setSegData(wheelFromBrowserStorage.data);
-  //       setWheelData(wheelFromBrowserStorage.wheelData);
-  //       // maxlengthOfSegmentText = calculateMaxLengthOfText(
-  //       //   wheelFromBrowserStorage.data
-  //       // );
-
-  //       // segTxtfontSize = calculateFontSizeOfText(
-  //       //   maxlengthOfSegmentText,
-  //       //   wheelFromBrowserStorage.data
-  //       // );
-
-  //       setMaxlengthOfSegmentText(
-  //         calculateMaxLengthOfText(wheelFromBrowserStorage.data)
-  //       );
-
-  //       setSegTxtfontSize(
-  //         calculateFontSizeOfText(
-  //           maxlengthOfSegmentText,
-  //           wheelFromBrowserStorage.data
-  //         )
-  //       );
-
-  //       html.current = wheelFromBrowserStorage.data
-  //         .map((perSegData) => `<div>${perSegData}</div>`)
-  //         .join("");
-  //     }
-  //   }
-
-  //   setPrizeNumber(Math.floor(Math.random() * newSegments.length));
-  //   setData(prepareData(segData, wheelData.segColors, maxlengthOfSegmentText));
-  //   // setadvancedOptions(true);
-
-  //   if (wheelPresetSettings !== null && wheelPresetSettings !== undefined)
-  //     setWheelData(wheelPresetSettings);
-  // }, []);
-
   useEffect(() => {
     // console.log("Inside Parameterized User Effect");
     if (!advancedOptions) {
@@ -184,7 +140,6 @@ const WheelWithInputContentEditable = ({
         calculateFontSizeOfText(maxlengthOfSegmentText, segData)
       );
 
-      // console.log("LocalStorageWheelData = ", localStorageWheel);
       if (localStorageWheel !== null) saveWheelData(segData, wheelData);
     }
   }, [segData, wheelData, advancedOptions]);
@@ -349,7 +304,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                 setMustSpin(false);
                 setWinner(segData[prizeNumber]);
               }}
-              innerRadius={15}
+              innerRadius={wheelData?.innerRadius}
               innerBorderWidth={4}
               innerBorderColor="white"
               fontWeight={"normal"}
@@ -411,10 +366,10 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   style={{ display: isVisible ? "block" : "none" }}
                 >
                   {/* For Advanced Editor Selection */}
-                  {/* <EditorSwitchWithPopup
+                  <EditorSwitchWithPopup
                     advOpt={advancedOptions}
                     setAdvOpt={setadvancedOptions}
-                  /> */}
+                  />
 
                   {advancedOptions ? (
                     <ScrollableSegmentsEditor
@@ -443,15 +398,15 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             </>
           ) : (
             <div className="flex flex-col items-center">
-            <Button
-              onClick={(e) => {
-                saveWheelData(segData, wheelData);
-                if (currentPath !== "/") router.push("/");
-              }}
-              className='mb-2'
-            >
-              Copy and Edit
-            </Button>
+              <Button
+                onClick={(e) => {
+                  saveWheelData(segData, wheelData);
+                  if (currentPath !== "/") router.push("/");
+                }}
+                className="mb-2"
+              >
+                Copy and Edit
+              </Button>
             </div>
           )}
         </div>

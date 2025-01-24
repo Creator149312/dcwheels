@@ -7,8 +7,11 @@ export const SegmentsProvider = ({ children }) => {
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
   const [wheelTitle, setWheelTitle] = useState("New Wheel");
-  const [wheelDescription , setWheelDescription] = useState("This is a new spinpapa wheel");
+  const [wheelDescription, setWheelDescription] = useState(
+    "This is a new spinpapa wheel"
+  );
   const MAX_OPTIONS_ON_WHEEL = 100;
+  const INNER_RADIUS = 15;
   const MAX_SPIN_TIME = 10;
   //this wheelData will contain the default wheelData that we use
   const [wheelData, setWheelData] = useState({
@@ -24,6 +27,7 @@ export const SegmentsProvider = ({ children }) => {
     ],
     spinDuration: MAX_SPIN_TIME / 2,
     maxNumberOfOptions: MAX_OPTIONS_ON_WHEEL, //this is max number of options to show on wheel
+    innerRadius: INNER_RADIUS,
   });
   const [data, setData] = useState([]);
   const [segments, setSegments] = useState([]);
@@ -31,10 +35,24 @@ export const SegmentsProvider = ({ children }) => {
     "Purple\nView\nViolot\nVulgar\nBowl\nPile"
   );
 
+  const handleWheelSettingsChange = (newSettings) => {
+    setWheelData((prevWheelData) => ({
+      ...prevWheelData,
+      ...newSettings,
+    }));
+  };
+
   const handleSegColorsChange = (newColorTheme) => {
     setWheelData((prevWheelData) => ({
       ...prevWheelData,
       segColors: newColorTheme,
+    }));
+  };
+
+  const handleInnerRadiusChange = (newRadius) => {
+    setWheelData((prevWheelData) => ({
+      ...prevWheelData,
+      innerRadius: newRadius,
     }));
   };
 
@@ -73,7 +91,9 @@ export const SegmentsProvider = ({ children }) => {
         setWheelDescription,
         setWheelTitle,
         wheelTitle,
-        wheelDescription
+        wheelDescription,
+        handleWheelSettingsChange,
+        handleInnerRadiusChange,
       }}
     >
       {children}
