@@ -28,6 +28,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
 import { useTheme } from "next-themes";
+import AIListGenerator from "./AIListGenerator";
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -332,6 +333,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             ) : (
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
+            <AIListGenerator />
           </div>
         </div>
 

@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 //sending request to create a list
 export async function POST(request) {
   try {
-    const { title, description, data, createdBy, wheelData } = await request.json();
+    const { title, description, data, createdBy, wheelData, category, content } = await request.json();
     let error = "";
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
@@ -22,7 +22,9 @@ export async function POST(request) {
         description,
         data,
         createdBy,
-        wheelData
+        wheelData,
+        category,
+        content
       });
       // console.log("Creation Data", creationData);
       return NextResponse.json({
