@@ -1,34 +1,24 @@
 "use client";
 import { createContext, useRef, useState } from "react";
+import defaultWheelJSON from "@data/formatJSON";
 
 export const SegmentsContext = createContext();
 
+// const Wheels = [defaultWheelJSON];
+
 export const SegmentsProvider = ({ children }) => {
+  const MAX_OPTIONS_ON_WHEEL = defaultWheelJSON.wheelData.maxNumberOfOptions;
+  const INNER_RADIUS = defaultWheelJSON.wheelData.innerRadius;
+  const MAX_SPIN_TIME = defaultWheelJSON.wheelData.spinDuration;
+  
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
-  const [wheelTitle, setWheelTitle] = useState("New Wheel");
+  const [wheelTitle, setWheelTitle] = useState(defaultWheelJSON.title);
   const [wheelDescription, setWheelDescription] = useState(
-    "This is a new spinpapa wheel"
+    defaultWheelJSON.description
   );
-  const MAX_OPTIONS_ON_WHEEL = 100;
-  const INNER_RADIUS = 15;
-  const MAX_SPIN_TIME = 10;
-  //this wheelData will contain the default wheelData that we use
-  const [wheelData, setWheelData] = useState({
-    segColors: [
-      "#EE4040",
-      "#F0CF50",
-      "#815CD1",
-      "#3DA5E0",
-      "#34A24F",
-      "#F9AA1F",
-      "#EC3F3F",
-      "#FF9000",
-    ],
-    spinDuration: MAX_SPIN_TIME / 2,
-    maxNumberOfOptions: MAX_OPTIONS_ON_WHEEL, //this is max number of options to show on wheel
-    innerRadius: INNER_RADIUS,
-  });
+
+  const [wheelData, setWheelData] = useState(defaultWheelJSON.wheelData);
   const [data, setData] = useState([]);
   const [segments, setSegments] = useState([]);
   const [userInputText, setUserInputText] = useState(
@@ -42,33 +32,33 @@ export const SegmentsProvider = ({ children }) => {
     }));
   };
 
-  const handleSegColorsChange = (newColorTheme) => {
-    setWheelData((prevWheelData) => ({
-      ...prevWheelData,
-      segColors: newColorTheme,
-    }));
-  };
+  // const handleSegColorsChange = (newColorTheme) => {
+  //   setWheelData((prevWheelData) => ({
+  //     ...prevWheelData,
+  //     segColors: newColorTheme,
+  //   }));
+  // };
 
-  const handleInnerRadiusChange = (newRadius) => {
-    setWheelData((prevWheelData) => ({
-      ...prevWheelData,
-      innerRadius: newRadius,
-    }));
-  };
+  // const handleInnerRadiusChange = (newRadius) => {
+  //   setWheelData((prevWheelData) => ({
+  //     ...prevWheelData,
+  //     innerRadius: newRadius,
+  //   }));
+  // };
 
-  const handleMaxNumberOfOptionsChange = (newMax) => {
-    setWheelData((prevWheelData) => ({
-      ...prevWheelData,
-      maxNumberOfOptions: newMax,
-    }));
-  };
+  // const handleMaxNumberOfOptionsChange = (newMax) => {
+  //   setWheelData((prevWheelData) => ({
+  //     ...prevWheelData,
+  //     maxNumberOfOptions: newMax,
+  //   }));
+  // };
 
-  const handleSpinDurationChange = (newDuration) => {
-    setWheelData((prevWheelData) => ({
-      ...prevWheelData,
-      spinDuration: newDuration,
-    }));
-  };
+  // const handleSpinDurationChange = (newDuration) => {
+  //   setWheelData((prevWheelData) => ({
+  //     ...prevWheelData,
+  //     spinDuration: newDuration,
+  //   }));
+  // };
 
   return (
     <SegmentsContext.Provider
@@ -82,10 +72,7 @@ export const SegmentsProvider = ({ children }) => {
         data,
         setData,
         wheelData,
-        handleSpinDurationChange,
-        handleSegColorsChange,
         setWheelData,
-        handleMaxNumberOfOptionsChange,
         MAX_OPTIONS_ON_WHEEL,
         MAX_SPIN_TIME,
         setWheelDescription,
@@ -93,7 +80,6 @@ export const SegmentsProvider = ({ children }) => {
         wheelTitle,
         wheelDescription,
         handleWheelSettingsChange,
-        handleInnerRadiusChange,
       }}
     >
       {children}

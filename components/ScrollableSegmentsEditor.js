@@ -3,7 +3,7 @@
 import { useContext, useEffect, useState } from "react";
 import Settings from "@components/Settings";
 import ImageUpload from "@components/ImageUpload";
-import { FaTrash, FaTrashAlt } from "react-icons/fa";
+import { FaTrash, FaTrashAlt, FaCopy } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { isImageElement } from "@utils/HelperFunctions";
@@ -17,10 +17,6 @@ const ScrollableSegmentsEditor = ({
   // console.log("Data Segments");
   // console.log(dataSegments);
   const { html } = useContext(SegmentsContext);
-
-
-
-
 
   // Function to extract data from the given array and update divs
   const updateDivsFromJson = (jsonArray) => {
@@ -60,18 +56,34 @@ const ScrollableSegmentsEditor = ({
     }));
   };
 
-  const addSegment = () => {
-    setDivs((prevDivs) => [
-      ...prevDivs,
-      {
-        id: prevDivs.length + 1, // Unique ID for the new div
-        text: "Default Text",
-        color: "#f8f9fa",
-        size: 1,
-        image: null,
-      },
-    ]);
+  const addSegment = (index) => {
+    if (index >= 0) {
+      setDivs((prevDivs) => {
+        console.log("Index = ", index + "   " + prevDivs[index]);
+        const newDivData = JSON.parse(JSON.stringify(prevDivs[index]));
+
+        newDivData.id = prevDivs.length + 1;
+        return [...prevDivs, newDivData];
+      });
+    } else {
+      setDivs((prevDivs) => [
+        ...prevDivs,
+        {
+          id: prevDivs.length + 1, // Unique ID for the new div
+          text: "Default Text",
+          color: "#f8f9fa",
+          size: 1,
+          image: null,
+        },
+      ]);
+    }
   };
+
+  // const duplicateSegment = (index) => {
+  //   // Create a deep copy of the div's data to avoid modifying the original
+  //   const newDivData = JSON.parse(JSON.stringify(prevDivs[index]));
+  //   initialDivs.push(newDivData);
+  // };
 
   const [divs, setDivs] = useState(updateDivsFromJson(dataSegments));
 
@@ -132,9 +144,14 @@ const ScrollableSegmentsEditor = ({
   // Handle delete for a specific div
   const handleDeleteDiv = (id) => {
     setDivs((prevDivs) => prevDivs.filter((div) => div.id !== id)); // Remove the div with the matching ID
+    setDivs((prevDivs) =>
+      prevDivs.map((divData, newIndex) => ({
+        ...divData,
+        id: newIndex + 1,
+      }))
+    );
   };
 
-    
   const calculateTotalWeight = (DataDivs) => {
     return DataDivs.reduce((totalWgt, CurrentObject) => {
       return totalWgt + Number(CurrentObject.size);
@@ -142,7 +159,7 @@ const ScrollableSegmentsEditor = ({
   };
 
   const [totalWeight, setTotalWeight] = useState(calculateTotalWeight(divs));
-  console.log("Total Weight = ",calculateTotalWeight(divs));
+  console.log("Total Weight = ", calculateTotalWeight(divs));
 
   return (
     <div className="space-y-4">
@@ -164,7 +181,6 @@ const ScrollableSegmentsEditor = ({
               className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800"
               placeholder="Enter text"
             />
-
             {/* Color Picker for Div Background */}
             <input
               type="color"
@@ -190,6 +206,14 @@ const ScrollableSegmentsEditor = ({
               handleWeightChange={handleWeightChange}
               totalWeight={totalWeight}
             />
+            <button
+              onClick={() => {
+                addSegment(div.id - 1);
+              }}
+              className="w-7 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
+            >
+              <FaCopy size={16} />
+            </button>
             {/* Delete Button */}
             <button
               onClick={() => handleDeleteDiv(div.id)} // Delete the div with the matching id

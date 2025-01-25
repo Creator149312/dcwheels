@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import Tooltip from "./Tooltip";
 import ImageUpload from "./ImageUpload";
+import HideSegmentCheckbox from "./HideSegmentCheckbox";
 
 /**
  *
@@ -21,7 +22,7 @@ const SegmentPropertiesEditorPopup = ({
   handleColorChange,
   handleTextChange,
   handleWeightChange,
-  totalWeight
+  totalWeight,
 }) => {
   const {
     handleSpinDurationChange,
@@ -36,7 +37,6 @@ const SegmentPropertiesEditorPopup = ({
   const [selectedTheme, setSelectedTheme] = useState(currentTheme);
   const [spinDuration, setSpinDuration] = useState(wheelData.spinDuration); // Size default to 1.0 (maximum size)
   const [maxOptions, setMaxOptions] = useState(wheelData.maxNumberOfOptions);
-  
 
   // Handle theme change
   const handleThemeChange = (theme) => {
@@ -83,7 +83,7 @@ const SegmentPropertiesEditorPopup = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 z-10 flex justify-center items-center">
           <div className="bg-white p-6 rounded-lg w-96 dark:bg-gray-800 dark:text-white">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Segment Settings</h2>
+              <h3 className="text-xl font-semibold">Segment Settings</h3>
               <button
                 onClick={handleClose}
                 className="text-gray-500 dark:text-gray-400"
@@ -102,7 +102,7 @@ const SegmentPropertiesEditorPopup = ({
                     {/* Input Field for Div Text */}
 
                     <div className="mt-4">
-                      <h3 className="text-lg font-medium">Segment Text</h3>
+                      <h4 className="text-lg font-medium">Segment Text</h4>
                       <input
                         type="text"
                         value={div.text}
@@ -114,7 +114,7 @@ const SegmentPropertiesEditorPopup = ({
                       />
                     </div>
                     <div className="mt-4">
-                      <h3 className="text-lg font-medium">Color for Segment</h3>
+                      <h4 className="text-lg font-medium">Color for Segment</h4>
                       {/* Color Picker for Div Background */}
                       <input
                         type="color"
@@ -126,10 +126,13 @@ const SegmentPropertiesEditorPopup = ({
                       />
                     </div>
                     <div className="mt-4">
-                      <h3 className="text-lg font-medium flex flex-row justify-between">
+                      <h4 className="text-lg font-medium flex flex-row justify-between">
                         <span>Weight </span>
-                         <span>Probability = {Number((div.size / totalWeight).toFixed(2))} </span>
-                      </h3>
+                        <span>
+                          Probability ={" "}
+                          {Number((div.size / totalWeight).toFixed(2))}{" "}
+                        </span>
+                      </h4>
                       <input
                         type="range"
                         value={div.size}
@@ -143,7 +146,7 @@ const SegmentPropertiesEditorPopup = ({
                       />
                     </div>
                     <div className="mt-4 flex flex-row justify-between">
-                      <h3 className="text-lg font-medium">Image for Segment</h3>
+                      <h4 className="text-lg font-medium">Image for Segment</h4>
                       {/* Image Upload Button */}
                       <ImageUpload
                         divId={div.id}
@@ -151,17 +154,20 @@ const SegmentPropertiesEditorPopup = ({
                         currentDivs={currentDivs}
                       />
                     </div>
-
-                    {/* Delete Button */}
+                    <div className="mt-4 flex flex-row justify-between">
+                      <h4 className="text-lg font-medium">Hide</h4>
+                      {/* Image Upload Button */}
+                      {/* <HideSegmentCheckbox /> */}
+                    </div>
                   </div>
                 )
             )}
 
             {/*            
             <div className="mt-4">
-              <h3 className="text-lg font-medium">
+              <h4 className="text-lg font-medium">
                 Weight - {divId.size}
-              </h3>
+              </h4>
               <input
                 type="range"
                 min="1"
@@ -178,9 +184,9 @@ const SegmentPropertiesEditorPopup = ({
             </div>
 
             <div className="mt-4">
-              <h3 className="text-lg font-medium">
+              <h4 className="text-lg font-medium">
                 Max number of Options on Wheel - {maxOptions}
-              </h3>
+              </h4>
               <input
                 type="range"
                 min="4"
