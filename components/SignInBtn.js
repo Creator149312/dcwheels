@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { Button } from "./ui/button";
-import {googleLogo} from "@public/google-logo.png"
-import {useRouter} from "next/navigation"
+import toast from 'react-hot-toast'
 
 export default function SignInBtn() {
   
@@ -12,7 +11,7 @@ export default function SignInBtn() {
     try {
       await signIn('google', { callbackUrl: '/dashboard' }); 
     } catch (error) {
-      console.error("Google Sign-in failed:", error);
+      toast.error("Google Sign-in failed");
       // Handle the error, e.g., display an error message to the user
     }
   };

@@ -28,6 +28,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
 import AIListGenerator from "./AIListGenerator";
+import toast from 'react-hot-toast';
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -101,7 +102,7 @@ const WheelWithInputContentEditable = ({
         // setLocalStorageWheel(wheelObject);
         // console.log("New Wheel Saved on Browser =", wheelObject);
       } catch (e) {
-        console.error("Error saving to localStorage", e);
+        toast.error("Error saving wheel, Please try again after sometime!");
       }
     }
   };

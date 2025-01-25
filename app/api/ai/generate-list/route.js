@@ -24,7 +24,7 @@ export async function POST(req) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    // console.error('OpenAI API error:', error);
     return new Response(JSON.stringify({ error: 'Failed to generate words' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
