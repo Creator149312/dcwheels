@@ -1,7 +1,7 @@
 const defaultWheelJSON = {
   title: "New wheel",
   description: "This is a new spinpapa wheel",
-  data: ["Yang", "Park", "Lee", "Wallace"],
+  data: [{ text: "Gabriel" }, { text: "Rahul" }, { text: "Ram" }],
   wheelData: {
     segColors: [
       "#EE4040",
@@ -17,6 +17,9 @@ const defaultWheelJSON = {
     maxNumberOfOptions: 100, //this is max number of options to show on wheel
     innerRadius: 15,
   },
+  editorData: {
+    advOptions: false,
+  }
 };
 
 export default defaultWheelJSON;

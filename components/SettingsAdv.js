@@ -156,23 +156,19 @@ const themes = [
  * @returns a popup window for all the wheel settings like theme, spin duration and max number of segments to show
  */
 
-const SettingsAdv = () => {
+const SettingsAdv = ({advOptions}) => {
   const {
-    handleSpinDurationChange,
-    handleSegColorsChange,
-    handleMaxNumberOfOptionsChange,
-    handleInnerRadiusChange,
     handleWheelSettingsChange,
     wheelData,
     MAX_OPTIONS_ON_WHEEL,
     MAX_SPIN_TIME,
+    setSegData
   } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
   const currentTheme = { name: "Current", colors: wheelData.segColors };
   const [selectedTheme, setSelectedTheme] = useState(currentTheme);
   const [spinDuration, setSpinDuration] = useState(wheelData.spinDuration); // Size default to 1.0 (maximum size)
   const [maxOptions, setMaxOptions] = useState(wheelData.maxNumberOfOptions);
-  //   const [innerRadius, setInnerRadius] = useState(wheelData.innerRadius);
   // Handle theme change
   const handleThemeChange = (theme) => {
     setSelectedTheme(theme);
@@ -182,11 +178,6 @@ const SettingsAdv = () => {
   const onSpinDurationChange = (e) => {
     setSpinDuration(parseInt(e.target.value));
   };
-
-  // Handle size change
-  //   const onInnerRadiusChange = (e) => {
-  //     setInnerRadius(parseInt(e.target.value));
-  //   };
 
   // Handle options size change
   const onMaxOptionsChange = (e) => {
@@ -198,12 +189,6 @@ const SettingsAdv = () => {
 
   // Handle apply changes
   const handleApply = () => {
-    // Apply changes here (e.g., set the new theme and spin duration to context or global state)
-    // handleSegColorsChange(selectedTheme.colors);
-    // handleMaxNumberOfOptionsChange(maxOptions);
-    // handleSpinDurationChange(spinDuration);
-    // handleInnerRadiusChange(innerRadius);
-
     handleWheelSettingsChange({
       segColors: selectedTheme.colors,
       maxNumberOfOptions: maxOptions,
@@ -218,7 +203,17 @@ const SettingsAdv = () => {
     setMaxOptions(wheelData.maxNumberOfOptions);
     setSelectedTheme({ name: "Current", colors: wheelData.segColors });
     setSpinDuration(wheelData.spinDuration);
-    // setInnerRadius(wheelData.innerRadius);
+    
+    if (advOptions) {
+      setSegData((prevSegData) =>
+        prevSegData.map((segment, index) => ({
+          text: segment.text,
+          weight: segment.weight,
+          visible: segment.visible,
+          color: wheelData.segColors[index % wheelData.segColors.length], 
+        }))
+      );
+    }
   }, [wheelData]);
 
   return (

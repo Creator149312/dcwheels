@@ -1,8 +1,6 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import Settings from "@components/Settings";
-import ImageUpload from "@components/ImageUpload";
 import { FaTrash, FaTrashAlt, FaCopy } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
@@ -14,8 +12,6 @@ const ScrollableSegmentsEditor = ({
   setSegmentsData,
   setSegTxtData,
 }) => {
-  // console.log("Data Segments");
-  // console.log(dataSegments);
   const { html } = useContext(SegmentsContext);
 
   // Function to extract data from the given array and update divs
@@ -29,6 +25,7 @@ const ScrollableSegmentsEditor = ({
           color: item.style?.backgroundColor || "#f8f9fa", // Extracting color from style
           size: item.optionSize, // Default size (this can be modified if needed)
           image: IfImageData.src || null, // Extracting image uri, if it exists
+          visible: true,
         };
         return div;
       } else {
@@ -38,6 +35,7 @@ const ScrollableSegmentsEditor = ({
           color: item.style?.backgroundColor || "#f8f9fa", // Extracting color from style
           size: item.optionSize, // Default size (this can be modified if needed)
           image: item.image?.uri || null, // Extracting image uri, if it exists
+          visible: true,
         };
         return div;
       }
@@ -46,7 +44,7 @@ const ScrollableSegmentsEditor = ({
 
   // Function to get the JSON array from the current divs state
   const getJsonArrayFromDivs = () => {
-    return divs.map((div) => ({
+    return divs.filter((div) => div.visible === true).map((div) => ({
       option: div.text, // Div text
       style: { backgroundColor: div.color }, // Div background color
       image: div.image
@@ -59,7 +57,7 @@ const ScrollableSegmentsEditor = ({
   const addSegment = (index) => {
     if (index >= 0) {
       setDivs((prevDivs) => {
-        console.log("Index = ", index + "   " + prevDivs[index]);
+        // console.log("Index = ", index + "   " + prevDivs[index]);
         const newDivData = JSON.parse(JSON.stringify(prevDivs[index]));
 
         newDivData.id = prevDivs.length + 1;
@@ -94,10 +92,10 @@ const ScrollableSegmentsEditor = ({
         if (item.option === null) {
           let imageComp = `<img src="${item.image.uri}" width="50" height="50" />`;
           updatedHTML += `<div>${imageComp}</div>`;
-          return imageComp;
+          return { text: imageComp, visible: true };
         } else {
           updatedHTML += `<div>${item.option}</div>`;
-          return item.option;
+          return { text: item.option, visible: true };
         }
       })
     );
@@ -114,6 +112,8 @@ const ScrollableSegmentsEditor = ({
     updateEditorContents(updateSegmentsData);
     setTotalWeight(calculateTotalWeight(divs));
   }, [divs]);
+
+  // useEffect(()=>{setDivs(updateDivsFromJson(dataSegments))}, [dataSegments]);
 
   // Handle text changes for a specific div
   const handleTextChange = (id, text) => {
@@ -141,6 +141,15 @@ const ScrollableSegmentsEditor = ({
     );
   };
 
+  const handleVisibilityChange = (id, visible) => {
+    console.log("id = " + id + " Visible = " + visible);
+    setDivs((prevDivs) =>
+      prevDivs.map(
+        (div) => (div.id === id ? { ...div, visible } : div) // Only update the div with the matching ID
+      )
+    );
+  };
+
   // Handle delete for a specific div
   const handleDeleteDiv = (id) => {
     setDivs((prevDivs) => prevDivs.filter((div) => div.id !== id)); // Remove the div with the matching ID
@@ -159,8 +168,9 @@ const ScrollableSegmentsEditor = ({
   };
 
   const [totalWeight, setTotalWeight] = useState(calculateTotalWeight(divs));
-  console.log("Total Weight = ", calculateTotalWeight(divs));
+  // console.log("Total Weight = ", calculateTotalWeight(divs));
 
+  console.log("Divs = ", divs);
   return (
     <div className="space-y-4">
       {/* Scrollable area for editing divs */}
@@ -188,14 +198,22 @@ const ScrollableSegmentsEditor = ({
               onChange={(e) => handleColorChange(div.id, e.target.value)} // Update the color for the div with matching id
               className="min-w-5 h-6 border border-gray-300 dark:border-gray-600"
             />
-            <input
+            {/* <input
               type="input"
               value={div.size}
               onChange={(e) => handleWeightChange(div.id, e.target.value)}
               className="w-7 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
+            /> */}
+
+            <input
+              type="checkbox"
+              checked={div.visible}
+              onChange={(e) => handleVisibilityChange(div.id, e.target.checked)}
+              className="w-8 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
             />
+
             {/* Image Upload Button */}
-            <ImageUpload divId={div.id} setDivs={setDivs} currentDivs={divs} />
+            {/* <ImageUpload divId={div.id} setDivs={setDivs} currentDivs={divs} /> */}
             <SegmentPropertiesEditorPopup
               divId={div.id}
               setDivs={setDivs}
@@ -204,13 +222,14 @@ const ScrollableSegmentsEditor = ({
               handleColorChange={handleColorChange}
               handleTextChange={handleTextChange}
               handleWeightChange={handleWeightChange}
+              handleVisibilityChange={handleVisibilityChange}
               totalWeight={totalWeight}
             />
             <button
               onClick={() => {
                 addSegment(div.id - 1);
               }}
-              className="w-7 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
+              className="w-8 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
             >
               <FaCopy size={16} />
             </button>
@@ -219,7 +238,7 @@ const ScrollableSegmentsEditor = ({
               onClick={() => handleDeleteDiv(div.id)} // Delete the div with the matching id
               className="text-red-500 min-w-7 hover:text-red-700"
             >
-              <FaTrashAlt size={20} />
+              <FaTrashAlt size={16} />
             </button>
           </div>
         ))}

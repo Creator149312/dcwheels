@@ -24,11 +24,13 @@ import {
   getWheelData,
   calculateMaxLengthOfText,
   calculateFontSizeOfText,
+  segmentsToHTMLTxt,
 } from "@utils/HelperFunctions";
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
 import { useTheme } from "next-themes";
 import AIListGenerator from "./AIListGenerator";
+import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -38,6 +40,8 @@ const WheelWithInputContentEditable = ({
     resultList,
     setResultList,
     wheelData,
+    segData,
+    setSegData,
     data,
     setData,
     html,
@@ -47,6 +51,8 @@ const WheelWithInputContentEditable = ({
     setWheelTitle,
     wheelTitle,
     wheelDescription,
+    advancedOptions,
+    setadvancedOptions,
   } = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   const { status, data: session } = useSession();
@@ -57,10 +63,8 @@ const WheelWithInputContentEditable = ({
   // using the following prizeNumber causes error due to newSegments when wheel is imported.
   // const [prizeNumber, setPrizeNumber] = useState( Math.floor(Math.random() * newSegments.length));
 
-  const [segData, setSegData] = useState([]);
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
-  const [advancedOptions, setadvancedOptions] = useState(false);
   const [isVisible, setIsVisible] = useState(true); // state to control visibility
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
@@ -68,11 +72,18 @@ const WheelWithInputContentEditable = ({
 
   const [showOverlay, setShowOverlay] = useState(true);
 
+  // console.log("SegData = ", segData);
+  // console.log("New Segments = ", newSegments);
+
+  // console.log("DATA for Wheel", data);
+
+  /**
+   * used to handle what needs to be done when spin wheel is clicked
+   */
   const handleSpinClick = () => {
     if (!mustSpin) {
       setShowOverlay(false);
       setMustSpin(true);
-      // setShowCelebration(false);
 
       let newPrizeNumber = advancedOptions
         ? pickRandomWinner()
@@ -82,7 +93,6 @@ const WheelWithInputContentEditable = ({
                 ? data.length
                 : wheelData.maxNumberOfOptions)
           );
-      // console.log("Prize Number = ", newPrizeNumber);
       setPrizeNumber(newPrizeNumber);
     }
   };
@@ -130,23 +140,24 @@ const WheelWithInputContentEditable = ({
 
   useEffect(() => {
     // console.log("Inside Parameterized User Effect");
-    if (!advancedOptions) {
-      setData(
-        prepareData(segData, wheelData.segColors, maxlengthOfSegmentText)
-      );
+    setData(
+      prepareData(
+        segData,
+        wheelData.segColors,
+        maxlengthOfSegmentText,
+        advancedOptions
+      )
+    );
 
-      setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
+    setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
 
-      setSegTxtfontSize(
-        calculateFontSizeOfText(maxlengthOfSegmentText, segData)
-      );
+    setSegTxtfontSize(calculateFontSizeOfText(maxlengthOfSegmentText, segData));
 
-      if (localStorageWheel !== null) saveWheelData(segData, wheelData);
-    }
+    if (localStorageWheel !== null) saveWheelData(segData, wheelData);
   }, [segData, wheelData, advancedOptions]);
 
   useEffect(() => {
-    // console.log("Inside Blank User Effect");
+    console.log("Inside Blank User Effect");
     if (currentPath === "/") {
       //do this when we are in the homepage
       let wheelFromBrowserStorage = getWheelData();
@@ -171,14 +182,17 @@ const WheelWithInputContentEditable = ({
           prepareData(
             localSegData.length,
             localWheelData.segColors,
-            initialMaxLength
+            initialMaxLength,
+            advancedOptions
           )
         );
         // setadvancedOptions(true);
 
-        html.current = localSegData
-          .map((perSegData) => `<div>${perSegData}</div>`)
-          .join("");
+        // html.current = localSegData
+        //   .map((perSegData) => `<div>${perSegData.text}</div>`)
+        //   .join("");
+
+        html.current = segmentsToHTMLTxt(localSegData);
       } else {
         let initialMaxLength = calculateMaxLengthOfText(newSegments);
         setMaxlengthOfSegmentText(initialMaxLength);
@@ -189,12 +203,20 @@ const WheelWithInputContentEditable = ({
         setSegData(newSegments);
         setPrizeNumber(Math.floor(Math.random() * newSegments.length));
         setData(
-          prepareData(newSegments, wheelData.segColors, maxlengthOfSegmentText)
+          prepareData(
+            newSegments,
+            wheelData.segColors,
+            maxlengthOfSegmentText,
+            advancedOptions
+          )
         );
 
-        html.current = newSegments
-          .map((perSegData) => `<div>${perSegData}</div>`)
-          .join("");
+        // html.current = newSegments
+        //   .map((perSegData) => `<div>${perSegData.text}</div>`)
+        //   .join("");
+
+        html.current = segmentsToHTMLTxt(newSegments);
+
         saveWheelData(newSegments, wheelData);
         // setadvancedOptions(true);
       }
@@ -207,12 +229,18 @@ const WheelWithInputContentEditable = ({
       setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, newSegments));
       setPrizeNumber(Math.floor(Math.random() * newSegments.length));
       setData(
-        prepareData(newSegments, wheelData.segColors, maxlengthOfSegmentText)
+        prepareData(
+          newSegments,
+          wheelData.segColors,
+          maxlengthOfSegmentText,
+          advancedOptions
+        )
       );
 
-      html.current = newSegments
-        .map((perSegData) => `<div>${perSegData}</div>`)
-        .join("");
+      // html.current = newSegments
+      //   .map((perSegData) => `<div>${perSegData.text}</div>`)
+      //   .join("");
+      html.current = segmentsToHTMLTxt(newSegments);
 
       if (wheelPresetSettings !== null && wheelPresetSettings !== undefined) {
         setWheelData(wheelPresetSettings);
@@ -361,6 +389,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                     toggleVisibility={toggleVisibility}
                     handleToggle={handleToggleFullScreen}
                     isFullScreen={isFullScreen}
+                    advOptions={advancedOptions}
                   />
                 </TabsList>
                 <TabsContent
@@ -374,11 +403,13 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   />
 
                   {advancedOptions ? (
-                    <ScrollableSegmentsEditor
-                      dataSegments={data}
-                      setSegmentsData={setData}
-                      setSegTxtData={setSegData}
-                    />
+                    // <ScrollableSegmentsEditor
+                    // segData={segData}
+                    //   dataSegments={data}
+                    //   setSegmentsData={setData}
+                    //   setSegTxtData={setSegData}
+                    // />
+                    <ScrollableSegmentsEditorAdv />
                   ) : (
                     // <ContentEditableDiv segData={segData} setSegData={setSegData} />
                     <ContentEditableDivImageTest

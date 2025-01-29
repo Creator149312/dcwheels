@@ -1,27 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { SegmentsContext } from "@app/SegmentsContext";
+import { useContext, useState } from "react";
 import { FaImage } from "react-icons/fa";
+import imageCompression from "browser-image-compression";
 
-const ImageUpload = ({ divId, setDivs, currentDivs }) => {
-  // console.log("Div id = ", divId);
-  const [imageUrl, setImageUrl] = useState(currentDivs[divId-1]?.image);
+const regex = /src="([^"]+)"/;
+
+const ImageUpload = ({ selectedIndex, segData }) => {
+  const { updateSegment } = useContext(SegmentsContext);
+  const imgValue = segData[selectedIndex]?.text;
+
+  const [imageUrl, setImageUrl] = useState(
+    imgValue.includes("<img") ? regex.exec(imgValue)[1] : null
+  );
 
   // Handle image upload
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setImageUrl(url);
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 200,
+        useWebWorker: true,
+      };
+      try {
+        const compressedFile = await imageCompression(file, options);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Image = e.target.result;
 
-      // Update the div with the new image URL based on the unique id
-      setDivs((prevDivs) =>
-        prevDivs.map(
-          (div) => (div.id === divId ? { ...div, image: url } : div) // Update the div with matching id
-        )
-      );
-    }else {
-      alert('Please select a valid image file.');
+          setImageUrl(base64Image);
+          updateSegment(
+            selectedIndex,
+            "text",
+            `<img src="${base64Image}" width="25" height="37" />`
+          );
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      alert("Please select a valid image file.");
     }
   };
 
@@ -32,10 +53,10 @@ const ImageUpload = ({ divId, setDivs, currentDivs }) => {
         accept="image/*"
         onChange={handleImageUpload}
         className="hidden"
-        id={`image-upload-${divId}`}
+        id={`image-upload-${selectedIndex}`}
       />
-     <label
-        htmlFor={`image-upload-${divId}`}
+      <label
+        htmlFor={`image-upload-${selectedIndex}`}
         className="h-5 min-w-7 px-1 rounded-md cursor-pointer"
       >
         {imageUrl ? (
@@ -44,16 +65,13 @@ const ImageUpload = ({ divId, setDivs, currentDivs }) => {
             alt="Selected"
             width={20}
             height={20}
-            style={{ objectFit: 'cover' }} // Ensures the image doesn't stretch or distort
+            style={{ objectFit: "cover" }} // Ensures the image doesn't stretch or distort
           />
         ) : (
           <FaImage size={20} />
         )}
       </label>
-
-      {/* following code is used to display the uplaoded image */}
-      {/* {imageUrl && <img src={imageUrl} alt="Div Image" className="mt-2 w-32 h-32 object-cover" />} */}
-    </>
+  </>
   );
 };
 

@@ -160,6 +160,7 @@ const Settings = () => {
     handleSpinDurationChange,
     handleSegColorsChange,
     handleMaxNumberOfOptionsChange,
+    handleWheelSettingsChange,
     wheelData,
     MAX_OPTIONS_ON_WHEEL,
     MAX_SPIN_TIME,
@@ -191,9 +192,11 @@ const Settings = () => {
   // Handle apply changes
   const handleApply = () => {
     // Apply changes here (e.g., set the new theme and spin duration to context or global state)
-    handleSegColorsChange(selectedTheme.colors);
-    handleMaxNumberOfOptionsChange(maxOptions);
-    handleSpinDurationChange(spinDuration);
+    // handleSegColorsChange(selectedTheme.colors);
+    // handleMaxNumberOfOptionsChange(maxOptions);
+    // handleSpinDurationChange(spinDuration);
+
+    handleWheelSettingsChange({segColors: selectedTheme.colors,  maxNumberOfOptions: maxOptions, spinDuration});
 
     setIsOpen(false); // Close the modal after applying changes
   };

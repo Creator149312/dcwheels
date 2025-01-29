@@ -2,6 +2,7 @@
 import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "./ui/button";
+import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 
 const WinnerPopup = ({
   winner,
@@ -14,6 +15,8 @@ const WinnerPopup = ({
   let [open, setOpen] = useState(false);
   const { html } = useContext(SegmentsContext);
   // const { userInputText, setUserInputText } = useContext(SegmentsContext);
+
+  console.log(" Prize Number in Winner Popup = " + prizeNumber);
 
   useEffect(() => {
     if (!mustSpin) {
@@ -31,38 +34,27 @@ const WinnerPopup = ({
     }
   }, [winner, mustSpin]);
 
-  function joinWithNewlines(stringArray) {
-    // Handle empty array case
-    if (!stringArray || stringArray.length === 0) {
-      return "";
-    }
-
-    if (stringArray.length > 1) {
-      // Join all elements except the last with newlines
-      const joinedWithNewlines = stringArray.slice(0, -1).join("\n");
-
-      // Concatenate with the last element and another newline
-      return joinedWithNewlines + "\n" + stringArray[stringArray.length - 1];
-    } else {
-      return stringArray[0] + "\n";
-    }
-  }
-
   const removeWinner = (ifRemoveAll) => {
     let updatedSegData = null;
     if (ifRemoveAll) {
-      updatedSegData = segData.filter((element) => element !== winner);
-      // Filter out element with value 3
+      updatedSegData = segData.filter(
+        (element) => element.text !== winner.text
+      );
     } else {
       updatedSegData = segData.filter(
-        (element, index) => !(element === winner && index === prizeNumber)
+        (element, index) =>
+          !(element.text === winner.text && index === prizeNumber)
       );
     }
+
+    console.log("Updated Seg Data = ", updatedSegData);
     setSegData(updatedSegData);
 
-    html.current = updatedSegData
-      .map((perSegData) => `<div>${perSegData}</div>`)
-      .join("");
+    // html.current = updatedSegData
+    //   .map((perSegData) => `<div>${perSegData.text}</div>`)
+    //   .join("");
+
+    html.current = segmentsToHTMLTxt(updatedSegData);
     setOpen(!open);
     setShowCelebration(!open);
   };
@@ -70,8 +62,11 @@ const WinnerPopup = ({
   const setImgMaxWidth = (temphtml) => {
     if (typeof document !== "undefined" && temphtml) {
       const div = document.createElement("div");
-      div.innerHTML = temphtml;
-
+      div.innerHTML = temphtml.text;
+      // console.log(
+      //   "Temp HTML = " + temphtml.text + " Div INNER = " + div.innerHTML
+      // );
+      // console.log("Div = ", div);
       const imgs = div.getElementsByTagName("img");
 
       Array.from(imgs).forEach((img) => {
@@ -79,6 +74,9 @@ const WinnerPopup = ({
           img.style.width = "100px";
         }
       });
+
+      console.log("Div INNER HTML = ", div.innerHTML);
+
       return div.innerHTML;
     } else {
       return temphtml;
@@ -86,8 +84,12 @@ const WinnerPopup = ({
   };
 
   function containsDuplicates(element) {
-    let count = segData.filter((item) => item === element).length;
-    return count > 1;
+    if (element !== undefined) {
+      let count = segData.filter((item) => item.text === element.text).length;
+      return count > 1;
+    } else {
+      return 0;
+    }
   }
 
   return (
@@ -106,7 +108,7 @@ const WinnerPopup = ({
             <span
               className={`font-extrabold ${
                 winner
-                  ? winner.length > 50
+                  ? winner.text.length > 50
                     ? "text-xl"
                     : "text-2xl"
                   : "text-2xl"

@@ -19,6 +19,7 @@ const TabsListOnEditor = ({
   toggleVisibility,
   handleToggle,
   isFullScreen,
+  advOptions
 }) => {
   return (
     <>
@@ -42,7 +43,7 @@ const TabsListOnEditor = ({
         </Tooltip>
 
         {/* <Settings /> */}
-        <SettingsAdv />
+        <SettingsAdv advOptions={advOptions}/>
         {/* Button to Handle FullScreen Toggle */}
         <Tooltip text="Fullscreen">
           <Button
