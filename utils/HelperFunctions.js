@@ -111,7 +111,7 @@ export function isImageElement(str) {
 export const getWheelData = () => {
   if (typeof window !== "undefined" && window.localStorage) {
     // console.log("Fetching Wheel Object....");
-    const data = window.localStorage.getItem("wheelObject");
+    const data = window.localStorage.getItem("SpinpapaWheel");
     return data ? JSON.parse(data) : null;
   } else {
     // console.log("Local Storage or Window Object Now available");

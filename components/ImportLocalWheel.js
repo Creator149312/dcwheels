@@ -1,11 +1,22 @@
 "use client";
 import { SegmentsContext } from "@app/SegmentsContext";
+import {
+  calculateMaxLengthOfText,
+  prepareData,
+  segmentsToHTMLTxt,
+} from "@utils/HelperFunctions";
 import { useContext, useState } from "react";
 import { FaUpload } from "react-icons/fa";
 
 const ImportLocalWheel = ({ afterImport }) => {
   const [error, setError] = useState(null);
-  const { html, setWheelData } = useContext(SegmentsContext);
+  const {
+    html,
+    setWheelData,
+    setSegData,
+    setadvancedOptions,
+    prepareDataForEditorSwitch,
+  } = useContext(SegmentsContext);
 
   // Handle importing JSON file
   const handleImport = (e) => {
@@ -17,13 +28,15 @@ const ImportLocalWheel = ({ afterImport }) => {
           // Parse the JSON data and pass it to parent component
           const importedData = JSON.parse(reader.result);
           setError(null);
-          afterImport(importedData.data); // Pass data to parent component
-          html.current = importedData.data
-            .map((perSegData) => `<div>${perSegData}</div>`)
-            .join("");
 
+          html.current = segmentsToHTMLTxt(importedData.data);
           setWheelData(importedData.wheelData);
+          setSegData(importedData.data);
+
+          setadvancedOptions(importedData.editorData.advancedOptions);
+          // processOnImportData(importedData);
         } catch (error) {
+          console.log("Error = ", error);
           setError("Invalid JSON file. Please upload a valid JSON.");
         }
       };

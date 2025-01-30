@@ -108,7 +108,7 @@ const WheelWithInputContentEditable = ({
 
     if (typeof window !== "undefined" && window.localStorage) {
       try {
-        window.localStorage.setItem("wheelObject", JSON.stringify(wheelObject));
+        window.localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
         // setLocalStorageWheel(wheelObject);
         // console.log("New Wheel Saved on Browser =", wheelObject);
       } catch (e) {
@@ -210,10 +210,6 @@ const WheelWithInputContentEditable = ({
             advancedOptions
           )
         );
-
-        // html.current = newSegments
-        //   .map((perSegData) => `<div>${perSegData.text}</div>`)
-        //   .join("");
 
         html.current = segmentsToHTMLTxt(newSegments);
 
@@ -403,12 +399,6 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   />
 
                   {advancedOptions ? (
-                    // <ScrollableSegmentsEditor
-                    // segData={segData}
-                    //   dataSegments={data}
-                    //   setSegmentsData={setData}
-                    //   setSegTxtData={setSegData}
-                    // />
                     <ScrollableSegmentsEditorAdv />
                   ) : (
                     // <ContentEditableDiv segData={segData} setSegData={setSegData} />

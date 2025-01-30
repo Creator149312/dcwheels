@@ -1,5 +1,16 @@
 import mongoose, { Schema, models } from "mongoose";
 
+/**
+ * title : used to display title at the tab of browser and to display heading in page
+ * description: used to set description of page it is usually of length less than 125 words
+ * data : is it the list data that is displayed in spinwheel and editor
+ * createdBy : is the person who created the list
+ * wheelData : is the wheel settings like theme of wheel, spin duration, number of segments to show on wheel etc.
+ * content: is used to display content related to wheel in the page
+ * category: is used to associate a category for a wheel
+ * editorData: is data used to display editor with proper settings
+ */
+
 const wheelSchema = new Schema(
   {
     title: {
@@ -11,7 +22,7 @@ const wheelSchema = new Schema(
       required: true,
     },
     data: {
-      type: [String],
+      type: [Object],
       default: [],
       required: true,
     }, // Array of wordDataObjects
@@ -21,7 +32,13 @@ const wheelSchema = new Schema(
     },
     wheelData: { type: Object, default: {} },
     content: { type: Object, default: {} },
-    category: { type: String },
+    category: { type: String, default: "" },
+    editorData: {
+      type: Object,
+      default: {
+        advOptions: false,
+      },
+    },
   },
   {
     timestamps: true,

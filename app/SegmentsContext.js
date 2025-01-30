@@ -4,9 +4,6 @@ import defaultWheelJSON from "@data/formatJSON";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 
 export const SegmentsContext = createContext();
-
-// const Wheels = [defaultWheelJSON];
-
 export const SegmentsProvider = ({ children }) => {
   const MAX_OPTIONS_ON_WHEEL = defaultWheelJSON.wheelData.maxNumberOfOptions;
   const INNER_RADIUS = defaultWheelJSON.wheelData.innerRadius;
@@ -43,9 +40,11 @@ export const SegmentsProvider = ({ children }) => {
       setSegData((prevSegData) =>
         prevSegData.map((segment, index) => ({
           text: segment.text,
-          weight: 1,
-          visible: true,
-          color: wheelData.segColors[index % wheelData.segColors.length],
+          weight: segment?.weight ? segment.weight : 1,
+          visible: segment?.visible ? segment.visible : true,
+          color: segment?.color
+            ? segment.color
+            : wheelData.segColors[index % wheelData.segColors.length],
         }))
       );
     } else {
