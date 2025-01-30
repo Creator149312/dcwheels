@@ -13,7 +13,12 @@ export function replaceUnderscoreWithSpace(str) {
   return str.replace(/_/g, " ");
 }
 
-export const prepareData = (segData, colData, maxlengthOfSegmentText, advOptions) => {
+export const prepareData = (
+  segData,
+  colData,
+  maxlengthOfSegmentText,
+  advOptions
+) => {
   console.log("SEG data inside Prepare Data = ", segData);
   const result = [];
   const colDataLength = colData.length;
@@ -106,6 +111,28 @@ export function isImageElement(str) {
 
   return { isValid: false, src: null };
 }
+
+export const ensureArrayOfObjects = (arr) => {
+  if (!Array.isArray(arr)) {
+    return []; // Or handle the error as you see fit
+  }
+
+  return arr
+    .map((item) => {
+      if (typeof item === "string") {
+        return { text: item };
+      } else if (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.text === "string"
+      ) {
+        return item; // It's already in the correct format
+      } else {
+        return null; // Or handle the error as you see fit for invalid items
+      }
+    })
+    .filter((item) => item !== null); // Remove any invalid items
+};
 
 //get the wheel data storage in browser localstorage
 export const getWheelData = () => {

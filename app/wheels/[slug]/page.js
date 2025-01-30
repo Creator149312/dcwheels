@@ -2,6 +2,7 @@ import WheelWithInputContentEditable from "@components/WheelWithInputContentEdit
 import WheelData from "@data/WheelData";
 import { replaceDashWithUnderscore } from "@utils/HelperFunctions";
 import { redirect } from "next/navigation";
+import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -25,7 +26,7 @@ export default async function Home({ params }) {
   return (
     <div className="p-3">
       {/* <WheelWithInput newSegments={segmentsData} /> */}
-      <WheelWithInputContentEditable newSegments={pageData.segments} />
+      <WheelWithInputContentEditable newSegments={ensureArrayOfObjects(pageData.segments)} />
       <h1 className="text-3xl mb-2">{pageData.heading}</h1>
 
       {/* Map through the content and render accordingly */}
