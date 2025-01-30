@@ -5,6 +5,7 @@ import Wheel from "@models/wheel";
 import { validateObjectID } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
+import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 
 let titleStr = "";
 let listerror = null;
@@ -12,6 +13,7 @@ let listerror = null;
 /*
  *  This file is user for user generated wheels which are saved in database.
  */
+
 
 export async function generateMetadata({ params }, parent) {
   let listdata = null;
@@ -88,7 +90,7 @@ export default async function Page({ params }) {
       {wordsList !== null && listerror == null && (
         <>
           {/* <WheelWithInput newSegments={wordsList.data}/> */}
-          <WheelWithInputContentEditable newSegments={wordsList.data} wheelPresetSettings={wordsList?.wheelData  ? wordsList?.wheelData : null} />
+          <WheelWithInputContentEditable newSegments={ensureArrayOfObjects(wordsList.data)} wheelPresetSettings={wordsList?.wheelData  ? wordsList?.wheelData : null} />
           {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
         <p>{wordsList.description}</p>
         </div> */}

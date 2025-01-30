@@ -11,7 +11,7 @@ const ContentEditableDivResult = () => {
   const { resultList, setResultList } = useContext(SegmentsContext);
 
   result.current = resultList
-    .map((resultElement) => `<div>${resultElement}</div>`)
+    .map((resultElement) => `<div>${resultElement.text}</div>`)
     .join("");
 
   const sortSegments = () => {

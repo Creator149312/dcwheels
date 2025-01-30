@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { FaFileImage, FaRandom, FaSortAlphaDown } from "react-icons/fa";
 import imageCompression from "browser-image-compression";
+import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 
 const ContentEditableDivImageTest = ({ segData, setSegData }) => {
   const { html } = useContext(SegmentsContext);
@@ -12,17 +13,10 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
   const editableDivRef = useRef(null);
   let error = "";
 
-  //this is used to set initial Value of segData to html.current
   html.current =
     html.current === `<div>TestData</div>`
-      ? segData.map((perSegData) => `<div>${perSegData}</div>`).join("")
+      ? segmentsToHTMLTxt(segData)
       : html.current;
-
-  // useEffect(() => {
-  //   html.current = segData
-  //     .map((perSegData) => `<div>${perSegData}</div>`)
-  //     .join("");
-  // }, [segData]);
 
   const handleInputChange = (event) => {
     html.current = event.target.value;
@@ -165,6 +159,7 @@ const ContentEditableDivImageTest = ({ segData, setSegData }) => {
         return 1; // a doesn't have image, b does: b goes first
       } else {
         return a.innerText.localeCompare(b.innerText);
+        // return a.text.localeCompare(b.text);
       }
     });
 
@@ -230,7 +225,7 @@ export default ContentEditableDivImageTest;
 
 function refactorDataFromHTML(html) {
   if (html.current === "") {
-    return ["Add your text here"];
+    return [{ text: "Add your text here" }];
   } else {
     const masterDiv = document.querySelector(".segmentsDiv");
     const contentDivs = masterDiv.querySelectorAll("div");
@@ -245,7 +240,8 @@ function refactorDataFromHTML(html) {
       }
 
       // Add trimmed text to the array
-      if (div.innerHTML !== "<br>" && text.length !== 0) textArray.push(text);
+      if (div.innerHTML !== "<br>" && text.length !== 0)
+        textArray.push({ text });
     });
 
     return textArray;

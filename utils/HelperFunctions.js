@@ -13,35 +13,70 @@ export function replaceUnderscoreWithSpace(str) {
   return str.replace(/_/g, " ");
 }
 
-export const prepareData = (segData, colData, maxlengthOfSegmentText) => {
+export const prepareData = (
+  segData,
+  colData,
+  maxlengthOfSegmentText,
+  advOptions
+) => {
+  console.log("SEG data inside Prepare Data = ", segData);
   const result = [];
   const colDataLength = colData.length;
   for (let i = 0; i < segData.length; i++) {
-    const seg = segData[i];
+    const seg = segData[i].text;
     const colIndex = i % colDataLength;
     const col = colData[colIndex];
 
-    if (seg.includes("<img")) {
-      const regex = /src="([^"]+)"/;
-      const imgUrl = regex.exec(seg)[1];
-      result.push({
-        option: seg,
-        style: { backgroundColor: col},
-        image: {
-          uri: imgUrl,
-          sizeMultiplier: getImageSizeMultiplierValue(segData.length),
-        },
-        optionSize: 1,
-      });
+    if (advOptions) {
+      if (seg.includes("<img")) {
+        const regex = /src="([^"]+)"/;
+        const imgUrl = regex.exec(seg)[1];
+        if (segData[i].visible) {
+          result.push({
+            option: seg,
+            style: { backgroundColor: segData[i].color },
+            image: {
+              uri: imgUrl,
+              sizeMultiplier: getImageSizeMultiplierValue(segData.length),
+            },
+            optionSize: Number(segData[i].weight),
+          });
+        }
+      } else {
+        if (segData[i].visible) {
+          result.push({
+            option:
+              seg.length > maxlengthOfSegmentText
+                ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
+                : seg.substring(0, maxlengthOfSegmentText),
+            style: { backgroundColor: segData[i].color },
+            optionSize: Number(segData[i].weight),
+          });
+        }
+      }
     } else {
-      result.push({
-        option:
-          seg.length > maxlengthOfSegmentText
-            ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
-            : seg.substring(0, maxlengthOfSegmentText),
-        style: { backgroundColor: col },
-        optionSize: 1,
-      });
+      if (seg.includes("<img")) {
+        const regex = /src="([^"]+)"/;
+        const imgUrl = regex.exec(seg)[1];
+        result.push({
+          option: seg,
+          style: { backgroundColor: col },
+          image: {
+            uri: imgUrl,
+            sizeMultiplier: getImageSizeMultiplierValue(segData.length),
+          },
+          optionSize: 1,
+        });
+      } else {
+        result.push({
+          option:
+            seg.length > maxlengthOfSegmentText
+              ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
+              : seg.substring(0, maxlengthOfSegmentText),
+          style: { backgroundColor: col },
+          optionSize: 1,
+        });
+      }
     }
   }
 
@@ -77,11 +112,33 @@ export function isImageElement(str) {
   return { isValid: false, src: null };
 }
 
+export const ensureArrayOfObjects = (arr) => {
+  if (!Array.isArray(arr)) {
+    return []; // Or handle the error as you see fit
+  }
+
+  return arr
+    .map((item) => {
+      if (typeof item === "string") {
+        return { text: item };
+      } else if (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.text === "string"
+      ) {
+        return item; // It's already in the correct format
+      } else {
+        return null; // Or handle the error as you see fit for invalid items
+      }
+    })
+    .filter((item) => item !== null); // Remove any invalid items
+};
+
 //get the wheel data storage in browser localstorage
 export const getWheelData = () => {
   if (typeof window !== "undefined" && window.localStorage) {
     // console.log("Fetching Wheel Object....");
-    const data = window.localStorage.getItem("wheelObject");
+    const data = window.localStorage.getItem("SpinpapaWheel");
     return data ? JSON.parse(data) : null;
   } else {
     // console.log("Local Storage or Window Object Now available");
@@ -91,11 +148,17 @@ export const getWheelData = () => {
 
 export const calculateMaxLengthOfText = (segData) => {
   return Math.min(
-    segData.reduce((acc, word) => {
-      return word.length > acc.length ? word : acc;
+    segData.reduce((acc, segment) => {
+      return segment.text.length > acc.length ? segment.text : acc;
     }, "").length,
     14
   );
+};
+
+export const segmentsToHTMLTxt = (segmentsData) => {
+  return segmentsData
+    .map((perSegData) => `<div>${perSegData.text}</div>`)
+    .join("");
 };
 
 export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
@@ -125,3 +188,44 @@ export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
   );
   return txtSize;
 };
+
+/**
+ * ALL Functions related to Segments
+ * @param {*} entries
+ * @param {*} newSegment
+ * @returns
+ */
+export function addSegment(entries, newSegment) {
+  return [...entries, newSegment];
+}
+
+export function updateSegment(entries, index, updatedSegment) {
+  return [
+    ...entries.slice(0, index),
+    updatedSegment,
+    ...entries.slice(index + 1),
+  ];
+}
+
+export function deleteSegment(entries, index) {
+  return [...entries.slice(0, index), ...entries.slice(index + 1)];
+}
+
+export function duplicateSegment(entries, index) {
+  const newSegment = { ...entries[index] };
+  return [...entries, newSegment];
+}
+
+export function sortSegments(entries, key, order = "asc") {
+  return [...entries].sort((a, b) => {
+    if (order === "asc") {
+      return a[key] > b[key] ? 1 : -1;
+    } else {
+      return a[key] < b[key] ? 1 : -1;
+    }
+  });
+}
+
+export function shuffleSegments(entries) {
+  return [...entries].sort(() => Math.random() - 0.5);
+}

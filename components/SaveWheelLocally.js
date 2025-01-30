@@ -3,14 +3,13 @@ import { FaDownload } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 
-const SaveWheelLocally = ({segmentsData}) => {
+const SaveWheelLocally = () => {
   // State to manage modal visibility and form data
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  // const [data, setData] = useState(segmentsData);
-  const { wheelData } = useContext(SegmentsContext);
+  const { wheelData, segData , advancedOptions} = useContext(SegmentsContext);
 
   // Show modal when user wants to save
   const handleOpenModal = () => {
@@ -30,8 +29,9 @@ const SaveWheelLocally = ({segmentsData}) => {
     const pageData = {
       title: title || "Default Title", // Default title if no input
       description: description || "Default Description", // Default description if no input
-      data: segmentsData,
+      data: segData,
       wheelData: wheelData,
+      editorData: {advancedOptions}
     };
 
     // Convert the page data to a JSON string
@@ -59,12 +59,6 @@ const SaveWheelLocally = ({segmentsData}) => {
 
   return (
     <div className="flex flex-col items-center justify-center py-2">
-      {/* <button
-        className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none"
-        onClick={handleOpenModal}
-      >
-        Save Wheel Locally
-      </button> */}
       <Button
         size={"lg"}
         className="mr-1 p-3 rounded-md text-sm focus:outline-none"

@@ -27,7 +27,7 @@ export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
   const [description, setDescription] = useState("This is my new wheel");
   const createdBy = useSession().data?.user?.email;
-  const { segments, setSegments, wheelData } = useContext(SegmentsContext);
+  const { segData, wheelData } = useContext(SegmentsContext);
 
   const [isSaving, setisSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -36,6 +36,8 @@ export default function SaveWheelBtn({ segmentsData }) {
 
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  console.log("Segments = ", segData);
 
   const router = useRouter();
 
@@ -66,7 +68,7 @@ export default function SaveWheelBtn({ segmentsData }) {
     e.preventDefault();
     setisSaving(true);
 
-    if (!title || !description || !segments) {
+    if (!title || !description || !segData) {
       setError("Title, description and Data are required.");
       setisSaving(false);
       return;
@@ -88,7 +90,7 @@ export default function SaveWheelBtn({ segmentsData }) {
 
     try {
       if (selectedUser) {
-        const data = [...segmentsData];
+        const data = [...segData];
         const res = await fetch(
           `${apiConfig.apiUrl}/wheel/${selectedUser._id}`,
           {
@@ -114,7 +116,7 @@ export default function SaveWheelBtn({ segmentsData }) {
           router.push("/dashboard");
         }
       } else {
-        const data = [...segmentsData];
+        const data = [...segData];
         const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
           method: "POST",
           headers: {
@@ -130,6 +132,7 @@ export default function SaveWheelBtn({ segmentsData }) {
         });
 
         let resObj = await res.json();
+        console.log("Res Obj = ", resObj);
 
         if (resObj?.error) {
           setError("Failed to create a wheel");

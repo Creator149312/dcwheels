@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 
 //sending request to create a list
 export async function POST(request) {
+  let error = "";
   try {
-    const { title, description, data, createdBy, wheelData } = await request.json();
-    let error = "";
+    const { title, description, data, createdBy, wheelData } =
+      await request.json();
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
 
@@ -15,16 +16,16 @@ export async function POST(request) {
     if (vld.length !== 0) error = vld;
 
     if (error.length === 0) {
-      // console.log("Inside Processing and Trying to Create Wheel")
+      console.log("Inside Processing and Trying to Create Wheel");
       await connectMongoDB();
       const creationData = await Wheel.create({
         title,
         description,
         data,
         createdBy,
-        wheelData
+        wheelData,
       });
-      // console.log("Creation Data", creationData);
+      console.log("Creation Data", creationData);
       return NextResponse.json({
         message: "Wheel Created Successfully",
         creationID: creationData._id,

@@ -5,18 +5,21 @@ export default async function Home() {
     <div className="mx-auto">
       <WheelWithInputContentEditable
         newSegments={[
-          "Siddharth",
-          "Peter",
-          "Rob",
-          "Ram",
-          "Paul",
-          "Siya",
-          "Livingston",
-          "Wei",
-          "Yang",
-          "Park",
-          "Lee",
-          "Wallace",
+          { text: "Gabriel", weight: 1, visible: true },
+          {
+            text: "Hanna",
+            weight: 1,
+            visible: true,
+            message: "Where are you going my bro?",
+          },
+          {
+            text: "or try new",
+            weight: 1,
+            visible: true,
+            message: "What is your name my friend?",
+          },
+          { text: "Daniel", weight: 1, visible: true },
+          { text: "Ram", weight: 1, visible: true },
         ]}
       />
       <div className="blog-main mt-4 p-3">
@@ -80,7 +83,8 @@ export default async function Home() {
         <p className="mb-2">You have to follow some steps:</p>
         <p className="mb-3">
           1. Update Wheel: To update the wheel just type the value you want to
-          appear in the editable section. Each line in the editor is treated as sector in a spin wheel.
+          appear in the editable section. Each line in the editor is treated as
+          sector in a spin wheel.
         </p>
         <p className="mb-3">
           2. Create New Wheel: To create new wheel you can just clear all the
@@ -108,8 +112,8 @@ export default async function Home() {
           appropriate theme.
         </p>
         <p className="mb-5">
-          7. Weighted wheel: Each segment on the wheel is assigned a weight.
-          The weight represents the probability of that segment being selected. The
+          7. Weighted wheel: Each segment on the wheel is assigned a weight. The
+          weight represents the probability of that segment being selected. The
           weights on the segments create a probability distribution. For
           example, if a segment has a weight of 5 and another has a weight of 1,
           the first segment is five times more likely to be selected than the
@@ -126,8 +130,8 @@ export default async function Home() {
         <p className="mb-3">
           The user interface is intuitive and user-friendly, allowing anyone to
           create a digital wheel in just a few minutes. Simply input the values
-          in editable textarea you want to add to wheel and customize the wheel to your
-          liking, and you are ready to spin.
+          in editable textarea you want to add to wheel and customize the wheel
+          to your liking, and you are ready to spin.
         </p>
         <p className="mb-3">
           There are variety of customization options available. Users can

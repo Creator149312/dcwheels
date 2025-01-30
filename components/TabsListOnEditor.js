@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import Tooltip from "./Tooltip";
 import Settings from "./Settings";
+import SettingsAdv from "./SettingsAdv";
 
 const TabsListOnEditor = ({
   segData,
@@ -18,6 +19,7 @@ const TabsListOnEditor = ({
   toggleVisibility,
   handleToggle,
   isFullScreen,
+  advOptions
 }) => {
   return (
     <>
@@ -40,7 +42,8 @@ const TabsListOnEditor = ({
           </Button>
         </Tooltip>
 
-        <Settings />
+        {/* <Settings /> */}
+        <SettingsAdv advOptions={advOptions}/>
         {/* Button to Handle FullScreen Toggle */}
         <Tooltip text="Fullscreen">
           <Button
