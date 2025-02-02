@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import AccountEmailVerificationByToken from "@components/AccountEmailVerificationByToken";
-import AccountEmailVerification from "@components/AccountEmailVerification";
 
 export const metadata = {
   title: "Email Verification",

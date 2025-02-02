@@ -25,7 +25,7 @@ export async function POST(req) {
 
     const words = response.choices[0].message.content;
 
-    console.log("Returned Words = ", words);
+    // console.log("Returned Words = ", words);
 
     return new Response(JSON.stringify({ words }), {
       status: 200,

@@ -142,7 +142,7 @@ const ScrollableSegmentsEditor = ({
   };
 
   const handleVisibilityChange = (id, visible) => {
-    console.log("id = " + id + " Visible = " + visible);
+    // console.log("id = " + id + " Visible = " + visible);
     setDivs((prevDivs) =>
       prevDivs.map(
         (div) => (div.id === id ? { ...div, visible } : div) // Only update the div with the matching ID
@@ -170,7 +170,7 @@ const ScrollableSegmentsEditor = ({
   const [totalWeight, setTotalWeight] = useState(calculateTotalWeight(divs));
   // console.log("Total Weight = ", calculateTotalWeight(divs));
 
-  console.log("Divs = ", divs);
+  // console.log("Divs = ", divs);
   return (
     <div className="space-y-4">
       {/* Scrollable area for editing divs */}

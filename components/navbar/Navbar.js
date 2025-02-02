@@ -18,7 +18,7 @@ const Navbar = () => {
   const handleNewWheelClick = (event) => {
     event.preventDefault();
     // Clear the localStorage
-    localStorage.removeItem("wheelObject");
+    localStorage.removeItem("SpinpapaWheel");
     // Redirect to the homepage
     if (currentPath === "/") {
       window.location.reload();

@@ -179,6 +179,103 @@ const WheelData = {
       "wooden",
     ],
   },
+  clash_royale_deck_picker: {
+    title: "Clash Royale Deck Picker",
+    description:
+      "Explore the Clash Royale Deck Picker and spin to choose a random deck for your next battle.",
+    heading: "Clash Royale Deck Picker",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Clash Royale Deck Picker is an exciting tool that helps you randomly select a deck from Clash Royale’s wide variety of cards. The wheel is divided into segments, each representing a different deck combination featuring a mix of offensive, defensive, and tactical cards.",
+      },
+      {
+        type: "paragraph",
+        text: "By spinning the wheel, you'll land on a random deck, providing you with a unique combination of cards to use in your next battle. This tool is great for players looking to try out new strategies or challenge themselves with unfamiliar decks.",
+      },
+      {
+        type: "paragraph",
+        text: "This tool is perfect for those who want a fun and random way to select their deck, or for those who need some inspiration for building a new deck to take to the arena.",
+      },
+    ],
+    segments: [
+      "Hog Cycle",
+      "X-Bow Siege",
+      "Royal Giant Furnace",
+      "P.E.K.K.A Control",
+      "LavaLoon",
+      "P.E.K.K.A Bridge Spam",
+      "Graveyard Poison",
+      "Spell Bait",
+      "Golem Beatdown",
+      "X-Bow Rocket",
+    ],
+  },
+  clash_royale_random_card_generator: {
+    title: "Clash Royale Random Card Generator",
+    description:
+      "Explore the Clash Royale Random Card Generator and spin to select a random card for your next battle.",
+    heading: "Clash Royale Random Card Generator",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Clash Royale Random Card Generator is a tool that helps you randomly select a card from the wide variety available in Clash Royale. Whether you're looking for a random card for your deck or just want to experiment with different cards, the generator adds an element of surprise to your strategy.",
+      },
+      {
+        type: "paragraph",
+        text: "By spinning the wheel, you'll land on a random card, which can range from common cards to legendary ones. This tool is perfect for those who want to shake up their deck or challenge themselves with new card combinations.",
+      },
+      {
+        type: "paragraph",
+        text: "This generator is ideal for players who want to experiment with different card types, try out new strategies, or simply enjoy the randomness that comes with selecting cards for their next battle.",
+      },
+    ],
+    segments: [
+      "Golem",
+      "P.E.K.K.A",
+      "Hog Rider",
+      "Royal Giant",
+      "X-Bow",
+      "Goblin Barrel",
+      "Balloon",
+      "Ice Spirit",
+      "Electro Wizard",
+      "Mega Minion",
+      "Lightning",
+      "Miner",
+      "Princess",
+      "Cannon",
+      "Tornado",
+      "Skeleton Army",
+      "Elixir Collector",
+      "Dark Prince",
+      "Witch",
+      "Zap",
+      "Baby Dragon",
+      "Fireball",
+      "Archers",
+      "Giant",
+      "Inferno Tower",
+      "Graveyard",
+      "Rage",
+      "Valkyrie",
+      "Clone",
+      "Firecracker",
+      "Log",
+      "Rocket",
+      "Skeletons",
+      "Musketeer",
+      "Ice Golem",
+      "Bowler",
+      "Giant Skeleton",
+      "Lumberjack",
+      "Night Witch",
+      "Magic Archer",
+      "Battle Ram",
+    ],
+  },
   random_bird_generator: {
     title: "Random Bird Generator - Spin & Pick Popular Birds",
     description:
@@ -228,7 +325,7 @@ const WheelData = {
     description:
       "Spin this body part generator to randomly select one or more body parts from a list of common and unique body parts found on the human body with just a click of a button.",
     heading: "Random Body Part Generator Wheel - Spin & Pick a Body Part",
-category: "Vocabulary",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -305,7 +402,7 @@ category: "Vocabulary",
     description:
       "Spin this generator to randomly select a throw (rock, paper, or scissors) for the game of rock-paper-scissors with just the click of a button.",
     heading: "Random Rock Paper Scissors Generator - Spin & Pick Your Throw",
-category: "Games",
+    category: "Games",
     content: [
       {
         type: "paragraph",
@@ -328,7 +425,7 @@ category: "Games",
     description:
       "Spin this random city generator to pick your next travel destination from a list of popular cities around the world.",
     heading: "Random City Generator - Spin & Find Your Next City",
-category: "Geography",
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -422,7 +519,7 @@ category: "Geography",
     description:
       "Use this random sports generator to pick a sport to play or try a new one, whether you are with friends or looking for a new challenge.",
     heading: "Random Sports Generator - Spin & Find Your Next Sport",
-category: "Sports",
+    category: "Sports",
     content: [
       {
         type: "paragraph",
@@ -476,7 +573,7 @@ category: "Sports",
     description:
       "Spin this random ice cream flavor generator to pick a yummy list of random flavors, perfect for satisfying your ice cream cravings.",
     heading: "Random Ice Cream Flavor Generator - Spin & Find Your Next Flavor",
-category:"Food & Cooking",
+    category: "Food & Cooking",
     content: [
       {
         type: "paragraph",
@@ -533,7 +630,7 @@ category:"Food & Cooking",
     description:
       "Spin this random Indian city generator to pick a city from over 350+ cities in India for your next adventure, project, or research.",
     heading: "Random Indian City Name Generator - Spin & Pick Towns",
-category: "Geography",
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -1247,7 +1344,7 @@ category: "Geography",
       "Spin this random musical instrument generator to pick and explore various musical instruments from around the world.",
     heading:
       "Random Musical Instrument Generator - Spin & Pick a New Instrument",
-      category: "Vocabulary",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1403,7 +1500,7 @@ category: "Geography",
       "Spin this random constellation and galaxy generator to pick from various constellations and galaxies of the universe, complete with names, mythology, and their locations in the night sky.",
     heading:
       "Random Constellation and Galaxy Generator - Spin & Explore a New Constellation or Galaxy",
-      category: "Vocabulary",
+    category: "Vocabulary",
     content: [
       {
         type: "paragraph",
@@ -1485,7 +1582,7 @@ category: "Geography",
       "Use this Marvel movie character spinner to randomly select a character from the Marvel Cinematic Universe (MCU). Whether you're a fan of superheroes, villains, or sidekicks, this spinner has it all.",
     heading:
       "Marvel Movie Character Spinner - Spin & Find Your Marvel Hero or Villain",
-      category: "Movie",
+    category: "Movie",
     content: [
       {
         type: "paragraph",
@@ -1562,7 +1659,7 @@ category: "Geography",
       "Spin this Encanto character picker to randomly select a character from the magical world of Disney's *Encanto*. Whether you're a fan of the Madrigal family or other magical characters, this spinner is for you!",
     heading:
       "Random Encanto Character Picker - Spin & Find Your Encanto Character",
-      category: "Movie",
+    category: "Movie",
     content: [
       {
         type: "paragraph",
@@ -2397,7 +2494,7 @@ category: "Geography",
       "Spin this random US city generator to randomly select a city from the list of over 300 cities across the United States. Explore new places or find your next destination.",
     heading:
       "Random US City Generator - Spin to Pick American Cities and Towns",
-      category: "Geography",
+    category: "Geography",
     content: [
       {
         type: "paragraph",
@@ -4339,6 +4436,72 @@ category: "Geography",
       "Win a match without taking damage, building, or using healing items (Legendary)",
     ],
   },
+  fortnite_dance_wheel: {
+    title: "Fortnite Dance Wheel",
+    description:
+      "Explore the Fortnite Dance Wheel and spin to discover a random Fortnite dance emote.",
+    heading: "Fortnite Dance Wheel",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Fortnite Dance Wheel is a fun and interactive tool that lets you randomly select one of Fortnite's iconic dance emotes. The wheel is divided into segments, each featuring a different dance move from the game.",
+      },
+      {
+        type: "paragraph",
+        text: "By spinning the wheel, you’ll land on a random Fortnite dance, giving you the chance to try out new moves or challenge your friends to do the same. Whether it’s the popular 'Floss' or the energetic 'Electro Shuffle,' the wheel adds some fun variety to your game time.",
+      },
+      {
+        type: "paragraph",
+        text: "This tool is perfect for Fortnite players who want to add some randomness to their emote choices or just have fun discovering different dances from the game.",
+      },
+    ],
+    segments: [
+      "Floss",
+      "Electro Shuffle",
+      "Orange Justice",
+      "Take the L",
+      "Fresh",
+      "The Worm",
+      "Wave",
+      "Best Mates",
+      "Robot",
+      "Salsation",
+    ],
+  },
+  fortnite_skin_picker: {
+    title: "Fortnite Random Skin Picker Wheel",
+    description:
+      "Explore the Fortnite Random Skin Picker Wheel and spin to choose a random skin for your next match.",
+    heading: "Fortnite Random Skin Picker Wheel",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Fortnite Random Skin Picker Wheel is a fun tool that allows you to randomly pick a skin from Fortnite's vast collection of outfits. The wheel is divided into segments, each representing a different character or skin.",
+      },
+      {
+        type: "paragraph",
+        text: "By spinning the wheel, you can get a random skin to wear for your next Fortnite match, adding an element of surprise and fun to your gameplay. Whether you’re rocking a classic or the latest release, the skin picker wheel offers variety and excitement.",
+      },
+      {
+        type: "paragraph",
+        text: "This tool is perfect for players who want to change up their look or don’t know which skin to choose before jumping into a game. It's also great for those who love the thrill of random selection.",
+      },
+    ],
+    segments: [
+      "Reaper",
+      "Midas",
+      "Renegade Raider",
+      "Drift",
+      "Peely",
+      "John Wick",
+      "Black Knight",
+      "Galaxy",
+      "Marshmello",
+      "Spider-Man",
+    ],
+  },
   fruit_wheel: {
     title: "Fruit Picker Wheel",
     description: "Explore Fruit Picker Wheel and spin to pick a random fruit.",
@@ -4532,6 +4695,72 @@ category: "Geography",
       "Complete a hardcore world (Master)",
       "Obtain a complete set of enchanted netherite armor (Master)",
       "Defeat the ender dragon in a peaceful world (Legendary)",
+    ],
+  },
+  minecraft_resource_wheel: {
+    title: "Minecraft Resource Wheel",
+    description:
+      "Explore the Minecraft Resource Wheel and spin to pick a random in-game resource.",
+    heading: "Minecraft Resource Wheel",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Minecraft Resource Wheel is a fun tool designed to help you randomly pick resources from the world of Minecraft. The wheel is divided into segments representing various in-game items like ores, tools, and blocks.",
+      },
+      {
+        type: "paragraph",
+        text: "By clicking to spin the wheel, you'll land on a random Minecraft resource, helping you make decisions on what to collect or use next during your adventures.",
+      },
+      {
+        type: "paragraph",
+        text: "This tool is perfect for adding a bit of randomness to your gameplay or making quick decisions when you're unsure of what resources to gather next in your Minecraft world.",
+      },
+    ],
+    segments: [
+      "Iron Ore",
+      "Gold Ore",
+      "Diamond",
+      "Coal",
+      "Emerald",
+      "Lapis Lazuli",
+      "Wood",
+      "Stone",
+      "Obsidian",
+      "Redstone",
+    ],
+  },
+  minecraft_biome_wheel: {
+    title: "Minecraft Biome Wheel",
+    description:
+      "Explore the Minecraft Biome Wheel and spin to discover a random biome in the game.",
+    heading: "Minecraft Biome Wheel",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "Minecraft Biome Wheel is a fun tool that helps you randomly select a biome from the vast and diverse world of Minecraft. The wheel is divided into segments representing different biomes, each offering unique resources and challenges.",
+      },
+      {
+        type: "paragraph",
+        text: "By spinning the wheel, you’ll land on a random biome, giving you inspiration for your next exploration or building project. Whether it's the desert, jungle, or icy tundra, the Biome Wheel can guide your next adventure.",
+      },
+      {
+        type: "paragraph",
+        text: "This tool is ideal for players who want a new challenge or those looking to try out different biomes for creative builds or resource gathering in Minecraft.",
+      },
+    ],
+    segments: [
+      "Plains",
+      "Desert",
+      "Jungle",
+      "Taiga",
+      "Savanna",
+      "Swamp",
+      "Ocean",
+      "Mountain",
+      "Forest",
+      "Ice Spikes",
     ],
   },
   mlb_wheel: {

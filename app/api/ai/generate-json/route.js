@@ -25,14 +25,14 @@ export async function POST(req) {
 
     const words = response.choices[0].message.content;
 
-    console.log("Returned Words = ", words);
+    // console.log("Returned Words = ", words);
 
     return new Response(JSON.stringify({ words }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    // console.error("OpenAI API error:", error);
     return new Response(JSON.stringify({ error: "Failed to generate words" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

@@ -224,7 +224,7 @@ const WheelComponent = ({
           const imageAlt = imageData[2] || ""; // Handle missing alt attribute
     
           const image = new Image();
-          console.log('Drawing image....');
+          // console.log('Drawing image....');
           image.onload = () => {
             const imageWidth = image.naturalWidth || 50; // Use natural width if available
             const imageHeight = image.naturalHeight || 45; // Use natural height if available
@@ -234,7 +234,7 @@ const WheelComponent = ({
           image.alt = imageAlt; // Set alt attribute for accessibility
         } else {
           // Handle case where image data is invalid or missing
-          console.warn("Invalid image data in segment:", value);
+          // console.warn("Invalid image data in segment:", value);
           ctx.fillText(segmentTextToDisplay, size / 1.6, 0);
         }
       }

@@ -12,8 +12,11 @@ export const SegmentsProvider = ({ children }) => {
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
   const [advancedOptions, setadvancedOptions] = useState(
-    defaultWheelJSON.editorData.advOptions
+    defaultWheelJSON?.editorData?.advOptions
+      ? defaultWheelJSON?.editorData?.advOptions
+      : false
   );
+
   const [wheelTitle, setWheelTitle] = useState(defaultWheelJSON.title);
   const [wheelDescription, setWheelDescription] = useState(
     defaultWheelJSON.description
@@ -32,10 +35,11 @@ export const SegmentsProvider = ({ children }) => {
       ...prevWheelData,
       ...newSettings,
     }));
+    // console.log("Updated Wheel DAta = ", wheelData);
   };
 
   const prepareDataForEditorSwitch = (advOptions) => {
-    console.log("ADV OPT = ", advOptions);
+    // console.log("ADV OPT = ", advOptions);
     if (advOptions) {
       setSegData((prevSegData) =>
         prevSegData.map((segment, index) => ({

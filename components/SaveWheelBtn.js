@@ -37,7 +37,7 @@ export default function SaveWheelBtn({ segmentsData }) {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  console.log("Segments = ", segData);
+  // console.log("Segments = ", segData);
 
   const router = useRouter();
 
@@ -132,7 +132,7 @@ export default function SaveWheelBtn({ segmentsData }) {
         });
 
         let resObj = await res.json();
-        console.log("Res Obj = ", resObj);
+        // console.log("Res Obj = ", resObj);
 
         if (resObj?.error) {
           setError("Failed to create a wheel");

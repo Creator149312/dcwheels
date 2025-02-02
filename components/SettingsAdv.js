@@ -156,19 +156,30 @@ const themes = [
  * @returns a popup window for all the wheel settings like theme, spin duration and max number of segments to show
  */
 
-const SettingsAdv = ({advOptions}) => {
+const SettingsAdv = ({ advOptions }) => {
   const {
     handleWheelSettingsChange,
     wheelData,
     MAX_OPTIONS_ON_WHEEL,
     MAX_SPIN_TIME,
-    setSegData
+    setSegData,
   } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
   const currentTheme = { name: "Current", colors: wheelData.segColors };
   const [selectedTheme, setSelectedTheme] = useState(currentTheme);
   const [spinDuration, setSpinDuration] = useState(wheelData.spinDuration); // Size default to 1.0 (maximum size)
   const [maxOptions, setMaxOptions] = useState(wheelData.maxNumberOfOptions);
+  const [rmvWinnerAfterSpin, setRmvWinnerAfterSpin] = useState(
+    wheelData?.removeWinnerAfterSpin ? wheelData.removeWinnerAfterSpin : false
+  );
+  const [customPopupDisplayMessage, setCustomPopupDisplayMessage] = useState(
+    wheelData?.customPopupDisplayMessage
+      ? wheelData.customPopupDisplayMessage
+      : "The Winner is..."
+  );
+
+  // console.log("RmvWinner = ", rmvWinnerAfterSpin);
+
   // Handle theme change
   const handleThemeChange = (theme) => {
     setSelectedTheme(theme);
@@ -177,6 +188,14 @@ const SettingsAdv = ({advOptions}) => {
   // Handle size change
   const onSpinDurationChange = (e) => {
     setSpinDuration(parseInt(e.target.value));
+  };
+
+  const onRmvWinnerAfterSpinChange = (e) => {
+    setRmvWinnerAfterSpin(e.target.checked);
+  };
+
+  const onCustomPopupDisplayMessageChange = (e) => {
+    setCustomPopupDisplayMessage(e.target.value);
   };
 
   // Handle options size change
@@ -189,10 +208,13 @@ const SettingsAdv = ({advOptions}) => {
 
   // Handle apply changes
   const handleApply = () => {
+    // console.log("rmvWinnerAfterSpin = ", rmvWinnerAfterSpin);
     handleWheelSettingsChange({
       segColors: selectedTheme.colors,
       maxNumberOfOptions: maxOptions,
       spinDuration,
+      removeWinnerAfterSpin: rmvWinnerAfterSpin,
+      customPopupDisplayMessage,
     });
 
     setIsOpen(false); // Close the modal after applying changes
@@ -203,14 +225,16 @@ const SettingsAdv = ({advOptions}) => {
     setMaxOptions(wheelData.maxNumberOfOptions);
     setSelectedTheme({ name: "Current", colors: wheelData.segColors });
     setSpinDuration(wheelData.spinDuration);
-    
+    setRmvWinnerAfterSpin(wheelData.removeWinnerAfterSpin);
+    setCustomPopupDisplayMessage(wheelData.customPopupDisplayMessage);
+
     if (advOptions) {
       setSegData((prevSegData) =>
         prevSegData.map((segment, index) => ({
           text: segment.text,
           weight: segment.weight,
           visible: segment.visible,
-          color: wheelData.segColors[index % wheelData.segColors.length], 
+          color: wheelData.segColors[index % wheelData.segColors.length],
         }))
       );
     }
@@ -287,6 +311,26 @@ const SettingsAdv = ({advOptions}) => {
                       </div>
                     </div>
 
+                    {/* Range Input for Size Adjustment */}
+                    <div className="mt-4">
+                      <h3 className="text-lg font-medium">
+                        Max number of Options on Wheel - {maxOptions}
+                      </h3>
+                      <input
+                        type="range"
+                        min="4"
+                        max={MAX_OPTIONS_ON_WHEEL}
+                        step="1"
+                        value={maxOptions}
+                        onChange={onMaxOptionsChange}
+                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
+                      />
+                      <div className="flex justify-between text-sm mt-2">
+                        <span>4</span>
+                        <span>100</span>
+                      </div>
+                    </div>
+
                     {/* Range Input for Inner Radius Adjustment */}
                     {/* <div className="mt-4">
                       <h3 className="text-lg font-medium">
@@ -313,26 +357,6 @@ const SettingsAdv = ({advOptions}) => {
                     {/* Range Input for Size Adjustment */}
                     <div className="mt-4">
                       <h3 className="text-lg font-medium">
-                        Max number of Options on Wheel - {maxOptions}
-                      </h3>
-                      <input
-                        type="range"
-                        min="4"
-                        max={MAX_OPTIONS_ON_WHEEL}
-                        step="1"
-                        value={maxOptions}
-                        onChange={onMaxOptionsChange}
-                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
-                      />
-                      <div className="flex justify-between text-sm mt-2">
-                        <span>4</span>
-                        <span>100</span>
-                      </div>
-                    </div>
-
-                    {/* Range Input for Size Adjustment */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">
                         Spin Duration - {spinDuration}
                       </h3>
                       <input
@@ -349,6 +373,32 @@ const SettingsAdv = ({advOptions}) => {
                         <span>Slow</span>
                       </div>
                     </div>
+
+                    <div className="mt-4 flex flex-row justify-between">
+                      <h4 className="text-lg font-medium">
+                        Auto Remove Winner
+                      </h4>
+                      <input
+                        type="checkbox"
+                        checked={rmvWinnerAfterSpin}
+                        onChange={onRmvWinnerAfterSpinChange} // Update visibility for the segment
+                        className="w-8 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <h4 className="text-lg font-medium">
+                        Display Popup with Message
+                      </h4>
+                      <input
+                        type="text"
+                        value={customPopupDisplayMessage}
+                        onChange={onCustomPopupDisplayMessageChange} // Update text for the segment
+                        className="mt-2 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                        placeholder="Enter Message"
+                      />
+                    </div>
+
                     {/* Additional Settings (e.g., Image Upload, etc.) */}
                     {/* Uncomment and implement as necessary */}
                   </div>

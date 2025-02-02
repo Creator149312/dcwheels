@@ -36,7 +36,7 @@ const ImportLocalWheel = ({ afterImport }) => {
           setadvancedOptions(importedData.editorData.advancedOptions);
           // processOnImportData(importedData);
         } catch (error) {
-          console.log("Error = ", error);
+          // console.log("Error = ", error);
           setError("Invalid JSON file. Please upload a valid JSON.");
         }
       };

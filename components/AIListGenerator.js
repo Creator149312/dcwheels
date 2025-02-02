@@ -6,11 +6,12 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { FaMagic } from "react-icons/fa";
 import { useSession } from "next-auth/react";
+import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 
 const AIListGenerator = ({ setSegData }) => {
   const MAX_ALLOWED_WORDS_AFTER_LOGIN = 50;
   const MAX_ALLOWED_BEFORE_LOGIN = 10;
-  const { html, setWheelTitle } = useContext(SegmentsContext);
+  const { html, setWheelTitle, setadvancedOptions } = useContext(SegmentsContext);
   const { status, data: session } = useSession();
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,9 +66,12 @@ const AIListGenerator = ({ setSegData }) => {
     setPrompt("");
     setWordCount(MAX_ALLOWED_BEFORE_LOGIN);
     setTextareaValue("");
-    setSegData(generatedWords);
-    html.current = generatedWords
-      .map((perSegData) => `<div>${perSegData}</div>`)
+    setadvancedOptions(false); //load the basic editor for using the AI generated List
+    
+    const toJSONArray = ensureArrayOfObjects(generatedWords);
+    setSegData(toJSONArray);
+    html.current = toJSONArray
+      .map((perSegData) => `<div>${perSegData.text}</div>`)
       .join("");
     setWheelTitle(prompt);
   };

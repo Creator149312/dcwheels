@@ -13,16 +13,20 @@ const WinnerPopup = ({
   mustSpin,
 }) => {
   let [open, setOpen] = useState(false);
-  const { html } = useContext(SegmentsContext);
+  const { html, wheelData } = useContext(SegmentsContext);
   // const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
-  console.log(" Prize Number in Winner Popup = " + prizeNumber);
+  // console.log(" Prize Number in Winner Popup = " + prizeNumber);
+  // console.log(" Auto Remove Winner", wheelData.removeWinnerAfterSpin);
 
   useEffect(() => {
     if (!mustSpin) {
       const timeoutId = setTimeout(() => {
         if (winner !== "" && winner !== undefined) {
           setOpen(true);
+          if(wheelData.removeWinnerAfterSpin){
+            removeWinner(false);
+          }
           setShowCelebration(true);
         } else {
           setOpen(false);
@@ -47,7 +51,7 @@ const WinnerPopup = ({
       );
     }
 
-    console.log("Updated Seg Data = ", updatedSegData);
+    // console.log("Updated Seg Data = ", updatedSegData);
     setSegData(updatedSegData);
 
     // html.current = updatedSegData
@@ -75,7 +79,7 @@ const WinnerPopup = ({
         }
       });
 
-      console.log("Div INNER HTML = ", div.innerHTML);
+      // console.log("Div INNER HTML = ", div.innerHTML);
 
       return div.innerHTML;
     } else {
@@ -102,7 +106,7 @@ const WinnerPopup = ({
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-11/12 max-w-lg mx-auto p-6 relative z-10">
         <div className="text-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-            The Winner is...
+            {wheelData.customPopupDisplayMessage}
           </h2>
           <p className="text-gray-700 dark:text-gray-300">
             <span

@@ -65,7 +65,7 @@ const WheelWithInputContentEditable = ({
 
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
-  const [isVisible, setIsVisible] = useState(true); // state to control visibility
+  const [isVisible, setIsVisible] = useState(false); // state to control visibility
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
   const [segTxtfontSize, setSegTxtfontSize] = useState(1);
@@ -157,7 +157,7 @@ const WheelWithInputContentEditable = ({
   }, [segData, wheelData, advancedOptions]);
 
   useEffect(() => {
-    console.log("Inside Blank User Effect");
+    // console.log("Inside Blank User Effect");
     if (currentPath === "/") {
       //do this when we are in the homepage
       let wheelFromBrowserStorage = getWheelData();
@@ -286,6 +286,7 @@ const WheelWithInputContentEditable = ({
               : "relative"
           }`}
         >
+          {/* <span className="text-3xl">{wheelTitle}</span> */}
           <WinnerPopup
             winner={winner}
             prizeNumber={prizeNumber}
@@ -335,7 +336,6 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               fontWeight={"normal"}
               // disableInitialAnimation={"false"}
               spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
-              // startingOptionIndex={prizeNumber}
               fontSize={segTxtfontSize}
               pointerProps={{
                 src: "/smallredpointer.png",
@@ -357,7 +357,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             ) : (
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
-            <AIListGenerator />
+            <AIListGenerator setSegData={setSegData}/>
           </div>
         </div>
 
@@ -393,10 +393,10 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   style={{ display: isVisible ? "block" : "none" }}
                 >
                   {/* For Advanced Editor Selection */}
-                  <EditorSwitchWithPopup
+                  {/* <EditorSwitchWithPopup
                     advOpt={advancedOptions}
                     setAdvOpt={setadvancedOptions}
-                  />
+                  /> */}
 
                   {advancedOptions ? (
                     <ScrollableSegmentsEditorAdv />
