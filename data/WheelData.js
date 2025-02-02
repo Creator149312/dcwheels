@@ -180,10 +180,10 @@ const WheelData = {
     ],
   },
   clash_royale_deck_picker: {
-    title: "Clash Royale Deck Picker",
+    title: "Clash Royale Deck Picker Spin Wheel",
     description:
       "Explore the Clash Royale Deck Picker and spin to choose a random deck for your next battle.",
-    heading: "Clash Royale Deck Picker",
+    heading: "Clash Royale Deck Picker Spin Wheel",
     category: "Games",
     content: [
       {
@@ -4697,72 +4697,6 @@ const WheelData = {
       "Defeat the ender dragon in a peaceful world (Legendary)",
     ],
   },
-  minecraft_resource_wheel: {
-    title: "Minecraft Resource Wheel",
-    description:
-      "Explore the Minecraft Resource Wheel and spin to pick a random in-game resource.",
-    heading: "Minecraft Resource Wheel",
-    category: "Games",
-    content: [
-      {
-        type: "paragraph",
-        text: "Minecraft Resource Wheel is a fun tool designed to help you randomly pick resources from the world of Minecraft. The wheel is divided into segments representing various in-game items like ores, tools, and blocks.",
-      },
-      {
-        type: "paragraph",
-        text: "By clicking to spin the wheel, you'll land on a random Minecraft resource, helping you make decisions on what to collect or use next during your adventures.",
-      },
-      {
-        type: "paragraph",
-        text: "This tool is perfect for adding a bit of randomness to your gameplay or making quick decisions when you're unsure of what resources to gather next in your Minecraft world.",
-      },
-    ],
-    segments: [
-      "Iron Ore",
-      "Gold Ore",
-      "Diamond",
-      "Coal",
-      "Emerald",
-      "Lapis Lazuli",
-      "Wood",
-      "Stone",
-      "Obsidian",
-      "Redstone",
-    ],
-  },
-  minecraft_biome_wheel: {
-    title: "Minecraft Biome Wheel",
-    description:
-      "Explore the Minecraft Biome Wheel and spin to discover a random biome in the game.",
-    heading: "Minecraft Biome Wheel",
-    category: "Games",
-    content: [
-      {
-        type: "paragraph",
-        text: "Minecraft Biome Wheel is a fun tool that helps you randomly select a biome from the vast and diverse world of Minecraft. The wheel is divided into segments representing different biomes, each offering unique resources and challenges.",
-      },
-      {
-        type: "paragraph",
-        text: "By spinning the wheel, you’ll land on a random biome, giving you inspiration for your next exploration or building project. Whether it's the desert, jungle, or icy tundra, the Biome Wheel can guide your next adventure.",
-      },
-      {
-        type: "paragraph",
-        text: "This tool is ideal for players who want a new challenge or those looking to try out different biomes for creative builds or resource gathering in Minecraft.",
-      },
-    ],
-    segments: [
-      "Plains",
-      "Desert",
-      "Jungle",
-      "Taiga",
-      "Savanna",
-      "Swamp",
-      "Ocean",
-      "Mountain",
-      "Forest",
-      "Ice Spikes",
-    ],
-  },
   mlb_wheel: {
     title: "MLB Spin Wheel - Pick Random Team or Player",
     description:
@@ -5410,6 +5344,45 @@ const WheelData = {
       "Jeff Hardy",
       "The New Day",
       "Jinder Mahal",
+    ],
+  },
+  star_wars_character_picker: {
+    title: "Star Wars Character Picker Spin Wheel - Hero or Villain",
+    description:
+      "Discover which Star Wars character you align with! Spin the wheel to find out if you are a hero or villain.",
+    heading: "Star Wars Character Picker Spin Wheel - Hero or Villain",
+    category: "Games",
+    content: [
+      {
+        type: "paragraph",
+        text: "The Star Wars Character Picker Spin Wheel is a fun and engaging tool that allows you to explore the iconic universe of Star Wars. This wheel helps you find out if you align more with the heroes or villains of the saga.",
+      },
+      {
+        type: "paragraph",
+        text: "Simply click to spin the wheel, and it will randomly select a character, revealing your potential alter ego from the Star Wars universe.",
+      },
+      {
+        type: "paragraph",
+        text: "Whether you're a lifelong fan or new to the series, this tool offers an entertaining way to discover where you stand in the eternal battle between good and evil.",
+      },
+    ],
+    segments: [
+      "Luke Skywalker",
+      "Darth Vader",
+      "Han Solo",
+      "Emperor Palpatine",
+      "Princess Leia",
+      "Darth Maul",
+      "Obi-Wan Kenobi",
+      "Kylo Ren",
+      "Yoda",
+      "General Grievous",
+      "Rey",
+      "Jabba the Hutt",
+      "Ahsoka Tano",
+      "Count Dooku",
+      "Anakin Skywalker",
+      "Boba Fett",
     ],
   },
   yes_or_no_wheel: {
