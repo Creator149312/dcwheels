@@ -189,6 +189,7 @@ export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
   return txtSize;
 };
 
+
 /**
  * ALL Functions related to Segments
  * @param {*} entries
@@ -229,3 +230,99 @@ export function sortSegments(entries, key, order = "asc") {
 export function shuffleSegments(entries) {
   return [...entries].sort(() => Math.random() - 0.5);
 }
+
+
+
+/**
+ * All Quiz related Helper Functions
+ */
+
+export const generateRandomizedTrueOrFalseQuestions = (wordObjects) => {
+  const questionData = [];
+  const usedPairs = new Set(); // To keep track of the pairs already used
+  const maxQuestions = wordObjects.length;
+
+  // We will generate a maximum of 'maxQuestions' questions
+  while (questionData.length < maxQuestions) {
+    // Randomly shuffle the wordObjects array to randomize the pairing
+    const shuffledWordObjects = [...wordObjects].sort(() => Math.random() - 0.5);
+
+    // Pick the first word and data from the shuffled array
+    const word = shuffledWordObjects[0].word;
+    const correctWordData = shuffledWordObjects[0].wordData;
+
+    // Randomly pick a wrong wordData from other items
+    let wrongWordData;
+    for (let i = 1; i < shuffledWordObjects.length; i++) {
+      if (shuffledWordObjects[i].wordData !== correctWordData) {
+        wrongWordData = shuffledWordObjects[i].wordData;
+        break;
+      }
+    }
+
+    // Ensure we have a valid wrong option
+    if (!wrongWordData) {
+      continue;
+    }
+
+    // Randomly determine if the question will be True or False
+    const isCorrect = Math.random() > 0.5; // 50% chance of being True or False
+    const selectedWordData = isCorrect ? correctWordData : wrongWordData;
+
+    // Ensure the question is unique
+    const questionKey = `${word}-${selectedWordData}`;
+    if (usedPairs.has(questionKey)) {
+      continue; // If we've already used this pair, skip to the next one
+    }
+
+    // Add the question data to the result
+    questionData.push({
+      question: `Is '${word}' associated with '${selectedWordData}'?`,
+      options: ["True", "False"],
+      correctAnswer: isCorrect ? "True" : "False",
+    });
+
+    // Mark this pair as used
+    usedPairs.add(questionKey);
+  }
+
+  return questionData;
+};
+
+
+export const generateRandomizedTrueOrFalseQuestionsBasic = (wordObjects) => {
+  const questionData = [];
+
+  // We will generate exactly 'wordObjects.length' questions
+  for (let i = 0; i < wordObjects.length; i++) {
+    // Pick the current wordObject
+    const wordObject = wordObjects[i];
+    const word = wordObject.word;
+
+    // Randomly pick another wordObject from the list
+    const randomIndex = Math.floor(Math.random() * wordObjects.length);
+    const randomWordObject = wordObjects[randomIndex];
+    const randomWordData = randomWordObject.wordData;
+
+    // Check if wordData is an image (starts with "data:image/")
+    const isImage = randomWordData.startsWith("data:image/");
+
+    // Determine if the answer is True or False
+    const correctAnswer = wordObject.wordData === randomWordData;
+
+    // Prepare the question data
+    const question = {
+      title: `Is '${word}' associated with '${isImage ? "<img src='" + randomWordData + "' alt='image' max-width='150px'/>" : randomWordData}'?`,
+      type: 'TF', // True/False question type
+      options: ['True', 'False'],
+      answer: correctAnswer ? 'True' : 'False',
+      coins: 5, // Default coin reward
+      isImage: isImage, // Add flag for image handling
+    };
+
+    questionData.push(question);
+  }
+
+  return questionData;
+};
+

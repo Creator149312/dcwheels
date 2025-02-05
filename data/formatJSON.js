@@ -22,7 +22,8 @@ const defaultWheelJSON = {
   editorData: {
     advOptions: false,
     visible: false,
-  }
+  },
+  type: 'basic',
 };
 
 export default defaultWheelJSON;

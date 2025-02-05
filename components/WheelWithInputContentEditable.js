@@ -31,6 +31,8 @@ import SharePopup from "./SharePopup";
 import { useTheme } from "next-themes";
 import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
+import ListSelector from "./lists/ListSelector";
+import ListSelectorAdv from "./lists/ListSelectorAdv";
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -392,6 +394,8 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   value="list"
                   style={{ display: isVisible ? "block" : "none" }}
                 >
+                <ListSelector html={html} setSegData={setSegData} />
+                {/* <ListSelectorAdv /> */}
                   {/* For Advanced Editor Selection */}
                   {/* <EditorSwitchWithPopup
                     advOpt={advancedOptions}

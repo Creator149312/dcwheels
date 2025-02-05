@@ -3,6 +3,7 @@ import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "./ui/button";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
+import TrueOrFalseQuestion from "@app/test/questions/TrueOrFalseQuestion";
 
 const WinnerPopup = ({
   winner,
@@ -24,7 +25,7 @@ const WinnerPopup = ({
       const timeoutId = setTimeout(() => {
         if (winner !== "" && winner !== undefined) {
           setOpen(true);
-          if(wheelData.removeWinnerAfterSpin){
+          if (wheelData.removeWinnerAfterSpin) {
             removeWinner(false);
           }
           setShowCelebration(true);
@@ -78,9 +79,6 @@ const WinnerPopup = ({
           img.style.width = "100px";
         }
       });
-
-      // console.log("Div INNER HTML = ", div.innerHTML);
-
       return div.innerHTML;
     } else {
       return temphtml;
@@ -108,6 +106,7 @@ const WinnerPopup = ({
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
             {wheelData.customPopupDisplayMessage}
           </h2>
+          {/*           
           <p className="text-gray-700 dark:text-gray-300">
             <span
               className={`font-extrabold ${
@@ -119,7 +118,25 @@ const WinnerPopup = ({
               }`}
               dangerouslySetInnerHTML={{ __html: setImgMaxWidth(winner) }}
             ></span>
-          </p>
+          </p> */}
+          <div>
+            {winner?.question ? (
+              <TrueOrFalseQuestion questionData={winner.question}/>
+            ) : (
+              <p className="text-gray-700 dark:text-gray-300">
+                <span
+                  className={`font-extrabold ${
+                    winner
+                      ? winner.text.length > 50
+                        ? "text-xl"
+                        : "text-2xl"
+                      : "text-2xl"
+                  }`}
+                  dangerouslySetInnerHTML={{ __html: setImgMaxWidth(winner) }}
+                ></span>
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex justify-end space-x-4">
           <Button
