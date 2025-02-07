@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import useLists from "@utils/customHooks/UseLists";
+import useLists from "@utils/customHooks/useLists";
 import * as XLSX from "xlsx";
 
 const ListSelectorAdv = () => {

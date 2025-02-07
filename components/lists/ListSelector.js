@@ -1,6 +1,6 @@
 "use client";
 import { useContext, useState } from "react";
-import useLists from "@utils/customHooks/UseLists";
+import useLists from "@utils/customHooks/useLists";
 import { generateRandomizedTrueOrFalseQuestionsBasic } from "@utils/HelperFunctions";
 import { SegmentsContext } from "@app/SegmentsContext";
 

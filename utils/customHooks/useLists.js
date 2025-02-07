@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiConfig from '@utils/ApiUrlConfig';
 
 const useLists = (title = null) => {
   const [lists, setLists] = useState([]);
@@ -8,7 +9,7 @@ const useLists = (title = null) => {
   useEffect(() => {
     const fetchLists = async () => {
       try {
-        const res = await fetch('/api/lists');
+        const res = await fetch(`${apiConfig.apiUrl}/lists`);
         if (!res.ok) {
           throw new Error('Failed to fetch lists');
         }
