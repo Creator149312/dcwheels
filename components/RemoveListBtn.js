@@ -3,9 +3,7 @@
 import { HiOutlineTrash } from "react-icons/hi";
 import { useRouter } from "next/navigation";
 import apiConfig from "@utils/ApiUrlConfig";
-// import apiConfig from "@utils/apiUrlConfig";
-
-export default function RemoveListBtn({ id }) {
+export default function RemoveListBtn({ id, type }) {
   const router = useRouter();
 
   const handleRemoveList = async (e) => {
@@ -17,7 +15,9 @@ export default function RemoveListBtn({ id }) {
     const confirmed = confirm("Are you sure?");
 
     if (confirmed) {
-      const res = await fetch(`${apiConfig.apiUrl}/wheel?id=${id}`, {
+      let fetchURLPath = `${apiConfig.apiUrl}/${type}?id=${id}`;
+
+      const res = await fetch(fetchURLPath, {
         method: "DELETE",
       });
 

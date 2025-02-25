@@ -3,7 +3,7 @@ import { useEffect, useState, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "./ui/button";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
-import TrueOrFalseQuestion from "@app/test/questions/TrueOrFalseQuestion";
+import MCQQuestion from "@app/test/questions/MCQQuestion";
 
 const WinnerPopup = ({
   winner,
@@ -14,7 +14,8 @@ const WinnerPopup = ({
   mustSpin,
 }) => {
   let [open, setOpen] = useState(false);
-  const { html, wheelData } = useContext(SegmentsContext);
+  const { html, wheelData, wheelType, advancedOptions } =
+    useContext(SegmentsContext);
   // const { userInputText, setUserInputText } = useContext(SegmentsContext);
 
   // console.log(" Prize Number in Winner Popup = " + prizeNumber);
@@ -68,6 +69,19 @@ const WinnerPopup = ({
     if (typeof document !== "undefined" && temphtml) {
       const div = document.createElement("div");
       div.innerHTML = temphtml.text;
+
+      // if (advancedOptions) {
+      //   console.log("Inside advOption ");
+      //   let j = 0;
+      //   for (let i = 0; i < segData.length; i++) {
+      //     if (segData[i].visible) {
+      //       if (j === prizeNumber) {
+      //         div.innerHTML = segData[i].text;
+      //         break;
+      //       } else j++;
+      //     }
+      //   }
+      // }
       // console.log(
       //   "Temp HTML = " + temphtml.text + " Div INNER = " + div.innerHTML
       // );
@@ -120,8 +134,9 @@ const WinnerPopup = ({
             ></span>
           </p> */}
           <div>
-            {winner?.question ? (
-              <TrueOrFalseQuestion questionData={winner.question}/>
+            {wheelType === "quiz" && winner?.question ? (
+              // <TrueOrFalseQuestion questionData={winner.question}/>
+              <MCQQuestion questionData={winner?.question} />
             ) : (
               <p className="text-gray-700 dark:text-gray-300">
                 <span
@@ -149,25 +164,29 @@ const WinnerPopup = ({
           >
             Close
           </Button>
-          <Button
-            onClick={() => {
-              removeWinner(false);
-            }}
-            className=""
-            variant={"destructive"}
-          >
-            Remove
-          </Button>
-          {containsDuplicates(segData[prizeNumber]) && (
-            <Button
-              onClick={() => {
-                removeWinner(true);
-              }}
-              className=""
-              variant={"destructive"}
-            >
-              Remove All Instances
-            </Button>
+          {wheelType !== "quiz" && !wheelData.removeWinnerAfterSpin && (
+            <>
+              <Button
+                onClick={() => {
+                  removeWinner(false);
+                }}
+                className=""
+                variant={"destructive"}
+              >
+                Remove
+              </Button>
+              {containsDuplicates(segData[prizeNumber]) > 0 && (
+                <Button
+                  onClick={() => {
+                    removeWinner(true);
+                  }}
+                  className=""
+                  variant={"destructive"}
+                >
+                  Remove All Instances
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

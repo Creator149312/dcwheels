@@ -35,6 +35,8 @@ const listSchema = new Schema(
   }
 );
 
+listSchema.index({ title: 1, createdBy: 1 }, { unique: true });
+
 const List = models.List || mongoose.model("List", listSchema);
 
 export default List;

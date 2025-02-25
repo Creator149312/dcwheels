@@ -22,6 +22,10 @@ export const SegmentsProvider = ({ children }) => {
     defaultWheelJSON.description
   );
 
+  const [wheelType, setWheelType] = useState(
+    defaultWheelJSON?.type ? defaultWheelJSON?.type : "basic"
+  );
+
   const [wheelData, setWheelData] = useState(defaultWheelJSON.wheelData);
   const [segData, setSegData] = useState(defaultWheelJSON.data);
   const [data, setData] = useState([]);
@@ -113,6 +117,8 @@ export const SegmentsProvider = ({ children }) => {
         setWheelTitle,
         wheelTitle,
         wheelDescription,
+        wheelType,
+        setWheelType,
         handleWheelSettingsChange,
       }}
     >

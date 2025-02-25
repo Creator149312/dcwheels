@@ -7,6 +7,7 @@ import EmailVerificationToken from "@models/emailverificationtoken";
 import PasswordReset from "@models/passwordreset";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import Page from "@models/page";
 import {
   validatePassword,
   validateUsername,
@@ -17,6 +18,10 @@ import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
 import PasswordResetEmail from "@app/email/PasswordResetEmail";
+import {
+  ensureArrayOfObjects,
+  replaceUnderscoreWithDash,
+} from "@utils/HelperFunctions";
 
 //this method is used when user is logged in
 export const updateNewPassword = async (formData) => {
@@ -220,7 +225,12 @@ export const registerUser = async (formData) => {
       };
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
-      let res = await User.create({ name, email, password: hashedPassword, authMethod: 'emailPassword' });
+      let res = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        authMethod: "emailPassword",
+      });
 
       let timeNow = new Date();
       // let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
@@ -241,7 +251,6 @@ export const registerUser = async (formData) => {
     return { error: "Error Registering a User" };
   }
 };
-
 
 export const generatePasswordResetLink = async (formData) => {
   let errorData = { error: "" };
@@ -267,7 +276,7 @@ export const generatePasswordResetLink = async (formData) => {
       if (user) {
         let timeNow = new Date();
         let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000); //expire in 1 hr
- 
+
         //TODO: send Email for verification
         token = uuid4(); // we want a unique token of 16 characters
 
@@ -347,3 +356,85 @@ export const verifyUserEmailbyToken = async (token) => {
     return { error: "Invalid Token" };
   }
 };
+
+export async function getPageDataBySlug(slug) {
+  //check if token is valid
+  await connectMongoDB();
+  const pageData = await Page.findOne({ slug }).populate("wheel");
+  return pageData;
+}
+
+export async function storeWheelDataToDatabase(initialJSONData) {
+  try {
+    const { jsonKey, jsonData } = initialJSONData; // Extract the JSON data from the request body
+
+    // console.log("JsonKey = ", jsonKey);
+    // console.log("jsonData = ", jsonData);
+
+    // Validate the JSON data to ensure it has the necessary fields
+    if (
+      !jsonData ||
+      !jsonData.title ||
+      !jsonData.description ||
+      !jsonData.segments
+    ) {
+      return { message: "Invalid JSON format. Missing required fields." };
+    }
+
+    await connectMongoDB();
+
+    // Step 1: Create the Wheel
+    const wheelData = jsonData; // Directly use the JSON data received
+
+    const dataObjectForSegments = ensureArrayOfObjects(wheelData.segments);
+
+    const wheelExists = await Wheel.findOne({ title: wheelData.title });
+    if (wheelExists) {
+      // console.log("For title wheelData.title = ", wheelData.title);
+      // console.log("Wheel Exists in DB \n", wheelExists);
+    }
+    let wheel = null;
+
+    if (wheelExists) {
+      wheel = await Wheel.findOneAndUpdate({
+        title: wheelData.title,
+        description: wheelData.description,
+        category: wheelData.category || "",
+      });
+    } else {
+      wheel = new Wheel({
+        title: wheelData.title,
+        description: wheelData.description,
+        data: dataObjectForSegments || [], // Handle content if present
+        createdBy: "gauravsingh9314@gmail.com", // Assuming admin for simplicity
+        category: wheelData.category || "",
+      });
+      // Save the wheel to the database
+      await wheel.save();
+    }
+
+    // console.log("Wheel Saved");
+
+    const pageSlug = replaceUnderscoreWithDash(jsonKey);
+    // Step 2: Create the Page
+    const pageData = {
+      title: `${wheelData.title}`,
+      description: `${wheelData.description}`,
+      content: wheelData.content || [],
+      slug: pageSlug.toLowerCase(),
+      indexed: true,
+      wheel: wheel._id, // Reference to the created wheel
+    };
+
+    const page = new Page(pageData);
+    await page.save();
+
+    // console.log("Paged Saved");
+    return {
+      success: "Page and Wheel Created Successfully",
+    };
+  } catch (error) {
+    // console.log("Error ", error);
+    return { error: "Error Creating Page and Wheel" };
+  }
+}

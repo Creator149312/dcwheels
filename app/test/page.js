@@ -76,103 +76,103 @@ export default function Home() {
     ref.current.value = "";
   };
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-2xl text-gray-700 dark:text-gray-300">
-        <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-          Customizable Random Output Generator
-        </h1>
+  return (<></>
+    // <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+    //   <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-2xl text-gray-700 dark:text-gray-300">
+    //     <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+    //       Customizable Random Output Generator
+    //     </h1>
 
-        <label
-          htmlFor="input1"
-          className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-        >
-          Input 1 (comma-separated):
-        </label>
-        <textarea
-          id="input1"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
-          value={input1}
-          onChange={(e) => setInput1(e.target.value)}
-          rows={3}
-        />
-        <input
-          type="file"
-          ref={fileInputRef1}
-          className="mb-2"
-          onChange={(e) => handleFileInput(e, setInput1, fileInputRef1)}
-        />
+    //     <label
+    //       htmlFor="input1"
+    //       className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+    //     >
+    //       Input 1 (comma-separated):
+    //     </label>
+    //     <textarea
+    //       id="input1"
+    //       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
+    //       value={input1}
+    //       onChange={(e) => setInput1(e.target.value)}
+    //       rows={3}
+    //     />
+    //     <input
+    //       type="file"
+    //       ref={fileInputRef1}
+    //       className="mb-2"
+    //       onChange={(e) => handleFileInput(e, setInput1, fileInputRef1)}
+    //     />
 
-        <label
-          htmlFor="input2"
-          className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-        >
-          Input 2 (comma-separated):
-        </label>
-        <textarea
-          id="input2"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
-          value={input2}
-          onChange={(e) => setInput2(e.target.value)}
-          rows={3}
-        />
-        <input
-          type="file"
-          ref={fileInputRef2}
-          className="mb-2"
-          onChange={(e) => handleFileInput(e, setInput2, fileInputRef2)}
-        />
+    //     <label
+    //       htmlFor="input2"
+    //       className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+    //     >
+    //       Input 2 (comma-separated):
+    //     </label>
+    //     <textarea
+    //       id="input2"
+    //       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
+    //       value={input2}
+    //       onChange={(e) => setInput2(e.target.value)}
+    //       rows={3}
+    //     />
+    //     <input
+    //       type="file"
+    //       ref={fileInputRef2}
+    //       className="mb-2"
+    //       onChange={(e) => handleFileInput(e, setInput2, fileInputRef2)}
+    //     />
 
-        <label
-          htmlFor="input3"
-          className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-        >
-          Input 3 (Optional, comma-separated):
-        </label>
-        <textarea
-          id="input3"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
-          value={input3}
-          onChange={(e) => setInput3(e.target.value)}
-          rows={3}
-        />
-        <input
-          type="file"
-          ref={fileInputRef3}
-          className="mb-2"
-          onChange={(e) => handleFileInput(e, setInput3, fileInputRef3)}
-        />
+    //     <label
+    //       htmlFor="input3"
+    //       className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+    //     >
+    //       Input 3 (Optional, comma-separated):
+    //     </label>
+    //     <textarea
+    //       id="input3"
+    //       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-2 bg-white dark:bg-gray-700"
+    //       value={input3}
+    //       onChange={(e) => setInput3(e.target.value)}
+    //       rows={3}
+    //     />
+    //     <input
+    //       type="file"
+    //       ref={fileInputRef3}
+    //       className="mb-2"
+    //       onChange={(e) => handleFileInput(e, setInput3, fileInputRef3)}
+    //     />
 
-        <label
-          htmlFor="format"
-          className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-        >
-          Output Format (e.g., {1} in {2} {1} {3} {2}):
-        </label>
-        <input
-          type="text"
-          id="format"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-4 bg-white dark:bg-gray-700"
-          value={format}
-          onChange={(e) => setFormat(e.target.value)}
-        />
+    //     <label
+    //       htmlFor="format"
+    //       className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+    //     >
+    //       Output Format (e.g., {1} in {2} {1} {3} {2}):
+    //     </label>
+    //     <input
+    //       type="text"
+    //       id="format"
+    //       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline mb-4 bg-white dark:bg-gray-700"
+    //       value={format}
+    //       onChange={(e) => setFormat(e.target.value)}
+    //     />
 
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-700 dark:hover:bg-blue-800"
-          onClick={generateOutput}
-        >
-          Generate
-        </button>
+    //     <button
+    //       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded dark:bg-blue-700 dark:hover:bg-blue-800"
+    //       onClick={generateOutput}
+    //     >
+    //       Generate
+    //     </button>
 
-        {output && (
-          <div className="mt-6 text-lg">
-            <p className="font-semibold text-gray-700 dark:text-gray-300">
-              Generated Output:
-            </p>
-            <p className="text-gray-700 dark:text-gray-300">{output}</p>
-          </div>
-        )}
-      </div>
-    </div>
+    //     {output && (
+    //       <div className="mt-6 text-lg">
+    //         <p className="font-semibold text-gray-700 dark:text-gray-300">
+    //           Generated Output:
+    //         </p>
+    //         <p className="text-gray-700 dark:text-gray-300">{output}</p>
+    //       </div>
+    //     )}
+    //   </div>
+    // </div>
   );
 }

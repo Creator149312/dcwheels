@@ -14,6 +14,18 @@ const themes = [
     colors: ["#FF5733", "#FF8D1A", "#FFBD33", "#FFDF33", "#FFD700"], // Warm oranges and yellows
   },
   {
+    name: "Mystic Forest",
+    colors: ["#2E8B57", "#228B22", "#6B8E23", "#9ACD32", "#98FB98"], // Fresh greens and earthy tones
+  },
+  {
+    name: "Birds Paradise",
+    colors: ["#FF6347", "#FFD700", "#00FA9A", "#FF1493", "#40E0D0"], // Coral reds, sunny yellows, vibrant greens, and ocean blues
+  },
+  {
+    name: "Electric Vibes",
+    colors: ["#00FFFF", "#00BFFF", "#1E90FF", "#FFD700", "#FF4500"], // Bright blues, yellows, and oranges
+  },
+  {
     name: "Ocean Breeze",
     colors: ["#0099FF", "#00BFFF", "#1E90FF", "#00CED1", "#7FFFD4"], // Blues and turquoise tones
   },
@@ -24,6 +36,168 @@ const themes = [
   {
     name: "Neon Lights",
     colors: ["#39FF14", "#FF007F", "#00FFFF", "#FFFC00", "#FF6600"], // Neon green, pink, cyan, yellow, and orange
+  },
+  {
+    name: "Rock Paper Scissors",
+    colors: [
+      "#808080", // Rock (Gray)
+      "#F5F5F5", // Paper (Light Gray)
+      "#FF6347", // Scissors (Red)
+      "#2F4F4F", // Background (Dark Slate)
+      "#FFD700", // Victory Highlight (Gold)
+    ],
+  },
+  {
+    name: "Urban Pulse",
+    colors: [
+      "#FF6347", // Bright Coral (Vibrant Energy / Sunset)
+      "#FFD700", // Golden Yellow (City Lights)
+      "#32CD32", // Fresh Green (Parks & Nature)
+      "#D3D3D3", // Light Gray (Modern Architecture & Infrastructure)
+      "#FF4500", // Vibrant Orange (Sunset / Energy)
+    ],
+  },
+  {
+    name: "Days of the Week",
+    colors: [
+      "#FFD700", // Monday (Golden Yellow for a fresh start and optimism)
+      "#00BFFF", // Tuesday (Sky Blue for productivity and focus)
+      "#32CD32", // Wednesday (Green for balance and harmony)
+      "#FF6347", // Thursday (Coral for energy and excitement)
+      "#8A2BE2", // Friday (Purple for creativity and relaxation)
+    ],
+  },
+  {
+    name: "Sports Vibes",
+    colors: [
+      "#FF4500", // Energy (Bright Orange for passion and excitement)
+      "#1E90FF", // Focus (Bright Blue for concentration and teamwork)
+      "#32CD32", // Victory (Green for success and growth)
+      "#FFD700", // Glory (Golden Yellow for achievement and excellence)
+      "#8B0000", // Intensity (Deep Red for strength and determination)
+    ],
+  },
+  {
+    name: "Anime Vibes",
+    colors: [
+      "#F9A8D4", // Soft Pink (Popular in anime art and character design)
+      "#7DD3FC", // Light Sky Blue (Reflects anime's dynamic backgrounds)
+      "#FEE2E2", // Light Peach (Represents anime's warmth and charm)
+      "#A78BFA", // Lavender Purple (Often seen in fantasy and magical anime)
+      "#D1FAE5", // Mint Green (Used in calming and serene anime scenes)
+    ],
+  },
+  {
+    name: "Cosmic Wonders",
+    colors: ["#9B4F96", "#4A90E2", "#FFD700", "#F39C12", "#D32F2F"],
+  },
+  {
+    name: "Geographic Wonders",
+    colors: ["#006994", "#228B22", "#EDC9AF", "#A9A9A9", "#FFD700"],
+  },
+  {
+    name: "Music Vibes",
+    colors: ["#D32F2F", "#0288D1", "#FFC107", "#8E24AA", "#43A047"],
+  },
+  {
+    name: "Global Community",
+    colors: ["#F57C00", "#8E24AA", "#0288D1", "#388E3C", "#F44336"],
+  },
+  {
+    name: "Halloween Vibes",
+    colors: [
+      "#FF5733", // Pumpkin Orange
+      "#900C3F", // Blood Red
+      "#F39C12", // Neon Yellow (associated with spooky lights)
+      "#F1C40F", // Witch's Gold
+      "#8E44AD", // Haunted Purple
+    ],
+  },
+  {
+    name: "Chemistry Vibes",
+    colors: [
+      "#0077FF", // Atomic Blue
+      "#4CAF50", // Molecule Green
+      "#D32F2F", // Chemical Reaction Red
+      "#FFEB3B", // Lab Glass Yellow
+      "#8E44AD", // Chemical Compound Purple
+    ],
+  },
+  {
+    name: "Light Woodish Foolish",
+    colors: ["#F5DEB3", "#FFF8DC", "#FAEBD7", "#D3D3D3", "#E8E8E8"],
+  },
+  {
+    name: "Food Theme",
+    colors: [
+      "#FF6347", // Tomato Red (representing pizza and pasta)
+      "#FFD700", // Gold (representing golden fries and croissants)
+      "#32CD32", // Lime Green (representing fresh vegetables and salads)
+      "#FF4500", // Orange Red (representing spicy foods like tacos and chili)
+      "#D2691E", // Chocolate (representing desserts like chocolate cake and brownies)
+    ],
+  },
+  {
+    name: "Movie Theme",
+    colors: ["#AC1C1C", "#F1C40F", "#D35400", "#2980B9", "#2ECC71"],
+  },
+  {
+    name: "Fortnite Theme",
+    colors: [
+      "#F5A623", // Orange (representing the game's vibrant, energetic aesthetic)
+      "#1E2A47", // Dark Blue (representing the game's night-time or battle royale atmosphere)
+      "#9B59B6", // Purple (representing the vibrant skins and the in-game universe)
+      "#2ECC71", // Green (representing the game's more natural elements like forests and fields)
+      "#E74C3C", // Red (representing the intense action and explosions in the game)
+    ],
+  },
+  {
+    name: "Minecraft Theme",
+    colors: ["#4E8B1B", "#7C8A42", "#1E2B23", "#D8A96A", "#E0D7B9"],
+  },
+  {
+    name: "Twister Theme",
+    colors: ["#FF0000", "#FFFF00", "#00FF00", "#0000FF"],
+  },
+  {
+    name: "Love Theme",
+    colors: ["#FF4C7A", "#FF6F61", "#FFB6C1", "#8B0000", "#FFC0CB"],
+  },
+  {
+    name: "Christmas Theme",
+    colors: ["#FF0000", "#008000", "#FFD700", "#FFFFFF", "#FF6347"],
+  },
+  {
+    name: "Mild Woodish",
+    colors: ["#C19A6B", "#A0522D", "#8B4513", "#D2691E", "#CD853F"],
+  },
+  {
+    name: "Into The Wild",
+    colors: ["#F4A261", "#2A9D8F", "#8D6E63", "#3B82F6", "#FF6F61"],
+  },
+  {
+    name: "Marvel Universe",
+    colors: ["#D32F2F", "#1976D2", "#FFC107", "#4CAF50", "#9C27B0"],
+  },
+  {
+    name: "Ice Cream Delight",
+    colors: [
+      "#F8C8DC", // Strawberry Pink (Sweet and fruity)
+      "#D2691E", // Chocolate Brown (Rich and indulgent)
+      "#98FB98", // Mint Green (Fresh and cool)
+      "#FFF5A1", // Vanilla Cream (Classic and smooth)
+      "#FF7F50", // Coral (Fruity and refreshing, like tropical flavors)
+    ],
+  },
+  {
+    name: "Anatomical Essence",
+    colors: [
+      "#F4C2C2", // Skin tone (soft pink)
+      "#FF6347", // Heart (red)
+      "#98FB98", // Lungs (light green)
+      "#8B4513", // Muscles (brown)
+      "#FFD700", // Bones (golden yellow)
+    ],
   },
   {
     name: "Electric Purple",

@@ -19,7 +19,6 @@ export const prepareData = (
   maxlengthOfSegmentText,
   advOptions
 ) => {
-  console.log("SEG data inside Prepare Data = ", segData);
   const result = [];
   const colDataLength = colData.length;
   for (let i = 0; i < segData.length; i++) {
@@ -189,7 +188,6 @@ export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
   return txtSize;
 };
 
-
 /**
  * ALL Functions related to Segments
  * @param {*} entries
@@ -231,8 +229,6 @@ export function shuffleSegments(entries) {
   return [...entries].sort(() => Math.random() - 0.5);
 }
 
-
-
 /**
  * All Quiz related Helper Functions
  */
@@ -245,7 +241,9 @@ export const generateRandomizedTrueOrFalseQuestions = (wordObjects) => {
   // We will generate a maximum of 'maxQuestions' questions
   while (questionData.length < maxQuestions) {
     // Randomly shuffle the wordObjects array to randomize the pairing
-    const shuffledWordObjects = [...wordObjects].sort(() => Math.random() - 0.5);
+    const shuffledWordObjects = [...wordObjects].sort(
+      () => Math.random() - 0.5
+    );
 
     // Pick the first word and data from the shuffled array
     const word = shuffledWordObjects[0].word;
@@ -289,7 +287,6 @@ export const generateRandomizedTrueOrFalseQuestions = (wordObjects) => {
   return questionData;
 };
 
-
 export const generateRandomizedTrueOrFalseQuestionsBasic = (wordObjects) => {
   const questionData = [];
 
@@ -312,10 +309,14 @@ export const generateRandomizedTrueOrFalseQuestionsBasic = (wordObjects) => {
 
     // Prepare the question data
     const question = {
-      title: `Is '${word}' associated with '${isImage ? "<img src='" + randomWordData + "' alt='image' max-width='150px'/>" : randomWordData}'?`,
-      type: 'TF', // True/False question type
-      options: ['True', 'False'],
-      answer: correctAnswer ? 'True' : 'False',
+      title: `Is '${word}' associated with '${
+        isImage
+          ? "<img src='" + randomWordData + "' alt='image' max-width='150px'/>"
+          : randomWordData
+      }'?`,
+      type: "TF", // True/False question type
+      options: ["True", "False"],
+      answer: correctAnswer ? "True" : "False",
       coins: 5, // Default coin reward
       isImage: isImage, // Add flag for image handling
     };
@@ -326,3 +327,127 @@ export const generateRandomizedTrueOrFalseQuestionsBasic = (wordObjects) => {
   return questionData;
 };
 
+export const generateRandomizedMCQsBasic = (items) => {
+  return items.map((item) => {
+    // Extract the word and its associated wordData
+    const { word, wordData } = item;
+
+    // Check if wordData is an image (starts with "data:image/")
+    const isImage = wordData.startsWith("data:image/");
+
+    // Use wordData as a possible option for the correct answer, we will generate a few random options
+    const allOptions = generateRandomOptions(
+      items,
+      `${
+        isImage
+          ? "<img src='" + wordData + "' alt='image' width='50px'/>"
+          : wordData
+      }`
+    );
+    // Randomize the options to ensure the correct answer is at a random position
+    const options = shuffle(allOptions);
+
+    return {
+      title: `What is the meaning of ${word}?`, // Generate the question dynamically using the word
+      type: "MCQ", // Question type
+      options: options, // Randomized options
+      answer: wordData, // Correct answer
+      coins: 5, // Default coin reward
+      isImage, // Default for image handling (you can modify it as needed)
+    };
+  });
+};
+
+// Helper function to generate random options (to create incorrect answers)
+export const generateRandomOptionsArray = (items, correctWordData) => {
+  const randomOptions = [];
+  // Create a pool of random words to generate incorrect answers
+  while (randomOptions.length < 3) {
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    const randomWordData = randomItem.wordData
+      ? randomItem.wordData
+      : randomOptions.length;
+
+    // Avoid duplicating the correct answer
+    if (
+      randomWordData !== correctWordData &&
+      !randomOptions.includes(randomWordData)
+    ) {
+      // Check if wordData is an image (starts with "data:image/")
+      const isImage = randomWordData.startsWith("data:image/");
+      randomOptions.push(
+        `${
+          isImage
+            ? "<img src='" + randomWordData + "' alt='image' width='50px'/>"
+            : randomWordData
+        }`
+      );
+    }
+  }
+  return randomOptions;
+};
+
+export const generateRandomOptions = (items, correctWordData) => {
+  const randomOptions = new Set();
+  randomOptions.add(correctWordData);
+
+  // Create a pool of random words to generate incorrect answers
+  while (randomOptions.size < 4) {
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    const randomWordData = randomItem.wordData
+      ? randomItem.wordData
+      : randomOptions.size;
+
+    // Avoid duplicating the correct answer
+    if (
+      randomWordData !== correctWordData &&
+      !Array.from(randomOptions).includes(randomWordData)
+    ) {
+      // Check if wordData is an image (starts with "data:image/")
+      const isImage = randomWordData.startsWith("data:image/");
+      randomOptions.add(
+        `${
+          isImage
+            ? "<img src='" + randomWordData + "' alt='image' width='50px'/>"
+            : randomWordData
+        }`
+      );
+    }
+  }
+
+  return Array.from(randomOptions);
+};
+
+// Utility function to shuffle an array
+export function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
+  return array;
+}
+
+
+export function formatWheelData(inputData) {
+  const formattedData = {};
+
+  // Loop through the keys of the input JSON object (such as 'writing_prompts_wheel')
+  Object.keys(inputData).forEach((key) => {
+    const wheelData = inputData[key];
+
+    // Format the wheel data into the desired structure
+    formattedData[key] = {
+      title: wheelData.title,
+      description: wheelData.description,
+      heading: wheelData.heading,
+      category: wheelData.category,
+      content: wheelData.content.map((contentItem) => ({
+        type: contentItem.type,
+        text: contentItem.text,
+      })),
+      segments: wheelData.segments,
+    };
+  });
+
+  return formattedData;
+}

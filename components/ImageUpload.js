@@ -63,12 +63,12 @@ const ImageUpload = ({ selectedIndex, segData }) => {
           <img
             src={imageUrl}
             alt="Selected"
-            width={20}
-            height={20}
+            width={25}
+            height={25}
             style={{ objectFit: "cover" }} // Ensures the image doesn't stretch or distort
           />
         ) : (
-          <FaImage size={20} />
+          <FaImage size={25} />
         )}
       </label>
   </>

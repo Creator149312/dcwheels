@@ -4,10 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import WinnerPopup from "@components/WinnerPopup";
 // import { Wheel } from "react-custom-roulette";
 // we are not using above import because it causes ReferenceError: window is not defined , workaround is the following import
-const Wheel = dynamic(
-  () => import("react-custom-roulette").then((mod) => mod.Wheel),
-  { ssr: false }
-);
+
 import FireworksConfetti from "@components/FireworksConfetti";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import { useSession } from "next-auth/react";
@@ -32,7 +29,11 @@ import { useTheme } from "next-themes";
 import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 import ListSelector from "./lists/ListSelector";
-import ListSelectorAdv from "./lists/ListSelectorAdv";
+import toast from "react-hot-toast";
+const Wheel = dynamic(
+  () => import("react-custom-roulette").then((mod) => mod.Wheel),
+  { ssr: false }
+);
 
 const WheelWithInputContentEditable = ({
   newSegments,
@@ -95,6 +96,8 @@ const WheelWithInputContentEditable = ({
                 ? data.length
                 : wheelData.maxNumberOfOptions)
           );
+
+      // console.log(" Prize Number before Setting = ", newPrizeNumber);
       setPrizeNumber(newPrizeNumber);
     }
   };
@@ -109,8 +112,12 @@ const WheelWithInputContentEditable = ({
     };
 
     if (typeof window !== "undefined" && window.localStorage) {
+      // console.log("Wheel Object = ", wheelObject);
       try {
-        window.localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
+        window.localStorage.setItem(
+          "SpinpapaWheel",
+          JSON.stringify(wheelObject)
+        );
         // setLocalStorageWheel(wheelObject);
         // console.log("New Wheel Saved on Browser =", wheelObject);
       } catch (e) {
@@ -330,7 +337,24 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               outerBorderColor="white"
               onStopSpinning={() => {
                 setMustSpin(false);
-                setWinner(segData[prizeNumber]);
+
+                if (advancedOptions) {
+                  let adjustedWinner = null;
+                  let j = 0;
+                  for (let i = 0; i < segData.length; i++) {
+                    if (segData[i].visible) {
+                      if (j === prizeNumber) {
+                        adjustedWinner = segData[i];
+                        setPrizeNumber(i);
+                        break;
+                      } else j++;
+                    }
+                  }
+
+                  setWinner(adjustedWinner);
+                } else {
+                  setWinner(segData[prizeNumber]);
+                }
               }}
               innerRadius={wheelData?.innerRadius}
               innerBorderWidth={4}
@@ -359,7 +383,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             ) : (
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
-            <AIListGenerator setSegData={setSegData}/>
+            <AIListGenerator setSegData={setSegData} />
           </div>
         </div>
 
@@ -394,13 +418,13 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   value="list"
                   style={{ display: isVisible ? "block" : "none" }}
                 >
-                <ListSelector html={html} setSegData={setSegData} />
-                {/* <ListSelectorAdv /> */}
+                  <ListSelector html={html} setSegData={setSegData} />
+                  {/* <ListSelectorAdv /> */}
                   {/* For Advanced Editor Selection */}
-                  {/* <EditorSwitchWithPopup
+                  <EditorSwitchWithPopup
                     advOpt={advancedOptions}
                     setAdvOpt={setadvancedOptions}
-                  /> */}
+                  />
 
                   {advancedOptions ? (
                     <ScrollableSegmentsEditorAdv />

@@ -3,6 +3,10 @@ import { useSession } from "next-auth/react";
 import ListCreationModal from "./ListCreationModal";
 import toast from "react-hot-toast";
 import { Button } from "@components/ui/button";
+import { Card } from "@components/ui/card";
+import RemoveListBtn from "@components/RemoveListBtn";
+import { HiOutlineEye } from "react-icons/hi";
+import SharePopup from "@components/SharePopup";
 
 const ListDashboard = () => {
   const [lists, setLists] = useState([]);
@@ -12,7 +16,7 @@ const ListDashboard = () => {
   useEffect(() => {
     if (status === "authenticated") {
       const fetchLists = async () => {
-        const res = await fetch(`/api/lists/user/${session?.user?.email}`);
+        const res = await fetch(`/api/list/user/${session?.user?.email}`);
         const data = await res.json();
         setLists(data.lists);
       };
@@ -29,7 +33,7 @@ const ListDashboard = () => {
   };
 
   const addNewList = async (listData) => {
-    const res = await fetch("/api/lists", {
+    const res = await fetch("/api/list", {
       method: "POST",
       body: JSON.stringify(listData),
       headers: { "Content-Type": "application/json" },
@@ -58,37 +62,35 @@ const ListDashboard = () => {
           Create List +
         </Button>
       </div>
-      <div className="p-6">
+      <div >
         <div className="mt-6">
           {lists.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400">
               You have no lists yet. Start by creating one!
             </p>
           ) : (
-            lists.map((list) => (
-              <div
-                key={list._id}
-                className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-4"
-              >
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                  {list.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {list.description}
-                </p>
-                <ul className="mt-2">
-                  {list.words.map((wordData, index) => (
-                    <li key={index}>
-                      <strong>{wordData.word}:</strong>
-                      {wordData.wordData.includes("image/") ? (
-                        <img src={`${wordData.wordData}`} width="50" />
-                      ) : (
-                        wordData.wordData
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            lists.map((item, index) => (
+              <>
+                <Card key={index} className="p-2 mt-3">
+                  <div className="leading-normal m-2 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-bold m-2">{item.title}</h2>
+                    </div>
+
+                    <div className="flex items-center">
+                      <div className="mx-2">{item.words.length} Words</div>
+                      <a href={`/ulists/${item._id}`} className="mx-2">
+                        <HiOutlineEye size={24} />
+                      </a>
+                      <SharePopup
+                        url={`/ulists/${item._id}`}
+                        buttonVariant="simple"
+                      />
+                      <RemoveListBtn id={item._id} type={"list"} />
+                    </div>
+                  </div>
+                </Card>
+              </>
             ))
           )}
         </div>

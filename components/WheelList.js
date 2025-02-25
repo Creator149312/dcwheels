@@ -56,20 +56,23 @@ export default function WordLists({ createdBy }) {
           <Card key={index} className="p-2 mt-3">
             <div className="leading-normal m-2 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold m-2">{item.title}</h2>
-                <p>{item.description}</p>
+                <h2 className="text-xl font-bold m-2">{item.title}</h2>
               </div>
-              <div>{item.data.length} Options</div>
-            </div>
-            <div className="flex items-center">
-              <a href={`/uwheels/${item._id}`} className="mx-2">
-                <HiOutlineEye size={24} />
-              </a>
-              {/* <a href={`/uwheels/${item._id}`} className="m-2">
+
+              <div className="flex items-center">
+                <div className="mx-2">{item.data.length} Options</div>
+                <a href={`/uwheels/${item._id}`} className="mx-2">
+                  <HiOutlineEye size={24} />
+                </a>
+                {/* <a href={`/uwheels/${item._id}`} className="m-2">
                 <HiPencilAlt size={24} />
               </a> */}
-              <SharePopup url={`/uwheels/${item._id}`} buttonVariant="simple"/>
-              <RemoveListBtn id={item._id} className="mx-2" />
+                <SharePopup
+                  url={`/uwheels/${item._id}`}
+                  buttonVariant="simple"
+                />
+                <RemoveListBtn id={item._id} type={"wheel"} />
+              </div>
             </div>
           </Card>
         ))}

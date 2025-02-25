@@ -49,6 +49,7 @@ const AIListGenerator = ({ setSegData }) => {
         });
 
         const data = await response.json();
+        // console.log("DATA from AI = ", data);
         setTextareaValue(data.words.join("\n"));
         setGeneratedWords(data.words);
       } else {

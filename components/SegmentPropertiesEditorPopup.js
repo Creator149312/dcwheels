@@ -39,8 +39,8 @@ const SegmentPropertiesEditorPopup = ({
 
   return (
     <>
-      <button className="my-1 py-0 h-7 text-xs" onClick={() => setIsOpen(true)}>
-        <FaTools size={16} />
+      <button className="py-0 h-7 text-xs" onClick={() => setIsOpen(true)}>
+        <FaTools size={18} />
       </button>
 
       {isOpen && (

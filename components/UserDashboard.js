@@ -2,7 +2,6 @@
 
 import { useSession } from "next-auth/react";
 import WheelList from "@components/WheelList";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@components/ui/button";
 import ListDashboard from "./lists/ListDashboard";
@@ -43,7 +42,7 @@ export default function UserDashboard() {
       //if is used till the time browser fetches the session data
       return (
         <div className="flex justify-center items-center">
-          <p>Fetching Your Wheels ...</p>
+          <p>Creating Your Dashboard...</p>
         </div>
       );
     } else {

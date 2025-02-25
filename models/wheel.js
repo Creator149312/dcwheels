@@ -31,7 +31,6 @@ const wheelSchema = new Schema(
       required: true,
     },
     wheelData: { type: Object, default: {} },
-    content: { type: Object, default: {} },
     category: { type: String, default: "" },
     editorData: {
       type: Object,
@@ -45,6 +44,7 @@ const wheelSchema = new Schema(
   }
 );
 
+wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true });
 const Wheel = models.Wheel || mongoose.model("Wheel", wheelSchema);
 
 export default Wheel;

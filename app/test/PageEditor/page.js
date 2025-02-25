@@ -56,57 +56,57 @@ const PageEditor = () => {
     setData({ ...data, colorSettings: updatedColorSettings });
   };
 
-  return (
-    <div style={{ backgroundColor: data.pageBackgroundColor }}>
-      <h1>{data.showTitle ? data.title : ""}</h1>
+  return (<></>
+    // <div style={{ backgroundColor: data.pageBackgroundColor }}>
+    //   <h1>{data.showTitle ? data.title : ""}</h1>
 
-      <div>
-        <h2>Edit Page Background</h2>
-        <input
-          type="color"
-          value={data.pageBackgroundColor}
-          onChange={handleBackgroundColorChange}
-        />
-      </div>
+    //   <div>
+    //     <h2>Edit Page Background</h2>
+    //     <input
+    //       type="color"
+    //       value={data.pageBackgroundColor}
+    //       onChange={handleBackgroundColorChange}
+    //     />
+    //   </div>
 
-      <div>
-        <h2>Edit Title</h2>
-        <input
-          type="text"
-          value={data.title}
-          onChange={handleTitleChange}
-        />
-      </div>
+    //   <div>
+    //     <h2>Edit Title</h2>
+    //     <input
+    //       type="text"
+    //       value={data.title}
+    //       onChange={handleTitleChange}
+    //     />
+    //   </div>
 
-      <div>
-        <h2>Entries</h2>
-        {data.entries.slice(0, data.maxNumberOfDivs).map((entry, index) => (
-          <div key={index} style={{ margin: '10px', padding: '10px', backgroundColor: data.colorSettings[index % data.colorSettings.length].enabled ? data.colorSettings[index % data.colorSettings.length].color : 'transparent' }}>
-            <input
-              type="text"
-              value={entry.text}
-              onChange={(e) => handleTextChange(index, e.target.value)}
-            />
-          </div>
-        ))}
-      </div>
+    //   <div>
+    //     <h2>Entries</h2>
+    //     {data.entries.slice(0, data.maxNumberOfDivs).map((entry, index) => (
+    //       <div key={index} style={{ margin: '10px', padding: '10px', backgroundColor: data.colorSettings[index % data.colorSettings.length].enabled ? data.colorSettings[index % data.colorSettings.length].color : 'transparent' }}>
+    //         <input
+    //           type="text"
+    //           value={entry.text}
+    //           onChange={(e) => handleTextChange(index, e.target.value)}
+    //         />
+    //       </div>
+    //     ))}
+    //   </div>
 
-      <div>
-        <h2>Color Settings</h2>
-        {data.colorSettings.map((colorSetting, index) => (
-          <div key={index} style={{ margin: '5px' }}>
-            <input
-              type="checkbox"
-              checked={colorSetting.enabled}
-              onChange={() => handleColorToggle(index)}
-            />
-            <span style={{ marginLeft: '10px' }}>{colorSetting.color}</span>
-          </div>
-        ))}
-      </div>
+    //   <div>
+    //     <h2>Color Settings</h2>
+    //     {data.colorSettings.map((colorSetting, index) => (
+    //       <div key={index} style={{ margin: '5px' }}>
+    //         <input
+    //           type="checkbox"
+    //           checked={colorSetting.enabled}
+    //           onChange={() => handleColorToggle(index)}
+    //         />
+    //         <span style={{ marginLeft: '10px' }}>{colorSetting.color}</span>
+    //       </div>
+    //     ))}
+    //   </div>
 
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </div>
+    //   <pre>{JSON.stringify(data, null, 2)}</pre>
+    // </div>
   );
 };
 

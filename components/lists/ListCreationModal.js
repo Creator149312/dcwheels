@@ -93,7 +93,7 @@ const ListCreationModal = ({ isOpen, closeModal, addNewList }) => {
                 value={formData.description}
                 onChange={handleChange}
                 className="w-full p-2 mt-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white"
-                rows="3"
+                rows="2"
               />
             </div>
 
@@ -110,7 +110,7 @@ const ListCreationModal = ({ isOpen, closeModal, addNewList }) => {
                 value={formData.words}
                 onChange={handleChange}
                 className="w-full p-2 mt-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white"
-                rows="5"
+                rows="6"
               />
               {errors.words && (
                 <p className="text-red-500 text-sm">{errors.words}</p>

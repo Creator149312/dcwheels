@@ -92,96 +92,96 @@ const WordDataComponent = () => {
     multiple: false, // Only allow one image at a time
   });
 
-  return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-800 p-4">
-      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-          Word Data Entry
-        </h2>
+  return (<></>
+    // <div className="min-h-screen bg-gray-100 dark:bg-gray-800 p-4">
+    //   <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg">
+    //     <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+    //       Word Data Entry
+    //     </h2>
 
-        {/* Word Input */}
-        <input
-          type="text"
-          value={word}
-          onChange={handleWordChange}
-          placeholder="Enter word or phrase"
-          className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-300"
-        />
+    //     {/* Word Input */}
+    //     <input
+    //       type="text"
+    //       value={word}
+    //       onChange={handleWordChange}
+    //       placeholder="Enter word or phrase"
+    //       className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-300"
+    //     />
 
-        {/* Image Upload */}
-        <div
-          {...getRootProps()}
-          className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 mb-4 rounded-lg cursor-pointer hover:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:hover:border-blue-300"
-        >
-          <input {...getInputProps()} />
-          <p className="text-gray-600 dark:text-gray-300">
-            Drag & drop an image, or click to select one
-          </p>
-        </div>
+    //     {/* Image Upload */}
+    //     <div
+    //       {...getRootProps()}
+    //       className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 mb-4 rounded-lg cursor-pointer hover:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:hover:border-blue-300"
+    //     >
+    //       <input {...getInputProps()} />
+    //       <p className="text-gray-600 dark:text-gray-300">
+    //         Drag & drop an image, or click to select one
+    //       </p>
+    //     </div>
 
-        {imageData && (
-          <div className="mb-4">
-            <img
-              src={imageData}
-              alt="Uploaded Image"
-              width="200"
-              className="rounded-lg"
-            />
-          </div>
-        )}
+    //     {imageData && (
+    //       <div className="mb-4">
+    //         <img
+    //           src={imageData}
+    //           alt="Uploaded Image"
+    //           width="200"
+    //           className="rounded-lg"
+    //         />
+    //       </div>
+    //     )}
 
-        {/* Add word data */}
-        <button
-          onClick={handleAddWordData}
-          className="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-blue-700 dark:hover:bg-blue-600 dark:focus:ring-blue-500"
-        >
-          Add Word Data
-        </button>
+    //     {/* Add word data */}
+    //     <button
+    //       onClick={handleAddWordData}
+    //       className="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-blue-700 dark:hover:bg-blue-600 dark:focus:ring-blue-500"
+    //     >
+    //       Add Word Data
+    //     </button>
 
-        {/* Word Data List */}
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6">
-          Word Data List
-        </h3>
-        <ul className="mt-4 space-y-4">
-          {wordDataList.map((item, index) => (
-            <li
-              key={index}
-              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-md"
-            >
-              <div className="flex flex-col">
-                <strong className="text-gray-800 dark:text-white">Word:</strong>
-                <span className="text-gray-700 dark:text-gray-300">
-                  {item.word}
-                </span>
-                <strong className="mt-2 text-gray-800 dark:text-white">
-                  Data:
-                </strong>
-                <div className="flex items-center">
-                  {item.wordData ? (
-                    <img
-                      src={item.wordData}
-                      alt="Word Data"
-                      width="50"
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <span>{item.wordData}</span>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+    //     {/* Word Data List */}
+    //     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6">
+    //       Word Data List
+    //     </h3>
+    //     <ul className="mt-4 space-y-4">
+    //       {wordDataList.map((item, index) => (
+    //         <li
+    //           key={index}
+    //           className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-md"
+    //         >
+    //           <div className="flex flex-col">
+    //             <strong className="text-gray-800 dark:text-white">Word:</strong>
+    //             <span className="text-gray-700 dark:text-gray-300">
+    //               {item.word}
+    //             </span>
+    //             <strong className="mt-2 text-gray-800 dark:text-white">
+    //               Data:
+    //             </strong>
+    //             <div className="flex items-center">
+    //               {item.wordData ? (
+    //                 <img
+    //                   src={item.wordData}
+    //                   alt="Word Data"
+    //                   width="50"
+    //                   className="rounded-full"
+    //                 />
+    //               ) : (
+    //                 <span>{item.wordData}</span>
+    //               )}
+    //             </div>
+    //           </div>
+    //         </li>
+    //       ))}
+    //     </ul>
 
-        {/* Submit the list of wordDataObjects */}
-        <button
-          onClick={handleSubmit}
-          className="w-full mt-6 p-3 bg-green-500 hover:bg-green-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-600 dark:focus:ring-green-500"
-        >
-          Submit
-        </button>
-      </div>
-    </div>
+    //     {/* Submit the list of wordDataObjects */}
+    //     <button
+    //       onClick={handleSubmit}
+    //       className="w-full mt-6 p-3 bg-green-500 hover:bg-green-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-600 dark:focus:ring-green-500"
+    //     >
+    //       Submit
+    //     </button>
+    //   </div>
+    // </div>
   );
 };
 

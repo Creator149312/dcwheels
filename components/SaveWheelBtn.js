@@ -4,7 +4,11 @@ import { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import apiConfig from "@utils/ApiUrlConfig";
-import { validateListDescription, validateListTitle } from "@utils/Validator";
+import {
+  sanitizeInputForDB,
+  validateListDescription,
+  validateListTitle,
+} from "@utils/Validator";
 import toast from "react-hot-toast";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "@/components/ui/button";
@@ -36,8 +40,6 @@ export default function SaveWheelBtn({ segmentsData }) {
 
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-
-  // console.log("Segments = ", segData);
 
   const router = useRouter();
 
@@ -89,6 +91,9 @@ export default function SaveWheelBtn({ segmentsData }) {
     }
 
     try {
+      const titleToStore = sanitizeInputForDB(title);
+      const descriptionToStore = sanitizeInputForDB(description);
+
       if (selectedUser) {
         const data = [...segData];
         const res = await fetch(
@@ -99,8 +104,8 @@ export default function SaveWheelBtn({ segmentsData }) {
               "Content-type": "application/json",
             },
             body: JSON.stringify({
-              title,
-              description,
+              title: titleToStore,
+              description: descriptionToStore,
               data,
               wheelData,
             }),
@@ -123,8 +128,8 @@ export default function SaveWheelBtn({ segmentsData }) {
             "Content-type": "application/json",
           },
           body: JSON.stringify({
-            title,
-            description,
+            title: titleToStore,
+            description: descriptionToStore,
             data,
             createdBy,
             wheelData,
@@ -226,6 +231,7 @@ export default function SaveWheelBtn({ segmentsData }) {
               </Label>
               <Input
                 id="name"
+                value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="col-span-3"
               />
@@ -236,6 +242,7 @@ export default function SaveWheelBtn({ segmentsData }) {
               </Label>
               <Textarea
                 id="description"
+                value={description}
                 placeholder="Enter Wheel Description in about 75 to 100 words"
                 className="col-span-3"
                 onChange={(e) => setDescription(e.target.value)}

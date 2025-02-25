@@ -16,7 +16,7 @@ export async function POST(request) {
     if (vld.length !== 0) error = vld;
 
     if (error.length === 0) {
-      console.log("Inside Processing and Trying to Create Wheel");
+      // console.log("Inside Processing and Trying to Create Wheel");
       await connectMongoDB();
       const creationData = await Wheel.create({
         title,
@@ -25,7 +25,7 @@ export async function POST(request) {
         createdBy,
         wheelData,
       });
-      console.log("Creation Data", creationData);
+      // console.log("Creation Data", creationData);
       return NextResponse.json({
         message: "Wheel Created Successfully",
         creationID: creationData._id,
