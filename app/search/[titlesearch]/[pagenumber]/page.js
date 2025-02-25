@@ -1,7 +1,4 @@
-// import ListDisplay from "@components/ListDisplay";
-import RemoveListBtn from "@components/RemoveListBtn";
 import SearchBarNav from "@components/SearchNavBar";
-import WheelWithInput from "@components/WheelWithInput";
 import { Card } from "@components/ui/card";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";

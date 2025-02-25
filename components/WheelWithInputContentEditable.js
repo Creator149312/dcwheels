@@ -12,7 +12,6 @@ import ContentEditableDivResult from "./ContentEditableDivResult";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import SaveImportComponent from "./SaveImportComponent";
-import ScrollableSegmentsEditor from "./ScrollableSegmentsEditor";
 import ContentEditableDivImageTest from "./ContentEditableDivImageTest";
 import EditorSwitchWithPopup from "./EditorSwitchWithPopup";
 import TabsListOnEditor from "./TabsListOnEditor";
@@ -25,7 +24,6 @@ import {
 } from "@utils/HelperFunctions";
 import { usePathname, useRouter } from "next/navigation";
 import SharePopup from "./SharePopup";
-import { useTheme } from "next-themes";
 import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 import ListSelector from "./lists/ListSelector";
