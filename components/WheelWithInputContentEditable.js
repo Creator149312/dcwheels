@@ -257,11 +257,11 @@ const WheelWithInputContentEditable = ({
     //   setWheelData(wheelPresetSettings);
   }, []);
 
-  useEffect(() => {
-    if (winner !== "" && winner !== undefined) {
-      setResultList([...resultList, winner]);
-    }
-  }, [winner]);
+  // useEffect(() => {
+  //   if (winner !== "" && winner !== undefined) {
+  //     setResultList([...resultList, winner]);
+  //   }
+  // }, [winner, mustSpin]);
 
   const toggleVisibility = () => {
     setIsVisible((prevState) => !prevState); // toggle the state between true and false
@@ -350,8 +350,10 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   }
 
                   setWinner(adjustedWinner);
+                  setResultList([...resultList, adjustedWinner]);
                 } else {
                   setWinner(segData[prizeNumber]);
+                  setResultList([...resultList, segData[prizeNumber]]);
                 }
               }}
               innerRadius={wheelData?.innerRadius}

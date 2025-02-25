@@ -54,19 +54,13 @@ export default function WordLists({ createdBy }) {
       {data.length > 0 &&
         data.map((item, index) => (
           <Card key={index} className="p-2 mt-3">
-            <div className="leading-normal m-2 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold m-2">{item.title}</h2>
-              </div>
-
-              <div className="flex items-center">
+            <div className="leading-normal m-2 flex flex-col md:flex-row justify-between items-center">
+              <p className="text-lg font-bold m-1">{item.title}</p>
+              <div className="flex items-center mt-1">
                 <div className="mx-2">{item.data.length} Options</div>
                 <a href={`/uwheels/${item._id}`} className="mx-2">
                   <HiOutlineEye size={24} />
                 </a>
-                {/* <a href={`/uwheels/${item._id}`} className="m-2">
-                <HiPencilAlt size={24} />
-              </a> */}
                 <SharePopup
                   url={`/uwheels/${item._id}`}
                   buttonVariant="simple"

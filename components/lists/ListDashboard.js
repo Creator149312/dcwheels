@@ -81,12 +81,11 @@ const ListDashboard = () => {
             lists.map((item, index) => (
               <>
                 <Card key={index} className="p-2 mt-3">
-                  <div className="leading-normal m-2 flex justify-between items-center">
+                  <div className="leading-normal m-2 flex flex-col md:flex-row justify-between items-center">
                     <div>
-                      <h2 className="text-xl font-bold m-2">{item.title}</h2>
+                      <h2 className="text-lg font-bold m-1">{item.title}</h2>
                     </div>
-
-                    <div className="flex items-center">
+                    <div className="flex items-center mt-1">
                       <div className="mx-2">{item.words.length} Words</div>
                       <a href={`/ulists/${item._id}`} className="mx-2">
                         <HiOutlineEye size={24} />
