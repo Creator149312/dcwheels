@@ -72,7 +72,7 @@ const TrueOrFalseGeneratorAdv = ({ selectedList }) => {
     if (!isFinished) {
       generateTrueOrFalseQuestion();
     }
-  }, [questionIndex, isFinished]);
+  }, [questionIndex, isFinished, generateTrueOrFalseQuestion]);
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg">

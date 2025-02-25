@@ -59,7 +59,7 @@ const MCQGenerator = ({ selectedList }) => {
     if (selectedList && selectedList.length > 0) {
       generateMCQ();
     }
-  }, [selectedList]); // This ensures the effect runs when selectedList changes
+  }, [selectedList, generateMCQ]); // This ensures the effect runs when selectedList changes
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg">
