@@ -1,4 +1,8 @@
 # Block all crawlers for
+User-agent: GPTBot
+Disallow: /
+
+# Block all crawlers for
 User-agent: *
 Disallow: /login
 Disallow: /register
