@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { validateListDescription, validateListTitle } from "@utils/Validator";
 
 const ListCreationModal = ({ isOpen, closeModal, addNewList }) => {
   const { data: session } = useSession();
@@ -20,12 +21,17 @@ const ListCreationModal = ({ isOpen, closeModal, addNewList }) => {
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.title) {
-      errors.title = "Title is required";
-    }
+
+    let vlt = validateListTitle(formData.title);
+    let vld = validateListDescription(formData.description);
+
+    if (vlt.length !== 0) errors.title = vlt;
+    if (vld.length !== 0) errors.description = vld;
+
     if (!formData.words.trim()) {
       errors.words = "Words cannot be empty";
     }
+
     setErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -95,6 +101,9 @@ const ListCreationModal = ({ isOpen, closeModal, addNewList }) => {
                 className="w-full p-2 mt-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white"
                 rows="2"
               />
+              {errors.description && (
+                <p className="text-red-500 text-sm">{errors.description}</p>
+              )}
             </div>
 
             <div className="mb-4">

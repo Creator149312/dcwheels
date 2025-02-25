@@ -144,10 +144,15 @@ const ListItemEditor = ({
       }
 
       const result = await response.json();
-      // console.log("Backend response:", result);
-      alert("Data successfully updated!");
+
+      if (response.ok) {
+        // console.log("Backend response:", result);
+        alert("Data successfully updated!");
+        // Refresh the page after list is deleted
+        // location.reload();
+      }
     } catch (error) {
-      console.error("Error updating data:", error);
+      // console.error("Error updating data:", error);
       alert("Error updating data.");
     }
   };
@@ -299,13 +304,15 @@ const ListItemEditor = ({
               onChange={handleNewImageUpload}
               className="w-full p-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-gray-100"
             />
-          ): ( <input
-            type="text"
-            value={newWordData}
-            onChange={(e) => setNewWordData(e.target.value)}
-            className="w-full p-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-gray-100"
-            placeholder="Enter new word data"
-          />)}
+          ) : (
+            <input
+              type="text"
+              value={newWordData}
+              onChange={(e) => setNewWordData(e.target.value)}
+              className="w-full p-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-gray-100"
+              placeholder="Enter new word data"
+            />
+          )}
 
           <div className="text-center mt-4">
             <button

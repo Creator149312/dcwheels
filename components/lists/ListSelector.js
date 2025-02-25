@@ -158,7 +158,7 @@ const ListSelector = ({ html, setSegData }) => {
               <option value="">-- Select a Type --</option>
               <option value="basic">Basic</option>
               {/* <option value="advanced">Advanced</option>*/}
-              <option value="quiz">Quiz</option> 
+              {/* <option value="quiz">Quiz</option>  */}
             </select>
             <div className="flex justify-between">
               <button

@@ -39,10 +39,19 @@ const ListDashboard = () => {
       headers: { "Content-Type": "application/json" },
     });
 
-    if (res.error) {
-      toast.error("Failed to Create List!");
+    const data = await res.json(); // Parse JSON from response
+
+    if (data.error && data.error.length > 0) {
+      // If there are validation errors
+      toast.error("Failed to create List"); // Join multiple error messages into one string
+    } else if (data.message) {
+      // If the list was created successfully
+      toast.success(data.message);
+
+      // Refresh the page after list is deleted
+      location.reload();
     } else {
-      toast.success("List Created Successfully!");
+      toast.error("Unexpected Error Occurred!");
     }
   };
 
@@ -62,7 +71,7 @@ const ListDashboard = () => {
           Create List +
         </Button>
       </div>
-      <div >
+      <div>
         <div className="mt-6">
           {lists.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400">

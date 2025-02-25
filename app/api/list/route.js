@@ -35,6 +35,7 @@ export async function GET() {
   const lists = await List.find();
   return NextResponse.json({ lists }, { status: 200 });
 }
+
 export async function DELETE(request) {
   const id = request.nextUrl.searchParams.get("id");
   await connectMongoDB();

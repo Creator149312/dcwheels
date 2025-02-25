@@ -40,7 +40,7 @@ export async function generateMetadata({ params }, parent) {
     // read route params
     titleStr = listdata.title;
     const descriptionStr =
-      "Explore " + listdata.title + " and spin to pick a random choice.";
+      "Explore " + listdata.title;
     return {
       title: titleStr,
       description: descriptionStr,
@@ -48,8 +48,8 @@ export async function generateMetadata({ params }, parent) {
     };
   } else {
     return {
-      title: "No Wheels Found",
-      description: "No Wheels Found",
+      title: "No Lists Found",
+      description: "No Lists Found",
       robots: "noindex",
     };
   }
@@ -65,9 +65,7 @@ export default async function Page({ params }) {
   if (IfIdValid) {
     const id = params.listId;
     try {
-      const response = await fetch(`${apiConfig.apiUrl}/list/${id}`, {
-        cache: "no-store",
-      }); // Replace with your actual API endpoint
+      const response = await fetch(`${apiConfig.apiUrl}/list/${id}`); // Replace with your actual API endpoint
 
       if (!response.ok) {
         throw new Error("Failed to fetch List");

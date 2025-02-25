@@ -11,5 +11,6 @@ Disallow: /dashboard
 Disallow: /email
 Disallow: /verify
 Disallow: /uwheels
+Disallow: /ulists
 
 Allow: /sitemap.xml
