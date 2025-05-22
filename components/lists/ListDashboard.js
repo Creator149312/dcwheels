@@ -7,6 +7,7 @@ import { Card } from "@components/ui/card";
 import RemoveListBtn from "@components/RemoveListBtn";
 import { HiOutlineEye } from "react-icons/hi";
 import SharePopup from "@components/SharePopup";
+import AIListGenerator from "@components/AIListGenerator";
 
 const ListDashboard = () => {
   const [lists, setLists] = useState([]);

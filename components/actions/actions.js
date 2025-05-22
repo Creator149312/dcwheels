@@ -360,7 +360,13 @@ export const verifyUserEmailbyToken = async (token) => {
 export async function getPageDataBySlug(slug) {
   //check if token is valid
   await connectMongoDB();
-  const pageData = await Page.findOne({ slug }).populate("wheel");
+
+  // const pageData = await Page.findOne({ slug }).populate("wheel");
+  const pageData = await Page.findOne({ slug })
+  .select("title description content wheel")
+  .populate("wheel")
+  .lean();
+
   return pageData;
 }
 
@@ -390,8 +396,8 @@ export async function storeWheelDataToDatabase(initialJSONData) {
 
     const wheelExists = await Wheel.findOne({ title: wheelData.title });
     if (wheelExists) {
-      // console.log("For title wheelData.title = ", wheelData.title);
-      // console.log("Wheel Exists in DB \n", wheelExists);
+      console.log("Wheel Exists in DB \n", wheelExists);
+      console.log("For title wheelData.title = ", wheelData.title);
     }
     let wheel = null;
 

@@ -28,6 +28,7 @@ import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 import ListSelector from "./lists/ListSelector";
 import toast from "react-hot-toast";
+import GenerateWheel from "@app/test/wheel/GenerateWheel";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -54,6 +55,8 @@ const WheelWithInputContentEditable = ({
     wheelDescription,
     advancedOptions,
     setadvancedOptions,
+    INNER_RADIUS,
+    FONT_SIZE,
   } = useContext(SegmentsContext);
   const [mustSpin, setMustSpin] = useState(false);
   const { status, data: session } = useSession();
@@ -69,8 +72,9 @@ const WheelWithInputContentEditable = ({
   const [isVisible, setIsVisible] = useState(false); // state to control visibility
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
-  const [segTxtfontSize, setSegTxtfontSize] = useState(1);
-
+  const [segTxtfontSize, setSegTxtfontSize] = useState(
+    wheelData?.fontSize ? wheelData.fontSize : 1
+  );
   const [showOverlay, setShowOverlay] = useState(true);
 
   // console.log("SegData = ", segData);
@@ -314,6 +318,7 @@ const WheelWithInputContentEditable = ({
           )}
           <div
             onClick={handleSpinClick}
+            // bg-[url('/google-logo.png')] bg-cover bg-no-repeat   can be used inside the div to add background image to it.
             className={`flex items-center justify-center
 ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
           >
@@ -356,7 +361,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   setResultList([...resultList, segData[prizeNumber]]);
                 }
               }}
-              innerRadius={wheelData?.innerRadius}
+              innerRadius={wheelData.innerRadius}
               innerBorderWidth={4}
               innerBorderColor="white"
               fontWeight={"normal"}
@@ -384,9 +389,9 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
             <AIListGenerator setSegData={setSegData} />
+            <GenerateWheel />
           </div>
         </div>
-
         <div
           className={`${
             isFullScreen

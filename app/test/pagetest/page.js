@@ -63,90 +63,90 @@ const CreatePageForm = ({ Wheels = [] }) => {
     loadWheels();
   }, []);
 
-  return (<></>
-    // <>
-    //   {isLoading && (
-    //     <div className="flex justify-center items-center">
-    //       <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>
-    //     </div>
-    //   )}
-    //   {error && (
-    //     <div className="flex justify-center items-center">
-    //       <p className="text-xl font-bold m-2">Failed to Load Your Wheels</p>
-    //     </div>
-    //   )}
-    //   {wheels.length > 0 && (
-    //     <form
-    //       onSubmit={handleFormSubmit}
-    //       className="max-w-lg mx-auto p-4 bg-white shadow-md rounded"
-    //     >
-    //       <h2 className="text-xl font-bold mb-4">Create New Page</h2>
-    //       <div className="mb-4">
-    //         <label className="block text-gray-700">Title</label>
-    //         <input
-    //           type="text"
-    //           value={title}
-    //           onChange={(e) => setTitle(e.target.value)}
-    //           className="w-full px-3 py-2 border rounded"
-    //           required
-    //         />
-    //       </div>
+  return (
+    <>
+      {isLoading && (
+        <div className="flex justify-center items-center">
+          <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>
+        </div>
+      )}
+      {error && (
+        <div className="flex justify-center items-center">
+          <p className="text-xl font-bold m-2">Failed to Load Your Wheels</p>
+        </div>
+      )}
+      {wheels.length > 0 && (
+        <form
+          onSubmit={handleFormSubmit}
+          className="max-w-lg mx-auto p-4 bg-white shadow-md rounded"
+        >
+          <h2 className="text-xl font-bold mb-4">Create New Page</h2>
+          <div className="mb-4">
+            <label className="block text-gray-700">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
 
-    //       <textarea
-    //         id="content"
-    //         value={content}
-    //         onChange={(e) => {setContent(e.target.value);
-    //             console.log("Parsed JSON = " + JSON.stringify(e.target.value)); }}
-    //         placeholder={`Enter content as JSON... e.g., ${JSON.stringify(
-    //           [
-    //             {
-    //               type: "paragraph",
-    //               text: "Your text here...",
-    //             },
-    //           ],
-    //           null,
-    //           2
-    //         )}`}
-    //         rows="10"
-    //         cols="50"
-    //         required
-    //       />
-    //       <div className="mb-4">
-    //         <label className="block text-gray-700">Slug</label>
-    //         <input
-    //           type="text"
-    //           value={slug}
-    //           onChange={(e) => setSlug(e.target.value)}
-    //           className="w-full px-3 py-2 border rounded"
-    //           required
-    //         />
-    //       </div>
-    //       <div className="mb-4">
-    //         <label className="block text-gray-700">Select Wheel</label>
-    //         <select
-    //           value={selectedWheel}
-    //           onChange={handleWheelChange}
-    //           className="w-full px-3 py-2 border rounded"
-    //           required
-    //         >
-    //           <option value="">Select a Wheel</option>
-    //           {wheels.map((wheel) => (
-    //             <option key={wheel._id} value={wheel._id}>
-    //               {wheel.title}
-    //             </option>
-    //           ))}
-    //         </select>
-    //       </div>
+          <textarea
+            id="content"
+            value={content}
+            onChange={(e) => {setContent(e.target.value);
+                console.log("Parsed JSON = " + JSON.stringify(e.target.value)); }}
+            placeholder={`Enter content as JSON... e.g., ${JSON.stringify(
+              [
+                {
+                  type: "paragraph",
+                  text: "Your text here...",
+                },
+              ],
+              null,
+              2
+            )}`}
+            rows="10"
+            cols="50"
+            required
+          />
+          <div className="mb-4">
+            <label className="block text-gray-700">Slug</label>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700">Select Wheel</label>
+            <select
+              value={selectedWheel}
+              onChange={handleWheelChange}
+              className="w-full px-3 py-2 border rounded"
+              required
+            >
+              <option value="">Select a Wheel</option>
+              {wheels.map((wheel) => (
+                <option key={wheel._id} value={wheel._id}>
+                  {wheel.title}
+                </option>
+              ))}
+            </select>
+          </div>
 
-    //       <button
-    //         type="submit"
-    //         className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-    //       >
-    //         Create Page
-    //       </button>
-    //     </form>
-    //   )}{" "}
-    // </>
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Create Page
+          </button>
+        </form>
+      )}{" "}
+    </>
   );
 };
 

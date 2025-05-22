@@ -427,7 +427,6 @@ export function shuffle(array) {
   return array;
 }
 
-
 export function formatWheelData(inputData) {
   const formattedData = {};
 
@@ -451,3 +450,125 @@ export function formatWheelData(inputData) {
 
   return formattedData;
 }
+
+//All functions related to Coins Management
+// utils.js
+
+export const handleAction = ({
+  actionType,
+  amount,
+  coins,
+  setCoins,
+  event,
+}) => {
+  // Check if the amount to add or use is valid
+  const numCoins = parseInt(amount, 10);
+  if (
+    isNaN(numCoins) ||
+    numCoins < 1 ||
+    (actionType === "use" && numCoins > coins)
+  ) {
+    alert(
+      `Please enter a valid number of coins to ${
+        actionType === "add" ? "add" : "use"
+      }.`
+    );
+    return false; // Indicate failure
+  }
+
+  // Define the core logic for adding and using coins
+  if (actionType === "add") {
+    // Add coins logic
+    const newCoinCount = coins + numCoins;
+    setCoins(newCoinCount);
+    const coinElements = createCoinElements(numCoins, event); // Assuming createCoinElements is available in scope
+    animateCoins(
+      coinElements,
+      { x: window.innerWidth - 50, y: 50 },
+      { x: event.clientX, y: event.clientY }
+    );
+    return true; // Indicate success
+  }
+
+  if (actionType === "use") {
+    // Use coins logic
+    if (coins >= numCoins) {
+      const newCoinCount = coins - numCoins;
+      setCoins(newCoinCount);
+      const coinElements = createCoinElements(numCoins, event); // Assuming createCoinElements is available in scope
+      animateCoins(
+        coinElements,
+        { x: event.clientX, y: event.clientY },
+        { x: window.innerWidth - 50, y: 50 }
+      );
+      return true; // Indicate success
+    } else {
+      alert("Not enough coins to use.");
+      return false; // Indicate failure
+    }
+  }
+
+  // After updating the local state and animating, sync to localStorage or Redis
+  if (newCoinCount !== undefined) {
+    // Store coins in LocalStorage (for client-side)
+    storeCoinsInStorage(newCoinCount);
+
+    // If using Redis (for server-side), you would update Redis here
+    // await storeCoinsInRedis(userId, newCoinCount); // Uncomment for Redis
+
+    // Sync coins to the database (e.g., using an API)
+    // const success = await updateCoinsInDatabase(userId, newCoinCount);
+    // if (!success) {
+    //   alert("Failed to update coins in the database.");
+    //   return false; // Indicate failure
+    // }
+  }
+
+  return true; // Default return if something goes wrong
+};
+
+// Utility for creating coin elements (ensure to include this function in your utils file or elsewhere in your project)
+export const createCoinElements = (count, event) => {
+  const coins = [];
+  for (let i = 0; i < count; i++) {
+    const coin = document.createElement("div");
+    coin.classList.add("coin");
+    coin.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="gold" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>`;
+    // Add coin to container
+    document.body.appendChild(coin); // Add to a container of your choice
+    coins.push(coin);
+  }
+  return coins;
+};
+
+export const animateCoins = (coins, from, to) => {
+  coins.forEach((coin, index) => {
+    coin.style.position = "absolute";
+    coin.style.left = `${from.x}px`;
+    coin.style.top = `${from.y}px`;
+    coin.style.transition = "all 0.5s ease-in-out";
+
+    setTimeout(() => {
+      coin.style.left = `${to.x}px`;
+      coin.style.top = `${to.y}px`;
+    }, 10 * index);
+
+    setTimeout(() => {
+      coin.remove();
+    }, 300);
+  });
+};
+
+// Fetch coins from LocalStorage (or database)
+export const fetchCoinsFromStorage = () => {
+  const storedCoins = localStorage?.getItem("coins");
+  if (storedCoins) {
+    return parseInt(storedCoins, 10); // Parse the coin value from localStorage
+  }
+  return 0; // Default to 0 if no coins are stored
+};
+
+// Store coins in LocalStorage after fetching from the database or updating
+export const storeCoinsInStorage = (coins) => {
+  localStorage.setItem("coins", coins); // Store the updated coin count
+};

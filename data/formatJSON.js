@@ -17,7 +17,8 @@ const defaultWheelJSON = {
     maxNumberOfOptions: 100, //this is max number of options to show on wheel
     innerRadius: 15,
     removeWinnerAfterSpin: false,
-    customPopupDisplayMessage: "The Winner is..."
+    customPopupDisplayMessage: "The Winner is...",
+    fontSize: 1
   },
   editorData: {
     advOptions: false,

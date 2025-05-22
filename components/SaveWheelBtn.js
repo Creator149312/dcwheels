@@ -26,12 +26,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import Tooltip from "./Tooltip";
+import { handleAction } from "@utils/HelperFunctions";
 
 export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
   const [description, setDescription] = useState("This is my new wheel");
   const createdBy = useSession().data?.user?.email;
-  const { segData, wheelData } = useContext(SegmentsContext);
+  const { segData, wheelData, coins, setCoins } = useContext(SegmentsContext);
 
   const [isSaving, setisSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -118,6 +119,13 @@ export default function SaveWheelBtn({ segmentsData }) {
           setError("Failed to Update a wheel");
           toast.error("Failed to Update Wheel");
         } else {
+          handleAction({
+            actionType: "use",
+            amount: parseInt(10),
+            coins,
+            setCoins,
+            event: e,
+          });
           router.push("/dashboard");
         }
       } else {

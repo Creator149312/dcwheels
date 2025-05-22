@@ -2,6 +2,7 @@
 import { SegmentsContext } from "@app/SegmentsContext";
 import {
   calculateMaxLengthOfText,
+  handleAction,
   prepareData,
   segmentsToHTMLTxt,
 } from "@utils/HelperFunctions";
@@ -16,6 +17,8 @@ const ImportLocalWheel = ({ afterImport }) => {
     setSegData,
     setadvancedOptions,
     prepareDataForEditorSwitch,
+    coins,
+    setCoins,
   } = useContext(SegmentsContext);
 
   // Handle importing JSON file
@@ -34,6 +37,13 @@ const ImportLocalWheel = ({ afterImport }) => {
           setSegData(importedData.data);
 
           setadvancedOptions(importedData.editorData.advancedOptions);
+          handleAction({
+            actionType: "use",
+            amount: parseInt(10),
+            coins,
+            setCoins,
+            event: e,
+          });
           // processOnImportData(importedData);
         } catch (error) {
           // console.log("Error = ", error);

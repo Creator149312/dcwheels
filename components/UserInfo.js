@@ -6,8 +6,8 @@ export default function UserInfo({ name, status, setOpen}) {
   if (status === 'authenticated') {
     return (
       <div className="cursor-pointer flex flex-col gap-5 align-middle items-center">
-        {/* <UserProfileDropdown name={name} setOpen={setOpen}/> */}
-        <UserDropDownMenu name={name} setOpen={setOpen}/>
+        {/* This is where I need to fetch coins from the database to show on user profile */}
+        <UserDropDownMenu name={name} setOpen={setOpen} coins={30}/>
       </div>
     );
   } else {

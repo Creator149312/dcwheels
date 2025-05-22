@@ -18,15 +18,21 @@ export async function generateMetadata({ params }) {
 
 export default async function Home({ params }) {
   const slug = await params.slug;
-
+  const startDB = performance.now();
   const pageData = WheelData[replaceDashWithUnderscore(slug)];
+  const endDB = performance.now();
 
+  console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
   if (pageData === undefined) redirect("/");
+
+  const startRender = performance.now();
 
   return (
     <div className="p-3">
       {/* <WheelWithInput newSegments={segmentsData} /> */}
-      <WheelWithInputContentEditable newSegments={ensureArrayOfObjects(pageData.segments)} />
+      <WheelWithInputContentEditable
+        newSegments={ensureArrayOfObjects(pageData.segments)}
+      />
       <h1 className="text-3xl mb-2">{pageData.heading}</h1>
 
       {/* Map through the content and render accordingly */}

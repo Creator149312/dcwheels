@@ -12,5 +12,6 @@ Disallow: /email
 Disallow: /verify
 Disallow: /uwheels
 Disallow: /ulists
+Disallow: /*sex*
 
 Allow: /sitemap.xml

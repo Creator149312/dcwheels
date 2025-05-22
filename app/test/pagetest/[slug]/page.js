@@ -1,9 +1,10 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
-import WheelData from "@data/WheelData";
-import { replaceDashWithUnderscore } from "@utils/HelperFunctions";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getPageDataBySlug } from "@components/actions/actions";
+import { performance } from "perf_hooks";
+
+export const revalidate = false
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -20,57 +21,56 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Home({ params }) {
-  const slug = await params.slug;
+  const slug = params.slug;
 
-  //   const pageData = WheelData[replaceDashWithUnderscore(slug)];
-
+  const startDB = performance.now();
   const pageData = await getPageDataBySlug(slug);
+  const endDB = performance.now();
+
+  console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
   if (pageData === undefined) redirect("/");
 
-  return (<></>
-    // <div className="p-3">
-    //   {/* <WheelWithInput newSegments={segmentsData} /> */}
-    //   {/* <WheelWithInputContentEditable
-    //     newSegments={ensureArrayOfObjects(pageData.segments)}
-    //   /> */}
+  const startRender = performance.now();
 
-    //   <WheelWithInputContentEditable
-    //     newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-    //   />
-    //   <h1 className="text-3xl mb-2">{pageData.title}</h1>
+  return (
+    <div className="p-3">
+      <WheelWithInputContentEditable
+        newSegments={ensureArrayOfObjects(pageData.wheel.data)}
+        wheelPresetSettings={pageData.wheel.wheelData}
+      />
+      <h1 className="text-3xl mb-2">{pageData.title}</h1>
 
-    //   {/* Map through the content and render accordingly */}
-    //   <div className="text-lg">
-    //     {pageData.content.map((item, index) => {
-    //       switch (item.type) {
-    //         case "paragraph":
-    //           return (
-    //             <p key={index} className="mb-3">
-    //               {item.text}
-    //             </p>
-    //           );
-    //         case "image":
-    //           return <img key={index} src={item.src} alt={item.alt} />;
-    //         case "link":
-    //           return (
-    //             <a
-    //               key={index}
-    //               href={item.href}
-    //               target="_blank"
-    //               rel="noopener noreferrer"
-    //             >
-    //               {item.text}
-    //             </a>
-    //           );
-    //         case "heading":
-    //           const HeadingTag = `h${item.level}`; // Dynamically render the heading tag (e.g., h2, h3)
-    //           return <HeadingTag key={index}>{item.text}</HeadingTag>;
-    //         default:
-    //           return null;
-    //       }
-    //     })}
-    //   </div>
-    // </div>
+      <div className="text-lg">
+        {pageData.content.map((item, index) => {
+          switch (item.type) {
+            case "paragraph":
+              return (
+                <p key={index} className="mb-3">
+                  {item.text}
+                </p>
+              );
+            case "image":
+              return <img key={index} src={item.src} alt={item.alt} />;
+            case "link":
+              return (
+                <a
+                  key={index}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {item.text}
+                </a>
+              );
+            case "heading":
+              const HeadingTag = `h${item.level}`;
+              return <HeadingTag key={index}>{item.text}</HeadingTag>;
+            default:
+              return null;
+          }
+        })}
+      </div>
+    </div>
   );
 }

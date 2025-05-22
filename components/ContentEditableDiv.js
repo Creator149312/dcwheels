@@ -11,7 +11,6 @@ import {
   FaSortAlphaDown,
   FaUpload,
 } from "react-icons/fa";
-import Settings from "./Settings";
 
 const ContentEditableDiv = ({
   segData,

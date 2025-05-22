@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
+import { handleAction } from "@utils/HelperFunctions";
 
 const SaveWheelLocally = () => {
   // State to manage modal visibility and form data
@@ -9,7 +10,7 @@ const SaveWheelLocally = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const { wheelData, segData , advancedOptions} = useContext(SegmentsContext);
+  const { wheelData, segData, advancedOptions, coins, setCoins } = useContext(SegmentsContext);
 
   // Show modal when user wants to save
   const handleOpenModal = () => {
@@ -22,7 +23,7 @@ const SaveWheelLocally = () => {
   };
 
   // Save the data and trigger file download
-  const handleSaveData = () => {
+  const handleSaveData = (e) => {
     setIsSaving(true);
 
     // Prepare the page data with user input
@@ -31,7 +32,7 @@ const SaveWheelLocally = () => {
       description: description || "Default Description", // Default description if no input
       data: segData,
       wheelData: wheelData,
-      editorData: {advancedOptions}
+      editorData: { advancedOptions },
     };
 
     // Convert the page data to a JSON string
@@ -55,6 +56,14 @@ const SaveWheelLocally = () => {
     // Close the modal after saving
     setIsModalOpen(false);
     setIsSaving(false);
+
+    handleAction({
+      actionType: "use",
+      amount: parseInt(10),
+      coins,
+      setCoins,
+      event: e,
+    });
   };
 
   return (
@@ -121,7 +130,7 @@ const SaveWheelLocally = () => {
               </button>
               <button
                 className="bg-blue-500 dark:bg-blue-700 py-2 px-4 rounded-md text-white hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none"
-                onClick={handleSaveData}
+                onClick={(e) => handleSaveData(e)}
                 disabled={isSaving}
               >
                 {isSaving ? "Saving..." : "Save"}

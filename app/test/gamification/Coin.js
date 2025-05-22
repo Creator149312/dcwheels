@@ -3,18 +3,18 @@ import { useState } from 'react';
 
 const Coin = ({ actionType, onActionComplete }) => {
   const [animationClass, setAnimationClass] = useState('');
-  const [size, setSize] = useState('text-4xl');
+  const [size, setSize] = useState('text-3xl');
 
   // Handle Add Coin Animation (Enlarge & Spin)
   const handleAddCoin = () => {
     setAnimationClass('coin-add');
-    setSize('text-5xl');  // Enlarge the coin size
+    setSize('text-4xl');  // Enlarge the coin size
     // Trigger onActionComplete after animation finishes
     setTimeout(() => {
       setAnimationClass('');
-      setSize('text-4xl');
+      setSize('text-3xl');
       if (onActionComplete) onActionComplete();
-    }, 1000);
+    }, 250);
   };
 
   // Handle Use Coin Animation (Shrink & Shake)
@@ -24,9 +24,9 @@ const Coin = ({ actionType, onActionComplete }) => {
     // Trigger onActionComplete after animation finishes
     setTimeout(() => {
       setAnimationClass('');
-      setSize('text-4xl');
+      setSize('text-3xl');
       if (onActionComplete) onActionComplete();
-    }, 500);
+    }, 250);
   };
 
   // Trigger the correct animation based on the actionType prop

@@ -39,10 +39,9 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          {/* <NavbarAdv /> */}
-          <Navbar />
-          {/* <SearchBarNav /> */}
+        
           <SegmentsProvider>
+          <Navbar />
             <div className="grid lg:grid-cols-12 gap-x-2 mt-2 min-h-screen">
               <div className="rounded-xl bg-card mb-2 text-card-foreground grid lg:col-span-9 shadow border">
                 {children}

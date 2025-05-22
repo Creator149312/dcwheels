@@ -1,16 +1,20 @@
 "use client";
 import { createContext, useRef, useState } from "react";
 import defaultWheelJSON from "@data/formatJSON";
+// import { fetchCoinsFromStorage } from "@utils/HelperFunctions";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 
 export const SegmentsContext = createContext();
 export const SegmentsProvider = ({ children }) => {
   const MAX_OPTIONS_ON_WHEEL = defaultWheelJSON.wheelData.maxNumberOfOptions;
   const INNER_RADIUS = defaultWheelJSON.wheelData.innerRadius;
+  const FONT_SIZE = defaultWheelJSON.wheelData.fontSize;
   const MAX_SPIN_TIME = defaultWheelJSON.wheelData.spinDuration;
-
+  // const [coins, setCoins] = useState(fetchCoinsFromStorage());
+  const [coins, setCoins] = useState(100);
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
+
   const [advancedOptions, setadvancedOptions] = useState(
     defaultWheelJSON?.editorData?.advOptions
       ? defaultWheelJSON?.editorData?.advOptions
@@ -39,7 +43,6 @@ export const SegmentsProvider = ({ children }) => {
       ...prevWheelData,
       ...newSettings,
     }));
-    // console.log("Updated Wheel DAta = ", wheelData);
   };
 
   const prepareDataForEditorSwitch = (advOptions) => {
@@ -110,9 +113,13 @@ export const SegmentsProvider = ({ children }) => {
         setSegData,
         setData,
         wheelData,
+        coins,
+        setCoins,
         setWheelData,
         MAX_OPTIONS_ON_WHEEL,
         MAX_SPIN_TIME,
+        INNER_RADIUS,
+        FONT_SIZE,
         setWheelDescription,
         setWheelTitle,
         wheelTitle,

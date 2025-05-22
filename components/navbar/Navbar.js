@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "@components/ThemeToggle";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
 import { HiSearch } from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
-import { Button } from "@components/ui/button";
+import CoinComponent from "./CoinComponent";
+import { fetchCoinsFromStorage } from "@utils/HelperFunctions";
+import { SegmentsContext } from "@app/SegmentsContext";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const { coins, setCoins } = useContext(SegmentsContext);
   const { status, data: session } = useSession();
   const router = useRouter();
   const currentPath = usePathname();
@@ -48,13 +51,13 @@ const Navbar = () => {
         </div>
         <ul className="z-10 md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
           <li>
-              <a
-                href="/"
-                className="inline-flex align-middle items-center text-lg"
-                onClick={handleNewWheelClick}
-              >
-                New Wheel +
-              </a>
+            <a
+              href="/"
+              className="inline-flex align-middle items-center text-lg"
+              onClick={handleNewWheelClick}
+            >
+              New Wheel +
+            </a>
           </li>
           <li>
             <a
@@ -65,7 +68,7 @@ const Navbar = () => {
             </a>
           </li>
           <ThemeToggle />
-          {/* <NavLinks /> */}
+          {/* <CoinComponent coins={coins} /> */}
           <li>
             <div className="md:flex hidden">
               <UserInfo name={session?.user?.name} status={status} />
@@ -115,7 +118,11 @@ const Navbar = () => {
           </li>
           <li>
             <div className="py-5 mr-2">
-              <UserInfo name={session?.user?.name} status={status} setOpen={setOpen}/>
+              <UserInfo
+                name={session?.user?.name}
+                status={status}
+                setOpen={setOpen}
+              />
             </div>
           </li>
           <li>

@@ -9,7 +9,6 @@ import {
   FaRegWindowClose,
 } from "react-icons/fa";
 import Tooltip from "./Tooltip";
-import Settings from "./Settings";
 import SettingsAdv from "./SettingsAdv";
 
 const TabsListOnEditor = ({

@@ -7,13 +7,22 @@ import {
   replaceUnderscoreWithDash,
 } from "@utils/HelperFunctions";
 
+import { OpenAI } from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
+});
+
+// Utility function for delay
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 //sending request to create a list
 export async function POST(req) {
   try {
     const { jsonKey, jsonData } = await req.json(); // Extract the JSON data from the request body
 
-    // console.log("JsonKey = ", jsonKey);
-    // console.log("jsonData = ", jsonData);
+    console.log("JsonKey = ", jsonKey);
+    console.log("jsonData = ", jsonData);
 
     // Validate the JSON data to ensure it has the necessary fields
     if (
@@ -31,13 +40,41 @@ export async function POST(req) {
 
     // Step 1: Create the Wheel
     const wheelData = jsonData; // Directly use the JSON data received
+    const prompt = wheelData.title;
 
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: `only give 4 color codes for "${prompt}" each separated by comma`,
+        },
+      ],
+      max_tokens: 200,
+    });
+
+    const colorCodes = response.choices[0].message.content
+      .split(",")
+      .map((word) => word.trim())
+      .slice(0, 4); // Ensure we only take 4 words
+
+    console.log("Words = \n", colorCodes);
+
+    await delay(1500);
     const dataObjectForSegments = ensureArrayOfObjects(wheelData.segments);
 
     const wheel = new Wheel({
       title: wheelData.title,
       description: wheelData.description,
       data: dataObjectForSegments || [], // Handle content if present
+      wheelData: {
+        segColors: colorCodes,
+        spinDuration: 5,
+        maxNumberOfOptions: 100,
+        innerRadius: 15,
+        removeWinnerAfterSpin: false,
+        customPopupDisplayMessage: "The Winner is...",
+      },
       createdBy: "gauravsingh9314@gmail.com", // Assuming admin for simplicity
       category: wheelData.category || "",
     });

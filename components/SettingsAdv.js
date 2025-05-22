@@ -336,6 +336,7 @@ const SettingsAdv = ({ advOptions }) => {
     wheelData,
     MAX_OPTIONS_ON_WHEEL,
     MAX_SPIN_TIME,
+    FONT_SIZE,
     setSegData,
   } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -351,8 +352,12 @@ const SettingsAdv = ({ advOptions }) => {
       ? wheelData.customPopupDisplayMessage
       : "The Winner is..."
   );
-
-  // console.log("RmvWinner = ", rmvWinnerAfterSpin);
+  const [fontSize, setFontSize] = useState(
+    wheelData?.fontSize ? wheelData.fontSize : 1
+  );
+  const [innerRadius, setInnerRadius] = useState(
+    wheelData?.innerRadius ? wheelData.innerRadius : 1
+  );
 
   // Handle theme change
   const handleThemeChange = (theme) => {
@@ -377,6 +382,14 @@ const SettingsAdv = ({ advOptions }) => {
     setMaxOptions(parseInt(e.target.value));
   };
 
+  const onFontSizeChange = (e) => {
+    setFontSize(parseInt(e.target.value));
+  };
+
+  const onInnerRadiusChange = (e) => {
+    setInnerRadius(parseInt(e.target.value));
+  };
+
   // Handle close modal
   const handleClose = () => setIsOpen(false);
 
@@ -389,6 +402,8 @@ const SettingsAdv = ({ advOptions }) => {
       spinDuration,
       removeWinnerAfterSpin: rmvWinnerAfterSpin,
       customPopupDisplayMessage,
+      fontSize,
+      innerRadius,
     });
 
     setIsOpen(false); // Close the modal after applying changes
@@ -401,6 +416,8 @@ const SettingsAdv = ({ advOptions }) => {
     setSpinDuration(wheelData.spinDuration);
     setRmvWinnerAfterSpin(wheelData.removeWinnerAfterSpin);
     setCustomPopupDisplayMessage(wheelData.customPopupDisplayMessage);
+    setFontSize(wheelData.fontSize);
+    setInnerRadius(wheelData.innerRadius);
 
     if (advOptions) {
       setSegData((prevSegData) =>
@@ -426,7 +443,7 @@ const SettingsAdv = ({ advOptions }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 bg-black bg-opacity-50 z-10 flex justify-center items-center">
-            <div className="bg-white p-6 rounded-lg w-96 dark:bg-gray-800 dark:text-white">
+            <div className="max-w-[90vw] bg-white p-6 rounded-lg dark:bg-gray-800 dark:text-white">
               <div className="flex justify-end">
                 <button
                   onClick={handleClose}
@@ -506,14 +523,14 @@ const SettingsAdv = ({ advOptions }) => {
                     </div>
 
                     {/* Range Input for Inner Radius Adjustment */}
-                    {/* <div className="mt-4">
+                    <div className="mt-4">
                       <h3 className="text-lg font-medium">
                         Inner Radius - {innerRadius}
                       </h3>
                       <input
                         type="range"
                         min="4"
-                        max={100}
+                        max={30}
                         step="1"
                         value={innerRadius}
                         onChange={onInnerRadiusChange}
@@ -521,9 +538,9 @@ const SettingsAdv = ({ advOptions }) => {
                       />
                       <div className="flex justify-between text-sm mt-2">
                         <span>4</span>
-                        <span>100</span>
+                        <span>30 </span>
                       </div>
-                    </div> */}
+                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="settings">
@@ -571,6 +588,25 @@ const SettingsAdv = ({ advOptions }) => {
                         className="mt-2 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                         placeholder="Enter Message"
                       />
+                    </div>
+                    {/* Range Input for Size Adjustment */}
+                    <div className="mt-4">
+                      <h3 className="text-lg font-medium">
+                        Font Size - {fontSize}
+                      </h3>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        step="1"
+                        value={fontSize}
+                        onChange={onFontSizeChange}
+                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
+                      />
+                      <div className="flex justify-between text-sm mt-2">
+                        <span>1</span>
+                        <span>50</span>
+                      </div>
                     </div>
 
                     {/* Additional Settings (e.g., Image Upload, etc.) */}
