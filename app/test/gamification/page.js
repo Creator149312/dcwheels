@@ -1,10 +1,7 @@
 'use client'
-import React, { useContext } from "react";
-import { handleAction } from "@utils/HelperFunctions";
-import { SegmentsContext } from "@app/SegmentsContext";
+import React from "react";
 
 const page = () => {
-  const {coins, setCoins} = useContext(SegmentsContext);
   return (<></>
     // <button
     //   onClick={(e) =>
