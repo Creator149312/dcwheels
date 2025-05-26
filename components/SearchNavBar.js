@@ -129,8 +129,8 @@ const SearchBarNav = () => {
   }
 
   return (
-      <div className="grid md:grid-cols-6 w-[100%] md:w-[60%] m-auto p-2">
-        <div className="md:col-span-6 grid border-2 md:rounded-r-lg grid-cols-6">
+      <div className="grid md:grid-cols-6 w-[100%] md:w-[60%] m-auto p-3">
+        <div className="md:col-span-6 grid border-2 md:rounded-r-lg grid-cols-6 mt-3">
         <input
           className={
             inputError

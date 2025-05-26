@@ -363,11 +363,26 @@ export async function getPageDataBySlug(slug) {
 
   // const pageData = await Page.findOne({ slug }).populate("wheel");
   const pageData = await Page.findOne({ slug })
-  .select("title description content wheel")
-  .populate("wheel")
-  .lean();
+    .select("title description content wheel")
+    .populate("wheel")
+    .lean();
 
   return pageData;
+}
+
+export async function getAllWheelPages() {
+  await connectMongoDB();
+
+  const Slugs = await Page.aggregate([
+    {
+      $project: {
+        _id: 0,
+        slug: 1,
+      },
+    },
+  ]);
+
+  return Slugs.map((doc) => doc.slug);
 }
 
 export async function storeWheelDataToDatabase(initialJSONData) {

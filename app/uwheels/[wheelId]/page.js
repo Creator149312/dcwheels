@@ -2,7 +2,7 @@ import { validateObjectID } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { performance } from "perf_hooks";
+// import { performance } from "perf_hooks";
 
 let titleStr = "";
 let listerror = null;
@@ -56,7 +56,7 @@ let wordsList = null;
 
 export default async function Page({ params }) {
   let IfIdValid = validateObjectID(params.wheelId);
-  const startDB = performance.now();
+  // const startDB = performance.now();
   if (IfIdValid) {
     const id = params.wheelId;
     try {
@@ -81,11 +81,11 @@ export default async function Page({ params }) {
       }
     }
 
-    const endDB = performance.now();
-    console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
+    // const endDB = performance.now();
+    // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
   }
 
-  const startRender = performance.now();
+  // const startRender = performance.now();
 
   return (
     <div>

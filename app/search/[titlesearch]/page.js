@@ -55,30 +55,32 @@ let wordsList = null;
 
 const printSearchData = (wheelList) => {
   let wheelData = [];
-  let end = wheelList.length > start + perPage ? start + perPage : wheelList.length;
+  let end =
+    wheelList.length > start + perPage ? start + perPage : wheelList.length;
   for (var i = start; i < end; i++) {
     let item = wheelList[i];
 
-    // console.log("Title of Wheel = ", item.title);
     wheelData.push(
-      <Card key={i} className="p-2 mt-3 mx-4">
-        <div className="text-base leading-normal m-2 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold mb-2">{item.title}</h2>
-            {/* <p>{item.description}</p> */}
+      <Link href={`/uwheels/${item._id}`} key={i}>
+        <Card
+          className="p-4 sm:p-6 mt-4 mx-4 rounded-md bg-white dark:bg-gray-800 
+               hover:shadow-xl hover:scale-[1.01] hover:-translate-y-1 
+               transition-all duration-300 ease-in-out 
+               focus:outline-none focus:ring-2 focus:ring-blue-500"
+          tabIndex={0} // for keyboard accessibility
+        >
+          <div className="text-base leading-normal flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold mb-1 hover:underline">
+                {item.title}
+              </h2>
+            </div>
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {item.data.length} Words
+            </div>
           </div>
-          <div>{item.data.length} Words</div>
-        </div>
-        <div className="flex items-center">
-          <Link href={`/uwheels/${item._id}`} className="p-2">
-            <HiOutlineEye size={24} />
-          </Link>
-          {/* <Link href={`/uwheels/${item._id}`} className="p-2">
-            <HiPencilAlt size={24} />
-          </Link>
-          <RemoveListBtn id={item._id} className="p-2" /> */}
-        </div>
-      </Card>
+        </Card>
+      </Link>
     );
   }
 
@@ -113,35 +115,17 @@ export default async function Page({ params }) {
   }
 
   return (
-    <>
+    <div className="m-3 p-3">
       <div className="bg-card text-card-foreground w-full">
         <SearchBarNav />
-        <h1 className="text-3xl font-semibold mt-2 mb-2">Search Results for {searchtitle}</h1>
+        <h1 className="text-3xl font-semibold mt-2 mb-3">
+          Search Results: {searchtitle}
+        </h1>
       </div>
-     <div>
+      <div className="mb-4">
         {wordsList !== null &&
           listerror == null &&
           wordsList.length > 0 &&
-          // wordsList.map((item, index) => (
-          //   <Card key={index} className="p-2 mt-3">
-          //     <div className="text-base leading-normal m-2 flex justify-between items-center">
-          //       <div>
-          //         <h2 className="text-xl font-bold mb-2">{item.title}</h2>
-          //         <p>{item.description}</p>
-          //       </div>
-          //       <div>{item.data.length} Words</div>
-          //     </div>
-          //     <div className="flex items-center">
-          //       <Link href={`/wheels/${item._id}`} className="p-2">
-          //         <HiOutlineEye size={24} />
-          //       </Link>
-          //       <Link href={`/wheels/${item._id}`} className="p-2">
-          //         <HiPencilAlt size={24} />
-          //       </Link>
-          //       <RemoveListBtn id={item._id} className="p-2" />
-          //     </div>
-          //   </Card>
-          // ))
           printSearchData(wordsList).map((item, index) => item)}
         {listerror && (
           <div>
@@ -149,7 +133,12 @@ export default async function Page({ params }) {
           </div>
         )}
       </div>
-      <BottomPagination data={wordsList} perPage={perPage} searchValue={searchtitle} pagenumber={1}/>
-    </>
+      <BottomPagination
+        data={wordsList}
+        perPage={perPage}
+        searchValue={searchtitle}
+        pagenumber={1}
+      />
+    </div>
   );
 }

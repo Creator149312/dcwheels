@@ -37,10 +37,10 @@ const UserDropDownMenu = ({ name, setOpen }) => {
           <GiCartwheel size={20} className="mr-2" />
           <a href="/">New Wheel + </a>
         </DropdownMenuItem>{" "}
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
           <HiOutlineClipboardList size={20} className="mr-2" />
           <a href="/">New List + </a>
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         {/* <DropdownMenuItem><Link href="/settings">Settings</Link></DropdownMenuItem> */}
         <DropdownMenuItem>
           <HiOutlineLogout size={20} className="mr-2" />

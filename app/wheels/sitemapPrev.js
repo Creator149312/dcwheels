@@ -1,13 +1,11 @@
-import { getAllWheelPages } from "@components/actions/actions";
-// import WheelData from "@data/WheelData";
+import WheelData from "@data/WheelData";
 import { replaceUnderscoreWithDash } from "@utils/HelperFunctions";
 const BASE_URL = "https://www.spinpapa.com";
 
 export const revalidate = 0;
 
 export default async function sitemap({ id }) {
-  // const AllUrls = Object.keys(WheelData);
-  const AllUrls = await getAllWheelPages();
+  const AllUrls = Object.keys(WheelData);
 
   return AllUrls.map((word) => ({
     url: `${BASE_URL}/wheels/${replaceUnderscoreWithDash(word)}`.trim(),

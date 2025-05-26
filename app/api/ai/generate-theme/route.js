@@ -6,7 +6,7 @@ const openai = new OpenAI({
 
 export async function POST(req) {
   const { prompt } = await req.json();
-  console.log("Prompt - ", prompt);
+  // console.log("Prompt - ", prompt);
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -24,14 +24,13 @@ export async function POST(req) {
       .map((word) => word.trim())
       .slice(0, 4); // Ensure we only take 4 words
 
-    console.log("Words = \n", colorCodes);
     return new Response(JSON.stringify({ colorCodes }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("OpenAI API error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate words" }), {
+    // console.error("OpenAI API error:", error);
+    return new Response(JSON.stringify({ error: "Failed to generate colors" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

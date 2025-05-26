@@ -1,15 +1,12 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
+import WheelData from "@data/WheelData";
+import { replaceDashWithUnderscore } from "@utils/HelperFunctions";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { getPageDataBySlug } from "@components/actions/actions";
-// import { performance } from "perf_hooks";
-
-export const revalidate = false
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-
-  const pageData = await getPageDataBySlug(slug);
+  const pageData = WheelData[replaceDashWithUnderscore(slug)];
 
   if (pageData === undefined) redirect("/"); //this is done to ensure only valid urls are loaded and all others are redirected to homepage.
 
@@ -20,26 +17,25 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Home({ params }) {
-  const slug = params.slug;
+  const slug = await params.slug;
+  const startDB = performance.now();
+  const pageData = WheelData[replaceDashWithUnderscore(slug)];
+  const endDB = performance.now();
 
-  // const startDB = performance.now();
-  const pageData = await getPageDataBySlug(slug);
-  // const endDB = performance.now();
-
-  // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
-
+  console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
   if (pageData === undefined) redirect("/");
 
   const startRender = performance.now();
 
   return (
     <div className="p-3">
+      {/* <WheelWithInput newSegments={segmentsData} /> */}
       <WheelWithInputContentEditable
-        newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-        wheelPresetSettings={pageData.wheel.wheelData}
+        newSegments={ensureArrayOfObjects(pageData.segments)}
       />
-      <h1 className="text-3xl mb-2">{pageData.title}</h1>
+      <h1 className="text-3xl mb-2">{pageData.heading}</h1>
 
+      {/* Map through the content and render accordingly */}
       <div className="text-lg">
         {pageData.content.map((item, index) => {
           switch (item.type) {
@@ -63,7 +59,7 @@ export default async function Home({ params }) {
                 </a>
               );
             case "heading":
-              const HeadingTag = `h${item.level}`;
+              const HeadingTag = `h${item.level}`; // Dynamically render the heading tag (e.g., h2, h3)
               return <HeadingTag key={index}>{item.text}</HeadingTag>;
             default:
               return null;

@@ -28,7 +28,7 @@ import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 import ListSelector from "./lists/ListSelector";
 import toast from "react-hot-toast";
-import GenerateWheel from "@app/test/wheel/GenerateWheel";
+import GenerateWheel from "@components/GenerateWheel";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -69,7 +69,7 @@ const WheelWithInputContentEditable = ({
 
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
-  const [isVisible, setIsVisible] = useState(false); // state to control visibility
+  const [isVisible, setIsVisible] = useState(true); // state to control visibility
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
   const [segTxtfontSize, setSegTxtfontSize] = useState(
@@ -388,8 +388,8 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
             ) : (
               <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
             )}
-            <AIListGenerator setSegData={setSegData} />
-            <GenerateWheel />
+            {/* <AIListGenerator setSegData={setSegData} /> */}
+            <GenerateWheel url={currentPath}/>
           </div>
         </div>
         <div
