@@ -65,7 +65,7 @@ const CreatePageForm = ({ Wheels = [] }) => {
 
   return (
     <>
-      {isLoading && (
+      {/* {isLoading && (
         <div className="flex justify-center items-center">
           <p className="text-xl font-bold m-2">Fetching Your Wheels ...</p>
         </div>
@@ -145,7 +145,7 @@ const CreatePageForm = ({ Wheels = [] }) => {
             Create Page
           </button>
         </form>
-      )}{" "}
+      )}{" "} */}
     </>
   );
 };

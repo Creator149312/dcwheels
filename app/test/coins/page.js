@@ -1,8 +1,8 @@
 import CoinsTracker from "./CoinsTracker"
 
 const page = () => {
-  return (
-    <CoinsTracker />
+  return (<></>
+    // <CoinsTracker />
   )
 }
 

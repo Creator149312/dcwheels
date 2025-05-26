@@ -35,22 +35,22 @@ const MainComponent = () => {
     setIsPopupOpen(false);
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center p-6">
-        <h2 className="text-2xl font-semibold mb-6">Welcome to the Quiz</h2>
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
-          onClick={randomizeQuestion}
-        >
-          Question Me
-        </button>
-      </div>
+  return (<></>
+    // <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    //   <div className="text-center p-6">
+    //     <h2 className="text-2xl font-semibold mb-6">Welcome to the Quiz</h2>
+    //     <button
+    //       className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
+    //       onClick={randomizeQuestion}
+    //     >
+    //       Question Me
+    //     </button>
+    //   </div>
 
-      {isPopupOpen && (
-        <QuestionPopup questionData={currentQuestion} closePopup={closePopup} />
-      )}
-    </div>
+    //   {isPopupOpen && (
+    //     <QuestionPopup questionData={currentQuestion} closePopup={closePopup} />
+    //   )}
+    // </div>
   );
 };
 
