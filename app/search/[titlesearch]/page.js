@@ -124,8 +124,7 @@ export default async function Page({ params }) {
         {(wordsList == null || wordsList.length == 0) && (
           <div className="text-center mt-6">
             <p className="text-gray-700 dark:text-gray-300">
-              We can't find any wheels related to <strong>{searchtitle}</strong>
-              .
+              We cannot find any wheels related to <strong>{searchtitle}</strong>.
             </p>
 
             <div className="mt-4">
