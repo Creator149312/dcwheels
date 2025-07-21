@@ -76,7 +76,7 @@ export async function POST(req) {
         customPopupDisplayMessage: "The Winner is...",
       },
       createdBy: "gauravsingh9314@gmail.com", // Assuming admin for simplicity
-      category: wheelData.category || "",
+      tags: wheelData.tags || "",
     });
 
     // Save the wheel to the database

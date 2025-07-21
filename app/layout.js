@@ -5,6 +5,10 @@ import { ThemeProvider } from "./ThemeProvider";
 import { SegmentsProvider } from "./SegmentsContext";
 import { Toaster } from "react-hot-toast";
 import GAnalytics from "./GAnalytics";
+import BottomNavMobile from "@components/BottomNavMobile";
+import SuggestedSidebar from "@components/SuggestedSidebar";
+import TagsPage from "./test/TagsTesting/page";
+import TagsCarousel from "@components/TagsCarousel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,7 +35,7 @@ export default function RootLayout({ children }) {
         <meta name="msvalidate.01" content="A8182827FD82081B73F2EB1024F9C2C9" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="min-h-screen bg-slate-100 dark:bg-slate-900 font-sans antialiased">
+      <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
         <Toaster />
         <ThemeProvider
           attribute="class"
@@ -39,18 +43,16 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-        
           <SegmentsProvider>
-          <Navbar />
+            <Navbar />
+            <TagsCarousel />
             <div className="grid lg:grid-cols-12 gap-x-2 mt-2 min-h-screen">
-              <div className="rounded-xl bg-card mb-2 text-card-foreground grid lg:col-span-9 shadow border">
-                {children}
-              </div>
-              <div className="rounded-xl border bg-card text-card-foreground shadow text-center lg:col-span-3">
+              <div className=" grid lg:col-span-9 ">{children}</div>
+              <div className="lg:col-span-3">
                 {/* here we will have a ad of Wordpapa */}
-                <p className="text-lg">Advertisement</p>
               </div>
             </div>
+            {/* <BottomNavMobile /> */}
           </SegmentsProvider>
         </ThemeProvider>
       </body>

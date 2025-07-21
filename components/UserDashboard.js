@@ -13,7 +13,7 @@ export default function UserDashboard() {
 
   if (status === "authenticated" || session?.user?.email !== undefined) {
     return (
-      <div className="m-3 p-10">
+      <div className="m-1 p-2 sm:m-3 sm:p-10">
         <h1 className="text-3xl font-bold mb-4 text-center">Dashboard</h1>
         <Tabs defaultValue="wheels">
           <TabsList className="grid w-full grid-cols-2">

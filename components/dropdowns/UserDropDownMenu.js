@@ -16,32 +16,40 @@ import { GiCutDiamond } from "react-icons/gi";
 import CoinsManager from "@app/test/gamification/CoinsManager";
 import { useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
+import { ThemeToggleSwitch } from "@components/ThemeToggleSwitch";
 
 const UserDropDownMenu = ({ name, setOpen }) => {
   const {coins} = useContext(SegmentsContext);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <div className="flex center-align">
+     <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center justify-center focus:outline-none">
           <HiOutlineUserCircle size={38} />
-        </div>
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-52 z-[1000] mr-2"
+      >
         <DropdownMenuLabel>{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+
         <DropdownMenuItem>
           <HiOutlinePresentationChartBar size={20} className="mr-2" />
           <a href="/dashboard">Dashboard</a>
         </DropdownMenuItem>
+
         <DropdownMenuItem>
           <GiCartwheel size={20} className="mr-2" />
-          <a href="/">New Wheel + </a>
-        </DropdownMenuItem>{" "}
-        {/* <DropdownMenuItem>
-          <HiOutlineClipboardList size={20} className="mr-2" />
-          <a href="/">New List + </a>
-        </DropdownMenuItem> */}
-        {/* <DropdownMenuItem><Link href="/settings">Settings</Link></DropdownMenuItem> */}
+          <a href="/">New Wheel +</a>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem>
+          <ThemeToggleSwitch />
+        </DropdownMenuItem>
+
         <DropdownMenuItem>
           <HiOutlineLogout size={20} className="mr-2" />
           <SignOut />

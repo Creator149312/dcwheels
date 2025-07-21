@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 const HOME_URL = "https://www.spinpapa.com";
 
-const GenerateWheel = ({ url }) => {
+const GenerateWheel = () => {
   const { status, data: session } = useSession();
   const [prompt, setPrompt] = useState("");
   const [list, setList] = useState([]);

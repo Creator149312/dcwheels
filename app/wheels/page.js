@@ -1,10 +1,10 @@
+/*this file works on creating links to different categories of Wheels */
 import CollapsibleCategory from "@components/CollapsibleCategory";
 import WheelData from "@data/WheelData";
 
 export const metadata = {
   title: "Wheels Explorer",
-  description:
-    "Explore all wheels in Spinpapa and find the one you need.",
+  description: "Explore all wheels in Spinpapa and find the one you need.",
 };
 
 // Function to group the keys by category and return an array of JSONs
@@ -34,27 +34,6 @@ function groupJsonByCategory(jsons) {
 }
 
 const CategoriesPage = async () => {
-  // const categories = [
-  //   {
-  //     category: "Education",
-  //     links: [
-  //       { title: "Mathematics", href: "/education/mathematics" },
-  //       { title: "Science", href: "/education/science" },
-  //       { title: "History", href: "/education/history" },
-  //       { title: "Literature", href: "/education/literature" },
-  //     ],
-  //   },
-  //   {
-  //     category: "Games",
-  //     links: [
-  //       { title: "Action", href: "/games/action" },
-  //       { title: "Strategy", href: "/games/strategy" },
-  //       { title: "RPG", href: "/games/rpg" },
-  //       { title: "Puzzle", href: "/games/puzzle" },
-  //     ],
-  //   },
-  // ];
-
   // Call the function and store the result
   const categories = groupJsonByCategory(WheelData);
 
@@ -62,12 +41,13 @@ const CategoriesPage = async () => {
     <div className="container mx-auto px-4 py-6 dark:text-white">
       {/* Page Title */}
       <h1 className="text-3xl font-bold text-center mb-8 dark:text-white">
-        Wheels Explorer      </h1>
+        Wheels Explorer{" "}
+      </h1>
 
       {/* Page Description */}
       <p className="text-lg text-gray-700 mb-6 text-center dark:text-gray-300">
-        Discover picker wheels related to a wide range of topics across various categories, including
-        Animals, Education, and Games. 
+        Discover picker wheels related to a wide range of topics across various
+        categories, including Animals, Education, and Games.
       </p>
 
       <div className="mx-10">

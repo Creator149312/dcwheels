@@ -27,7 +27,7 @@ export default async function Home() {
           Spin Wheel – Your Random Name Picker to Decide Winner
         </h1>
         <p className="mb-3">
-          Spinpapa is a an Online spinner tool that is designed to help
+          Spinpapa is an Online spinner tool that is designed to help
           individuals make choices in a fun and random way. It is a virtual
           wheel that can be spun to determine a random outcome or winner. The
           wheel is divided into various sections out of a circle, each with a

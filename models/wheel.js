@@ -31,7 +31,8 @@ const wheelSchema = new Schema(
       required: true,
     },
     wheelData: { type: Object, default: {} },
-    category: { type: String, default: "" },
+    tags: { type: [String], default: [] },
+    // category: { type: String, default: "" }, //will remove it after migration
     editorData: {
       type: Object,
       default: {

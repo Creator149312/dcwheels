@@ -5,11 +5,17 @@ import { Menu, X } from "lucide-react";
 import ThemeToggle from "@components/ThemeToggle";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
-import { HiSearch } from "react-icons/hi";
+import {
+  HiCollection,
+  HiOutlinePlusSm,
+  HiPlus
+} from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
 import CoinComponent from "./CoinComponent";
 import { fetchCoinsFromStorage } from "@utils/HelperFunctions";
 import { SegmentsContext } from "@app/SegmentsContext";
+import MobileSearchBar from "@components/MobileSearchBar";
+import CategoryMenu from "@components/CategoryMenu";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -30,8 +36,9 @@ const Navbar = () => {
 
   return (
     <div className="pr-2 pl-2 text-center bg-card text-card-foreground shadow">
-      <div className="flex items-center font-medium justify-between">
-        <div className="z-30 p-2 md:w-auto w-full flex justify-between">
+      <div className="flex items-center justify-between py-2">
+        {/* Left: Logo */}
+        <div className="flex items-center shrink-0">
           <a href="/" className="text-2xl font-semibold flex items-center">
             <img
               src={"/spin-wheel-logo.png"}
@@ -40,106 +47,96 @@ const Navbar = () => {
             />
             SpinPapa
           </a>
-          <div className="flex gap-4">
-            <div className="md:hidden">
-              <ThemeToggle />
-            </div>
-            <div className="text-3xl md:hidden" onClick={() => setOpen(!open)}>
-              {open ? <X size={35} /> : <Menu size={35} />}
-            </div>
+        </div>
+
+        {/* Center: Search Bar - hidden on very small mobile */}
+        <div className="hidden md:flex flex-grow justify-center px-4">
+          <div className="w-full max-w-xl">
+            <MobileSearchBar />
           </div>
         </div>
-        <ul className="z-10 md:flex hidden p-2 justify-between align-middle gap-10 pr-5">
-          <li>
-            <a
-              href="/"
-              className="inline-flex align-middle items-center text-lg"
-              onClick={handleNewWheelClick}
-            >
-              New Wheel +
-            </a>
-          </li>
-          <li>
-            <a
-              href="/wheels"
-              className="inline-flex align-middle items-center text-lg"
-            >
-              All Wheels
-            </a>
-          </li>
-          <ThemeToggle />
-          {/* <CoinComponent coins={coins} /> */}
-          <li>
-            <div className="md:flex hidden">
-              <UserInfo name={session?.user?.name} status={status} />
-            </div>
-          </li>
-          <li>
-            <a
-              href="/search"
-              className="inline-flex align-middle items-center text-lg"
-            >
-              <span className="mr-2 hover:font-semibold">
-                <HiSearch size={38} />
-              </span>
-              Find Wheels
-            </a>
-          </li>
-          {/* <li className="items-center">
-            <a href="/" className="hover:font-semibold text-lg items-center align-middle">
-              Help
-            </a>
-          </li> */}
-        </ul>
 
-        {/* Mobile nav */}
-        <ul
-          className={`z-20
-        md:hidden dark:bg-[#020817] bg-white fixed w-full top-0 overflow-y-auto bottom-0 py-10 pl-4
-        duration-500 align-middle ${open ? "left-0" : "left-[-100%]"}
-        `}
-        >
-          {/* <NavLinks setOpen={setOpen} /> */}
-          <li>
-            <a
-              href="/"
-              className="inline-flex align-middle items-center text-lg"
-            >
-              New Wheel +
-            </a>
-          </li>
-          <li>
-            <a
-              href="/wheels"
-              className="inline-flex align-middle items-center text-lg"
-            >
-              All Wheels
-            </a>
-          </li>
-          <li>
-            <div className="py-5 mr-2">
-              <UserInfo
-                name={session?.user?.name}
-                status={status}
-                setOpen={setOpen}
-              />
-            </div>
-          </li>
-          <li>
-            <a href="/search" className="inline-flex">
-              <span className="align-middle mr-2 hover:font-semibold">
-                <HiSearch size={28} />
-              </span>
-              <span>Find Wheels</span>
-            </a>
-          </li>
-          {/* <li>
-            <a href="" className="hover:font-semibold">
-              Help
-            </a>
-          </li> */}
-        </ul>
+        {/* Right Side */}
+        <div className="flex items-center sm:gap-4">
+          {/* Search bar toggle + Theme toggle on mobile */}
+          <div className="md:hidden">
+            <MobileSearchBar />
+          </div>
+          <div className="md:hidden">{/* <ThemeToggle /> */}</div>
+          {/* <CategoryMenu /> */}
+          {/* Desktop menu */}
+          <ul className="hidden md:flex gap-6 items-center">
+            <li>
+              <a
+                href="/"
+                className="inline-flex items-center text-lg"
+                onClick={handleNewWheelClick}
+              >
+                <span className="mr-2 hover:font-semibold">
+                  <HiOutlinePlusSm size={26} />
+                </span>
+                Create
+              </a>
+            </li>
+            <li>
+              <a href="/wheels" className="inline-flex items-center text-lg">
+                <span className="mr-2 hover:font-semibold">
+                  <HiCollection size={26} />
+                </span>
+                All Wheels
+              </a>
+            </li>
+            {/* <ThemeToggle /> */}
+            <li>
+              <UserInfo name={session?.user?.name} status={status} />
+            </li>
+          </ul>
+
+          {/* Mobile menu icon */}
+          <div
+            className="text-3xl md:hidden z-40"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? <X size={28} /> : <Menu size={28} />}
+          </div>
+        </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      <ul
+        className={`z-20
+      md:hidden dark:bg-[#020817] bg-white fixed top-0 bottom-0 right-0 overflow-y-auto
+      w-64 max-w-[80%] py-10 pl-4 gap-3 duration-500 ease-in-out
+      ${open ? "translate-x-0" : "translate-x-full"}
+      transition-transform
+    `}
+      >
+        <li className="pt-5 pb-3">
+          <a href="/" className="inline-flex items-center text-lg">
+            <span className="mr-2 hover:font-semibold">
+              <HiPlus size={28} />
+            </span>
+            Create
+          </a>
+        </li>
+        <li className="py-3">
+          <a href="/wheels" className="inline-flex items-center text-lg">
+            <span className="mr-2 hover:font-semibold">
+              <HiCollection size={28} />
+            </span>
+            All Wheels
+          </a>
+        </li>
+        <li>
+          <div className="py-3 mr-2">
+            <UserInfo
+              name={session?.user?.name}
+              status={status}
+              setOpen={setOpen}
+            />
+          </div>
+        </li>
+      </ul>
     </div>
   );
 };

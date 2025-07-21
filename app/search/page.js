@@ -1,6 +1,4 @@
-import SearchBarNav from "@components/SearchNavBar";
 import { Button } from "@components/ui/button";
-import { Card } from "@components/ui/card";
 
 export const metadata = {
   title: "Find Spin Wheels",
@@ -12,7 +10,6 @@ export default function Page() {
     <>
       <div className="bg-card text-card-foreground w-full">
         <h1 className="text-4xl m-2 flex justify-center items-center">Find Spin Wheels</h1>
-        <SearchBarNav />
         <div className="text-lg pt-2 flex justify-center items-center">
           You can create your own wheels by{" "}
           <a href="/register">

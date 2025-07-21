@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-      // output: 'export',
+  // output: 'export',
   images: {
     domains: ["lh3.googleusercontent.com"],
   },
@@ -9,11 +9,23 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000", "https://ominous-engine-q766v6jx45r34qx9.github.dev"],
+      allowedOrigins: [
+        "localhost:3000",
+        "https://ominous-engine-q766v6jx45r34qx9.github.dev",
+      ],
       // allowedForwardedHosts: ["localhost:3000"],
       // ^ You might have to use this property depending on your exact version.
-    }
-  }
+    },
+  },
+  async redirects() {
+    return [
+      {
+        source: "/wheels/random-sex-position-picker",
+        destination: "https://www.domainconverters.com/",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

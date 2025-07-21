@@ -10,58 +10,100 @@ import {
 
 let currentPage = 1; //current page number
 
-const printPaginationItem = (numOfPages, searchValue) => {
-  let paginationLinkItems = [];
-  let currentPageCopy = currentPage;
+// const printPaginationItem = (numOfPages, searchValue) => {
+//   let paginationLinkItems = [];
+//   let currentPageCopy = currentPage;
 
-  paginationLinkItems.push(
-    <>
-      <PaginationItem>
-        {currentPageCopy > 1 &&
-          (currentPageCopy - 1 === 1 ? (
-            <PaginationPrevious href={`/search/${searchValue}`} />
-          ) : (
-            <PaginationPrevious
-              href={`/search/${searchValue}/${currentPageCopy - 1}`}
-            />
-          ))}
+//   paginationLinkItems.push(
+//     <>
+//       <PaginationItem>
+//         {currentPageCopy > 1 &&
+//           (currentPageCopy - 1 === 1 ? (
+//             <PaginationPrevious href={`/search/${searchValue}`} />
+//           ) : (
+//             <PaginationPrevious
+//               href={`/search/${searchValue}/${currentPageCopy - 1}`}
+//             />
+//           ))}
+//       </PaginationItem>
+//       <PaginationItem>
+//         <PaginationLink href={`/search/${searchValue}`}>1</PaginationLink>
+//       </PaginationItem>
+//     </>
+//   );
+//   for (var i = 2; i < numOfPages; i++) {
+//     paginationLinkItems.push(
+//       <PaginationItem>
+//         <PaginationLink href={`/search/${searchValue}/${i}`}>
+//           {i}
+//         </PaginationLink>
+//       </PaginationItem>
+//     );
+
+//     currentPageCopy = i;
+//   }
+
+//   let nextPage = parseInt(currentPage) + 1;
+//   // console.log("Next Page = ", nextPage);
+//   // console.log("Current Page = ", currentPage);
+//   // console.log("Number Of Pages = ", numOfPages);
+
+//   paginationLinkItems.push(
+//     <>
+//       <PaginationItem>
+//         <PaginationEllipsis />
+//       </PaginationItem>
+//       <PaginationItem>
+//         {(currentPage < numOfPages) && (
+//           <PaginationNext href={`/search/${searchValue}/${nextPage}`} />
+//         )}
+//       </PaginationItem>
+//     </>
+//   );
+//   return paginationLinkItems;
+// };
+
+const printPaginationItem = (numOfPages, searchValue) => {
+  const items = [];
+  const current = parseInt(currentPage);
+
+  // Previous button
+  if (current > 1) {
+    const prevPage = current - 1;
+    items.push(
+      <PaginationItem key="prev">
+        <PaginationPrevious
+          href={prevPage === 1 ? `/search/${searchValue}` : `/search/${searchValue}/${prevPage}`}
+        />
       </PaginationItem>
-      <PaginationItem>
-        <PaginationLink href={`/search/${searchValue}`}>1</PaginationLink>
-      </PaginationItem>
-    </>
-  );
-  for (var i = 2; i < numOfPages; i++) {
-    paginationLinkItems.push(
-      <PaginationItem>
-        <PaginationLink href={`/search/${searchValue}/${i}`}>
-          {i}
+    );
+  }
+
+  // Only show current page if it's not 1
+  if (current > 1 && current < numOfPages) {
+    items.push(
+      <PaginationItem key={`page-${current}`}>
+        <PaginationLink href={`/search/${searchValue}/${current}`}>
+          {current}
         </PaginationLink>
       </PaginationItem>
     );
-
-    currentPageCopy = i;
   }
 
-  let nextPage = parseInt(currentPage) + 1;
-  // console.log("Next Page = ", nextPage);
-  // console.log("Current Page = ", currentPage);
-  // console.log("Number Of Pages = ", numOfPages);
+  // Next button
+  if (current < numOfPages) {
+    const nextPage = current + 1;
+    items.push(
+      <PaginationItem key="next">
+        <PaginationNext href={`/search/${searchValue}/${nextPage}`} />
+      </PaginationItem>
+    );
+  }
 
-  paginationLinkItems.push(
-    <>
-      <PaginationItem>
-        <PaginationEllipsis />
-      </PaginationItem>
-      <PaginationItem>
-        {(currentPage < numOfPages) && (
-          <PaginationNext href={`/search/${searchValue}/${nextPage}`} />
-        )}
-      </PaginationItem>
-    </>
-  );
-  return paginationLinkItems;
+  return items;
 };
+
+
 
 const BottomPagination = ({ data, perPage, searchValue, pagenumber }) => {
   let numOfPages = Math.floor(data.length / perPage);

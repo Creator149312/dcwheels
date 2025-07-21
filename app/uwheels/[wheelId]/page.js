@@ -98,9 +98,10 @@ export default async function Page({ params }) {
               wordsList?.wheelData ? wordsList?.wheelData : null
             }
           />
-          {/* <div className="mt-3 p-2"><h1 cl>{wordsList.title}</h1>
-        <p>{wordsList.description}</p>
-        </div> */}
+          <div className="mt-3 p-2">
+            <h1 className="text-3xl m-2 flex">{wordsList.title}</h1>
+            <p>{wordsList.description}</p>
+          </div>
         </>
       )}
       {listerror && (

@@ -53,7 +53,7 @@ export default function WordLists({ createdBy }) {
       {/* show the lists if data is found */}
       {data.length > 0 &&
         data.map((item, index) => (
-          <Card key={index} className="p-2 mt-3">
+          <Card key={index} className="p-1 sm:p-2 mt-3">
             <div className="leading-normal m-2 flex flex-col md:flex-row justify-between items-center">
               <p className="text-lg font-bold m-1">{item.title}</p>
               <div className="flex items-center mt-1">

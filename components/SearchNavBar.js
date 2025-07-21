@@ -14,60 +14,6 @@ const SearchBarNav = () => {
   const [placeholder, setPlaceHolder] = useState(
     "Find New Wheels to Explore"
   );
-
-//   //add placeholder key also in this
-//   const urlOptions = [
-//     {
-//       value: commonLinks.definition,
-//       label: "Word Dictionary",
-//       placeholder: "Enter Word to Find Definitions",
-//     },
-//     {
-//       value: commonLinks.wordfinder,
-//       label: "Word Finder",
-//       placeholder: "Enter Letters to Unscramble",
-//     },
-//     {
-//       value: commonLinks.thesaurus,
-//       label: "Thesaurus",
-//       placeholder: "Enter Word to Find Synonyms",
-//     },
-//     {
-//       value: commonLinks.rhyming,
-//       label: "Rhyming Dictionary",
-//       placeholder: "Enter Word to Find Rhyming Words",
-//     },
-//     {
-//       value: commonLinks.syllables,
-//       label: "Syllable Counter",
-//       placeholder: "Enter Word to Count Syllables",
-//     },
-//     {
-//       value: commonLinks.adjectives,
-//       label: "Adjectives Finder",
-//       placeholder: "Enter Word to Find Adjectives",
-//     },
-//   ];
-
-  function checkOptionInSearch(obj, stringA) {
-    for (let key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        if (obj[key] === stringA) {
-          return true; // Found a match
-        }
-      }
-    }
-    return false; // No match found
-  }
-
-//   function findPlaceholder(selectedValue) {
-//     for (let i = 0; i < urlOptions.length; i++) {
-//       if (urlOptions[i].value === selectedValue) {
-//         setPlaceHolder(urlOptions[i].placeholder);
-//       }
-//     }
-//   }
-
   //this is used to facilitate Enter key press
   const handleKeyPress = (event) => {
     if (!inputError) {
@@ -75,12 +21,6 @@ const SearchBarNav = () => {
         handleLoadUrl();
       }
     }
-  };
-
-  const handleOptionChange = (e) => {
-    const value = e.target.value;
-    setSelectedOption(value);
-    findPlaceholder(value);
   };
 
   const handleLoadUrl = () => {

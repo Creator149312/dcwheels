@@ -9,7 +9,36 @@ export default async function sitemap({ id }) {
   // const AllUrls = Object.keys(WheelData);
   const AllUrls = await getAllWheelPages();
 
-  return AllUrls.map((word) => ({
+  const adultWords = [
+    "sex",
+    "porn",
+    "nude",
+    "erotic",
+    "xxx",
+    "fetish",
+    "bdsm",
+    "naked",
+    "boobs",
+    "butt",
+    "vagina",
+    "penis",
+    "dildo",
+    "orgasm",
+    "hentai",
+    "anal",
+    "cum",
+    "intercourse",
+    "masturbation",
+    "position",
+    "sex-position",
+  ];
+
+  const isAdult = (word) => {
+    const normalizedWord = word.toLowerCase();
+    return adultWords.some((adultTerm) => normalizedWord.includes(adultTerm));
+  };
+
+  return AllUrls.filter((word) => !isAdult(word)).map((word) => ({
     url: `${BASE_URL}/wheels/${replaceUnderscoreWithDash(word)}`.trim(),
     lastModified: new Date(),
   }));

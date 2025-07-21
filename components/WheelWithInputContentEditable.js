@@ -310,7 +310,7 @@ const WheelWithInputContentEditable = ({
           {showOverlay && (
             <div
               onClick={handleSpinClick}
-              className="z-10 absolute h-[450px] inset-0 flex items-center justify-center rounded-full text-center text-4xl font-bold dark:text-white text-gray-800"
+              className="z-10 absolute h-[450px] inset-0 flex items-center justify-center rounded-full text-pretty text-4xl font-bold text-white"
               style={{ textShadow: "2px 2px 0 rgba(0, 0, 0, 0.2)" }}
             >
               Click to Spin
@@ -396,7 +396,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
           className={`${
             isFullScreen
               ? "hidden"
-              : "bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 shadow-md"
+              : "bg-card text-card-foreground mx-3 lg:p-2 lg:mx-1 lg:col-span-4 rounded-xl"
           }`}
         >
           {currentPath === "/" ? (

@@ -13,5 +13,6 @@ Disallow: /verify
 Disallow: /uwheels
 Disallow: /ulists
 Disallow: /*sex*
+Disallow: /tags
 
 Allow: /sitemap.xml

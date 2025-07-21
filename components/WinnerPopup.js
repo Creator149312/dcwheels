@@ -115,9 +115,9 @@ const WinnerPopup = ({
       }`}
     >
       <div className="bg-gray-800 bg-opacity-20 fixed inset-0 pointer-events-none"></div>
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-11/12 max-w-lg mx-auto p-6 relative z-10">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-11/12 max-w-lg mx-auto p-4 relative z-10">
         <div className="text-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+          <h2 className="text-xl mb-4 font-semibold text-gray-800 dark:text-gray-200">
             {wheelData.customPopupDisplayMessage}
           </h2>
           {/*           
@@ -183,7 +183,7 @@ const WinnerPopup = ({
                   className=""
                   variant={"destructive"}
                 >
-                  Remove All Instances
+                  Remove All
                 </Button>
               )}
             </>
