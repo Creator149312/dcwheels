@@ -1,40 +1,53 @@
-"use client";
-
-/* in future I would make it a server side component along with indexing enabled */
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
 import WheelCard from "@app/test/TagsTesting/WheelCard";
+import apiConfig from "@utils/ApiUrlConfig";
 
-export default function TagDetailPage() {
-  const { tagId } = useParams();
-  const [wheels, setWheels] = useState([]);
-  const [loading, setLoading] = useState(true);
+// Optional: configure revalidation (ISR)
+// const REVALIDATE_SECONDS = 60;
 
-  useEffect(() => {
-    if (tagId) {
-      fetch(`/api/wheels-by-tag?tag=${encodeURIComponent(tagId)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setWheels(data.wheels || []);
-        })
-        .catch((err) => console.error("Failed to fetch wheels", err))
-        .finally(() => setLoading(false));
-    }
-  }, [tagId]);
+// Dynamically generate metadata
+export async function generateMetadata({ params }) {
+  const tag = decodeURIComponent(params.tagId);
+  const capitalizedTag = tag.charAt(0).toUpperCase() + tag.slice(1);
+
+  return {
+    title: `${capitalizedTag} Decision Picker Wheels`, //& Decision Pickers
+    description: `Browse all wheels tagged under "${capitalizedTag}". Spin and explore interactive wheels by category.`,
+  };
+}
+
+// Server-side data fetching
+async function getWheelsByTag(tagId) {
+  try {
+    const res = await fetch(
+      `${apiConfig.apiUrl}/wheels-by-tag?tag=${encodeURIComponent(tagId)}`
+    );
+
+    if (!res.ok) throw new Error("Failed to fetch");
+
+    const data = await res.json();
+    return data.wheels || [];
+  } catch (err) {
+    console.error("Error fetching wheels:", err);
+    return [];
+  }
+}
+
+// Server Component
+export default async function TagDetailPage({ params }) {
+  const tagId = decodeURIComponent(params.tagId);
+  const wheels = await getWheelsByTag(tagId);
+
+  if (!wheels) return notFound();
 
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto dark:bg-gray-950 min-h-screen transition-colors">
       <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white capitalize">
-        {decodeURIComponent(tagId)} Wheels
+        {tagId} Wheels
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {loading ? (
-          <p className="col-span-full text-center text-gray-500 dark:text-gray-400">
-            Loading...
-          </p>
-        ) : wheels.length === 0 ? (
+        {wheels.length === 0 ? (
           <p className="col-span-full text-center text-gray-500 dark:text-gray-400">
             No wheels found for “{tagId}”.
           </p>
