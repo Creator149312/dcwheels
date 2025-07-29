@@ -2,7 +2,7 @@
 const nextConfig = {
   // output: 'export',
   images: {
-    domains: ["lh3.googleusercontent.com"],
+    domains: ["lh3.googleusercontent.com",'s4.anilist.co'],
   },
   env: {
     WORK_ENV: process.env.WORK_ENV,
