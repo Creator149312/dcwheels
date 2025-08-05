@@ -14,5 +14,6 @@ Disallow: /uwheels
 Disallow: /ulists
 Disallow: /*sex*
 Disallow: /tags
+Disallow: /anime
 
 Allow: /sitemap.xml

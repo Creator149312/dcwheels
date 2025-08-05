@@ -8,6 +8,15 @@ export function replaceUnderscoreWithDash(str) {
   return str.replace(/_/g, "-");
 }
 
+// utils/slugify.js
+export default function slugifyAnime(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, '');    // Remove leading/trailing hyphens
+}
+
+
 export function replaceUnderscoreWithSpace(str) {
   if (str.length === 0) return str;
   return str.replace(/_/g, " ");

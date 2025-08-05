@@ -1,102 +1,162 @@
 import { AniList, MediaType } from "@spkrbox/anilist";
-import SpinCard from "@/components/SpinCard";
 import { connectMongoDB } from "@/lib/mongodb";
-import Wheel from "@models/wheel";
+import Anime from "@/models/anime";
+import Wheel from "@/models/wheel";
 
-export default async function AnimePage({ params }) {
-  const { anime } = params; // e.g. "attack-on-titan"
+// Converts title into a clean slug
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Extract ID from "1234-your-lie-in-april"
+function extractId(animeParam) {
+  const id = parseInt(animeParam.split("-")[0], 10);
+  return isNaN(id) ? null : id;
+}
+
+function generateHashtags(titleObj) {
+  const tags = [];
+
+  if (titleObj.english) {
+    tags.push(titleObj.english.replace(/[^a-z0-9]/gi, ""));
+  }
+
+  if (titleObj.romaji) {
+    tags.push(titleObj.romaji.replace(/[^a-z0-9]/gi, ""));
+  }
+
+  return tags;
+}
+
+export async function generateMetadata({ params }) {
+  const id = extractId(params.anime);
+  if (!id) {
+    return {
+      title: "Anime Not Found",
+      description: "The anime you’re looking for could not be found.",
+    };
+  }
+
   const client = new AniList();
+  const media = await client.media.getById(id);
 
-  const searchRes = await client.media.search({
-    search: anime.replace(/-/g, " "),
-    type: MediaType.ANIME,
-    perPage: 1,
-  });
+  if (!media) {
+    return {
+      title: "Anime Not Found",
+      description: `Could not locate anime with ID ${id}`,
+    };
+  }
 
-  const summary = searchRes.media[0];
-  if (!summary) return <div>Anime not found: "{anime}"</div>;
+  const displayTitle = media.title.english || media.title.romaji;
+  const plainDescription =
+    media.description?.replace(/<[^>]+>/g, "").slice(0, 160) ||
+    "Explore this anime's details and community-generated wheels.";
 
-  const media = await client.media.getById(summary.id);
+  return {
+    title: displayTitle,
+    description: plainDescription,
+    openGraph: {
+      title: displayTitle,
+      description: plainDescription,
+      images: [media.coverImage?.large || media.coverImage?.medium],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: displayTitle,
+      description: plainDescription,
+      images: [media.coverImage?.large || media.coverImage?.medium],
+    },
+  };
+}
 
-  // ✅ Normalize anime name to tag format
-  const animeTag = anime.toLowerCase().replace(/[^a-z0-9]/gi, "");
+export default async function AnimeDetailPage({ params }) {
+  const id = extractId(params.anime);
 
-  // ✅ Connect to DB and get wheels tagged with the anime
+  if (!id) return <div>Invalid Anime URL</div>;
+
+  const client = new AniList();
   await connectMongoDB();
-  const taggedWheels = await Wheel.find({ tags: animeTag })
+
+  // 1. Try to find in DB
+  let animeDoc = await Anime.findOne({ anilistId: id });
+  let media;
+
+  if (!animeDoc) {
+    media = await client.media.getById(id);
+    if (!media) return <div>Anime not found</div>;
+
+    const generatedSlug = `${media.id}-${slugify(
+      media.title.romaji || media.title.english
+    )}`;
+    const hashtagTags = generateHashtags(media.title);
+
+    animeDoc = await Anime.create({
+      anilistId: media.id,
+      slug: generatedSlug,
+      title: media.title,
+      wheels: 0,
+      followers: 0,
+      tags: hashtagTags,
+    });
+  } else {
+    media = await client.media.getById(animeDoc.anilistId);
+  }
+
+  // 2. Fetch wheels where relatedTo.type === 'anime' and relatedTo.id === anilistId
+  const taggedWheels = await Wheel.find({
+    "relatedTo.type": "anime",
+    "relatedTo.id": animeDoc.anilistId,
+  })
     .sort({ createdAt: -1 })
     .lean();
 
-  // 🔧 Example spins (you can remove later)
-  const exampleSpins = [
-    {
-      id: "1",
-      user: "otakuGuy",
-      avatar: "/avatars/1.png",
-      question: "Was Eren a hero or villain?",
-      options: ["Hero", "Villain", "Gray area"],
-      votes: { Hero: 100, Villain: 60, "Gray area": 25 },
-      timestamp: "2 hours ago",
-    },
-    {
-      id: "2",
-      user: "memeQueen",
-      avatar: "/avatars/2.png",
-      question: "Best opening? OP1 / OP2 / OP3",
-      options: ["OP1", "OP2", "OP3"],
-      votes: { OP1: 40, OP2: 120, OP3: 75 },
-      timestamp: "5 hours ago",
-    },
-  ];
-
   return (
-    <div className="flex flex-col p-6 gap-8 bg-white dark:bg-gray-900 text-black dark:text-white">
-      {/* Anime Info Section */}
-      <section className="flex flex-col sm:flex-row sm:items-start gap-4">
+    <div className="p-6 bg-white dark:bg-gray-900 text-black dark:text-white min-h-screen">
+      {/* Anime Info */}
+      <section className="flex flex-col sm:flex-row gap-4 mb-6">
         <img
-          src={media.coverImage.medium}
+          src={media.coverImage?.medium}
           alt={media.title.english || media.title.romaji}
-          className="rounded-lg w-40 h-auto flex-shrink-0"
+          className="rounded-lg w-40 h-auto"
         />
         <div>
-          <h1 className="text-2xl font-bold mb-2">
+          <h1 className="text-2xl font-bold mb-1">
             {media.title.english || media.title.romaji}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            {media.genres.join(", ")}
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+            {media.genres?.join(", ")}
           </p>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            {media.description.replace(/<[^>]+>/g, "").slice(0, 500)}…
+          <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
+            {media.description?.replace(/<[^>]+>/g, "").slice(0, 500)}…
+          </p>
+          <p className="text-sm mt-2">
+            <strong>Followers:</strong> {animeDoc.followers} |{" "}
+            <strong>Wheels:</strong> {animeDoc.wheels}
           </p>
         </div>
       </section>
 
-      {/* Example Spins Section */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Community Spins</h2>
-        {exampleSpins.map((spin) => (
-          <SpinCard key={spin.id} spin={spin} />
-        ))}
-      </section>
-
-      {/* Tagged Wheels Section */}
+      {/* Decision Wheels */}
       {taggedWheels.length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold mb-4">
-            Spins Tagged #{animeTag}
-          </h2>
-          {taggedWheels.map((wheel) => (
-            <a
-              key={wheel._id}
-              href={`/uwheels/${wheel._id}`}
-              className="block bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition p-4 rounded mb-4"
-            >
-              <h3 className="text-lg font-semibold">{wheel.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                {wheel.description}
-              </p>
-            </a>
-          ))}
+          <h2 className="text-lg font-semibold mb-2">🎡 Decision Wheels</h2>
+          <div className="space-y-4">
+            {taggedWheels.map((wheel) => (
+              <a
+                key={wheel._id}
+                href={`/uwheels/${wheel._id}`}
+                className="block bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition p-4 rounded"
+              >
+                <h3 className="text-md font-semibold">{wheel.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                  {wheel.description}
+                </p>
+              </a>
+            ))}
+          </div>
         </section>
       )}
     </div>

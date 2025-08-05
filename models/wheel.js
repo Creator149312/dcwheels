@@ -32,7 +32,14 @@ const wheelSchema = new Schema(
     },
     wheelData: { type: Object, default: {} },
     tags: { type: [String], default: [] },
-    // category: { type: String, default: "" }, //will remove it after migration
+    //new field Added Related To
+    relatedTo: {
+      type: {
+        type: String,
+        enum: ["anime", "movie", "game"],
+      },
+      id: String, // e.g., AniList ID
+    }, //end of related to
     editorData: {
       type: Object,
       default: {
