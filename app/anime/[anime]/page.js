@@ -84,6 +84,14 @@ export default async function AnimeDetailPage({ params }) {
   let animeDoc = await Anime.findOne({ anilistId: id });
   let media;
 
+  // 2. Fetch wheels where relatedTo.type === 'anime' and relatedTo.id === anilistId
+  const taggedWheels = await Wheel.find({
+    "relatedTo.type": "anime",
+    "relatedTo.id": animeDoc.anilistId,
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
   if (!animeDoc) {
     media = await client.media.getById(id);
     if (!media) return <div>Anime not found</div>;
@@ -97,21 +105,13 @@ export default async function AnimeDetailPage({ params }) {
       anilistId: media.id,
       slug: generatedSlug,
       title: media.title,
-      wheels: 0,
+      wheels: taggedWheels.length,
       followers: 0,
       tags: hashtagTags,
     });
   } else {
     media = await client.media.getById(animeDoc.anilistId);
   }
-
-  // 2. Fetch wheels where relatedTo.type === 'anime' and relatedTo.id === anilistId
-  const taggedWheels = await Wheel.find({
-    "relatedTo.type": "anime",
-    "relatedTo.id": animeDoc.anilistId,
-  })
-    .sort({ createdAt: -1 })
-    .lean();
 
   return (
     <div className="p-6 bg-white dark:bg-gray-900 text-black dark:text-white min-h-screen">
@@ -134,7 +134,7 @@ export default async function AnimeDetailPage({ params }) {
           </p>
           <p className="text-sm mt-2">
             <strong>Followers:</strong> {animeDoc.followers} |{" "}
-            <strong>Wheels:</strong> {animeDoc.wheels}
+            <strong>Wheels:</strong> {taggedWheels.length || animeDoc.wheels}
           </p>
         </div>
       </section>
