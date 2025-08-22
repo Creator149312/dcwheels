@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
   const description = typeDescriptions[type] || "Explore curated content and community-generated wheels.";
 
   return {
-    title: `${label} | SpinPapa`,
+    title: `${label}`,
     description,
   };
 }

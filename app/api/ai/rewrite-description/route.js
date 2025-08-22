@@ -1,4 +1,3 @@
-// app/api/ai-rewrite/route.js
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -6,7 +5,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req) {
   const { prompt } = await req.json();
-  console.log("Rewrite Prompt Received");
+  // console.log("Rewrite Prompt Received");
 
   try {
     const response = await openai.chat.completions.create({
@@ -21,7 +20,7 @@ export async function POST(req) {
     });
 
     const rewrittenText = response.choices[0].message.content.trim();
-    console.log("Rewritten Text = ", rewrittenText);
+    // console.log("Rewritten Text = ", rewrittenText);
 
     return NextResponse.json({ rewrittenText });
   } catch (error) {
