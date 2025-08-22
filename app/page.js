@@ -24,7 +24,7 @@ export default async function Home() {
       />
       <div className="blog-main mt-4 p-3">
         <h1 className="text-4xl mb-2">
-          Spin Wheel – Your Fun Random Picker for Everyday Decisions
+          Spin Wheel – Your Fun Random Decisions Picker
         </h1>
         <p className="mb-3">
           Spinpapa is an online spinner tool designed to help people make
