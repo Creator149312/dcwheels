@@ -4,9 +4,9 @@ let apiConfig;
 // console.log("Vercel Env - " ,process.env.VERCEL_ENV); //there is no variable as VERCEL_ENV
 
 if (process.env.NODE_ENV === "production") {
-   apiConfig = {
-    apiUrl: "http://localhost:3000/api", // Example local API URL
-    baseUrl: "http://localhost:3000",
+  apiConfig = {
+    apiUrl: "https://www.spinpapa.com/api", // Example production API URL
+    baseUrl: "https://www.spinpapa.com",
   };
 } else if (process.env.NODE_ENV === "test") {
   apiConfig = {
