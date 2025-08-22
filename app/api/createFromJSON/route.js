@@ -75,6 +75,7 @@ export async function POST(req) {
         removeWinnerAfterSpin: false,
         customPopupDisplayMessage: "The Winner is...",
       },
+      relatedTo: {type: wheelData.relatedTo.type , id: wheelData.relatedTo.id},
       createdBy: "gauravsingh9314@gmail.com", // Assuming admin for simplicity
       tags: wheelData.tags || "",
     });

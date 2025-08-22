@@ -8,12 +8,16 @@ export function replaceUnderscoreWithDash(str) {
   return str.replace(/_/g, "-");
 }
 
-// utils/slugify.js
-export default function slugifyAnime(str) {
+export function slugify(str) {
   return str
+    .normalize("NFKD") // Normalize accented characters (e.g. é → e)
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-    .replace(/^-+|-+$/g, '');    // Remove leading/trailing hyphens
+    .replace(/&/g, "and") // Replace common symbols
+    .replace(/@/g, "at")
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumerics with hyphen
+    .replace(/^-+|-+$/g, "") // Trim leading/trailing hyphens
+    .replace(/--+/g, "-"); // Collapse multiple hyphens
 }
 
 

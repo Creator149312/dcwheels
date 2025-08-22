@@ -36,40 +36,40 @@ export default function SyncTagsPage() {
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h2 className="text-xl font-semibold mb-4">Sync Tags from Wheels</h2>
+  return (<></>
+    // <div className="max-w-2xl mx-auto p-4">
+    //   <h2 className="text-xl font-semibold mb-4">Sync Tags from Wheels</h2>
 
-      <div className="flex gap-4 mb-4">
-        <button
-          onClick={() => syncTags(10)}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Sync 10 Wheels
-        </button>
-        <button
-          onClick={() => syncTags(2000)}
-          disabled={loading}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Sync 100 Wheels
-        </button>
-      </div>
+    //   <div className="flex gap-4 mb-4">
+    //     <button
+    //       onClick={() => syncTags(10)}
+    //       disabled={loading}
+    //       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    //     >
+    //       Sync 10 Wheels
+    //     </button>
+    //     <button
+    //       onClick={() => syncTags(2000)}
+    //       disabled={loading}
+    //       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+    //     >
+    //       Sync 100 Wheels
+    //     </button>
+    //   </div>
 
-      {loading && <p className="text-gray-600">Syncing...</p>}
-      {message && <p className="text-gray-800 font-medium">{message}</p>}
+    //   {loading && <p className="text-gray-600">Syncing...</p>}
+    //   {message && <p className="text-gray-800 font-medium">{message}</p>}
 
-      {updatedTags.length > 0 && (
-        <div className="mt-4">
-          <h4 className="font-semibold">Updated Tags:</h4>
-          <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200">
-            {updatedTags.map((tag, i) => (
-              <li key={i}>{tag}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    //   {updatedTags.length > 0 && (
+    //     <div className="mt-4">
+    //       <h4 className="font-semibold">Updated Tags:</h4>
+    //       <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200">
+    //         {updatedTags.map((tag, i) => (
+    //           <li key={i}>{tag}</li>
+    //         ))}
+    //       </ul>
+    //     </div>
+    //   )}
+    // </div>
   );
 }

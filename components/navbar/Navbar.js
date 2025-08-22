@@ -63,7 +63,7 @@ const Navbar = () => {
             <MobileSearchBar />
           </div>
           <div className="md:hidden">{/* <ThemeToggle /> */}</div>
-          {/* <CategoryMenu /> */}
+          <CategoryMenu />
           {/* Desktop menu */}
           <ul className="hidden md:flex gap-6 items-center">
             <li>

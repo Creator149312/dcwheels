@@ -33,44 +33,44 @@ export default async function Home({ params }) {
 
   const startRender = performance.now();
 
-  return (
-    <div className="p-3">
-      <WheelWithInputContentEditable
-        newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-        wheelPresetSettings={pageData.wheel.wheelData}
-      />
-      <h1 className="text-3xl mb-2">{pageData.title}</h1>
+  return (<></>
+    // <div className="p-3">
+    //   <WheelWithInputContentEditable
+    //     newSegments={ensureArrayOfObjects(pageData.wheel.data)}
+    //     wheelPresetSettings={pageData.wheel.wheelData}
+    //   />
+    //   <h1 className="text-3xl mb-2">{pageData.title}</h1>
 
-      <div className="text-lg">
-        {pageData.content.map((item, index) => {
-          switch (item.type) {
-            case "paragraph":
-              return (
-                <p key={index} className="mb-3">
-                  {item.text}
-                </p>
-              );
-            case "image":
-              return <img key={index} src={item.src} alt={item.alt} />;
-            case "link":
-              return (
-                <a
-                  key={index}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {item.text}
-                </a>
-              );
-            case "heading":
-              const HeadingTag = `h${item.level}`;
-              return <HeadingTag key={index}>{item.text}</HeadingTag>;
-            default:
-              return null;
-          }
-        })}
-      </div>
-    </div>
+    //   <div className="text-lg">
+    //     {pageData.content.map((item, index) => {
+    //       switch (item.type) {
+    //         case "paragraph":
+    //           return (
+    //             <p key={index} className="mb-3">
+    //               {item.text}
+    //             </p>
+    //           );
+    //         case "image":
+    //           return <img key={index} src={item.src} alt={item.alt} />;
+    //         case "link":
+    //           return (
+    //             <a
+    //               key={index}
+    //               href={item.href}
+    //               target="_blank"
+    //               rel="noopener noreferrer"
+    //             >
+    //               {item.text}
+    //             </a>
+    //           );
+    //         case "heading":
+    //           const HeadingTag = `h${item.level}`;
+    //           return <HeadingTag key={index}>{item.text}</HeadingTag>;
+    //         default:
+    //           return null;
+    //       }
+    //     })}
+    //   </div>
+    // </div>
   );
 }

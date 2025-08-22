@@ -28,6 +28,14 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import Tooltip from "./Tooltip";
 import { handleAction } from "@utils/HelperFunctions";
 
+function getQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    type: params.get("type"),
+    id: params.get("id"),
+  };
+}
+
 export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
   const [description, setDescription] = useState("This is my new wheel");
@@ -161,18 +169,120 @@ export default function SaveWheelBtn({ segmentsData }) {
     }
   };
 
-  function removeSpecialCharacters(text) {
-    // Define the regular expression to match special characters
-    const regex = /[^a-zA-Z0-9\s-]/g;
-    // Remove special characters except '-', and spaces
-    return text.replace(regex, "");
-  }
-
-  //to check if all words are valid
-  const verifyWords = (e) => {
+  const handleSubmitWithUrlParams = async (e) => {
     setError("");
     e.preventDefault();
-    setWordsToCheck(words);
+    setisSaving(true);
+
+    if (!title || !description || !segData) {
+      setError("Title, description and Data are required.");
+      setisSaving(false);
+      return;
+    }
+
+    let vlt = validateListTitle(title);
+    let vld = validateListDescription(description);
+
+    const { id, type } = getQueryParams();
+
+    // ✅ Conditionally construct relatedTo
+    let relatedTo;
+    if (id && type && ["anime", "movie", "game"].includes(type)) {
+      relatedTo = { type, id };
+    }
+
+    if (vlt.length !== 0) {
+      setError(vlt);
+      setisSaving(false);
+      return;
+    }
+
+    if (vld.length !== 0) {
+      setError(vld);
+      setisSaving(false);
+      return;
+    }
+
+    try {
+      const titleToStore = sanitizeInputForDB(title);
+      const descriptionToStore = sanitizeInputForDB(description);
+      const data = [...segData];
+
+      if (selectedUser) {
+        // ✅ Update flow
+        const body = {
+          title: titleToStore,
+          description: descriptionToStore,
+          data,
+          wheelData,
+        };
+
+        if (relatedTo) {
+          body.relatedTo = relatedTo;
+        }
+
+        const res = await fetch(
+          `${apiConfig.apiUrl}/wheel/${selectedUser._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-type": "application/json",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+
+        const resObj = await res.json();
+
+        if (resObj?.error) {
+          setError("Failed to Update a wheel");
+          toast.error("Failed to Update Wheel");
+        } else {
+          handleAction({
+            actionType: "use",
+            amount: parseInt(10),
+            coins,
+            setCoins,
+            event: e,
+          });
+          router.push("/dashboard");
+        }
+      } else {
+        // ✅ Create flow
+        const body = {
+          title: titleToStore,
+          description: descriptionToStore,
+          data,
+          createdBy,
+          wheelData,
+        };
+
+        if (relatedTo) {
+          body.relatedTo = relatedTo;
+        }
+
+        const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+
+        const resObj = await res.json();
+
+        if (resObj?.error) {
+          setError("Failed to create a wheel");
+          toast.error("Failed to Create Wheel");
+        } else {
+          router.push("/dashboard");
+        }
+      }
+    } catch (error) {
+      setError(error);
+    } finally {
+      setisSaving(false);
+    }
   };
 
   const handleUserChange = (e) => {
@@ -211,7 +321,7 @@ export default function SaveWheelBtn({ segmentsData }) {
           <DialogTitle>Wheel Data</DialogTitle>
           <DialogDescription>Add wheel title and description</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmitWithUrlParams}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">

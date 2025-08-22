@@ -14,7 +14,7 @@ export async function GET() {
       ],
     })
       .sort({ createdAt: 1 })
-      .limit(1500)
+      .limit(2500)
       .lean();
 
     return NextResponse.json({ wheels });
