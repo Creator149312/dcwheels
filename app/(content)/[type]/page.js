@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { AniList, MediaType } from "@spkrbox/anilist";
 import { slugify } from "@utils/HelperFunctions";
+import apiConfig from "@utils/ApiUrlConfig";
 
-const BASE_URL = "https://www.spinpapa.com";
+const BASE_URL = apiConfig.baseUrl;
 
 export async function generateMetadata({ params }) {
   const { type } = params;

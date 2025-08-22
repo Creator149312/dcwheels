@@ -8,7 +8,7 @@ import ReactionBar from "@components/ReactionBar";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
 
-const BASE_URL = "https://www.spinpapa.com";
+const BASE_URL = apiConfig.baseUrl;
 
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE_URL = "https://api.rawg.io/api";
@@ -133,6 +133,7 @@ export async function getOrCreateTopicPage(type, relatedId) {
       // Duplicate key — another request created it just now
       pageDoc = await TopicPage.findOne({ slug: newDoc.slug }).lean();
     } else {
+      console.log("I have an error");
       throw err;
     }
   }
