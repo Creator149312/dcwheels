@@ -6,7 +6,6 @@ import TopicInteractionTabs from "@app/(content)/[type]/TopicInteractionTabs";
 import ReactionBar from "@components/ReactionBar";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
-
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
