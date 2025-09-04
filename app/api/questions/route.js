@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Question from "@models/question";
-import QuestionVote from "@models/questionVote";
+import QuestionVote from "@models/questionvote"
 import User from "@models/user";
 import ReactionTest from "@models/reactiontest";
 

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Question from "@models/question";
-import QuestionVote from "@models/questionVote"; // NEW
+import QuestionVote from "@models/questionvote"
 import User from "@models/user";
 
 export async function PATCH(req, { params }) {
