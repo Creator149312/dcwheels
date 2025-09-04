@@ -190,7 +190,7 @@ export default async function TopicListPage({ params, searchParams }) {
     "🎮 Discover Games";
 
 return (
-  <div className="p-6 bg-white dark:bg-gray-900 text-black dark:text-white min-h-screen">
+  <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
     <h1 className="text-3xl font-bold mb-6">{typeLabel}</h1>
 
     {/* Filters */}

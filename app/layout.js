@@ -1,14 +1,11 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@components/navbar/Navbar";
 import { ThemeProvider } from "./ThemeProvider";
 import { SegmentsProvider } from "./SegmentsContext";
 import { Toaster } from "react-hot-toast";
 import GAnalytics from "./GAnalytics";
-import BottomNavMobile from "@components/BottomNavMobile";
-import SuggestedSidebar from "@components/SuggestedSidebar";
-import TagsPage from "./test/TagsTesting/page";
-import TagsCarousel from "@components/TagsCarousel";
+import LayoutShell from "@components/LayoutShell";
+import { LoginPromptProvider } from "./LoginPromptProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -44,15 +41,9 @@ export default function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <SegmentsProvider>
-            <Navbar />
-            <TagsCarousel />
-            <div className="grid lg:grid-cols-12 gap-x-2 mt-2 min-h-screen">
-              <div className=" grid lg:col-span-9 ">{children}</div>
-              <div className="lg:col-span-3">
-                {/* here we will have a ad of Wordpapa */}
-              </div>
-            </div>
-            {/* <BottomNavMobile /> */}
+            <LoginPromptProvider>
+              <LayoutShell>{children}</LayoutShell>
+            </LoginPromptProvider>
           </SegmentsProvider>
         </ThemeProvider>
       </body>

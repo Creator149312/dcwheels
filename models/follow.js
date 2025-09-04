@@ -8,22 +8,23 @@ const FollowSchema = new Schema(
       required: true,
       index: true,
     },
-    contentId: {
+    entityId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "TopicPage",
       required: true,
       index: true,
     },
-    type: {
+    entityType: {
       type: String,
-      enum: ["anime", "movie", "game", "custom"],
       required: true,
+      enum: ["page", "group", "user", "topic"], // Expandable
+      index: true,
     },
   },
   { timestamps: true }
 );
 
-// Prevent duplicate follows by same user
-FollowSchema.index({ userId: 1, contentId: 1 }, { unique: true });
+// Prevent duplicate follows by same user on same entity
+FollowSchema.index({ userId: 1, entityId: 1, entityType: 1 }, { unique: true });
+
 const Follow = models.Follow || mongoose.model("Follow", FollowSchema);
 export default Follow;

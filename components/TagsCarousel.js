@@ -52,7 +52,7 @@ export default function TagsCarousel() {
   };
 
   return (
-    <div className="relative px-2 mb-2 md:px-4 pt-3 min-h-12 max-w-full mx-auto dark:bg-gray-950 transition-colors">
+    <div className="relative px-2 mb-1 md:px-4 pt-4 min-h-12 max-w-full mx-auto dark:bg-gray-950 transition-colors">
       {/* Left Arrow */}
       <button
         onClick={() => scroll("left")}
@@ -68,9 +68,9 @@ export default function TagsCarousel() {
             <Link
               key={tag}
               href={`/tags/${encodeURIComponent(tag).toLowerCase()}`}
-              className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm border rounded-full shrink-0 snap-start 
-            bg-white text-black border-gray-300 hover:bg-gray-100 
-            dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
+              className="px-2 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-bold border rounded-md shrink-0 snap-start 
+bg-white text-black border-gray-300 hover:bg-gray-100 
+dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
             >
               {tag}
             </Link>

@@ -8,6 +8,10 @@ import ReactionBar from "@components/ReactionBar";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import User from "@models/user";
+
 const BASE_URL = apiConfig.baseUrl;
 
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
@@ -201,6 +205,7 @@ export async function generateMetadata({ params }) {
 
 // --- Generic Dynamic Page ---
 export default async function TopicPageDetail({ params }) {
+  const session = await getServerSession(authOptions);
   const { type, slug } = params;
   const relatedId = extractId(slug);
   if (!relatedId) return <div>Invalid URL</div>;
@@ -223,15 +228,19 @@ export default async function TopicPageDetail({ params }) {
     .sort({ createdAt: -1 })
     .lean();
 
-  const yesNoQuestions = await YesNoQuestion.find({
-    "relatedTo.type": type,
-    "relatedTo.id": pageDoc.relatedId,
-  })
-    .sort({ createdAt: -1 })
-    .lean();
+  let user = null;
+  if (session) {
+    // Find user by email
+    user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+      });
+    }
+  }
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-900 text-black dark:text-white min-h-screen">
+    <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
       <section className="flex flex-col sm:flex-row gap-4 mb-6">
         <img
           src={pageDoc.cover || ""}
@@ -306,8 +315,11 @@ export default async function TopicPageDetail({ params }) {
       {/* Wheels & Questions sections can go here */}
       <TopicInteractionTabs
         type={type}
+        pageId={pageDoc._id}
         contentId={relatedId.toString()} // ensure it's a string
         taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+        isLoggedIn={!!session}
+        currentUserId={user?._id || null}
       />
     </div>
   );
