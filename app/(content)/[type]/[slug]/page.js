@@ -2,7 +2,6 @@ import { AniList } from "@spkrbox/anilist";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import Wheel from "@/models/wheel";
-import YesNoQuestion from "@/models/yesnoquestion";
 import TopicInteractionTabs from "@app/(content)/[type]/TopicInteractionTabs";
 import ReactionBar from "@components/ReactionBar";
 import apiConfig from "@utils/ApiUrlConfig";
