@@ -10,9 +10,8 @@ export default function StatsBar({
   stats,
   session,
 }) {
-  if (!entityId || !stats) return null;
-  
   const openLoginPrompt = useLoginPrompt();
+  if (!entityId || !stats) return null;
 
   return (
     <div className="reactions flex items-center gap-3">
