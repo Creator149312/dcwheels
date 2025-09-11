@@ -1,64 +1,77 @@
+// app/api/follow/route.js
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route"; // adjust path if needed
 import { connectMongoDB } from "@/lib/mongodb";
-import TopicPage from "@/models/topicpage";
 import Follow from "@/models/follow";
 import User from "@/models/user";
-import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 
 export async function POST(req) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
-      return new Response(JSON.stringify({ error: "You must be logged in to follow" }), { status: 401 });
-    }
-
-    const { contentId, type } = await req.json();
-    if (!contentId || !type) {
-      return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
-    }
-
     await connectMongoDB();
 
-    // Find user by email
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "You must be logged in to follow" },
+        { status: 401 }
+      );
+    }
+
+    const { entityId, entityType } = await req.json();
+    if (!entityId || !entityType) {
+      return NextResponse.json(
+        { error: "Missing entityId or entityType" },
+        { status: 400 }
+      );
+    }
+
+    // Validate ObjectId
+    const id = mongoose.Types.ObjectId.isValid(entityId)
+      ? new mongoose.Types.ObjectId(entityId)
+      : entityId;
+
+    // Find user
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const queryId = mongoose.Types.ObjectId.isValid(contentId)
-      ? new mongoose.Types.ObjectId(contentId)
-      : contentId;
-
-    const page = await TopicPage.findOne({ _id: queryId, type });
-    if (!page) {
-      return new Response(JSON.stringify({ error: "Content not found" }), { status: 404 });
-    }
-
-    // Check if follow exists in Follow collection
-    const existingFollow = await Follow.findOne({ userId: user._id, contentId: page._id });
+    // Check if already following
+    const existingFollow = await Follow.findOne({
+      userId: user._id,
+      entityId: id,
+      entityType,
+    });
 
     let isFollowing;
     if (existingFollow) {
       // Unfollow
-      await Follow.deleteOne({ _id: existingFollow._id });
-      await TopicPage.updateOne({ _id: page._id }, { $inc: { followers: -1 } });
+      await existingFollow.deleteOne();
       isFollowing = false;
     } else {
       // Follow
-      await Follow.create({ userId: user._id, contentId: page._id, type });
-      await TopicPage.updateOne({ _id: page._id }, { $inc: { followers: 1 } });
+      await Follow.create({
+        userId: user._id,
+        entityId: id,
+        entityType,
+      });
       isFollowing = true;
     }
 
-    const updated = await TopicPage.findById(page._id);
+    // Get updated follower count
+    const followerCount = await Follow.countDocuments({
+      entityId: id,
+      entityType,
+    });
 
-    return new Response(JSON.stringify({
-      followers: updated.followers,
-      isFollowing
-    }), { status: 200 });
-
+    return NextResponse.json({ isFollowing, followerCount }, { status: 200 });
   } catch (err) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: "Server error" }), { status: 500 });
+    console.error("Follow API error:", err);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

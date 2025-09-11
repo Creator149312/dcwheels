@@ -9,6 +9,11 @@ import { slugify } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
+import { getContentStats } from "@components/actions/actions";
+import page from "@app/verify/new-email/page";
+import ReactionButton from "@components/ReactionButton";
+import FollowButton from "@components/FollowButton";
+import StatsBar from "../StatsBar";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -237,6 +242,13 @@ export default async function TopicPageDetail({ params }) {
     }
   }
 
+  const stats = await getContentStats({
+    entityType: "topicpage",
+    entityId: pageDoc._id,
+  });
+
+  console.log(stats);
+
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
       <section className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -298,14 +310,11 @@ export default async function TopicPageDetail({ params }) {
               </>
             )}
           </div>
-
-          <ReactionBar
-            initialReactions={JSON.parse(
-              JSON.stringify(pageDoc.reactions || {})
-            )}
-            isFollowing={!!pageDoc.isFollowing}
-            contentId={pageDoc._id.toString()}
-            type={pageDoc.type}
+          <StatsBar
+            entityType="topicpage"
+            entityId={pageDoc._id}
+            stats={stats}
+            session={session}
           />
         </div>
       </section>

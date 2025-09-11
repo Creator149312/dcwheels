@@ -67,7 +67,7 @@ const GenerateWheel = () => {
       }
 
       const data = await response.json();
-
+      // console.log("DATA WORDS = " + data.words);
       // Simulate progress to 100% as we render the list
       setProgress(60);
       setList(data.words); // Assume response is { words: [...] }
@@ -166,7 +166,7 @@ const GenerateWheel = () => {
                   >
                     {loading ? "Generating.." : "Generate"}
                   </button>
-                      {!loading && (
+                  {!loading && (
                     <button
                       onClick={handleClosePopup}
                       className="py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition"

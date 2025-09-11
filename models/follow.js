@@ -1,3 +1,4 @@
+// models/follow.js
 import mongoose, { Schema, models } from "mongoose";
 
 const FollowSchema = new Schema(
@@ -16,15 +17,19 @@ const FollowSchema = new Schema(
     entityType: {
       type: String,
       required: true,
-      enum: ["page", "group", "user", "topic"], // Expandable
+      enum: ["group", "user", "topicpage"], // Expandable
       index: true,
     },
   },
   { timestamps: true }
 );
 
-// Prevent duplicate follows by same user on same entity
-FollowSchema.index({ userId: 1, entityId: 1, entityType: 1 }, { unique: true });
+// ✅ Prevent duplicate follows by same user on same entity
+FollowSchema.index(
+  { userId: 1, entityId: 1, entityType: 1 },
+  { unique: true }
+);
 
 const Follow = models.Follow || mongoose.model("Follow", FollowSchema);
+
 export default Follow;
