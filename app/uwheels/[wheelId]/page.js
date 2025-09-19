@@ -2,6 +2,12 @@ import { validateObjectID } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
+import { getServerSession } from "@node_modules/next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { getContentStats } from "@components/actions/actions";
+import WheelInfoSection from "@components/WheelMeta";
+import User from "@models/user";
+
 // import { performance } from "perf_hooks";
 
 let titleStr = "";
@@ -55,7 +61,10 @@ export async function generateMetadata({ params }, parent) {
 let wordsList = null;
 
 export default async function Page({ params }) {
+  const session = await getServerSession(authOptions);
   let IfIdValid = validateObjectID(params.wheelId);
+  // Identify user who created the wheel
+  let username = null;
   // const startDB = performance.now();
   if (IfIdValid) {
     const id = params.wheelId;
@@ -69,10 +78,11 @@ export default async function Page({ params }) {
       }
 
       const data = await response.json();
+
       wordsList = data.list;
 
-      // await connectMongoDB();
-      // wordsList = await List.findOne({ _id: id });
+      const user = await User.findOne({ email: wordsList.createdBy }).lean();
+      if (user) username = user.name;
     } catch (error) {
       listerror = error;
     } finally {
@@ -86,22 +96,30 @@ export default async function Page({ params }) {
   }
 
   // const startRender = performance.now();
+  const stats = await getContentStats({
+    entityType: "wheel",
+    entityId: params.wheelId,
+  });
 
+  // console.log(stats);
   return (
     <div>
       {wordsList !== null && listerror == null && (
         <>
-          {/* <WheelWithInput newSegments={wordsList.data}/> */}
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={
               wordsList?.wheelData ? wordsList?.wheelData : null
             }
           />
-          <div className="mt-3 p-2">
-            <h1 className="text-3xl m-2 flex">{wordsList.title}</h1>
-            <p>{wordsList.description}</p>
-          </div>
+
+          <WheelInfoSection
+            wordsList={wordsList}
+            stats={stats}
+            session={session}
+            wheelId={params.wheelId}
+            username={username}
+          />
         </>
       )}
       {listerror && (

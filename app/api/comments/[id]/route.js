@@ -5,6 +5,7 @@ import { connectMongoDB } from "@/lib/mongodb";
 import Comment from "@models/comment";
 import User from "@models/user";
 
+// ✅ Edit a comment
 export async function PATCH(req, { params }) {
   try {
     await connectMongoDB();
@@ -29,7 +30,7 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // Only the author or an admin can edit
+    // Only the author can edit
     if (comment.userId.toString() !== user._id.toString()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -41,10 +42,14 @@ export async function PATCH(req, { params }) {
     return NextResponse.json(populated, { status: 200 });
   } catch (err) {
     console.error("Error updating comment:", err);
-    return NextResponse.json({ error: "Failed to update comment" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update comment" },
+      { status: 500 }
+    );
   }
 }
 
+// ✅ Delete a comment (and optionally its replies)
 export async function DELETE(req, { params }) {
   try {
     await connectMongoDB();
@@ -64,17 +69,22 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // Only author or admin can delete
+    // Only author can delete
     if (comment.userId.toString() !== user._id.toString()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Optional: delete all replies to this comment
+    await Comment.deleteMany({ parentCommentId: comment._id });
 
     await comment.deleteOne();
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     console.error("Error deleting comment:", err);
-    return NextResponse.json({ error: "Failed to delete comment" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete comment" },
+      { status: 500 }
+    );
   }
 }
-

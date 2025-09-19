@@ -1,10 +1,17 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { getPageDataBySlug } from "@components/actions/actions";
+import {
+  getContentStats,
+  getPageDataBySlug,
+} from "@components/actions/actions";
+import WheelInfoSection from "@components/WheelMeta";
+import { getServerSession } from "@node_modules/next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import User from "@models/user";
 // import { performance } from "perf_hooks";
 
-export const revalidate = false
+export const revalidate = false;
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -22,15 +29,29 @@ export async function generateMetadata({ params }) {
 export default async function Home({ params }) {
   const slug = params.slug;
 
+  const session = await getServerSession(authOptions);
   // const startDB = performance.now();
   const pageData = await getPageDataBySlug(slug);
   // const endDB = performance.now();
 
+  // console.log("PAGEDATA = ", pageData);
+  // Identify user who created the wheel
+  let username = null;
   // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
   if (pageData === undefined) redirect("/");
 
-  const startRender = performance.now();
+  const stats = await getContentStats({
+    entityType: "wheel",
+    entityId: pageData.wheel._id,
+  });
+
+  // console.log(stats);
+
+  const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();
+  if (user) username = user.name;
+
+  // const startRender = performance.now();
 
   return (
     <div className="p-3">
@@ -38,38 +59,14 @@ export default async function Home({ params }) {
         newSegments={ensureArrayOfObjects(pageData.wheel.data)}
         wheelPresetSettings={pageData.wheel.wheelData}
       />
-      <h1 className="text-3xl mb-2">{pageData.title}</h1>
-
-      <div className="text-lg">
-        {pageData.content.map((item, index) => {
-          switch (item.type) {
-            case "paragraph":
-              return (
-                <p key={index} className="mb-3">
-                  {item.text}
-                </p>
-              );
-            case "image":
-              return <img key={index} src={item.src} alt={item.alt} />;
-            case "link":
-              return (
-                <a
-                  key={index}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {item.text}
-                </a>
-              );
-            case "heading":
-              const HeadingTag = `h${item.level}`;
-              return <HeadingTag key={index}>{item.text}</HeadingTag>;
-            default:
-              return null;
-          }
-        })}
-      </div>
+      <WheelInfoSection
+        wordsList={pageData.wheel}
+        stats={stats}
+        session={session}
+        wheelId={pageData.wheel._id}
+        username={username}
+        pageData={pageData}
+      />
     </div>
   );
 }

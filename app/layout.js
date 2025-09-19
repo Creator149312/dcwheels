@@ -11,11 +11,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: {
-    default: "Spin Wheel – Random Name Picker to Decide Winner",
+    default: "Spinpapa – Explore, Discover, Spin & Decide",
     template: "%s - Spinpapa",
   },
   description:
-    "Spinpapa is your custom wheel spinner for a random decision picker. Fill multiple choices or names, spin the wheel to decide a random winner.",
+    "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun, random way.",
 };
 
 export default function RootLayout({ children }) {

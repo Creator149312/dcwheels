@@ -23,12 +23,12 @@ import {
   segmentsToHTMLTxt,
 } from "@utils/HelperFunctions";
 import { usePathname, useRouter } from "next/navigation";
-import SharePopup from "./SharePopup";
 import AIListGenerator from "./AIListGenerator";
 import ScrollableSegmentsEditorAdv from "./ScrollableSegmentsEditorAdv";
 import ListSelector from "./lists/ListSelector";
 import toast from "react-hot-toast";
 import GenerateWheel from "@components/GenerateWheel";
+import WheelPlayerControls from "./WheelPlayerControls";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -261,12 +261,6 @@ const WheelWithInputContentEditable = ({
     //   setWheelData(wheelPresetSettings);
   }, []);
 
-  // useEffect(() => {
-  //   if (winner !== "" && winner !== undefined) {
-  //     setResultList([...resultList, winner]);
-  //   }
-  // }, [winner, mustSpin]);
-
   const toggleVisibility = () => {
     setIsVisible((prevState) => !prevState); // toggle the state between true and false
   };
@@ -282,22 +276,16 @@ const WheelWithInputContentEditable = ({
     setIsFullScreen(!isFullScreen);
   };
 
-  // Function to handle canceling full screen mode
-  const handleCancel = () => {
-    setIsFullScreen(false);
-  };
+  const [showControls, setShowControls] = useState(false);
 
   return (
     <>
       <div className="grid lg:grid-cols-12 gap-x-2">
         <div
-          className={`bg-card flex flex-col justify-center items-center text-card-foreground lg:mb-2 pt-0 lg:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
-            isFullScreen
-              ? "absolute top-0 left-0 w-screen h-screen flex flex-col justify-center items-center"
-              : "relative"
+          className={`bg-card flex flex-col items-center text-card-foreground lg:mb-2 lg:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
+            isFullScreen ? "fixed inset-0 z-50 bg-black" : "relative w-full"
           }`}
         >
-          {/* <span className="text-3xl">{wheelTitle}</span> */}
           <WinnerPopup
             winner={winner}
             prizeNumber={prizeNumber}
@@ -307,20 +295,23 @@ const WheelWithInputContentEditable = ({
             setShowCelebration={setShowCelebration}
             mustSpin={mustSpin}
           />
+
           {showOverlay && (
             <div
               onClick={handleSpinClick}
-              className="z-10 absolute h-[450px] inset-0 flex items-center justify-center rounded-full text-pretty text-4xl font-bold text-white"
+              className="z-10 absolute inset-0 flex items-center justify-center rounded-full text-4xl font-bold text-white"
               style={{ textShadow: "2px 2px 0 rgba(0, 0, 0, 0.2)" }}
             >
               Click to Spin
             </div>
           )}
+
+          {/* Wheel container fills available space */}
           <div
             onClick={handleSpinClick}
-            // bg-[url('/google-logo.png')] bg-cover bg-no-repeat   can be used inside the div to add background image to it.
-            className={`flex items-center justify-center
-${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
+            className={`flex items-center justify-center w-full ${
+              isFullScreen ? "flex-1" : "min-h-[24rem]"
+            }`}
           >
             <Wheel
               mustStartSpinning={mustSpin}
@@ -331,16 +322,12 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                   ? data.length
                   : wheelData.maxNumberOfOptions
               )}
-              textDistance={
-                Math.min(60 + 0.5 * segData.length, 72)
-                // Math.min(segData.length > wheelData.maxNumberOfOptions ? wheelData.maxNumberOfOptions - maxlengthOfSegmentText : 50 + segData.length + maxlengthOfSegmentText, 90 - maxlengthOfSegmentText)
-              }
+              textDistance={Math.min(60 + 0.5 * segData.length, 72)}
               radiusLineWidth={0}
               outerBorderWidth={0}
               outerBorderColor="white"
               onStopSpinning={() => {
                 setMustSpin(false);
-
                 if (advancedOptions) {
                   let adjustedWinner = null;
                   let j = 0;
@@ -353,7 +340,6 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                       } else j++;
                     }
                   }
-
                   setWinner(adjustedWinner);
                   setResultList([...resultList, adjustedWinner]);
                 } else {
@@ -364,8 +350,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               innerRadius={wheelData.innerRadius}
               innerBorderWidth={4}
               innerBorderColor="white"
-              fontWeight={"normal"}
-              // disableInitialAnimation={"false"}
+              fontWeight="normal"
               spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
               fontSize={segTxtfontSize}
               pointerProps={{
@@ -379,19 +364,22 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
               }}
             />
           </div>
-          <div className="flex items-center space-x-4 mb-2">
-            {/* <ShareButton segmentsData={segData}/> */}
-            {/* <ShareWheelBtn segmentsData={segData} /> */}
-            <SharePopup url={currentPath} />
-            {isFullScreen ? (
-              <Button onClick={handleToggleFullScreen}> Exit Fullscreen</Button>
-            ) : (
-              <Button onClick={handleToggleFullScreen}> Fullscreen</Button>
-            )}
-            {/* <AIListGenerator setSegData={setSegData} /> */}
-            <GenerateWheel url={currentPath}/>
-          </div>
+
+          {/* Controls bar below wheel */}
+
+          <WheelPlayerControls
+            handleSpinClick={handleSpinClick}
+            mustSpin={mustSpin}
+            handleToggleFullScreen={handleToggleFullScreen}
+            isFullScreen={isFullScreen}
+            segData={segData}
+            wheelData={wheelData}
+            saveWheelData={saveWheelData}
+            currentPath={currentPath}
+            router={router}
+          />
         </div>
+
         <div
           className={`${
             isFullScreen
@@ -449,12 +437,13 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                 </TabsContent>
               </Tabs>
               <div>
+                <GenerateWheel url={currentPath} />
                 <SaveImportComponent segments={segData} onImport={setSegData} />
               </div>
             </>
           ) : (
             <div className="flex flex-col items-center">
-              <Button
+              {/* <Button
                 onClick={(e) => {
                   saveWheelData(segData, wheelData);
                   if (currentPath !== "/") router.push("/");
@@ -462,7 +451,7 @@ ${isFullScreen ? "mb-2" : "min-h-96 sm:h-[450px]"}`}
                 className="mb-2"
               >
                 Copy and Edit
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>

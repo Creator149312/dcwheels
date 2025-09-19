@@ -7,7 +7,7 @@ export default function FollowButton({
   entityType,
   entityId,
   initialFollow = false,
-  initialCount = 0,               // follower count from server
+  initialCount = 0,
   onToggle,
   openLoginPrompt,
   labelFollow = "Follow",
@@ -65,10 +65,10 @@ export default function FollowButton({
       aria-pressed={isFollowing}
       aria-label={`${isFollowing ? labelFollowing : labelFollow} (${count})`}
       className={`
-        px-4 py-1 rounded-full border text-sm font-medium transition
+        px-4 py-1.5 rounded-full border text-sm font-medium transition
         ${isFollowing
-          ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-          : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"}
+          ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 dark:border-blue-500"
+          : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700"}
         ${loading ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}

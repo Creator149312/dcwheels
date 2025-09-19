@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReactionButton from "@components/ReactionButton";
-import CommentsPanel from "@components/CommentsPanel";
+import CommentsPanel from "@components/comments/CommentsPanel";
 
 export default function QuestionCard({
   data,

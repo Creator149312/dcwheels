@@ -12,7 +12,7 @@ const ReactionTestSchema = new Schema(
     // The type of entity being reacted to (post, review, question, comment, etc.)
     entityType: {
       type: String,
-      enum: ["post", "review", "question", "comment", "topicpage"],
+      enum: ["post", "review", "question", "comment", "topicpage", "wheel"],
       required: true,
       index: true,
     },

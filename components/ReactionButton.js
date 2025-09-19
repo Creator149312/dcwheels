@@ -46,7 +46,7 @@ export default function ReactionButton({
       disabled={loading}
       aria-pressed={reacted}
       aria-label={`React with ${reactionType}`}
-      className={`flex items-center gap-1 px-3 py-2 rounded-md transition ${
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:border-gray-700 dark:text-gray-100 transition ${
         reacted ? "text-blue-600" : "text-gray-600"
       } ${loading ? "opacity-50 cursor-not-allowed" : "hover:text-blue-600"}`}
     >

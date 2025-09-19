@@ -463,15 +463,12 @@ export async function storeWheelDataToDatabase(initialJSONData) {
   }
 }
 
-
 /**
  * Get reaction + follow stats for any entity.
  *
  * @param {Object} params
- * @param {string} params.entityType - e.g. "post", "review", "question", "topicpage"
+ * @param {string} params.entityType - e.g. "post", "review", "question", "topicpage", "wheel"
  * @param {string} params.entityId   - ObjectId string
- * @param {Request} params.req
- * @param {Response} params.res
  */
 
 export async function getContentStats({ entityType, entityId }) {
@@ -536,9 +533,9 @@ export async function getContentStats({ entityType, entityId }) {
   }
 
   return {
-    reactions,        // { like: 10, heart: 2, ... }
-    reactedByUser,    // { like: true, heart: false, ... }
-    followCount,      // total followers
-    isFollowing,      // current user follows?
+    reactions, // { like: 10, heart: 2, ... }
+    reactedByUser, // { like: true, heart: false, ... }
+    followCount, // total followers
+    isFollowing, // current user follows?
   };
 }

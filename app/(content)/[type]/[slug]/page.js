@@ -247,7 +247,7 @@ export default async function TopicPageDetail({ params }) {
     entityId: pageDoc._id,
   });
 
-  console.log(stats);
+  // console.log(stats);
 
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
