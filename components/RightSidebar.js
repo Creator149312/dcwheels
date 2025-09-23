@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { MdTrendingUp } from "react-icons/md";
 
 const trendingPages = [
@@ -30,7 +29,7 @@ export default function RightSidebar() {
           </p>
         ) : (
           trendingPages.map(({ slug, title }) => (
-            <Link
+            <a
               key={slug}
               href={`/wheels/${slug}`}
               className="group p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
@@ -38,7 +37,7 @@ export default function RightSidebar() {
               <p className="text-sm font-medium dark:text-gray-100 group-hover:underline">
                 {title}
               </p>
-            </Link>
+            </a>
           ))
         )}
       </div>

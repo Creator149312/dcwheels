@@ -15,10 +15,27 @@ export default function WheelInfoSection({
   wordsList,
   session,
   wheelId,
-  username,
   pageData = null,
 }) {
   const openLoginPrompt = useLoginPrompt();
+  // const [username, setUsername] = useState("");
+
+  // useEffect(() => {
+  //   async function fetchUsername() {
+  //     if (wordsList?.createdBy) {
+  //       try {
+  //         const res = await fetch(`/api/user?email=${wordsList.createdBy}`);
+  //         if (res.ok) {
+  //           const data = await res.json();
+  //           setUsername(data.name);
+  //         }
+  //       } catch (err) {
+  //         console.error("Failed to fetch username", err);
+  //       }
+  //     }
+  //   }
+  //   fetchUsername();
+  // }, [wordsList?.createdBy]);
 
   return (
     <div className="mt-2 px-4 text-gray-900 dark:text-gray-100">
@@ -32,39 +49,36 @@ export default function WheelInfoSection({
         {/* Left: Creator Info */}
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white">
-            {getInitial(username)}
+            {getInitial(wordsList?.createdBy)}
           </div>
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <span className="font-semibold">{username}</span>
-          </div>
+          </div> */}
         </div>
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-4 text-sm lg:mr-48">
-          <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-            <StatsBar
-              entityType="wheel"
-              entityId={wheelId}
-              session={session}
-              show={{
-                like: true,
-                share: true,
-                save: false,
-                follow: false,
-              }}
-            />
-
-            <button
-              onClick={() => {
-                const el = document.getElementById("comments");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
-            >
-              <FaComment className="text-gray-600 dark:text-gray-300" />
-              <span>Comments</span>
-            </button>
-          </div>
+          <StatsBar
+            entityType="wheel"
+            entityId={wheelId}
+            session={session}
+            show={{
+              like: true,
+              share: true,
+              save: false,
+              follow: false,
+            }}
+          />
+          <button
+            onClick={() => {
+              const el = document.getElementById("comments");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
+          >
+            <FaComment className="text-gray-600 dark:text-gray-300" />
+            <span>Comments</span>
+          </button>
         </div>
       </div>
 

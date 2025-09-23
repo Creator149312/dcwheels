@@ -70,7 +70,7 @@ function renderAnimeCard(anime) {
   const slug = slugify(title);
   const url = `/anime/${anime.id}-${slug}`;
   return (
-    <Link key={anime.id} href={url}>
+    <a key={anime.id} href={url}>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
         <img
           src={anime.coverImage.large}
@@ -86,7 +86,7 @@ function renderAnimeCard(anime) {
           </p>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
 
@@ -119,7 +119,7 @@ function renderMovieCard(movie) {
   const slug = slugify(name);
   const url = `/movie/${movie.id}-${slug}`;
   return (
-    <Link key={movie.id} href={url}>
+    <a key={movie.id} href={url}>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
         <img
           src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
@@ -134,7 +134,7 @@ function renderMovieCard(movie) {
           </p>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
 
@@ -158,7 +158,7 @@ function renderGameCard(game) {
   const slug = game.slug;
   const url = `/game/${game.id}-${slug}`;
   return (
-    <Link key={game.id} href={url}>
+    <a key={game.id} href={url}>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
         <img
           src={game.background_image}
@@ -172,7 +172,7 @@ function renderGameCard(game) {
           </p>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
 

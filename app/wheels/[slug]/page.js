@@ -44,8 +44,9 @@ export default async function Home({ params }) {
 
   // console.log(stats);
 
-  const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();
-  if (user) username = user.name;
+  // remove username fetching so that I can reduce DB queries
+  // const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();
+  // if (user) username = user.name;
 
   // const startRender = performance.now();
 
@@ -68,7 +69,7 @@ export default async function Home({ params }) {
         wordsList={pageData.wheel}
         session={session}
         wheelId={pageData.wheel._id}
-        username={username}
+        // username={username}
         pageData={pageData}
       />
     </div>
