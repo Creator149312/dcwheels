@@ -1,15 +1,11 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import {
-  getContentStats,
-  getPageDataBySlug,
-} from "@components/actions/actions";
+import { getPageDataBySlug } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
-// import { performance } from "perf_hooks";
 
 export const revalidate = false;
 
@@ -41,10 +37,10 @@ export default async function Home({ params }) {
 
   if (pageData === undefined) redirect("/");
 
-  const stats = await getContentStats({
-    entityType: "wheel",
-    entityId: pageData.wheel._id,
-  });
+  // const stats = await getContentStats({
+  //   entityType: "wheel",
+  //   entityId: pageData.wheel._id,
+  // });
 
   // console.log(stats);
 
@@ -59,9 +55,17 @@ export default async function Home({ params }) {
         newSegments={ensureArrayOfObjects(pageData.wheel.data)}
         wheelPresetSettings={pageData.wheel.wheelData}
       />
-      <WheelInfoSection
+      {/* <WheelInfoSection
         wordsList={pageData.wheel}
         stats={stats}
+        session={session}
+        wheelId={pageData.wheel._id}
+        username={username}
+        pageData={pageData}
+      /> */}
+
+      <WheelInfoSection
+        wordsList={pageData.wheel}
         session={session}
         wheelId={pageData.wheel._id}
         username={username}

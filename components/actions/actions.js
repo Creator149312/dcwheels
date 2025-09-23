@@ -471,13 +471,17 @@ export async function storeWheelDataToDatabase(initialJSONData) {
  * @param {string} params.entityId   - ObjectId string
  */
 
-export async function getContentStats({ entityType, entityId }) {
+export async function getContentStats({ entityType, entityId, show }) {
   await connectMongoDB();
+
+  const id = mongoose.Types.ObjectId.isValid(entityId)
+    ? new mongoose.Types.ObjectId(entityId)
+    : entityId;
 
   // Identify current user
   let userId = null;
   try {
-    const session = await getServerSession(authOptions); // ✅ no req/res in App Router
+    const session = await getServerSession(authOptions);
     if (session?.user?.email) {
       const user = await User.findOne({ email: session.user.email }).lean();
       if (user) userId = user._id;
@@ -486,56 +490,56 @@ export async function getContentStats({ entityType, entityId }) {
     console.error("Session lookup failed:", err);
   }
 
-  const id = mongoose.Types.ObjectId.isValid(entityId)
-    ? new mongoose.Types.ObjectId(entityId)
-    : entityId;
+  const result = {};
 
   // --- Reactions ---
-  const reactionAgg = await ReactionTest.aggregate([
-    { $match: { entityType, entityId: id } },
-    { $group: { _id: "$reactionType", count: { $sum: 1 } } },
-  ]);
+  if (show?.like) {
+    const reactionAgg = await ReactionTest.aggregate([
+      { $match: { entityType, entityId: id } },
+      { $group: { _id: "$reactionType", count: { $sum: 1 } } },
+    ]);
 
-  const reactions = {};
-  const reactedByUser = {};
+    const reactions = {};
+    const reactedByUser = {};
 
-  reactionAgg.forEach(({ _id, count }) => {
-    reactions[_id] = count;
-    reactedByUser[_id] = false;
-  });
-
-  if (userId) {
-    const userReacts = await ReactionTest.find({
-      entityType,
-      entityId: id,
-      userId,
-    }).lean();
-
-    userReacts.forEach((r) => {
-      reactedByUser[r.reactionType] = true;
+    reactionAgg.forEach(({ _id, count }) => {
+      reactions[_id] = count;
+      reactedByUser[_id] = false;
     });
+
+    if (userId) {
+      const userReacts = await ReactionTest.find({
+        entityType,
+        entityId: id,
+        userId,
+      }).lean();
+
+      userReacts.forEach((r) => {
+        reactedByUser[r.reactionType] = true;
+      });
+    }
+
+    result.reactions = reactions;
+    result.reactedByUser = reactedByUser;
   }
 
   // --- Follows ---
-  const followCount = await Follow.countDocuments({
-    entityType,
-    entityId: id,
-  });
-
-  let isFollowing = false;
-  if (userId) {
-    const existingFollow = await Follow.findOne({
+  if (show?.follow) {
+    result.followCount = await Follow.countDocuments({
       entityType,
       entityId: id,
-      userId,
-    }).lean();
-    if (existingFollow) isFollowing = true;
+    });
+
+    result.isFollowing = false;
+    if (userId) {
+      const existingFollow = await Follow.findOne({
+        entityType,
+        entityId: id,
+        userId,
+      }).lean();
+      if (existingFollow) result.isFollowing = true;
+    }
   }
 
-  return {
-    reactions, // { like: 10, heart: 2, ... }
-    reactedByUser, // { like: true, heart: false, ... }
-    followCount, // total followers
-    isFollowing, // current user follows?
-  };
+  return result;
 }

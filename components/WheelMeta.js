@@ -1,4 +1,5 @@
 "use client";
+
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { FaComment } from "react-icons/fa";
@@ -12,7 +13,6 @@ function getInitial(name) {
 
 export default function WheelInfoSection({
   wordsList,
-  stats,
   session,
   wheelId,
   username,
@@ -45,7 +45,6 @@ export default function WheelInfoSection({
             <StatsBar
               entityType="wheel"
               entityId={wheelId}
-              stats={stats}
               session={session}
               show={{
                 like: true,
@@ -54,6 +53,7 @@ export default function WheelInfoSection({
                 follow: false,
               }}
             />
+
             <button
               onClick={() => {
                 const el = document.getElementById("comments");
