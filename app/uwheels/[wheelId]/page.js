@@ -5,7 +5,6 @@ import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
-import User from "@models/user";
 
 // Shared fetcher for wheel data
 async function fetchWheelData(id) {
@@ -54,13 +53,6 @@ export default async function Page({ params }) {
   const session = await getServerSession(authOptions);
   const wordsList = await fetchWheelData(params.wheelId);
 
-  // remove username fetching so that I can reduce DB queries
-  // let username = null;
-  // if (wordsList?.createdBy) {
-  //   const user = await User.findOne({ email: wordsList.createdBy }).lean();
-  //   if (user) username = user.name;
-  // }
-
   return (
     <div>
       {wordsList ? (
@@ -74,7 +66,6 @@ export default async function Page({ params }) {
             wordsList={wordsList}
             session={session}
             wheelId={params.wheelId}
-            // username={username}
           />
         </>
       ) : (

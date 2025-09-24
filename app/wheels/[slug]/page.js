@@ -5,7 +5,6 @@ import { getPageDataBySlug } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import User from "@models/user";
 
 export const revalidate = false;
 
@@ -31,18 +30,9 @@ export default async function Home({ params }) {
   // const endDB = performance.now();
 
   // console.log("PAGEDATA = ", pageData);
-  // Identify user who created the wheel
-  let username = null;
   // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
   if (pageData === undefined) redirect("/");
-
-  // const stats = await getContentStats({
-  //   entityType: "wheel",
-  //   entityId: pageData.wheel._id,
-  // });
-
-  // console.log(stats);
 
   // remove username fetching so that I can reduce DB queries
   // const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();

@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import GAnalytics from "./GAnalytics";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
+import Footer from "@components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }) {
             </LoginPromptProvider>
           </SegmentsProvider>
         </ThemeProvider>
+        <Footer />
       </body>
     </html>
   );

@@ -1,5 +1,4 @@
 import { getAllWheelPages } from "@components/actions/actions";
-// import WheelData from "@data/WheelData";
 import { replaceUnderscoreWithDash } from "@utils/HelperFunctions";
 const BASE_URL = "https://www.spinpapa.com";
 
