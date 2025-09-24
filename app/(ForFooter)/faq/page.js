@@ -3,7 +3,7 @@ export default function Page() {
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">F.A.Q / Help</h1>
       <p className="mb-4 text-gray-700 dark:text-gray-300">
-        Welcome to the SpinPapa Help Center. Here you'll find answers to common questions about using our wheel spinner, creating custom wheels, sharing results, and more.
+        Welcome to the SpinPapa Help Center. Here you will find answers to common questions about using our wheel spinner, creating custom wheels, sharing results, and more.
       </p>
       <ul className="list-disc pl-6 space-y-4 text-gray-600 dark:text-gray-400">
         <li>
