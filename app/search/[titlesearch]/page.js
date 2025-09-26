@@ -18,7 +18,7 @@ export async function generateMetadata({ params }) {
   try {
     // const { list } = await fetchInitialWheels(searchtitle);
     return {
-      title: `S${searchtitle} Wheels`,
+      title: `Search: ${searchtitle}`,
       description: `Explore the list of spin wheels related to ${searchtitle}.`,
     };
   } catch {
