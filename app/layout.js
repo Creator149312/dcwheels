@@ -7,6 +7,7 @@ import GAnalytics from "./GAnalytics";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
 import Footer from "@components/Footer";
+import AdsScriptLoader from "@components/ads/AdsScriptLoader";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }) {
           </SegmentsProvider>
         </ThemeProvider>
         <Footer />
+        <AdsScriptLoader />
       </body>
     </html>
   );

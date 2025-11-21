@@ -29,6 +29,8 @@ import ListSelector from "./lists/ListSelector";
 import toast from "react-hot-toast";
 import GenerateWheel from "@components/GenerateWheel";
 import WheelPlayerControls from "./WheelPlayerControls";
+import AdsScriptLoader from "./ads/AdsScriptLoader";
+import AdsUnit from "./ads/AdsUnit";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -452,6 +454,7 @@ const WheelWithInputContentEditable = ({
               >
                 Copy and Edit
               </Button> */}
+              <AdsUnit slot={"8595322263"}/>
             </div>
           )}
         </div>

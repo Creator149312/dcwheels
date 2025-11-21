@@ -237,14 +237,6 @@ export default async function TopicPageDetail({ params }) {
     }
   }
 
-  // const stats = await getContentStats({
-  //   entityType: "topicpage",
-  //   entityId: pageDoc._id,
-  //
-  // });
-
-  // // console.log(stats);
-
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
       <section className="flex flex-col sm:flex-row gap-4 mb-6">

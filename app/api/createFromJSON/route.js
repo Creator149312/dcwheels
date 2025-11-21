@@ -58,7 +58,7 @@ export async function POST(req) {
       .map((word) => word.trim())
       .slice(0, 4); // Ensure we only take 4 words
 
-    console.log("Words = \n", colorCodes);
+    console.log("Color Codes = \n", colorCodes);
 
     await delay(1500);
     const dataObjectForSegments = ensureArrayOfObjects(wheelData.segments);
@@ -75,7 +75,8 @@ export async function POST(req) {
         removeWinnerAfterSpin: false,
         customPopupDisplayMessage: "The Winner is...",
       },
-      relatedTo: {type: wheelData.relatedTo.type , id: wheelData.relatedTo.id},
+      // relatedTo: {type: wheelData.relatedTo.type , id: wheelData.relatedTo.id},
+      relatedTo: null,
       createdBy: "gauravsingh9314@gmail.com", // Assuming admin for simplicity
       tags: wheelData.tags || "",
     });
@@ -102,6 +103,7 @@ export async function POST(req) {
       message: "Page and Wheel Created Successfully",
     });
   } catch (error) {
+    console.log("Eoooo..." + error);
     return NextResponse.json({ message: "Error Creating Page and Wheel" });
   }
 }

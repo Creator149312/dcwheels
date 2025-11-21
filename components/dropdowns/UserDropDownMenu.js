@@ -9,11 +9,8 @@ import {
 import SignOut from "@components/user/SignOut";
 import { HiOutlineUserCircle } from "react-icons/hi";
 import { HiOutlineLogout } from "react-icons/hi";
-import { HiOutlineClipboardList } from "react-icons/hi";
 import { HiOutlinePresentationChartBar } from "react-icons/hi";
 import { GiCartwheel } from "react-icons/gi";
-import { GiCutDiamond } from "react-icons/gi";
-import CoinsManager from "@app/test/gamification/CoinsManager";
 import { useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { ThemeToggleSwitch } from "@components/ThemeToggleSwitch";

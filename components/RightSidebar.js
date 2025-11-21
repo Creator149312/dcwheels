@@ -1,6 +1,7 @@
 "use client";
 
 import { MdTrendingUp } from "react-icons/md";
+import AdsUnit from "./ads/AdsUnit";
 
 const trendingPages = [
   { slug: "clash-royale-random-card-generator", title: "Clash Royale Random Card Generator" },
@@ -16,12 +17,12 @@ const trendingPages = [
 
 export default function RightSidebar() {
   return (
-    <aside className="w-80 shrink-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 h-screen sticky top-0 overflow-y-auto p-4">
+    <aside className=" p-4">
       <h2 className="flex items-center text-lg font-semibold mb-4 dark:text-gray-100">
         <span className="pr-4">Trending Pages</span>
         <MdTrendingUp size={24} />
       </h2>
-
+      <AdsUnit slot={"8595322263"}/>
       <div className="flex flex-col gap-3">
         {trendingPages.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
