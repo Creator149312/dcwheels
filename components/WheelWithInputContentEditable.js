@@ -454,7 +454,6 @@ const WheelWithInputContentEditable = ({
               >
                 Copy and Edit
               </Button> */}
-              <AdsUnit slot={"8595322263"}/>
             </div>
           )}
         </div>
