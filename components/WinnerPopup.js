@@ -22,56 +22,56 @@ const WinnerPopup = ({
   // console.log(" Prize Number in Winner Popup = " + prizeNumber);
   // console.log(" Auto Remove Winner", wheelData.removeWinnerAfterSpin);
 
-useEffect(() => {
-  if (mustSpin) return;
+  useEffect(() => {
+    if (mustSpin) return;
 
-  const timeoutId = setTimeout(() => {
-    const hasWinner = winner && winner !== "";
+    const timeoutId = setTimeout(() => {
+      const hasWinner = winner && winner !== "";
 
-    setOpen(hasWinner);
-    setShowCelebration(hasWinner);
+      setOpen(hasWinner);
+      setShowCelebration(hasWinner);
 
-    if (hasWinner && wheelData.removeWinnerAfterSpin) {
-      removeWinner(false);
-    }
-  }, 200);
+      if (hasWinner && wheelData.removeWinnerAfterSpin) {
+        removeWinner(false);
+      }
+    }, 200);
 
-  return () => clearTimeout(timeoutId);
-}, [winner, mustSpin]);
+    return () => clearTimeout(timeoutId);
+  }, [winner, mustSpin, wheelData]);
 
-const removeWinner = (removeAll) => {
-  const updatedSegData = segData.filter((element, index) =>
-    removeAll
-      ? element.text !== winner.text
-      : !(element.text === winner.text && index === prizeNumber)
-  );
+  const removeWinner = (removeAll) => {
+    const updatedSegData = segData.filter((element, index) =>
+      removeAll
+        ? element.text !== winner.text
+        : !(element.text === winner.text && index === prizeNumber)
+    );
 
-  setSegData(updatedSegData);
-  html.current = segmentsToHTMLTxt(updatedSegData);
-  setOpen((prev) => !prev);
-  setShowCelebration((prev) => !prev);
-};
+    setSegData(updatedSegData);
+    html.current = segmentsToHTMLTxt(updatedSegData);
+    setOpen((prev) => !prev);
+    setShowCelebration((prev) => !prev);
+  };
 
-const setImgMaxWidth = (temphtml) => {
-  if (typeof document === "undefined" || !temphtml) return temphtml;
+  const setImgMaxWidth = (temphtml) => {
+    if (typeof document === "undefined" || !temphtml) return temphtml;
 
-  const div = document.createElement("div");
-  div.innerHTML = temphtml.text;
+    const div = document.createElement("div");
+    div.innerHTML = temphtml.text;
 
-  Array.from(div.getElementsByTagName("img")).forEach((img) => {
-    img.style.width = "100px";
-  });
+    Array.from(div.getElementsByTagName("img")).forEach((img) => {
+      img.style.width = "100px";
+    });
 
-  return div.innerHTML;
-};
+    return div.innerHTML;
+  };
 
-const containsDuplicates = (element) =>
-  element
-    ? segData.filter((item) => item.text === element.text).length > 1
-    : false;
+  const containsDuplicates = (element) =>
+    element
+      ? segData.filter((item) => item.text === element.text).length > 1
+      : false;
 
 
- const [showPostForm, setShowPostForm] = useState(false);
+  const [showPostForm, setShowPostForm] = useState(false);
 
   const generateQuirkyMessage = (winner) => {
     const templates = [
@@ -103,14 +103,26 @@ const containsDuplicates = (element) =>
 
               {/* Winner Display */}
               <div>
-                {wheelType === "quiz" && winner?.question ? (
-                  <MCQQuestion questionData={winner.question} />
+                {wheelType === "quiz" && winner?.questionData ? (
+                  <MCQQuestion
+                    questionData={winner.questionData}
+                    onAnswered={(correct, id, coins) => {
+                      if (correct) {
+                        // remove the segment
+                        const updatedSegData = segData.filter((seg) => seg.questionData.id !== id);
+                        setSegData(updatedSegData);
+                        html.current = segmentsToHTMLTxt(updatedSegData);
+                      }
+                      // close popup
+                      setOpen(false);
+                      setShowCelebration(false);
+                    }}
+                  />
                 ) : (
                   <p className="text-gray-700 dark:text-gray-300">
                     <span
-                      className={`font-extrabold ${
-                        winner?.text?.length > 50 ? "text-xl" : "text-2xl"
-                      }`}
+                      className={`font-extrabold ${winner?.text?.length > 50 ? "text-xl" : "text-2xl"
+                        }`}
                       dangerouslySetInnerHTML={{
                         __html: setImgMaxWidth(winner),
                       }}
@@ -133,12 +145,12 @@ const containsDuplicates = (element) =>
               </Button>
 
               {/* Share Button */}
-              {/* <Button
+              <Button
                 onClick={() => setShowPostForm(true)}
                 variant="default"
               >
                 Share
-              </Button> */}
+              </Button>
 
               {wheelType !== "quiz" && !wheelData.removeWinnerAfterSpin && (
                 <>

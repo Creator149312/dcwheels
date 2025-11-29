@@ -176,9 +176,66 @@ function renderGameCard(game) {
   );
 }
 
+
+// ---------- Characters Fetch ----------
+// ---------- Character Fetch ----------
+async function fetchCharacters({
+  search,
+  page = 1,
+  perPage = 20,
+  sort = "FAVOURITES_DESC", // AniList supports sorting by favourites/popularity
+}) {
+  const client = new AniList();
+  const response = await client.character.search({
+    search: search || undefined,
+    sort: [sort],
+    page,
+    perPage,
+  });
+
+  let characters = response.characters || [];
+
+  // ✅ filter out characters without images
+  characters = characters.filter((char) => char.image?.large);
+
+  return characters;
+}
+
+function renderCharacterCard(character) {
+  const name =
+    character.name?.full ||
+    character.name?.native ||
+    character.name?.alternative?.[0] ||
+    "Unnamed";
+
+  const slug = slugify(name);
+  const url = `/character/${character.id}-${slug}`;
+
+  return (
+    <a key={character.id} href={url}>
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
+        <img
+          src={character.image.large}
+          alt={name}
+          className="w-full h-64 object-cover"
+        />
+        <div className="p-2">
+          <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">
+            {name}
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {character.gender || "—"} · {character.age || ""}
+          </p>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+
 // ---------- Main Page ----------
 export default async function TopicListPage({ params, searchParams }) {
-  const type = params.type; // "anime", "movie", "game"
+  const type = params.type; // "anime", "movie", "game", "character"
   const search = searchParams?.search || "";
   const genre = searchParams?.genre || "";
   const year = searchParams?.year || "";
@@ -214,14 +271,27 @@ export default async function TopicListPage({ params, searchParams }) {
       "puzzle",
       "sports",
     ];
+  } if (type === "character") {
+    items = await fetchCharacters({ search, page });
+
+    // You can define categories for characters instead of genres
+    // For example: roles, traits, or popularity buckets
+    genresList = [
+      "Main",
+      "Supporting",
+      "Male",
+      "Female",
+      "Villain",
+      "Hero",
+    ];
   }
 
   const typeLabel =
     type === "anime"
       ? "🎌 Discover Anime"
       : type === "movie"
-      ? "🎬 Discover Movies"
-      : "🎮 Discover Games";
+        ? "🎬 Discover Movies"
+        : "🎮 Discover Games";
 
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
@@ -281,8 +351,12 @@ export default async function TopicListPage({ params, searchParams }) {
               type === "anime"
                 ? renderAnimeCard(item)
                 : type === "movie"
-                ? renderMovieCard(item)
-                : renderGameCard(item)
+                  ? renderMovieCard(item)
+                  : type === "game"
+                    ? renderGameCard(item)
+                    : type === "character"
+                      ? renderCharacterCard(item)
+                      : null
             )}
           </div>
 

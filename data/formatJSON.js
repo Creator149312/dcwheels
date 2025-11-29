@@ -24,7 +24,7 @@ const defaultWheelJSON = {
     advOptions: false,
     visible: false,
   },
-  type: 'basic',
+  type: 'quiz',
 };
 
 export default defaultWheelJSON;

@@ -4,24 +4,18 @@ import React, { useEffect, useState } from "react";
 import { isImageElement } from "@utils/HelperFunctions";
 
 const MCQQuestion = ({ questionData, onAnswered }) => {
-  const [answered, setAnswered] = useState(false);
-  const [answerResult, setAnswerResult] = useState(null);
+  const [answered, setAnswered] = useState(false); // To track if the question is answered
+  const [answerResult, setAnswerResult] = useState(null); // To store the answer result (correct/incorrect)
 
-  // ⏳ State for delayed deletion
-  const [deletionTimer, setDeletionTimer] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [cancelled, setCancelled] = useState(false);
-
+  // Reset the state when the questionData changes
   useEffect(() => {
     setAnswered(false);
     setAnswerResult(null);
-    setDeletionTimer(null);
-    setProgress(0);
-    setCancelled(false);
   }, [questionData]);
 
+  // Function to handle answer click
   const handleAnswer = (answer) => {
-    if (answered) return;
+    if (answered) return; // Prevent answering again if already answered
 
     let isCorrect = false;
     const { isValid, src } = isImageElement(answer);
@@ -29,42 +23,22 @@ const MCQQuestion = ({ questionData, onAnswered }) => {
     if (isValid) {
       isCorrect = src === questionData.answer;
     } else {
-      isCorrect = answer === questionData.answer;
+      isCorrect = answer === questionData.answer; // Check if the selected answer is correct
     }
 
+    // Return the result based on the answer
     const result = {
       correct: isCorrect,
       coins: isCorrect ? questionData.coins : 0,
     };
 
-    setAnswered(true);
-    setAnswerResult(result);
+    setAnswered(true); // Mark the question as answered
+    setAnswerResult(result); // Set the result of the answer
 
-    if (isCorrect && onAnswered) {
-      // Start 5s deletion countdown
-      let elapsed = 0;
-      const interval = setInterval(() => {
-        elapsed += 1;
-        setProgress((elapsed / 5) * 100);
-
-        if (elapsed >= 5) {
-          clearInterval(interval);
-          if (!cancelled) {
-            onAnswered(true, questionData.id, result.coins);
-          }
-        }
-      }, 1000);
-
-      setDeletionTimer(interval);
+    // 🔑 Notify parent (QuizWheel) so it can remove the segment + close popup
+    if (onAnswered) {
+      onAnswered(result.correct, questionData.id, result.coins);
     }
-  };
-
-  const cancelDeletion = () => {
-    if (deletionTimer) {
-      clearInterval(deletionTimer);
-    }
-    setCancelled(true);
-    setProgress(0);
   };
 
   return (
@@ -95,7 +69,7 @@ const MCQQuestion = ({ questionData, onAnswered }) => {
                 >
                   {option.isImage && (
                     <img
-                      src={option}
+                      src={option} // Assuming option is an image URL
                       alt={`Option ${index + 1}`}
                       className="object-contain w-full h-full"
                     />
@@ -107,34 +81,13 @@ const MCQQuestion = ({ questionData, onAnswered }) => {
         </div>
       </div>
 
-      {/* Result */}
+      {/* Result after answering */}
       {answered && answerResult && (
         <div className="mt-6 text-center">
           {answerResult.correct ? (
             <div className="text-green-500">
               <p className="text-xl">🎉 Correct Answer! 🎉</p>
               <p className="text-lg">You earned {answerResult.coins} coins.</p>
-
-              {/* Deletion progress bar */}
-              {!cancelled && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600">
-                    Segment will be deleted in 5 seconds...
-                  </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                    <div
-                      className="bg-red-500 h-2.5 rounded-full transition-all duration-1000"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                  <Button
-                    className="mt-2 bg-gray-500 text-white px-3 py-1 rounded"
-                    onClick={cancelDeletion}
-                  >
-                    Cancel Deletion
-                  </Button>
-                </div>
-              )}
             </div>
           ) : (
             <div className="text-red-500">

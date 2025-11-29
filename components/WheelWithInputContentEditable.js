@@ -79,8 +79,8 @@ const WheelWithInputContentEditable = ({
   );
   const [showOverlay, setShowOverlay] = useState(true);
 
-  // console.log("SegData = ", segData);
-  // console.log("New Segments = ", newSegments);
+  console.log("SegData = ", segData);
+  console.log("New Segments = ", newSegments);
 
   // console.log("DATA for Wheel", data);
 
@@ -175,7 +175,7 @@ const WheelWithInputContentEditable = ({
       //do this when we are in the homepage
       let wheelFromBrowserStorage = getWheelData();
       setLocalStorageWheel(wheelFromBrowserStorage);
-      // console.log("browser saved wheel = ", wheelFromBrowserStorage);
+     console.log("browser saved wheel = ", wheelFromBrowserStorage);
 
       if (wheelFromBrowserStorage !== null) {
         let localSegData = wheelFromBrowserStorage.data;

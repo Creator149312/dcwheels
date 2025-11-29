@@ -1,26 +1,100 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
+
+const initialQuizData = [
+  {
+    "text": "Is the sky blue?",
+    "weight": 1,
+    "visible": true,
+    "questionData": {
+      "id": 1,
+      "title": "Is the sky blue?",
+      "type": "true_false",
+      "options": ["True", "False"],
+      "answer": "True",
+      "coins": 10
+    }
+  },
+  {
+    "text": "Capital of France?",
+    "weight": 1,
+    "visible": true,
+    "message": "Where are you going my bro?",
+    "questionData": {
+      "id": 2,
+      "title": "What is the capital of France?",
+      "type": "mcq",
+      "options": ["Berlin", "Paris", "Madrid", "Rome"],
+      "answer": "Paris",
+      "coins": 15
+    }
+  },
+  {
+    "text": "Is water H2O?",
+    "weight": 1,
+    "visible": true,
+    "message": "What is your name my friend?",
+    "questionData": {
+      "id": 3,
+      "title": "Is water made of H2O?",
+      "type": "true_false",
+      "options": ["True", "False"],
+      "answer": "True",
+      "coins": 10
+    }
+  },
+  {
+    "text": "Largest planet?",
+    "weight": 1,
+    "visible": true,
+    "questionData": {
+      "id": 4,
+      "title": "Which is the largest planet in our solar system?",
+      "type": "mcq",
+      "options": ["Earth", "Mars", "Jupiter", "Saturn"],
+      "answer": "Jupiter",
+      "coins": 20
+    }
+  },
+  {
+    "text": "Who wrote Hamlet?",
+    "weight": 1,
+    "visible": true,
+    "questionData": {
+      "id": 5,
+      "title": "Who wrote 'Hamlet'?",
+      "type": "mcq",
+      "options": ["Charles Dickens", "William Shakespeare", "Mark Twain", "Leo Tolstoy"],
+      "answer": "William Shakespeare",
+      "coins": 25
+    }
+  }
+];
+
+const initialDefaultData = [
+  { text: "Gabriel", weight: 1, visible: true },
+  {
+    text: "Hanna",
+    weight: 1,
+    visible: true,
+    message: "Where are you going my bro?",
+  },
+  {
+    text: "or try new",
+    weight: 1,
+    visible: true,
+    message: "What is your name my friend?",
+  },
+  { text: "Daniel", weight: 1, visible: true },
+  { text: "Ram", weight: 1, visible: true },
+];
+
 export default async function Home() {
   return (
     <div className="mx-auto">
       <WheelWithInputContentEditable
-        newSegments={[
-          { text: "Gabriel", weight: 1, visible: true },
-          {
-            text: "Hanna",
-            weight: 1,
-            visible: true,
-            message: "Where are you going my bro?",
-          },
-          {
-            text: "or try new",
-            weight: 1,
-            visible: true,
-            message: "What is your name my friend?",
-          },
-          { text: "Daniel", weight: 1, visible: true },
-          { text: "Ram", weight: 1, visible: true },
-        ]}
+         newSegments={initialQuizData}
       />
+
       <div className="blog-main mt-4 p-3">
         <h1 className="text-4xl mb-2">
           Spin Wheel – Your Fun Random Decisions Picker
