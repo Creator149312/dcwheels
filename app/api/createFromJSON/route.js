@@ -99,9 +99,12 @@ export async function POST(req) {
     await page.save();
 
     // Return success message and the created wheel and page
-    return NextResponse.json({
-      message: "Page and Wheel Created Successfully",
-    });
+    return NextResponse.json(
+      {
+        message: "Page and Wheel Created Successfully",
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.log("Eoooo..." + error);
     return NextResponse.json({ message: "Error Creating Page and Wheel" });
