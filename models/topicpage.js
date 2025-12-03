@@ -7,7 +7,7 @@ const TopicPageSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["anime", "movie", "game", "custom"],
+      enum: ["anime", "movie", "game", "character", "custom"],
       required: true,
     },
     source: {

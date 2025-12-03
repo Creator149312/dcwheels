@@ -21,6 +21,12 @@ async function fetchAnimeFromAnilist(id) {
   return client.media.getById(id);
 }
 
+//-- fetch Anime Characters using Anilist API --//
+async function fetchCharacterFromAnilist(id) {
+  const client = new AniList();
+  return client.character.getById(id);
+}
+
 async function fetchMovieFromTMDb(id) {
   const apiKey = process.env.TMDB_API_KEY;
   const url = `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=en-US`;
@@ -122,6 +128,38 @@ export async function getOrCreateTopicPage(type, relatedId) {
         releaseYear: media.released
           ? parseInt(media.released.split("-")[0])
           : null,
+      },
+    };
+  } else if (type === "character") {
+    const character = await fetchCharacterFromAnilist(relatedId);
+    if (!character) return null;
+
+    // Strip HTML tags from AniList description
+    const rawDescription = character.description?.replace(/<[^>]+>/g, "") || "";
+    const rewritten = await rewriteDescription(rawDescription, "character");
+
+    // Prefer English-friendly name if available
+    newDoc = {
+      type: "character",
+      source: "Anilist",
+      relatedId: character.id,
+      slug: `${character.id}-${slugify(
+        character.name?.full || character.name?.native
+      )}`,
+      title: {
+        english: character.name?.full,
+        // alternative: character.name?.alternative?.[0],
+        // native: character.name?.native || "",
+      },
+      cover: character.image?.large || character.image?.medium,
+      description: rewritten || rawDescription,
+      tags: (character.media?.nodes || [])
+        .map((m) => m?.title?.romaji?.toLowerCase())
+        .filter(Boolean),
+      details: {
+        gender: character.gender || "",
+        age: character.age || "",
+        siteUrl: character.siteUrl || "",
       },
     };
   }
@@ -259,7 +297,8 @@ export default async function TopicPageDetail({ params }) {
               pageDoc.title?.english ||
               pageDoc.title?.romaji ||
               pageDoc.title?.localized ||
-              pageDoc.title?.original}
+              pageDoc.title?.original ||
+              pageDoc.name?.full}
           </h1>
 
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">

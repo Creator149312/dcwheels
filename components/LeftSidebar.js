@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FaHome,
-  FaFire,
   FaGamepad,
   FaFilm,
-  FaFan, // ✅ Anime icon
+  FaFan,   // ✅ Anime icon
+  FaUser,  // ✅ Character icon
 } from "react-icons/fa";
 
 export default function LeftSidebar({ isOpen }) {
@@ -56,6 +56,12 @@ export default function LeftSidebar({ isOpen }) {
               <span>Movies</span>
             </a>
           </li>
+          <li>
+            <a href="/character" className={collapsedItemClass("/character")}>
+              <FaUser size={24} />
+              <span>Characters</span>
+            </a>
+          </li>
         </ul>
       </aside>
 
@@ -89,6 +95,12 @@ export default function LeftSidebar({ isOpen }) {
               <a href="/movie" className={expandedItemClass("/movie")}>
                 <FaFilm size={18} />
                 Movies
+              </a>
+            </li>
+            <li>
+              <a href="/character" className={expandedItemClass("/character")}>
+                <FaUser size={18} />
+                Characters
               </a>
             </li>
           </ul>

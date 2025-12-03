@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { AniList, MediaType } from "@spkrbox/anilist";
-import { slugify } from "@utils/HelperFunctions";
 import apiConfig from "@utils/ApiUrlConfig";
+import {
+  fetchAnime,
+  fetchCharacters,
+  fetchGames,
+  fetchMovies,
+  renderAnimeCard,
+  renderCharacterCard,
+  renderGameCard,
+  renderMovieCard,
+} from "./TopicPagesHelperFunctions";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -12,6 +20,7 @@ export async function generateMetadata({ params }) {
     anime: "Anime",
     movie: "Movies",
     game: "Games",
+    character: "Characters",
     custom: "Custom Wheels",
   };
 
@@ -21,6 +30,8 @@ export async function generateMetadata({ params }) {
     movie:
       "Explore popular movies, share your reactions, and spin up themed wheels for your next watch party.",
     game: "Browse top-rated games, vote on recommendations, and create wheels for your next gaming session.",
+    character:
+      "Explore iconic characters, celebrate fan favorites, and create wheels to spark fun character matchups.",
     custom:
       "Create and explore custom wheels made by the community for any topic imaginable.",
   };
@@ -36,149 +47,9 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// ---------- Anime Fetch ----------
-async function fetchAnime({
-  search,
-  genre,
-  year,
-  page = 1,
-  perPage = 20,
-  sort = "POPULARITY_DESC",
-}) {
-  const client = new AniList();
-  const response = await client.media.search({
-    type: MediaType.ANIME,
-    search: search || undefined,
-    sort: [sort],
-    page,
-    perPage,
-  });
-
-  let media = response.media || [];
-  if (genre) media = media.filter((anime) => anime.genres?.includes(genre));
-  if (year)
-    media = media.filter((anime) => anime.startDate?.year == parseInt(year));
-
-  // ✅ filter out anime without cover images
-  media = media.filter((anime) => anime.coverImage?.large);
-
-  return media;
-}
-
-function renderAnimeCard(anime) {
-  const title = anime.title.english || anime.title.romaji || "Untitled";
-  const slug = slugify(title);
-  const url = `/anime/${anime.id}-${slug}`;
-  return (
-    <a key={anime.id} href={url}>
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
-        <img
-          src={anime.coverImage.large}
-          alt={title}
-          className="w-full h-64 object-cover"
-        />
-        <div className="p-2">
-          <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">
-            {title}
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {anime.startDate?.year || "—"} · {anime.format}
-          </p>
-        </div>
-      </div>
-    </a>
-  );
-}
-
-// ---------- Movie Fetch ----------
-async function fetchMovies({ search, genres, year, page = 1 }) {
-  const API_KEY = process.env.TMDB_API_KEY;
-  if (search) {
-    const url = new URL(`https://api.themoviedb.org/3/search/movie`);
-    url.searchParams.set("api_key", API_KEY);
-    url.searchParams.set("language", "en-US");
-    url.searchParams.set("query", search);
-    url.searchParams.set("page", page);
-    const res = await fetch(url, { cache: "no-store" });
-    const data = await res.json();
-    return (data.results || []).filter((movie) => movie.poster_path); // ✅ filter here
-  }
-  const url = new URL(`https://api.themoviedb.org/3/discover/movie`);
-  url.searchParams.set("api_key", API_KEY);
-  url.searchParams.set("language", "en-US");
-  url.searchParams.set("page", page);
-  if (genres) url.searchParams.set("with_genres", genres);
-  if (year) url.searchParams.set("primary_release_year", year);
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  return (data.results || []).filter((movie) => movie.poster_path); // ✅ filter here
-}
-
-function renderMovieCard(movie) {
-  const name = movie.title;
-  const slug = slugify(name);
-  const url = `/movie/${movie.id}-${slug}`;
-  return (
-    <a key={movie.id} href={url}>
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
-        <img
-          src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-          alt={name}
-          className="w-full h-64 object-cover"
-        />
-        <div className="p-2">
-          <h3 className="text-sm font-semibold truncate">{name}</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {movie.release_date?.slice(0, 4) || "—"} ·{" "}
-            {movie.genres?.[0]?.name || ""}
-          </p>
-        </div>
-      </div>
-    </a>
-  );
-}
-
-// ---------- Game Fetch ----------
-async function fetchGames({ search, genres, year, page = 1 }) {
-  const API_KEY = process.env.RAWG_API_KEY;
-  const url = new URL("https://api.rawg.io/api/games");
-  url.searchParams.set("key", API_KEY);
-  url.searchParams.set("page", page);
-  url.searchParams.set("page_size", 20);
-  url.searchParams.set("ordering", "-added");
-  if (search) url.searchParams.set("search", search);
-  if (genres) url.searchParams.set("genres", genres);
-  if (year) url.searchParams.set("dates", `${year}-01-01,${year}-12-31`);
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  return (data.results || []).filter((game) => game.background_image); // ✅ filter here
-}
-
-function renderGameCard(game) {
-  const slug = game.slug;
-  const url = `/game/${game.id}-${slug}`;
-  return (
-    <a key={game.id} href={url}>
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200">
-        <img
-          src={game.background_image}
-          alt={game.name}
-          className="w-full h-64 object-cover"
-        />
-        <div className="p-2">
-          <h3 className="text-sm font-semibold truncate">{game.name}</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {game.released?.slice(0, 4) || "—"} · {game.genres?.[0]?.name || ""}
-          </p>
-        </div>
-      </div>
-    </a>
-  );
-}
-
 // ---------- Main Page ----------
 export default async function TopicListPage({ params, searchParams }) {
-  const type = params.type; // "anime", "movie", "game"
+  const type = params.type; // "anime", "movie", "game", "character"
   const search = searchParams?.search || "";
   const genre = searchParams?.genre || "";
   const year = searchParams?.year || "";
@@ -215,13 +86,24 @@ export default async function TopicListPage({ params, searchParams }) {
       "sports",
     ];
   }
+  if (type === "character") {
+    items = await fetchCharacters({ search, page });
+
+    // You can define categories for characters instead of genres
+    // For example: roles, traits, or popularity buckets
+    genresList = ["Main", "Supporting", "Male", "Female", "Villain", "Hero"];
+  }
 
   const typeLabel =
     type === "anime"
       ? "🎌 Discover Anime"
       : type === "movie"
       ? "🎬 Discover Movies"
-      : "🎮 Discover Games";
+      : type === "game"
+      ? "🎮 Discover Games"
+      : type === "character"
+      ? "🧑‍🤝‍🧑 Discover Iconic Characters"
+      : "";
 
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
@@ -282,7 +164,11 @@ export default async function TopicListPage({ params, searchParams }) {
                 ? renderAnimeCard(item)
                 : type === "movie"
                 ? renderMovieCard(item)
-                : renderGameCard(item)
+                : type === "game"
+                ? renderGameCard(item)
+                : type === "character"
+                ? renderCharacterCard(item)
+                : null
             )}
           </div>
 
