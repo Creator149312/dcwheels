@@ -18,8 +18,8 @@ You are generating a wheel JSON. Output ONLY valid JSON. No prose.
 
 Requirements:
 - Use a single top-level key formed from the prompt in snake_case, ending with "_picker_wheel".
-- Include: title, description, tags (2-3), content (2 paragraphs), segments (10 to 40 entries based on query).
-- Segments must be short strings, relevant to the prompt, no duplicates.
+- Include: title, description, tags (2-3), content (2 paragraphs), number of segments (max 40 entries based on query).
+- Segments must be short strings, relevant to the prompt, no duplicates (in case where there are two choices like Right or Wrong, Left or Right segments should be only even users can make choice between the two).
 - Keep descriptions friendly and concise.
 
 Example format:

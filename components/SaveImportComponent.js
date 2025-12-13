@@ -14,10 +14,11 @@ const SaveImportComponent = ({ onImport, segments }) => {
         <>
           <div className="flex flex-wrap">
             {/* Save on Cloud Button */}
-            <SaveWheelLocally segmentsData={segments} />
+            {/* <SaveWheelLocally segmentsData={segments} /> */}
             {/* Save on Cloud Button */}
+            
             <SaveWheelBtn segmentsData={segments} />
-            <ImportLocalWheel afterImport={onImport} />
+            {/* <ImportLocalWheel afterImport={onImport} /> */}
           </div>
         </>
       ) : (

@@ -1,5 +1,6 @@
 import { connectMongoDB } from "@lib/mongodb";
 import List from "@models/list";
+import UnifiedList from "@models/unifiedlist";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";

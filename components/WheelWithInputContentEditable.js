@@ -438,7 +438,7 @@ const WheelWithInputContentEditable = ({
                   <ContentEditableDivResult resultList={resultList} />
                 </TabsContent>
               </Tabs>
-              <div>
+              <div className="flex flex-wrap justify-between items-center">
                 <GenerateWheel url={currentPath} />
                 <SaveImportComponent segments={segData} onImport={setSegData} />
               </div>

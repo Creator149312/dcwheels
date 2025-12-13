@@ -63,7 +63,7 @@ export default function WordLists({ createdBy }) {
                 </a>
                 <SharePopup
                   url={`/uwheels/${item._id}`}
-                  buttonVariant="simple"
+                  variant="simple"
                 />
                 <RemoveListBtn id={item._id} type={"wheel"} />
               </div>

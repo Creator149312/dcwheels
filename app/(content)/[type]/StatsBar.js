@@ -64,7 +64,7 @@ export default function StatsBar({
             />
           )}
 
-          {show.share && <SharePopup />}
+          {show.share && <SharePopup variant="buttoned"/>}
 
           {show.save && (
             <button

@@ -4,6 +4,7 @@ import useLists from "@utils/customHooks/useLists";
 import { generateRandomizedMCQsBasic } from "@utils/HelperFunctions";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useSession } from "next-auth/react";
+import useUnifiedLists from "@utils/customHooks/useUnifiedLists";
 
 const ListSelector = ({ html, setSegData }) => {
   const [selectedListId, setSelectedListId] = useState(null);
@@ -23,7 +24,9 @@ const ListSelector = ({ html, setSegData }) => {
   const { status, data: session } = useSession();
 
   // Using the custom hook to fetch lists
-  const { lists, loading, error } = useLists(null, true);
+  // const { lists, loading, error } = useLists(null, true);
+  const {lists, loading, error} = useUnifiedLists(null, true);
+  console.log(lists[0]);
 
   // Handle select change
   const handleListChange = (e) => {
@@ -32,7 +35,8 @@ const ListSelector = ({ html, setSegData }) => {
     setIsModalOpen(true); // Open the modal when a selection is made
 
     // Find the selected list and populate words in the textarea
-    const selectedList = lists.find((list) => list._id === listId);
+    const selectedList = lists.find((list) => list.id === listId);
+    console.log("Selected = " + selectedList.name);
     setListData(selectedList);
   };
 
@@ -62,20 +66,32 @@ const ListSelector = ({ html, setSegData }) => {
     }
   };
 
-  const prepareBasicWheel = () => {
-    if (listData) {
-      const wordsText = listData.words.map((wordData) => {
-        return { text: wordData.word };
-      });
+ const prepareBasicWheel = () => {
+  if (!listData) return;
 
-      setadvancedOptions(false);
-      setSelectedListTitle(listData.title);
-      setSegData(wordsText);
-      html.current = wordsText
-        .map((perSegData) => `<div>${perSegData.text}</div>`)
-        .join("");
+  // Normalize all items into { text: "..." }
+  const wordsText = listData.items.map((item) => {
+    if (item.type === "word") {
+      return { text: item.word };
     }
-  };
+
+    if (item.type === "entity") {
+      return { text: item.name };
+    }
+
+    // fallback for unknown types
+    return { text: "Unknown" };
+  });
+
+  setadvancedOptions(false);
+  setSelectedListTitle(listData.name);
+  setSegData(wordsText);
+
+  html.current = wordsText
+    .map((seg) => `<div>${seg.text}</div>`)
+    .join("");
+};
+
 
   const prepareAdvancedWheel = () => {
     if (listData) {
@@ -84,7 +100,7 @@ const ListSelector = ({ html, setSegData }) => {
       });
 
       setadvancedOptions(true);
-      setSelectedListTitle(listData.title);
+      setSelectedListTitle(listData.name);
       setSegData(wordsText);
       html.current = wordsText
         .map((perSegData) => `<div>${perSegData.text}</div>`)
@@ -99,7 +115,7 @@ const ListSelector = ({ html, setSegData }) => {
       });
 
       setadvancedOptions(false);
-      setSelectedListTitle(listData.title);
+      setSelectedListTitle(listData.name);
       setSegData(wordsText);
       html.current = wordsText
         .map((perSegData) => `<div>${perSegData.text}</div>`)
@@ -136,8 +152,10 @@ const ListSelector = ({ html, setSegData }) => {
               Select a List to Load
             </option>
             {lists.map((list) => (
-              <option key={list._id} value={list._id}>
-                {list.title}
+              // <option key={list._id} value={list._id}>
+              <option key={list.id} value={list.id}>
+                {/* {list.title} */}
+                {list.name}
               </option>
             ))}
           </select>

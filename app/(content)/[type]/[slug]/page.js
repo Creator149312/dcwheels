@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
 import StatsBar from "../StatsBar";
+import SaveButton from "@components/SaveButton";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -337,12 +338,29 @@ export default async function TopicPageDetail({ params }) {
               </>
             )}
           </div>
+          <div className="flex items-center gap-4 mt-2">
           <StatsBar
             entityType="topicpage"
             entityId={pageDoc._id}
             show={{ like: true, follow: true }}
             session={session}
           />
+          <SaveButton
+            entityType={type}
+            entityId={pageDoc._id}
+            name={
+              pageDoc.title?.default ||
+              pageDoc.title?.english ||
+              pageDoc.title?.romaji ||
+              pageDoc.title?.localized ||
+              pageDoc.title?.original ||
+              pageDoc.name?.full
+            }
+            slug={pageDoc.slug}
+            image={pageDoc.cover}
+            userId={user?._id || null}
+          />
+          </div>
         </div>
       </section>
 

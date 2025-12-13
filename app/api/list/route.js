@@ -1,5 +1,6 @@
 import { connectMongoDB } from "@lib/mongodb";
 import List from "@models/list";
+import UnifiedList from "@models/unifiedlist";
 import { validateListDescription, validateListTitle } from "@utils/Validator";
 import { NextResponse } from "next/server";
 

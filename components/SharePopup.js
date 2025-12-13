@@ -14,23 +14,23 @@ import {
 
 export default function SharePopup({
   platforms = ["facebook", "twitter", "linkedin", "whatsapp", "telegram", "email"],
+  variant = "simple", // ✅ NEW PROP
 }) {
   const [showPopup, setShowPopup] = useState(false);
   const [url, setUrl] = useState("");
 
-  // Auto‑detect current page URL
   useEffect(() => {
     if (typeof window !== "undefined") {
       setUrl(window.location.href);
     }
   }, []);
 
+  const togglePopup = () => setShowPopup((prev) => !prev);
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(url);
     alert("Link copied!");
   };
-
-  const togglePopup = () => setShowPopup((prev) => !prev);
 
   const platformLinks = {
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
@@ -50,17 +50,21 @@ export default function SharePopup({
     email: <FaEnvelope className="text-gray-500 text-2xl" />,
   };
 
+  // ✅ Conditional button styling
+  const buttonClass =
+    variant === "buttoned"
+      ? "flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:border-gray-700 dark:text-gray-100 transition"
+      : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700";
+
   return (
     <div className="relative">
-      {/* YouTube/Facebook style share button */}
-      <button
-        onClick={togglePopup}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:border-gray-700 dark:text-gray-100 transition"
-      >
+      {/* Trigger Button */}
+      <button onClick={togglePopup} className={buttonClass}>
         <FaShareAlt className="text-gray-600 dark:text-gray-300" />
         Share
       </button>
 
+      {/* Popup */}
       {showPopup && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
@@ -70,7 +74,7 @@ export default function SharePopup({
             className="bg-white p-6 rounded-lg shadow-lg w-80 relative dark:bg-gray-800 dark:text-gray-100"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
+            {/* Close */}
             <button
               onClick={togglePopup}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
@@ -94,7 +98,7 @@ export default function SharePopup({
               </button>
             </div>
 
-            {/* Social icons */}
+            {/* Social Icons */}
             <div className="flex justify-around">
               {platforms.map((p) => (
                 <a
