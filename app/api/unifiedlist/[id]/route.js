@@ -13,11 +13,11 @@ export async function GET(req, { params }) {
   try {
     const { id } = params;
 
-    // ✅ 1. Get logged-in user
-    const userId = await sessionUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // // ✅ 1. Get logged-in user
+    // const userId = await sessionUserId();
+    // if (!userId) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
 
     // ✅ 2. Fetch the list (must belong to this user)
     // const list = await UnifiedList.findOne({ _id: id, userId }).lean(); //slow but secure

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import UnifiedList from "@models/unifiedlist";
 import { connectMongoDB } from "@lib/mongodb";
 
+//used to get all the lists from the DB in 20 entries per load
 export async function GET(req) {
   await connectMongoDB();
 

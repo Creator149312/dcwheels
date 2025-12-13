@@ -7,6 +7,7 @@ import { sessionUserId } from "@utils/SessionData";
 
 export const dynamic = "force-dynamic";
 
+//used to get all the lists created by the loggedin user
 export async function GET(req) {
   await connectMongoDB();
 

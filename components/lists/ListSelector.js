@@ -26,7 +26,6 @@ const ListSelector = ({ html, setSegData }) => {
   // Using the custom hook to fetch lists
   // const { lists, loading, error } = useLists(null, true);
   const {lists, loading, error} = useUnifiedLists(null, true);
-  console.log(lists[0]);
 
   // Handle select change
   const handleListChange = (e) => {
@@ -36,7 +35,7 @@ const ListSelector = ({ html, setSegData }) => {
 
     // Find the selected list and populate words in the textarea
     const selectedList = lists.find((list) => list.id === listId);
-    console.log("Selected = " + selectedList.name);
+   
     setListData(selectedList);
   };
 

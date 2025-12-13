@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { validateObjectID } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import ListDetailClient from "./ListDetailClient";
-import { getServerSession } from "@node_modules/next-auth";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { sessionUserId } from "@utils/SessionData";
 
@@ -21,27 +21,11 @@ export async function generateMetadata({ params }) {
   let list = null;
 
   try {
-    // ✅ Forward cookies so API can read session
-    const cookieStore = cookies();
-
     const res = await fetch(`${apiConfig.apiUrl}/unifiedlist/${listId}`, {
       method: "GET",
       cache: "no-store",
-      headers: {
-        Cookie: cookieStore.toString(), // ✅ critical for auth
-      },
     });
 
-    // ✅ Handle unauthorized
-    if (res.status === 401) {
-      return {
-        title: "Unauthorized",
-        description: "You must be logged in to view this list.",
-        robots: "noindex",
-      };
-    }
-
-    // ✅ Handle not found
     if (res.status === 404) {
       return {
         title: "List Not Found",
@@ -50,15 +34,12 @@ export async function generateMetadata({ params }) {
       };
     }
 
-    // ✅ Parse list
     const data = await res.json();
     list = data.list || null;
   } catch (err) {
-    // ✅ Metadata must never crash the page
     list = null;
   }
 
-  // ✅ If list exists → return metadata
   if (list) {
     const title = list.name || "User List";
     const description =
@@ -72,7 +53,6 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  // ✅ Fallback metadata
   return {
     title: "List Not Found",
     description: "The requested list does not exist.",
@@ -83,22 +63,15 @@ export async function generateMetadata({ params }) {
 export default async function ListDetailPage({ params }) {
   const { listId } = params;
 
-  const cookieStore = cookies();
-
   const res = await fetch(`${apiConfig.apiUrl}/unifiedlist/${listId}`, {
     method: "GET",
     cache: "no-store",
-    headers: {
-      Cookie: cookieStore.toString(),
-    },
   });
 
   if (!res.ok) {
     return (
       <div className="p-6 text-center text-red-500 dark:text-red-400">
-        {res.status === 401
-          ? "You must be logged in to view this list."
-          : "List not found."}
+        {res.status === 404 ? "List not found." : "Failed to load list."}
       </div>
     );
   }
@@ -106,16 +79,16 @@ export default async function ListDetailPage({ params }) {
   const data = await res.json();
   const list = data.list;
 
-  // ✅ Get logged-in user
+  // ✅ Get logged-in user (optional)
   const session = await getServerSession(authOptions);
-  const loggedInUserId = await sessionUserId(session?.user?.email || null);
+  let loggedInUserId = null;
+  if (session?.user?.email) {
+    loggedInUserId = await sessionUserId(session.user.email);
+  }
 
   // ✅ Compare with list.userId
   const isOwner = loggedInUserId === list.userId;
-  // console.log("logged In User ID = " + loggedInUserId);
 
-  // console.log("Creator ID = " + list.userId);
-  // console.log("Logged In is same as Creator = " + isOwner);
   return (
     <ListDetailClient initialList={list} listId={listId} isOwner={isOwner} />
   );
