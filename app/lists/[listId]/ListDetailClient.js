@@ -80,7 +80,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
       : null;
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen relative">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 relative">
 
       {/* ✅ Actions Menu (Owner Only) */}
       {isOwner && (
@@ -143,7 +143,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
       </div>
 
       {/* ✅ Items */}
-      <div className="space-y-4 overflow-y-auto max-h-[70vh] pr-2">
+      <div className="space-y-4 overflow-y-auto pr-2">
         {list.items.map((item, index) => {
           const isEntity = item.type === "entity";
           const isWord = item.type === "word";

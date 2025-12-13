@@ -22,21 +22,13 @@ const trendingPages = [
     slug: "drawing-ideas-picker",
     title: "What to Draw? - Drawing Ideas Picker Wheel",
   },
-  { slug: "valorant-map-rotation", title: "Valorant Map Rotation Wheel" },
-  {
-    slug: "deltarune-random-character",
-    title: "Deltarune Random Character Picker Wheel",
-  },
-  {
-    slug: "european-clubs-picker",
-    title: "European Football Club Teams Picker Wheel",
-  },
 ];
 
 export default function RightSidebar() {
   return (
     <aside className=" p-4">
       <AdsUnit slot={"8595322263"} />
+      <AdsUnit slot={"7963805759"} />
       <h2 className="flex items-center text-lg font-semibold mb-4 dark:text-gray-100">
         <span className="pr-4">Trending Pages</span>
         <MdTrendingUp size={24} />
