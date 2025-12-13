@@ -11,8 +11,6 @@ import {
   renderMovieCard,
 } from "./TopicPagesHelperFunctions";
 
-import FiltersBarWrapper from "./FiltersBarWrapper";
-
 const BASE_URL = apiConfig.baseUrl;
 
 export async function generateMetadata({ params }) {
@@ -28,7 +26,7 @@ export async function generateMetadata({ params }) {
 
   const typeDescriptions = {
     anime:
-      "Discover trending anime titles, vote on your favorites, and explore community-generated wheels and lists.",
+      "Discover trending anime titles, vote on your favorites, and explore community-generated wheels.",
     movie:
       "Explore popular movies, share your reactions, and spin up themed wheels for your next watch party.",
     game: "Browse top-rated games, vote on recommendations, and create wheels for your next gaming session.",
@@ -72,12 +70,10 @@ export default async function TopicListPage({ params, searchParams }) {
       "Sci-Fi",
     ];
   }
-
   if (type === "movie") {
     items = await fetchMovies({ search, genres: genre, year, page });
-    genresList = ["28", "12", "16", "35", "80", "18", "10751"]; // TMDB genre IDs
+    genresList = ["28", "12", "16", "35", "80", "18", "10751"]; // Example TMDB IDs
   }
-
   if (type === "game") {
     items = await fetchGames({ search, genres: genre, year, page });
     genresList = [
@@ -90,9 +86,11 @@ export default async function TopicListPage({ params, searchParams }) {
       "sports",
     ];
   }
-
   if (type === "character") {
     items = await fetchCharacters({ search, page });
+
+    // You can define categories for characters instead of genres
+    // For example: roles, traits, or popularity buckets
     genresList = ["Main", "Supporting", "Male", "Female", "Villain", "Hero"];
   }
 
@@ -109,20 +107,55 @@ export default async function TopicListPage({ params, searchParams }) {
 
   return (
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
-      <div className="mb-6">
-        {/* Container switches layout based on screen size */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          {/* ✅ Heading always on top-left */}
-          <h1 className="text-3xl font-bold">{typeLabel}</h1>
+      <h1 className="text-3xl font-bold mb-6">{typeLabel}</h1>
 
-          {/* ✅ FiltersBarWrapper moves below heading on mobile, right on desktop */}
-          <div className="w-full md:w-auto">
-            <FiltersBarWrapper genresList={genresList} />
-          </div>
-        </div>
-      </div>
+      {/* Filters */}
+      <form className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4" method="get">
+        <input
+          name="search"
+          type="text"
+          placeholder={`Search ${type}s...`}
+          defaultValue={search}
+          className="border px-4 py-2 rounded dark:bg-gray-800 dark:border-gray-700"
+        />
 
-      {/* ✅ Content Grid */}
+        <select
+          name="genre"
+          defaultValue={genre}
+          className="border px-4 py-2 rounded dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">All Genres</option>
+          {genresList.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name="year"
+          defaultValue={year}
+          className="border px-4 py-2 rounded dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">All Years</option>
+          {Array.from({ length: 2025 - 1980 + 1 }, (_, i) => 1980 + i)
+            .reverse()
+            .map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+        </select>
+
+        <button
+          type="submit"
+          className="sm:col-span-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
+          Apply Filters
+        </button>
+      </form>
+
+      {/* Content Grid */}
       {items.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -139,7 +172,7 @@ export default async function TopicListPage({ params, searchParams }) {
             )}
           </div>
 
-          {/* ✅ Pagination */}
+          {/* Pagination */}
           <div className="mt-6 flex justify-center gap-4">
             {page > 1 && (
               <form method="get">
@@ -152,7 +185,6 @@ export default async function TopicListPage({ params, searchParams }) {
                 </button>
               </form>
             )}
-
             {items.length === 20 && (
               <form method="get">
                 <input type="hidden" name="search" value={search} />

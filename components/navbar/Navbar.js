@@ -4,24 +4,28 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
-import { HiCollection, HiOutlinePlusSm, HiPlus } from "react-icons/hi";
+import {
+  HiCollection,
+  HiOutlinePlusSm,
+  HiPlus,
+  HiViewList,
+} from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
 import MobileSearchBar from "@components/MobileSearchBar";
-import CategoryMenu from "@components/CategoryMenu";
-import { BiSidebar } from 'react-icons/bi';
-import { FaDice } from "react-icons/fa"; // 🎲 icon for Surprise Me
+import { BiSidebar } from "react-icons/bi";
+import { FaDice } from "react-icons/fa";
+import { GiCartwheel } from "@node_modules/react-icons/gi";
 
 const Navbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false); // ✅ mobile dropdown
   const { status, data: session } = useSession();
   const router = useRouter();
   const currentPath = usePathname();
 
   const handleNewWheelClick = (event) => {
     event.preventDefault();
-    // Clear the localStorage
     localStorage.removeItem("SpinpapaWheel");
-    // Redirect to the homepage
     if (currentPath === "/") {
       window.location.reload();
     } else router.push("/");
@@ -30,7 +34,7 @@ const Navbar = ({ onToggleSidebar }) => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white dark:bg-gray-950 shadow pr-4">
       <div className="flex items-center justify-between py-2">
-        {/* Left: Logo */}
+        {/* Left: Sidebar Toggle */}
         <div className="w-16 flex justify-center items-center">
           <button
             onClick={onToggleSidebar}
@@ -39,6 +43,8 @@ const Navbar = ({ onToggleSidebar }) => {
             <BiSidebar size={26} />
           </button>
         </div>
+
+        {/* Logo */}
         <div className="flex items-center shrink-0">
           <a href="/" className="text-2xl font-semibold flex items-center">
             <img
@@ -49,20 +55,21 @@ const Navbar = ({ onToggleSidebar }) => {
             SpinPapa
           </a>
         </div>
-        {/* Center: Search Bar - hidden on very small mobile */}
+
+        {/* Desktop Search */}
         <div className="hidden md:flex flex-grow justify-center px-4">
           <div className="w-full max-w-xl">
             <MobileSearchBar />
           </div>
         </div>
+
         {/* Right Side */}
         <div className="flex items-center sm:gap-4">
-          {/* Search bar toggle + Theme toggle on mobile */}
           <div className="md:hidden">
             <MobileSearchBar />
           </div>
-          <div className="md:hidden">{/* <ThemeToggle /> */}</div>
-          {/* Desktop menu */}
+
+          {/* Desktop Menu */}
           <ul className="hidden md:flex gap-6 items-center">
             <li>
               <a
@@ -76,6 +83,7 @@ const Navbar = ({ onToggleSidebar }) => {
                 Create
               </a>
             </li>
+
             <li>
               <a
                 href="/recommendation"
@@ -87,20 +95,48 @@ const Navbar = ({ onToggleSidebar }) => {
                 Surprise Me
               </a>
             </li>
-            <li>
-              <a href="/wheels" className="inline-flex items-center text-lg">
+
+            {/* ✅ Desktop Dropdown */}
+            <li className="relative group">
+              <button className="inline-flex items-center text-lg">
                 <span className="mr-2 hover:font-semibold">
                   <HiCollection size={26} />
                 </span>
-                All Wheels
-              </a>
+                Explore
+              </button>
+
+              {/* Dropdown Menu */}
+              <div className="absolute left-0 mt-2 w-40 bg-white dark:bg-gray-800 shadow-lg rounded-lg opacity-0 group-hover:opacity-100 group-hover:visible invisible transition-all">
+                <a
+                  href="/wheels"
+                  className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <GiCartwheel
+                    size={20}
+                    className="mr-2 text-gray-600 dark:text-gray-300"
+                  />
+                  Wheels
+                </a>
+
+                <a
+                  href="/lists"
+                  className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <HiViewList
+                    size={20}
+                    className="mr-2 text-gray-600 dark:text-gray-300"
+                  />
+                  Lists
+                </a>
+              </div>
             </li>
+
             <li>
               <UserInfo name={session?.user?.name} status={status} />
             </li>
           </ul>
 
-          {/* Mobile menu icon */}
+          {/* Mobile Menu Icon */}
           <div
             className="text-3xl md:hidden z-40"
             onClick={() => setOpen(!open)}
@@ -110,13 +146,12 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* ✅ Mobile Navigation Drawer */}
       <ul
         className={`z-20 md:hidden dark:bg-[#020817] bg-white fixed top-0 bottom-0 right-0 overflow-y-auto
-      w-64 max-w-[80%] py-10 pl-4 gap-3 duration-500 ease-in-out
-      ${open ? "translate-x-0" : "translate-x-full"}
-      transition-transform
-    `}
+          w-64 max-w-[80%] py-10 pl-4 gap-3 duration-500 ease-in-out
+          ${open ? "translate-x-0" : "translate-x-full"}
+          transition-transform`}
       >
         <li className="pt-5 pb-3">
           <a href="/" className="inline-flex items-center text-lg">
@@ -126,6 +161,7 @@ const Navbar = ({ onToggleSidebar }) => {
             Create
           </a>
         </li>
+
         <li className="py-3">
           <a
             href="/recommendation"
@@ -137,14 +173,46 @@ const Navbar = ({ onToggleSidebar }) => {
             Surprise Me
           </a>
         </li>
+
+        {/* ✅ Mobile Dropdown (Accordion) */}
         <li className="py-3">
-          <a href="/wheels" className="inline-flex items-center text-lg">
+          <button
+            onClick={() => setExploreOpen(!exploreOpen)}
+            className="inline-flex items-center text-lg w-full"
+          >
             <span className="mr-2 hover:font-semibold">
               <HiCollection size={28} />
             </span>
-            All Wheels
-          </a>
+            Explore
+          </button>
+
+          {exploreOpen && (
+            <div className="ml-10 mt-2 flex flex-col gap-3">
+              <a
+                href="/wheels"
+                className="flex items-center text-lg hover:underline"
+              >
+                <GiCartwheel
+                  size={22}
+                  className="mr-2 text-gray-500 dark:text-gray-300"
+                />
+                Wheels
+              </a>
+
+              <a
+                href="/lists"
+                className="flex items-center text-lg hover:underline"
+              >
+                <HiViewList
+                  size={22}
+                  className="mr-2 text-gray-500 dark:text-gray-300"
+                />
+                Lists
+              </a>
+            </div>
+          )}
         </li>
+
         <li>
           <div className="py-3 mr-2">
             <UserInfo
