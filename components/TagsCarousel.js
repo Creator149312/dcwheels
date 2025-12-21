@@ -8,37 +8,27 @@ export default function TagsCarousel() {
   const [tags, setTags] = useState([
     "games",
     "music",
+    "christmas",
     "movies",
+    "fashion",
     "anime",
     "challenge",
     "sports",
     "travel",
     "cooking",
-    "fashion",
     "food",
     "fitness",
     "family",
-    "beauty",
     "relationships",
     "education",
     "phonics",
     "vocabulary",
-    "fun",
     "lifestyle",
     "math",
     "science",
   ]);
-  const scrollRef = useRef(null);
 
-  // Load tags
-  // useEffect(() => {
-  //   fetch("/api/tags-data")
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       setTags(data.tags || []);
-  //     })
-  //     .catch((err) => console.error("Failed to fetch tags", err));
-  // }, []);
+  const scrollRef = useRef(null);
 
   // Scroll left or right by fixed offset
   const scroll = (direction) => {
@@ -62,18 +52,31 @@ export default function TagsCarousel() {
       </button>
 
       {/* Tag Scroll Area */}
-      <div ref={scrollRef} className="overflow-hidden">
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto overflow-y-hidden touch-pan-x"
+        style={{
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE/Edge
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            display: none; /* Chrome, Safari */
+          }
+        `}</style>
+
         <div className="flex gap-2 md:gap-3 snap-x px-6 md:px-8">
           {tags.map((tag) => (
-            <Link
+            <a
               key={tag}
               href={`/tags/${encodeURIComponent(tag).toLowerCase()}`}
               className="px-2 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-bold border rounded-md shrink-0 snap-start 
-bg-white text-black border-gray-300 hover:bg-gray-100 
-dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
+              bg-white text-black border-gray-300 hover:bg-gray-100 
+              dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
             >
               {tag}
-            </Link>
+            </a>
           ))}
         </div>
       </div>

@@ -80,7 +80,7 @@ export default function WheelPlayerControls({
       {/* Right Controls: Fullscreen */}
       <div className="flex items-center gap-4">
         {/* Edit button */}
-        {currentPath !== "/" && (
+        {/* {currentPath !== "/" && (
           <button
             className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
             onClick={(e) => {
@@ -91,10 +91,23 @@ export default function WheelPlayerControls({
             <MdEdit size={20} />
             <span>Edit</span>
           </button>
+        )} */}
+
+        {currentPath !== "/" && (
+          <button
+            className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
+            onClick={(e) => {
+              saveWheelData(segData, wheelData);
+              // ✅ Force full page reload so ads/scripts reinitialize
+              window.location.href = "/";
+            }}
+          >
+            <MdEdit size={20} />
+            <span>Edit</span>
+          </button>
         )}
 
-
-      {/* Fullscreen Button*/}
+        {/* Fullscreen Button*/}
         <button
           onClick={handleToggleFullScreen}
           className="p-2 rounded hover:bg-white/20 transition"

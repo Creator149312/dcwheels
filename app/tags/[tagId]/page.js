@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import WheelCard from "@app/test/TagsTesting/WheelCard";
 import apiConfig from "@utils/ApiUrlConfig";
 
 // Optional: configure revalidation (ISR)
@@ -41,24 +40,56 @@ export default async function TagDetailPage({ params }) {
   if (!wheels) return notFound();
 
   return (
-    <div className="px-4 py-6 max-w-7xl mx-auto dark:bg-gray-950 min-h-screen transition-colors">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white capitalize">
-        {tagId} Wheels
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* ✅ Title */}
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+        {tagId.charAt(0).toUpperCase() + tagId.slice(1)} Wheels
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {wheels.length === 0 ? (
-          <p className="col-span-full text-center text-gray-500 dark:text-gray-400">
-            No wheels found for “{tagId}”.
-          </p>
-        ) : (
-          wheels.map((wheel) => (
-            <div key={wheel._id} className="h-full">
-              <WheelCard wheel={wheel} className="h-full" />
+      {/* ✅ Empty State */}
+      {wheels.length === 0 && (
+        <div className="text-gray-500 dark:text-gray-400 text-center mt-20">
+          No wheels found for “{tagId}”.
+        </div>
+      )}
+
+      {/* ✅ Wheels Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+        {wheels.map((wheel) => (
+          <a
+            key={wheel._id}
+            href={`/uwheels/${wheel._id}`}
+            className="block bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden hover:shadow-lg transition"
+          >
+            {/* ✅ Cover Placeholder (First Letter of Title) */}
+            <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <span className="text-gray-400 dark:text-gray-500 text-4xl font-bold">
+                {wheel.title?.charAt(0).toUpperCase()}
+              </span>
             </div>
-          ))
-        )}
+
+            {/* ✅ Text Content */}
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                {wheel.title}
+              </h3>
+            </div>
+          </a>
+        ))}
       </div>
+
+      {/* ✅ Load More Button */}
+      {/* {hasMore && (
+        <div className="text-center mt-8">
+          <button
+            onClick={loadMore}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? "Loading..." : "Load More"}
+          </button>
+        </div>
+      )} */}
     </div>
   );
 }

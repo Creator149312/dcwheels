@@ -194,7 +194,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {item.wordData?.startsWith("data:image")
                           ? "Image"
-                          : item.wordData || "No definition available"}
+                          : item.wordData || ""}
                       </p>
                     </>
                   )}
