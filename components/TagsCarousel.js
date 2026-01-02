@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
@@ -8,6 +7,7 @@ export default function TagsCarousel() {
   const [tags, setTags] = useState([
     "games",
     "music",
+    "newyear",
     "christmas",
     "movies",
     "fashion",

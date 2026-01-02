@@ -87,9 +87,9 @@ const Navbar = ({ onToggleSidebar }) => {
             <li>
               <a
                 href="/recommendation"
-                className="inline-flex items-center text-lg px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                className="inline-flex items-center text-lg"
               >
-                <span className="mr-2">
+                <span className="mr-2 hover:font-semibold">
                   <FaDice size={22} />
                 </span>
                 Surprise Me
@@ -162,18 +162,17 @@ const Navbar = ({ onToggleSidebar }) => {
           </a>
         </li>
 
-        <li className="py-3">
+        <li>
           <a
             href="/recommendation"
-            className="inline-flex items-center text-lg px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="inline-flex items-center text-lg"
           >
-            <span className="mr-2">
-              <FaDice size={24} />
+            <span className="mr-2 hover:font-semibold">
+              <FaDice size={22} />
             </span>
             Surprise Me
           </a>
         </li>
-
         {/* ✅ Mobile Dropdown (Accordion) */}
         <li className="py-3">
           <button

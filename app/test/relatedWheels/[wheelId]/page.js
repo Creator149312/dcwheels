@@ -5,6 +5,7 @@ import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
+import RelatedWheels from "../RelatedWheels";
 
 // Shared fetcher for wheel data
 async function fetchWheelData(id) {
@@ -24,15 +25,6 @@ async function fetchWheelData(id) {
     console.error("Wheel fetch failed:", err);
     return null;
   }
-}
-
-async function fetchRelatedWheels(tags) {
-  // ✅ Fetch on the server
-  const res = await fetch(
-    `${apiConfig.apiUrl}/related-wheels/advanced?tags=${tags.join(",")}`
-    // { cache: "no-store" } // or { next: { revalidate: 60 } } for caching
-  );
-  return await res.json();
 }
 
 /*
@@ -61,29 +53,32 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const session = await getServerSession(authOptions);
   const wordsList = await fetchWheelData(params.wheelId);
-  const relatedWheels = await fetchRelatedWheels(wordsList.tags);
 
+//   console.log(wordsList);
   return (
-    <div>
-      {wordsList ? (
-        <>
-          <WheelWithInputContentEditable
-            newSegments={ensureArrayOfObjects(wordsList.data)}
-            wheelPresetSettings={wordsList?.wheelData ?? null}
-            relatedWheels={relatedWheels}
-          />
+    // <div>
+    //   {wordsList ? (
+    //     <>
+    //       <WheelWithInputContentEditable
+    //         newSegments={ensureArrayOfObjects(wordsList.data)}
+    //         wheelPresetSettings={wordsList?.wheelData ?? null}
+    //        currentTags={wordsList.tags}
+    //       />
 
-          <WheelInfoSection
-            wordsList={wordsList}
-            session={session}
-            wheelId={params.wheelId}
-          />
-        </>
-      ) : (
-        <div>
-          We cannot find any Wheel. This has been deleted by the creator.
-        </div>
-      )}
-    </div>
+
+    //       <WheelInfoSection
+    //         wordsList={wordsList}
+    //         session={session}
+    //         wheelId={params.wheelId}
+    //       />
+    //     </>
+    //   ) : (
+    //     <div>
+    //       We cannot find any Wheel. This has been deleted by the creator.
+    //     </div>
+    //   )}
+    // </div>
+
+    <></>
   );
 }

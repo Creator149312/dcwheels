@@ -1,7 +1,7 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { getPageDataBySlug } from "@components/actions/actions";
+import { fetchRelatedWheels, getPageDataBySlug } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
@@ -28,7 +28,7 @@ export default async function Home({ params }) {
   // const startDB = performance.now();
   const pageData = await getPageDataBySlug(slug);
   // const endDB = performance.now();
-
+  const relatedWheels = await fetchRelatedWheels(pageData.wheel.tags);
   // console.log("PAGEDATA = ", pageData);
   // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
@@ -45,15 +45,8 @@ export default async function Home({ params }) {
       <WheelWithInputContentEditable
         newSegments={ensureArrayOfObjects(pageData.wheel.data)}
         wheelPresetSettings={pageData.wheel.wheelData}
+        relatedWheels={relatedWheels}
       />
-      {/* <WheelInfoSection
-        wordsList={pageData.wheel}
-        stats={stats}
-        session={session}
-        wheelId={pageData.wheel._id}
-        username={username}
-        pageData={pageData}
-      /> */}
 
       <WheelInfoSection
         wordsList={pageData.wheel}

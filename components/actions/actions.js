@@ -25,6 +25,7 @@ import {
 } from "@utils/HelperFunctions";
 import ReactionTest from "@models/reactiontest";
 import Follow from "@models/follow";
+import apiConfig from "@utils/ApiUrlConfig";
 
 //this method is used when user is logged in
 export const updateNewPassword = async (formData) => {
@@ -372,6 +373,17 @@ export async function getPageDataBySlug(slug) {
 
   return pageData;
 }
+
+
+export async function fetchRelatedWheels(tags) {
+  // ✅ Fetch on the server
+  const res = await fetch(
+    `${apiConfig.apiUrl}/related-wheels/advanced?tags=${tags.join(",")}`
+    // { cache: "no-store" } // or { next: { revalidate: 60 } } for caching
+  );
+  return await res.json();
+}
+
 
 export async function getAllWheelPages() {
   await connectMongoDB();

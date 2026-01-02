@@ -52,7 +52,12 @@ const wheelSchema = new Schema(
   }
 );
 
-wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true });
+wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing unique index, to keep a check on datastorage
+
+// New indexes for performance improvements 
+wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
+wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency
+
 const Wheel = models.Wheel || mongoose.model("Wheel", wheelSchema);
 
 export default Wheel;

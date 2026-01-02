@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LoadMoreWheels from "./LoadMoreWheels";
 import { Card } from "@components/ui/card";
 import apiConfig from "@utils/ApiUrlConfig";
@@ -56,12 +55,12 @@ export default async function Page({ params }) {
           We cannot find any wheels related to <strong>{searchtitle}</strong>.
         </p>
         <div className="mt-4">
-          <Link
+          <a
             href="/"
             className="inline-block px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition dark:bg-blue-500 dark:hover:bg-blue-600"
           >
             Create a New Wheel
-          </Link>
+          </a>
         </div>
       </div>
     );
@@ -79,7 +78,7 @@ export default async function Page({ params }) {
 
       {/* First 5 wheels */}
       {firstFive.map((item) => (
-        <Link href={`/uwheels/${item._id}`} key={item._id}>
+        <a href={`/uwheels/${item._id}`} key={item._id}>
           <Card
             className="p-4 sm:p-6 mt-4 rounded-md bg-white dark:bg-gray-800 
               hover:shadow-xl hover:scale-[1.01] hover:-translate-y-1 
@@ -95,7 +94,7 @@ export default async function Page({ params }) {
               </span>
             </div>
           </Card>
-        </Link>
+        </a>
       ))}
 
       {/* Anime section could be streamed later if needed */}
@@ -105,7 +104,7 @@ export default async function Page({ params }) {
 
       {/* Remaining wheels */}
       {remaining.map((item) => (
-        <Link href={`/uwheels/${item._id}`} key={item._id}>
+        <a href={`/uwheels/${item._id}`} key={item._id}>
           <Card
             className="p-4 sm:p-6 mt-4 rounded-md bg-white dark:bg-gray-800 
               hover:shadow-xl hover:scale-[1.01] hover:-translate-y-1 
@@ -121,7 +120,7 @@ export default async function Page({ params }) {
               </span>
             </div>
           </Card>
-        </Link>
+        </a>
       ))}
 
       {/* Game section could be streamed later if needed */}

@@ -31,6 +31,7 @@ import GenerateWheel from "@components/GenerateWheel";
 import WheelPlayerControls from "./WheelPlayerControls";
 import AdsScriptLoader from "./ads/AdsScriptLoader";
 import AdsUnit from "./ads/AdsUnit";
+import RelatedWheels from "@app/test/relatedWheels/RelatedWheels";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -39,6 +40,7 @@ const Wheel = dynamic(
 const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
+  relatedWheels
 }) => {
   const {
     resultList,
@@ -445,15 +447,7 @@ const WheelWithInputContentEditable = ({
             </>
           ) : (
             <div className="flex flex-col items-center">
-              {/* <Button
-                onClick={(e) => {
-                  saveWheelData(segData, wheelData);
-                  if (currentPath !== "/") router.push("/");
-                }}
-                className="mb-2"
-              >
-                Copy and Edit
-              </Button> */}
+              <RelatedWheels relatedWheels={relatedWheels} />
             </div>
           )}
         </div>
