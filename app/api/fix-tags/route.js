@@ -209,10 +209,10 @@ export async function POST(req) {
 
       console.log("Cleaned tags before OpenAI:", cleanedTags);
 
-      if (wheel.description.length > 25) {
-        if (cleanedTags.length < 3 || cleanedTags.length > 7) {
+      if (wheel.description.length < 25) {
+        if (cleanedTags.length === 0) {
           const prompt = `
-          Resource description: ${wheel.description || ""}
+          Resource description: ${wheel.title || ""}
           Current tags: ${cleanedTags.join(", ")}
 
           Task: Validate and correct the tags.

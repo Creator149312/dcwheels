@@ -8,6 +8,8 @@ import {
 } from "@utils/HelperFunctions";
 
 import { OpenAI } from "openai";
+import { sessionUserId } from "@utils/SessionData";
+import { callOpenAI } from "@components/actions/actions";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
@@ -42,17 +44,22 @@ export async function POST(req) {
     const wheelData = jsonData; // Directly use the JSON data received
     const prompt = wheelData.title;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `only give 4 color codes for "${prompt}" each separated by comma`,
-        },
-      ],
-      max_tokens: 200,
-    });
+    // const response = await openai.chat.completions.create({
+    //   model: "gpt-4o-mini",
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: `only give 4 color codes for "${prompt}" each separated by comma`,
+    //     },
+    //   ],
+    //   max_tokens: 200,
+    // });
 
+    const finalPrompt = `only give 4 color codes for "${prompt}" each separated by comma`;
+    const userId = await sessionUserId();
+    // console.log("User Id = " + userId);
+    const options = { max_tokens: 200 };
+    const response = await callOpenAI(userId, finalPrompt, options, prompt);
     const colorCodes = response.choices[0].message.content
       .split(",")
       .map((word) => word.trim())

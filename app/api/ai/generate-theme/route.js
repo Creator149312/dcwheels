@@ -1,24 +1,16 @@
-import { OpenAI } from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
-});
+import { callOpenAI } from "@components/actions/actions";
+import { sessionUserId } from "@utils/SessionData";
 
 export async function POST(req) {
   const { prompt } = await req.json();
   // console.log("Prompt - ", prompt);
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `only give 4 color codes for "${prompt}" each separated by comma`,
-        },
-      ],
-      max_tokens: 200,
-    });
-
+    const finalPrompt = `only give 4 color codes for "${prompt}" each separated by comma`;
+    const userId = await sessionUserId();
+    // console.log("User Id = " + userId);
+    const options = { max_tokens: 200 };
+    const response = await callOpenAI(userId, finalPrompt, options, prompt);
+    //  console.log("OpenAI response:", response);
     const colorCodes = response.choices[0].message.content
       .split(",")
       .map((word) => word.trim())
@@ -30,9 +22,12 @@ export async function POST(req) {
     });
   } catch (error) {
     // console.error("OpenAI API error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate colors" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Failed to generate colors" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

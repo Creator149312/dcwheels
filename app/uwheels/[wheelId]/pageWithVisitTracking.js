@@ -60,30 +60,32 @@ export async function generateMetadata({ params }) {
 }
 
 /**
- * Async function to log a wheel visit for a user.
+ * Log a wheel visit for a user.
+ * - Runs fire-and-forget (doesn't block rendering).
  * - Updates visitedAt if entry exists, otherwise creates new.
- * - Returns { ok: true } if new entry was added, { ok: false } if updated.
  */
-export async function storeVisit(userId, wheelId) {
-  await connectMongoDB();
+export function storeVisit(userId, wheelId) {
+  (async () => {
+    try {
+      await connectMongoDB();
 
-  const wheelObjectId =
-    typeof wheelId === "string"
-      ? new mongoose.Types.ObjectId(wheelId)
-      : wheelId;
+      const wheelObjectId =
+        typeof wheelId === "string"
+          ? new mongoose.Types.ObjectId(wheelId)
+          : wheelId;
 
-  // Try to find existing entry
-  const existing = await Visit.findOne({ userId, wheelId: wheelObjectId });
-
-  if (existing) {
-    existing.visitedAt = new Date();
-    await existing.save();
-    return { ok: false }; // updated existing entry
-  } else {
-    await Visit.create({ userId, wheelId: wheelObjectId, visitedAt: new Date() });
-    return { ok: true }; // new entry added
-  }
+      // Upsert: update visitedAt if exists, else insert new
+      await Visit.findOneAndUpdate(
+        { userId, wheelId: wheelObjectId },
+        { visitedAt: new Date() },
+        { upsert: true, new: true }
+      );
+    } catch (err) {
+      console.error("storeVisit error:", err);
+    }
+  })();
 }
+
 
 
 /*

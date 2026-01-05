@@ -1,25 +1,21 @@
-// app/api/createFromPrompt/route.js
+import { callOpenAI } from "@components/actions/actions";
+import { sessionUserId } from "@utils/SessionData";
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // keep your key in .env.local
-});
 
 export async function POST(req) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, context } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ message: "Missing prompt" }, { status: 400 });
     }
 
-    const instruction = `
+    const finalPrompt = `
 You are generating a wheel JSON. Output ONLY valid JSON. No prose.
 
 Requirements:
 - Use a single top-level key formed from the prompt in snake_case, ending with "_picker_wheel".
-- Include: title, description, tags (2-3), content (2 paragraphs), number of segments (max 40 entries based on query).
-- Segments must be short strings, relevant to the prompt, no duplicates (in case where there are two choices like Right or Wrong, Left or Right segments should be only even users can make choice between the two).
+- Include: title, description, tags (3-4 in lowercase), content (3 paragraphs), number of segments (max 40 entries based on query).
+- Segments must be short strings, relevant to the prompt, no duplicates.
 - Keep descriptions friendly and concise.
 
 Example format:
@@ -27,7 +23,7 @@ Example format:
   "european_roulette_picker_wheel": {
     "title": "European Roulette Picker Wheel",
     "description": "Spin the wheel to simulate the European Roulette game...",
-    "tags": ["Games", "Numbers"],
+    "tags": ["games", "numbers"],
     "content": [
       { "type": "paragraph", "text": "Paragraph one..." },
       { "type": "paragraph", "text": "Paragraph two..." }
@@ -36,16 +32,14 @@ Example format:
   }
 }
 
-Now generate for: "${prompt}"
+Now generate for: "${prompt}" such that "${context}"
 Output JSON only.
 `;
 
-    // Call OpenAI
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: instruction }],
-      max_tokens: 800,
-    });
+    const userId = await sessionUserId();
+    // console.log("User Id = " + userId);
+    const options = { max_tokens: 800 };
+    const response = await callOpenAI(userId, finalPrompt, options, prompt);
 
     const aiText = response.choices[0].message.content.trim();
 

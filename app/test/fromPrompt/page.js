@@ -3,6 +3,7 @@ import { useState } from "react";
 
 export default function StagedWheelCreator() {
   const [prompt, setPrompt] = useState("");
+  const [context, setContext] = useState("");
   const [stage, setStage] = useState(0); // 0 = idle, 1-4 = stages
   const [message, setMessage] = useState("");
   const [wheelLink, setWheelLink] = useState("");
@@ -28,7 +29,7 @@ export default function StagedWheelCreator() {
       const res1 = await fetch("/api/createFromPrompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, context }),
       });
 
       const data1 = await res1.json();
@@ -95,6 +96,17 @@ export default function StagedWheelCreator() {
           onChange={(e) => setPrompt(e.target.value)}
           className="w-full border rounded p-2"
           placeholder='e.g. "Dota 2 Challenges Picker Wheel"'
+        />
+      </div>
+
+       {/* Context input */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Enter your context</label>
+        <input
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          className="w-full border rounded p-2"
+          placeholder='e.g. "users can pick time for lunch"'
         />
       </div>
 

@@ -172,7 +172,6 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
                     </span>
                   )}
                 </div>
-
                 <div>
                   {isEntity ? (
                     <>

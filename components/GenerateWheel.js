@@ -111,7 +111,6 @@ const GenerateWheel = () => {
         <div className="relative">
           {/* Button to open popup */}
           <Button onClick={handleOpenPopup}>
-            {" "}
             <span>
               <FaMagic size={15} className="mr-2" />
             </span>

@@ -1,5 +1,6 @@
 import { slugify } from "@utils/HelperFunctions";
 import { AniList, MediaType } from "@spkrbox/anilist";
+import SaveButton from "@components/SaveButton";
 
 export function renderAnimeCard(anime) {
   const title = anime.title.english || anime.title.romaji || "Untitled";
@@ -21,6 +22,21 @@ export function renderAnimeCard(anime) {
             {anime.startDate?.year || "—"} · {anime.format}
           </p>
         </div>
+          {/* <SaveButton
+                    entityType={"anime"}
+                    entityId={pageDoc._id}
+                    name={
+                      anime.title?.default ||
+                      anime.title?.english ||
+                      anime.title?.romaji ||
+                      anime.title?.localized ||
+                      anime.title?.original ||
+                      anime.name?.full
+                    }
+                    slug={anime.slug}
+                    image={anime.cover}
+                    userId={user?._id || null}
+                  /> */}
       </div>
     </a>
   );

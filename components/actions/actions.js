@@ -26,6 +26,12 @@ import {
 import ReactionTest from "@models/reactiontest";
 import Follow from "@models/follow";
 import apiConfig from "@utils/ApiUrlConfig";
+import { OpenAI } from "openai";
+import ApiLog from "@models/apilogs";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
+});
 
 //this method is used when user is logged in
 export const updateNewPassword = async (formData) => {
@@ -374,7 +380,6 @@ export async function getPageDataBySlug(slug) {
   return pageData;
 }
 
-
 export async function fetchRelatedWheels(tags) {
   // ✅ Fetch on the server
   const res = await fetch(
@@ -383,7 +388,6 @@ export async function fetchRelatedWheels(tags) {
   );
   return await res.json();
 }
-
 
 export async function getAllWheelPages() {
   await connectMongoDB();
@@ -554,4 +558,63 @@ export async function getContentStats({ entityType, entityId, show }) {
   }
 
   return result;
+}
+
+/**
+ * Calls the OpenAI Chat Completions API with a given prompt and logs usage metadata.
+ *
+ * This function serves two purposes:
+ * 1. Executes a request to the OpenAI API using the specified model and options.
+ * 2. Logs metadata about the request/response (user ID, prompt, token usage, etc.)
+ *    into the `ApiLog` collection for later analysis and cost tracking.
+ *
+ * The logging is done in a "fire-and-forget" style, meaning the API response
+ * is returned immediately to the caller without waiting for the database write.
+ * This improves responsiveness under concurrent load.
+ *
+ * @async
+ * @function callOpenAI
+ * @param {string} userId - Unique identifier of the user making the request.
+ * @param {string} prompt - The text prompt to send to the OpenAI model.
+ * @param {object} options - Additional options for the OpenAI API call
+ *                           (e.g., max_tokens, temperature).
+ *
+ * @returns {Promise<object>} The raw response object returned by OpenAI.
+ *
+ * @example
+ * const response = await callOpenAI("user123", "Give me 5 color codes", { max_tokens: 200 });
+ * console.log(response.choices[0].message.content);
+ *
+ * @remarks
+ * - The function uses the `gpt-4o-mini` model by default.
+ * - Metadata stored in MongoDB includes:
+ *   - `userId`: to attribute usage to a specific user.
+ *   - `prompt`: the text sent to the API (consider sanitizing if sensitive).
+ *   - `model`: which OpenAI model was used.
+ *   - `promptTokens` and `completionTokens`: token usage metrics from OpenAI.
+ *   - `responseId`: unique identifier for the API response (useful for debugging).
+ * - Errors during logging are caught and printed, but do not affect the API response.
+ */
+export async function callOpenAI(userId, prompt, options, promptToStoreInDB) {
+  // Call OpenAI
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    ...options,
+  });
+
+  //only store in ApiLog DB if user is not Admin
+  if (userId !== "66dc4f8b2e40c86cdae0ea48") {
+    // Fire-and-forget logging (non-blocking)
+    ApiLog.create({
+      userId,
+      prompt: promptToStoreInDB,
+      model: response.model,
+      promptTokens: response.usage.prompt_tokens,
+      completionTokens: response.usage.completion_tokens,
+      responseId: response.id,
+    }).catch((err) => console.error("Failed to log API usage:", err));
+  }
+  
+  return response;
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -52,25 +53,22 @@ export default function UserDashboard() {
         Dashboard
       </h1>
 
+      <HistoryList />
+
       <Tabs defaultValue="wheels" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-200 dark:bg-gray-800 rounded-lg">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-200 dark:bg-gray-800 rounded-lg">
           <TabsTrigger
             value="wheels"
             className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700"
           >
             Wheels
           </TabsTrigger>
+
           <TabsTrigger
             value="lists"
             className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700"
           >
             Lists
-          </TabsTrigger>
-          <TabsTrigger
-            value="history"
-            className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700"
-          >
-            History
           </TabsTrigger>
         </TabsList>
 
@@ -100,19 +98,6 @@ export default function UserDashboard() {
           <Suspense fallback={<LoadingSkeleton />}>
             <DashboardPage createdBy={session.user.email} />
             {/* <ListDashboard /> */}
-          </Suspense>
-        </TabsContent>
-
-        {/* ✅ History Tab */}
-        <TabsContent value="history" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              Recent Visits
-            </h2>
-          </div>
-
-          <Suspense fallback={<LoadingSkeleton />}>
-            <HistoryList />
           </Suspense>
         </TabsContent>
       </Tabs>
