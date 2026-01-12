@@ -28,7 +28,12 @@ export default async function Home({ params }) {
   // const startDB = performance.now();
   const pageData = await getPageDataBySlug(slug);
   // const endDB = performance.now();
-  const relatedWheels = await fetchRelatedWheels(pageData.wheel.tags);
+  // const relatedWheels = await fetchRelatedWheels(pageData.wheel.tags);
+
+   const relatedWheels =
+    pageData.wheel?.tags && pageData.wheel.tags.length > 0
+      ? await fetchRelatedWheels(pageData.wheel.tags)
+      : [];
   // console.log("PAGEDATA = ", pageData);
   // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
@@ -39,7 +44,6 @@ export default async function Home({ params }) {
   // if (user) username = user.name;
 
   // const startRender = performance.now();
-
   return (
     <div className="p-3">
       <WheelWithInputContentEditable

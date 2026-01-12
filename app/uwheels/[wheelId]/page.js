@@ -6,20 +6,58 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
 
-// Shared fetcher for wheel data
+const adminCommonID = "gauravsingh9314@gmail.com";
+
+// Updated Shared fetcher for wheel data, longer caching if wheel is created by admin otherwise it is short
+// async function fetchWheelData(id) {
+//   if (!validateObjectID(id)) return null;
+
+//   try {
+//     const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
+//       // ✅ enable caching with revalidation
+//       next: { revalidate: 360 }, // cache for 2 minutes
+//     });
+
+//     if (!response.ok) throw new Error("Failed to fetch wheel");
+
+//     const data = await response.json();
+//     return data.list || null;
+//   } catch (err) {
+//     console.error("Wheel fetch failed:", err);
+//     return null;
+//   }
+// }
+
 async function fetchWheelData(id) {
   if (!validateObjectID(id)) return null;
 
   try {
-    const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
-      // ✅ enable caching with revalidation
-      next: { revalidate: 120 }, // cache for 2 minutes
-    });
+    // Decide cache duration before fetching
+    // Default short cache (6 minutes), longer cache (1 week) if admin
+    const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`);
 
     if (!response.ok) throw new Error("Failed to fetch wheel");
 
     const data = await response.json();
-    return data.list || null;
+    const wheel = data.list || null;
+
+    if (!wheel) return null;
+
+    const createdByAdmin = wheel?.createdBy === adminCommonID;
+
+    // Pick cache duration based on admin flag
+    const cacheDuration = createdByAdmin ? 604800 : 120;
+    //  console.log("Created By Admin = " + createdByAdmin + " Cache Duration =" + cacheDuration);
+
+    // Return wheel data with correct cache duration applied
+    const cachedResponse = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
+      next: { revalidate: cacheDuration },
+    });
+
+    if (!cachedResponse.ok) throw new Error("Failed to fetch wheel with cache");
+
+    const cachedData = await cachedResponse.json();
+    return cachedData.list || null;
   } catch (err) {
     console.error("Wheel fetch failed:", err);
     return null;
@@ -35,9 +73,6 @@ async function fetchRelatedWheels(tags) {
   return await res.json();
 }
 
-/*
- *  Metadata for SEO
- */
 export async function generateMetadata({ params }) {
   const listdata = await fetchWheelData(params.wheelId);
 
@@ -61,7 +96,11 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const session = await getServerSession(authOptions);
   const wordsList = await fetchWheelData(params.wheelId);
-  const relatedWheels = await fetchRelatedWheels(wordsList.tags);
+
+  const relatedWheels =
+    wordsList?.tags && wordsList.tags.length > 0
+      ? await fetchRelatedWheels(wordsList.tags)
+      : [];
 
   return (
     <div>

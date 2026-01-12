@@ -10,7 +10,7 @@ export default function CheckTagsPage() {
     setLoading(true);
     try {
       // batch size = 20
-      const res = await fetch(`/api/fix-tags?limit=40&page=${page}`, {
+      const res = await fetch(`/api/fix-tags?limit=3000&page=${page}`, {
         method: "POST",
       });
       const data = await res.json();

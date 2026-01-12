@@ -1,6 +1,27 @@
 "use client";
 import { useState } from "react";
 
+const bannedWords = [
+  "nsfw",
+  "porn",
+  "hentai",
+  "nude",
+  "sex",
+  "violence",
+  "drugs",
+  "kill",
+  "murder",
+  "terrorist",
+  "weapon",
+  "abuse",
+];
+
+const cleanTag = (tag) =>
+  tag
+    .replace(/[^a-zA-Z0-9]/g, "") // allow uppercase A–Z too
+    .trim()
+    .toLowerCase(); // normalize to lowercase
+
 export default function StagedWheelCreator() {
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("");
@@ -14,7 +35,9 @@ export default function StagedWheelCreator() {
   const startProcess = async () => {
     const now = Date.now();
     if (now - lastRequest < RATE_LIMIT_MS) {
-      setMessage("⏳ Rate limit exceeded. Please wait a few seconds before trying again.");
+      setMessage(
+        "⏳ Rate limit exceeded. Please wait a few seconds before trying again."
+      );
       return;
     }
     setLastRequest(now);
@@ -44,7 +67,8 @@ export default function StagedWheelCreator() {
       setMessage("Validating JSON...");
       await new Promise((res) => setTimeout(res, 1500));
       const topKeys = Object.keys(generatedJson);
-      if (topKeys.length !== 1) throw new Error("JSON must have one top-level key");
+      if (topKeys.length !== 1)
+        throw new Error("JSON must have one top-level key");
       const wheelData = generatedJson[topKeys[0]];
       if (
         !wheelData.title ||
@@ -55,6 +79,18 @@ export default function StagedWheelCreator() {
       ) {
         throw new Error("JSON missing required fields");
       }
+
+      let cleanedTags = Array.from(
+        new Set(
+          (wheelData.tags || [])
+            .map(cleanTag)
+            .filter((tag) => tag.length > 0 && !bannedWords.includes(tag))
+        )
+      );
+
+      // console.log("Cleaned Tags = " + cleanedTags);
+      wheelData.tags = cleanedTags;
+      
       setStage(3);
 
       // Stage 3: Create wheel entry
@@ -99,7 +135,7 @@ export default function StagedWheelCreator() {
         />
       </div>
 
-       {/* Context input */}
+      {/* Context input */}
       <div className="space-y-2">
         <label className="block text-sm font-medium">Enter your context</label>
         <input
