@@ -90,35 +90,36 @@ export async function storeVisit(userId, wheelId) {
  *  Page Component
  */
 export default async function Page({ params }) {
-  const session = await getServerSession(authOptions);
-  const userId = await sessionUserId();
-  const wordsList = await fetchWheelData(params.wheelId);
-  const relatedWheels = await fetchRelatedWheels(wordsList.tags);
-  const isVisitStored = await storeVisit(userId,params.wheelId );
+  // const session = await getServerSession(authOptions);
+  // const userId = await sessionUserId();
+  // const wordsList = await fetchWheelData(params.wheelId);
+  // const relatedWheels = await fetchRelatedWheels(wordsList.tags);
+  // const isVisitStored = await storeVisit(userId,params.wheelId );
 
-  console.log("History Stored = "+ isVisitStored.ok)
+  // console.log("History Stored = "+ isVisitStored.ok)
 
   return (
-    <div>
-      {wordsList ? (
-        <>
-          <WheelWithInputContentEditable
-            newSegments={ensureArrayOfObjects(wordsList.data)}
-            wheelPresetSettings={wordsList?.wheelData ?? null}
-            relatedWheels={relatedWheels}
-          />
+    // <div>
+    //   {wordsList ? (
+    //     <>
+    //       <WheelWithInputContentEditable
+    //         newSegments={ensureArrayOfObjects(wordsList.data)}
+    //         wheelPresetSettings={wordsList?.wheelData ?? null}
+    //         relatedWheels={relatedWheels}
+    //       />
 
-          <WheelInfoSection
-            wordsList={wordsList}
-            session={session}
-            wheelId={params.wheelId}
-          />
-        </>
-      ) : (
-        <div>
-          We cannot find any Wheel. This has been deleted by the creator.
-        </div>
-      )}
-    </div>
+    //       <WheelInfoSection
+    //         wordsList={wordsList}
+    //         session={session}
+    //         wheelId={params.wheelId}
+    //       />
+    //     </>
+    //   ) : (
+    //     <div>
+    //       We cannot find any Wheel. This has been deleted by the creator.
+    //     </div>
+    //   )}
+    // </div>
+    <></>
   );
 }
