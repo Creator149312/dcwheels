@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: {
-    default: "Spinpapa – Explore, Discover, Spin & Decide",
+    default: "Spinpapa – Explore, Discover, Spin Wheel & Decide",
     template: "%s - Spinpapa",
   },
   description:

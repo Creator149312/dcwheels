@@ -68,13 +68,11 @@ export default function TagWheelsGrid({ initialWheels, tagId }) {
                 </div>
               </a>
 
-              {/* ✅ Responsive Ad Injection */}
+              {/* ✅ Responsive Ad Injection using col-span-full */}
               {showAd && (
-                <div className="col-span-2 sm:col-span-3 lg:col-span-5 my-4">
-                  <div className="w-full min-h-[100px] bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center p-4">
-                    <div>
-                      <AdsUnit slot={"4694567949"} />
-                    </div>
+                <div className="col-span-full my-4 md:my-6">
+                  <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
+                    <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
               )}

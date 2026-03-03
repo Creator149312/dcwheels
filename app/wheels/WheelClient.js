@@ -66,7 +66,7 @@ export default function WheelsClient({ initialWheels }) {
 
           return (
             <Fragment key={wheel._id || index}>
-              <Link
+              <a
                 href={`/wheels/${wheel.slug}`}
                 className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-blue-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/5"
               >
@@ -81,15 +81,13 @@ export default function WheelsClient({ initialWheels }) {
                     {wheel.title}
                   </h3>
                 </div>
-              </Link>
+              </a>
 
               {/* ✅ Responsive Ad Injection using col-span-full */}
               {showAd && (
                 <div className="col-span-full my-4 md:my-6">
                   <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
-                    <div className="w-full overflow-hidden flex justify-center">
-                      <AdsUnit slot={"4694567949"} />
-                    </div>
+                    <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
               )}
