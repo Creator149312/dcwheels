@@ -42,9 +42,9 @@ export default async function Page({ params }) {
           Nothing turned up...
         </h2>
         <p className="text-sm md:text-base text-gray-500 max-w-xs md:max-w-sm mb-8 leading-relaxed">
-          We couldn't find any wheels matching{" "}
+          We could not find any wheels matching{" "}
           <span className="font-semibold text-gray-900 dark:text-gray-200">
-            "{searchtitle}"
+            {searchtitle}
           </span>
           .
         </p>
@@ -75,7 +75,7 @@ export default async function Page({ params }) {
             <h1 className="text-2xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white leading-tight">
               Showing{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
-                "{searchtitle}"
+                {searchtitle}
               </span>
             </h1>
             <p className="text-xs md:text-sm text-gray-400 mt-1 md:mt-2 font-medium">
