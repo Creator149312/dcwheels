@@ -1,7 +1,10 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { fetchRelatedWheels, getPageDataBySlug } from "@components/actions/actions";
+import {
+  fetchRelatedWheels,
+  getPageDataBySlug,
+} from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
@@ -30,7 +33,7 @@ export default async function Home({ params }) {
   // const endDB = performance.now();
   // const relatedWheels = await fetchRelatedWheels(pageData.wheel.tags);
 
-   const relatedWheels =
+  const relatedWheels =
     pageData.wheel?.tags && pageData.wheel.tags.length > 0
       ? await fetchRelatedWheels(pageData.wheel.tags)
       : [];
@@ -44,14 +47,19 @@ export default async function Home({ params }) {
   // if (user) username = user.name;
 
   // const startRender = performance.now();
-  return (
-    <div className="p-3">
-      <WheelWithInputContentEditable
-        newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-        wheelPresetSettings={pageData.wheel.wheelData}
-        relatedWheels={relatedWheels}
-      />
 
+  return (
+    <div className="flex flex-col">
+      {/* Main Wheel Section */}
+      <div className="relative">
+        <WheelWithInputContentEditable
+          newSegments={ensureArrayOfObjects(pageData.wheel.data)}
+          wheelPresetSettings={pageData.wheel.wheelData}
+          relatedWheels={relatedWheels}
+        />
+      </div>
+
+      {/* Information Section */}
       <WheelInfoSection
         wordsList={pageData.wheel}
         session={session}
@@ -60,5 +68,20 @@ export default async function Home({ params }) {
         pageData={pageData}
       />
     </div>
+    // <div>
+    //   <WheelWithInputContentEditable
+    //     newSegments={ensureArrayOfObjects(pageData.wheel.data)}
+    //     wheelPresetSettings={pageData.wheel.wheelData}
+    //     relatedWheels={relatedWheels}
+    //   />
+
+    //   <WheelInfoSection
+    //     wordsList={pageData.wheel}
+    //     session={session}
+    //     wheelId={pageData.wheel._id}
+    //     // username={username}
+    //     pageData={pageData}
+    //   />
+    // </div>
   );
 }
