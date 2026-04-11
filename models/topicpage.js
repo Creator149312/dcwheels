@@ -47,7 +47,14 @@ const TopicPageSchema = new Schema(
       of: Number,
       default: { like: 0 },
     },
-    followers: { type: Number, default: 0 },
+    // "Worth It?" community vote — repurposed from the unused `followers` field.
+    // Stores raw yes/no counts directly on the document to avoid a separate
+    // collection for a lightweight signal. Percentage is derived at read time.
+    // Both counters start at 0; the API increments them via $inc.
+    worthIt: {
+      yes: { type: Number, default: 0 },
+      no:  { type: Number, default: 0 },
+    },
     tags: {
       type: [String],
       default: [],

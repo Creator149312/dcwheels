@@ -1,64 +1,14 @@
 import React, { useState } from "react";
 
+// FirstPopup: collects the wheel title and description before the user
+// proceeds to the privacy setting step. The actual API call is handled
+// by the parent ShareButton once both steps are complete.
 const FirstPopup = ({ onClose, onNext }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const saveWheel = async () => {
-    setError("");
+  const handleNextClick = (e) => {
     e.preventDefault();
-    setisSaving(true);
-
-    if (!title || !description || !segments) {
-      setError("Title, description and Data are required.");
-      return;
-    }
-
-    let vlt = validateListTitle(title);
-    let vld = validateListDescription(description);
-
-    if (vlt.length !== 0) {
-      setError(vlt);
-      return;
-    }
-    if (vld.length !== 0) {
-      setError(vld);
-      return;
-    }
-
-    // console.log(apiConfig);
-
-    try {
-      const data = [...segmentsData];
-      const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ title, description, data, createdBy }),
-      });
-
-      let resObj = await res.json();
-      // console.log(resObj);
-
-      if (resObj?.error) {
-        //if there is error
-        // console.log("error in frontend", res);
-        toast.error("Failed to Create Wheel");
-        setError("Failed to create a wheel");
-      } else {
-        // console.log("Redirecting to Dashboard...");
-        router.push("/dashboard");
-      }
-    } catch (error) {
-      setError(error);
-    } finally {
-      setisSaving(false);
-    }
-  };
-
-  const handleNextClick = async() => {
-    await saveWheel();
     onNext({ name, description });
   };
 

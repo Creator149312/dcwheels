@@ -1,9 +1,13 @@
+import toast from "react-hot-toast";
+
 const SharableLinkPopup = ({ link, onClose }) => {
-  const linkPrefix = "https://www.spinpapa.com/uwheels/";
-  link = linkPrefix + link;
+  // Use the current origin so this works in dev and production without hardcoding
+  const fullLink = `${window.location.origin}/uwheels/${link}`;
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(link);
-    alert("Link copied to clipboard!");
+    navigator.clipboard.writeText(fullLink);
+    // Use toast instead of alert() so the UI stays non-blocking
+    toast.success("Link copied to clipboard!");
   };
 
   return (
@@ -13,7 +17,7 @@ const SharableLinkPopup = ({ link, onClose }) => {
           Shareable Link
         </h2>
         <div className="mb-4">
-          <p className="text-gray-700 dark:text-gray-300 break-words">{link}</p>
+          <p className="text-gray-700 dark:text-gray-300 break-words">{fullLink}</p>
         </div>
         <div className="flex justify-end space-x-4">
           <button

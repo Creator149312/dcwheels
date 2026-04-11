@@ -15,10 +15,14 @@ function formatRelativeTime(dateString) {
   return then.toLocaleDateString(); // fallback to date
 }
 
+// layout = "vertical" renders the original stacked list.
+// layout = "horizontal" renders a horizontally scrollable row of fixed-width cards,
+// keeping the page height compact when embedded in a stacked content page.
 export default function ReviewList({
   reviews = [],
   isLoggedIn = false,
   openLoginPrompt,
+  layout = "vertical",
 }) {
   if (!reviews.length) {
     return (
@@ -29,11 +33,24 @@ export default function ReviewList({
   }
 
   return (
-    <ul className="space-y-4">
+    <ul
+      className={
+        layout === "horizontal"
+          ? "flex overflow-x-auto gap-4 pb-3 [&::-webkit-scrollbar]:hidden"
+          : "space-y-4"
+      }
+      style={
+        layout === "horizontal"
+          ? { scrollbarWidth: "none", msOverflowStyle: "none" }
+          : {}
+      }
+    >
       {reviews.map((rev) => (
         <li
           key={rev._id}
-          className="border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900"
+          className={`border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900${
+            layout === "horizontal" ? " w-72 flex-shrink-0" : ""
+          }`}
         >
           {/* Header */}
           <div className="flex items-center gap-2 mb-1">

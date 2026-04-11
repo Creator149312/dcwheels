@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import QuestionComposer from "./QuestionComposer";
 import QuestionCard from "./QuestionCard";
 
+// layout = "vertical" renders the original stacked list.
+// layout = "horizontal" renders question cards as a horizontally scrollable row.
 export default function QuestionsPanel({
   type,               // contentType: "anime", "movie", "game"
   contentId,
   isLoggedIn,
   openLoginPrompt,
   currentUserId,
+  layout = "vertical",
 }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,16 +66,32 @@ export default function QuestionsPanel({
           No questions yet. Be the first to ask!
         </div>
       ) : (
-        <div className="space-y-4">
+        <div
+          className={
+            layout === "horizontal"
+              ? "flex overflow-x-auto gap-4 pb-3 [&::-webkit-scrollbar]:hidden"
+              : "space-y-4"
+          }
+          style={
+            layout === "horizontal"
+              ? { scrollbarWidth: "none", msOverflowStyle: "none" }
+              : {}
+          }
+        >
           {questions.map((q) => (
-            <QuestionCard
+            // Wrapper div gives each card a fixed width in horizontal mode
+            <div
               key={q._id}
-              data={q}
-              isLoggedIn={isLoggedIn}
-              openLoginPrompt={openLoginPrompt}
-              currentUserId={currentUserId}
-              onUpdated={handleUpdated}
-            />
+              className={layout === "horizontal" ? "w-72 flex-shrink-0" : undefined}
+            >
+              <QuestionCard
+                data={q}
+                isLoggedIn={isLoggedIn}
+                openLoginPrompt={openLoginPrompt}
+                currentUserId={currentUserId}
+                onUpdated={handleUpdated}
+              />
+            </div>
           ))}
         </div>
       )}

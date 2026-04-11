@@ -6,11 +6,14 @@ import ReviewForm from "./ReviewForm";
 import ReviewList from "./ReviewList";
 import apiConfig from "@utils/ApiUrlConfig";
 
+// layout prop is forwarded to ReviewList.
+// Pass layout="horizontal" to render reviews as a horizontal scroll row.
 export default function ReviewsPanel({
   type,
   contentId,
   isLoggedIn,
   openLoginPrompt,
+  layout = "vertical",
 }) {
   const [recommend, setRecommend] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -115,6 +118,7 @@ export default function ReviewsPanel({
             reviews={reviews}
             isLoggedIn={isLoggedIn}
             openLoginPrompt={openLoginPrompt}
+            layout={layout}
           />
         )}
       </div>

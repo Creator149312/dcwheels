@@ -40,7 +40,8 @@ const SecondPopup = ({ onClose, onCreateLink }) => {
         </div>
         <div className="flex justify-end space-x-4">
           <button onClick={onClose} className="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
-          <button onClick={onCreateLink} className="px-4 py-2 bg-blue-500 text-white rounded">Create Link</button>
+          {/* Pass the selected privacy value up so ShareButton can include it in the API call */}
+          <button onClick={() => onCreateLink(privacy)} className="px-4 py-2 bg-blue-500 text-white rounded">Create Link</button>
         </div>
       </div>
     </div>

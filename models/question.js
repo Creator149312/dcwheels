@@ -16,7 +16,7 @@ const QuestionSchema = new Schema(
     },
     contentType: {
       type: String,
-      enum: ["movie", "anime", "game"],
+      enum: ["movie", "anime", "game", "character"],
       required: true,
     },
     contentId: {

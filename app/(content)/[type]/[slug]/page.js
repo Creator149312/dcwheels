@@ -1,8 +1,12 @@
 import { AniList } from "@spkrbox/anilist";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
+import Question from "@models/question";
 import Wheel from "@/models/wheel";
 import TopicInteractionTabs from "@app/(content)/[type]/TopicInteractionTabs";
+import TrailerPlayer from "@app/(content)/[type]/TrailerPlayer";
+import WorthItVote from "@components/WorthItVote";
+import AddToListButton from "@components/AddToListButton";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
@@ -10,6 +14,7 @@ import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
 import StatsBar from "../StatsBar";
 import SaveButton from "@components/SaveButton";
+import AdaptiveLeaderBoardAds from "@components/ads/AdaptiveLeaderBoardAds";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -42,6 +47,154 @@ async function fetchGameById(gameId) {
   );
   if (!res.ok) return null;
   return res.json();
+}
+
+// --- Trailer & Streaming Extras Fetchers ---
+// These are fetched fresh on each request (not cached in DB) because
+// streaming availability and trailer listings change frequently.
+// Next.js ISR revalidation (86400 s = 24 h) prevents hammering external APIs.
+
+/**
+ * Fetches the YouTube trailer key and US streaming providers for a movie via TMDB.
+ * Returns { trailerKey, streaming[], watchLink } where watchLink is the
+ * JustWatch aggregated page for US providers.
+ */
+async function fetchMovieExtras(movieId) {
+  const apiKey = process.env.TMDB_API_KEY;
+  try {
+    const [videosRes, providersRes] = await Promise.all([
+      fetch(
+        `https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${apiKey}&language=en-US`,
+        { next: { revalidate: 86400 } }
+      ),
+      fetch(
+        `https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=${apiKey}`,
+        { next: { revalidate: 86400 } }
+      ),
+    ]);
+    const videos = videosRes.ok ? await videosRes.json() : { results: [] };
+    const providers = providersRes.ok ? await providersRes.json() : { results: {} };
+
+    // Prefer an "official" YouTube trailer; fall back to any YouTube result
+    const trailer =
+      (videos.results || []).find((v) => v.type === "Trailer" && v.site === "YouTube") ||
+      (videos.results || []).find((v) => v.site === "YouTube");
+
+    // US flatrate/free/ad-supported providers (up to 6)
+    const usProviders = providers.results?.US;
+    const streaming = [
+      ...(usProviders?.flatrate || []),
+      ...(usProviders?.free || []),
+      ...(usProviders?.ads || []),
+    ].slice(0, 6);
+
+    return {
+      trailerKey: trailer?.key || null,
+      // TMDB individual providers have no direct URL; use the JustWatch link
+      streaming: streaming.map((p) => ({ ...p, url: usProviders?.link || null })),
+      watchLink: usProviders?.link || null,
+    };
+  } catch {
+    return { trailerKey: null, streaming: [], watchLink: null };
+  }
+}
+
+/**
+ * Fetches the YouTube trailer key and streaming links for an anime via AniList GraphQL.
+ * Returns { trailerKey, streaming[] } where each streaming item has { url, site }.
+ */
+async function fetchAnimeExtras(animeId) {
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        trailer { id site }
+        externalLinks { url site type }
+      }
+    }
+  `;
+  try {
+    const res = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { id: animeId } }),
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return { trailerKey: null, streaming: [] };
+    const data = await res.json();
+    const media = data.data?.Media;
+    // AniList stores YouTube trailer id under trailer.id when site === "youtube"
+    const trailerKey = media?.trailer?.site === "youtube" ? media.trailer.id : null;
+    const streaming = (media?.externalLinks || [])
+      .filter((l) => l.type === "STREAMING")
+      .slice(0, 6);
+    return { trailerKey, streaming };
+  } catch {
+    return { trailerKey: null, streaming: [] };
+  }
+}
+
+/**
+ * Fetches store links for a game from RAWG.
+ * The detail endpoint (/games/{id}) has store metadata (name, domain) but
+ * its url fields are always empty. The sub-endpoint (/games/{id}/stores)
+ * has the real purchase URLs but no metadata. Fetch both in parallel and
+ * merge them by store_id so we get icons + working links.
+ */
+async function fetchGameExtras(gameId) {
+  try {
+    const [detailRes, storesRes] = await Promise.all([
+      fetch(`${RAWG_BASE_URL}/games/${gameId}?key=${RAWG_API_KEY}`, { next: { revalidate: 86400 } }),
+      fetch(`${RAWG_BASE_URL}/games/${gameId}/stores?key=${RAWG_API_KEY}`, { next: { revalidate: 86400 } }),
+    ]);
+    if (!detailRes.ok) return { trailerKey: null, streaming: [] };
+
+    const detail = await detailRes.json();
+    const storesData = storesRes.ok ? await storesRes.json() : { results: [] };
+
+    // Build a map of store_id → purchase URL from the sub-endpoint
+    const urlMap = {};
+    for (const s of storesData.results || []) {
+      urlMap[s.store_id] = s.url;
+    }
+
+    // Merge: detail gives store.name + store.domain, urlMap gives the real link
+    const streaming = (detail.stores || []).slice(0, 6).map((s) => ({
+      url: urlMap[s.store.id] || null,
+      store: s.store, // { id, name, slug, domain }
+    }));
+
+    return { trailerKey: null, streaming };
+  } catch {
+    return { trailerKey: null, streaming: [] };
+  }
+}
+
+/**
+ * Fetches related TopicPages from MongoDB by overlapping tags.
+ * Called directly (no HTTP round-trip) since this is a server component.
+ * Excludes the current page and limits to 10 results sorted by tag overlap.
+ */
+async function getRelatedPages(tags, currentId) {
+  if (!tags?.length) return [];
+  try {
+    return TopicPage.aggregate([
+      { $match: { tags: { $in: tags }, _id: { $ne: currentId } } },
+      {
+        $addFields: {
+          overlapCount: {
+            $size: {
+              $filter: { input: "$tags", as: "t", cond: { $in: ["$$t", tags] } },
+            },
+          },
+        },
+      },
+      { $sort: { overlapCount: -1, createdAt: -1 } },
+      { $limit: 10 },
+      { $project: { title: 1, cover: 1, slug: 1, type: 1 } },
+    ]);
+  } catch {
+    return [];
+  }
 }
 
 function extractId(param) {
@@ -169,6 +322,34 @@ export async function getOrCreateTopicPage(type, relatedId) {
 
   try {
     pageDoc = await TopicPage.create(newDoc);
+
+    // Seed starter questions for the new page so it doesn't look empty.
+    // Idempotency: questions are only inserted on the initial create path,
+    // so re-visiting an existing page never duplicates them.
+    // SYSTEM_USER_ID must be a valid ObjectId in your users collection.
+    const systemUserId = process.env.SYSTEM_USER_ID;
+    if (systemUserId) {
+      const seedQuestions = {
+        movie:     ["Worth watching?", "Better than the hype?", "Would you recommend it?"],
+        anime:     ["Worth watching?", "Better than the hype?", "Would you recommend it?"],
+        game:      ["Worth the full price?", "Better than the hype?", "Would you buy it again?"],
+        character: ["Best character in the series?", "Would you want them as an ally?", "Fan favourite?"],
+      };
+      const texts = seedQuestions[type] || [];
+      if (texts.length) {
+        await Question.insertMany(
+          texts.map((text) => ({
+            type: "yesno",
+            text,
+            contentType: type,
+            contentId: pageDoc._id,
+            options: ["Yes", "No"],
+            likes: [],
+            createdBy: systemUserId,
+          }))
+        );
+      }
+    }
   } catch (err) {
     if (err.code === 11000) {
       // Duplicate key — another request created it just now
@@ -257,13 +438,21 @@ export default async function TopicPageDetail({ params }) {
     media = pageDoc;
   }
 
-  // Related wheels & yes/no questions
-  const taggedWheels = await Wheel.find({
-    "relatedTo.type": type,
-    "relatedTo.id": pageDoc.relatedId,
-  })
-    .sort({ createdAt: -1 })
-    .lean();
+  // Fetch trailer/streaming extras, related pages, and tagged wheels in parallel
+  // to minimise total server latency on first load.
+  const [extras, relatedPages, taggedWheels] = await Promise.all([
+    type === "movie"
+      ? fetchMovieExtras(relatedId)
+      : type === "anime"
+      ? fetchAnimeExtras(relatedId)
+      : type === "game"
+      ? fetchGameExtras(relatedId)
+      : Promise.resolve({ trailerKey: null, streaming: [] }),
+    getRelatedPages(pageDoc.tags || [], pageDoc._id),
+    Wheel.find({ "relatedTo.type": type, "relatedTo.id": pageDoc.relatedId })
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
 
   let user = null;
   if (session) {
@@ -276,103 +465,348 @@ export default async function TopicPageDetail({ params }) {
     }
   }
 
+  // Resolve the display title once — referenced in hero, meta, and actions
+  const displayTitle =
+    pageDoc.title?.default ||
+    pageDoc.title?.english ||
+    pageDoc.title?.romaji ||
+    pageDoc.title?.localized ||
+    pageDoc.title?.original ||
+    pageDoc.name?.full ||
+    "Untitled";
+
   return (
-    <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
-      <section className="flex flex-col sm:flex-row gap-4 mb-6">
-        <img
-          src={pageDoc.cover || ""}
-          alt={
-            pageDoc.title?.default ||
-            pageDoc.title?.english ||
-            pageDoc.title?.romaji ||
-            pageDoc.title?.localized ||
-            pageDoc.title?.original ||
-            "Cover image"
-          }
-          className="rounded-lg w-full sm:w-64 aspect-[3/4] object-cover shadow-lg"
-        />
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-black dark:text-white">
 
-        <div>
-          <h1 className="text-2xl font-bold mb-1">
-            {pageDoc.title?.default ||
-              pageDoc.title?.english ||
-              pageDoc.title?.romaji ||
-              pageDoc.title?.localized ||
-              pageDoc.title?.original ||
-              pageDoc.name?.full}
-          </h1>
+      {/* ── Mobile hero (< sm): Option B plain layout ──────────────────────
+           No backdrop, no gradient.
+           [poster 88px] | [title + CTA button]
+           [scrollable meta pills]
+           [description (3-line clamp)]
+           [Worth It? vote]
+           [Where to Watch]                                                  */}
+      <div className="sm:hidden px-4 pt-6 pb-6">
 
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-            {pageDoc.tags?.join(", ")}
-          </p>
-
-          <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
-            {pageDoc.description}
-          </p>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {type === "anime" && (
-              <>
-                <p>
-                  <strong>Episodes:</strong> {pageDoc.details?.episodes}
-                </p>
-              </>
-            )}
-            {type === "movie" && (
-              <>
-                <p>
-                  <strong>Runtime:</strong> {pageDoc.details?.runtime} min
-                </p>
-                <p>
-                  <strong>Release Year:</strong> {pageDoc.details?.releaseYear}
-                </p>
-              </>
-            )}
-            {type === "game" && (
-              <>
-                <p>
-                  <strong>Platform:</strong> {pageDoc.details?.platform}
-                </p>
-                <p>
-                  <strong>Release Year:</strong> {pageDoc.details?.releaseYear}
-                </p>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-4 mt-2">
-          <StatsBar
-            entityType="topicpage"
-            entityId={pageDoc._id}
-            show={{ like: true, follow: true }}
-            session={session}
-          />
-          <SaveButton
-            entityType={type}
-            entityId={pageDoc._id}
-            name={
-              pageDoc.title?.default ||
-              pageDoc.title?.english ||
-              pageDoc.title?.romaji ||
-              pageDoc.title?.localized ||
-              pageDoc.title?.original ||
-              pageDoc.name?.full
-            }
-            slug={pageDoc.slug}
-            image={pageDoc.cover}
-            userId={user?._id || null}
-          />
+        {/* Row 1: poster + title / CTA */}
+        <div className="flex gap-4 items-start">
+          {pageDoc.cover && (
+            <img
+              src={pageDoc.cover}
+              alt={displayTitle}
+              className="w-[120px] flex-shrink-0 rounded-xl shadow-lg aspect-[3/4] object-cover"
+            />
+          )}
+          <div className="flex flex-col gap-3 min-w-0 pt-1">
+            <h1 className="text-xl font-bold leading-tight text-gray-900 dark:text-white">
+              {displayTitle}
+            </h1>
+            <AddToListButton
+              type={type}
+              entityId={String(pageDoc._id)}
+              name={displayTitle}
+              slug={pageDoc.slug}
+              image={pageDoc.cover}
+            />
           </div>
         </div>
-      </section>
 
-      {/* Wheels & Questions sections can go here */}
-      <TopicInteractionTabs
-        type={type}
-        pageId={pageDoc._id}
-        contentId={relatedId.toString()} // ensure it's a string
-        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-        isLoggedIn={!!session}
-        currentUserId={user?._id || null}
-      />
+        {/* Row 2: horizontally scrollable meta pills */}
+        <div
+          className="flex gap-2 mt-4 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {pageDoc.details?.releaseYear && (
+            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+              {pageDoc.details.releaseYear}
+            </span>
+          )}
+          {type === "anime" && pageDoc.details?.episodes && (
+            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+              {pageDoc.details.episodes} eps
+            </span>
+          )}
+          {type === "movie" && pageDoc.details?.runtime && (
+            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+              {pageDoc.details.runtime} min
+            </span>
+          )}
+          {type === "game" && pageDoc.details?.platform && (
+            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1 max-w-[180px] truncate">
+              {pageDoc.details.platform.split(",")[0].trim()}
+            </span>
+          )}
+          {pageDoc.tags?.slice(0, 5).map((tag) => (
+            <span
+              key={tag}
+              className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/75 rounded-full px-3 py-1 capitalize"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Row 3: description */}
+        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-4 line-clamp-3">
+          {pageDoc.description}
+        </p>
+
+        {/* Row 4: Worth It? vote (light bg) */}
+        <div className="mt-5">
+          <WorthItVote
+            topicPageId={String(pageDoc._id)}
+            type={type}
+            initialYes={pageDoc.worthIt?.yes ?? 0}
+            initialNo={pageDoc.worthIt?.no ?? 0}
+          />
+        </div>
+
+        {/* Row 5: Where to Watch */}
+        {extras?.streaming?.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+              {type === "game" ? "Available On" : "Where to Watch"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {extras.streaming.map((provider, i) => (
+                <a
+                  key={i}
+                  href={provider.url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
+                >
+                  {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
+                  {(provider.logo_path || provider.store?.domain) && (
+                    <img
+                      src={provider.logo_path
+                        ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
+                        : `https://www.google.com/s2/favicons?domain=${provider.store.domain}&sz=32`
+                      }
+                      alt=""
+                      className="w-4 h-4 rounded-sm flex-shrink-0"
+                    />
+                  )}
+                  {provider.provider_name ||
+                    provider.site ||
+                    provider.store?.name ||
+                    provider.url}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop hero (sm+): plain surface, no backdrop, no gradient ──────
+           Intentionally no blurred cover or gradient — looks clean in both
+           light and dark mode. Poster left, info right (same as mobile but
+           larger). Title and CTA share one row at 80/20.                   */}
+      <div className="hidden sm:block max-w-5xl mx-auto px-6 pt-10 pb-12">
+        <div className="flex gap-10 items-start">
+
+          {/* Poster */}
+          {pageDoc.cover && (
+            <img
+              src={pageDoc.cover}
+              alt={displayTitle}
+              className="w-52 flex-shrink-0 rounded-xl shadow-lg aspect-[3/4] object-cover"
+            />
+          )}
+
+          {/* Info column */}
+          <div className="flex-1 min-w-0">
+
+            <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white mb-4">
+              {displayTitle}
+            </h1>
+
+            <AddToListButton
+              type={type}
+              entityId={String(pageDoc._id)}
+              name={displayTitle}
+              slug={pageDoc.slug}
+              image={pageDoc.cover}
+            />
+
+            {/* Meta pills */}
+            <div
+              className="flex gap-2 mt-4 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {pageDoc.details?.releaseYear && (
+                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                  {pageDoc.details.releaseYear}
+                </span>
+              )}
+              {type === "anime" && pageDoc.details?.episodes && (
+                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                  {pageDoc.details.episodes} eps
+                </span>
+              )}
+              {type === "movie" && pageDoc.details?.runtime && (
+                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                  {pageDoc.details.runtime} min
+                </span>
+              )}
+              {type === "game" && pageDoc.details?.platform && (
+                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1 max-w-[180px] truncate">
+                  {pageDoc.details.platform.split(",")[0].trim()}
+                </span>
+              )}
+              {pageDoc.tags?.slice(0, 5).map((tag) => (
+                <span
+                  key={tag}
+                  className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/75 rounded-full px-3 py-1 capitalize"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Description */}
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-4 mb-5">
+              {pageDoc.description}
+            </p>
+
+            {/* Worth It? vote */}
+            <WorthItVote
+              topicPageId={String(pageDoc._id)}
+              type={type}
+              initialYes={pageDoc.worthIt?.yes ?? 0}
+              initialNo={pageDoc.worthIt?.no ?? 0}
+            />
+
+            {/* Where to Watch */}
+            {extras?.streaming?.length > 0 && (
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                  {type === "game" ? "Available On" : "Where to Watch"}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {extras.streaming.map((provider, i) => (
+                    <a
+                      key={i}
+                      href={provider.url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
+                    >
+                      {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
+                      {(provider.logo_path || provider.store?.domain) && (
+                        <img
+                          src={provider.logo_path
+                            ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
+                            : `https://www.google.com/s2/favicons?domain=${provider.store.domain}&sz=32`
+                          }
+                          alt=""
+                          className="w-4 h-4 rounded-sm flex-shrink-0"
+                        />
+                      )}
+                      {provider.provider_name ||
+                        provider.site ||
+                        provider.store?.name ||
+                        provider.url}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Ad: horizontal leaderboard ──────────────────────────────────────
+           Placed directly below the hero — highest-engagement position.
+           Same AdSense publisher + slots used across the rest of the site.
+           AdaptiveLeaderBoardAds swaps 728×90 ↔ 320×50 based on viewport. */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+        <AdaptiveLeaderBoardAds
+          desktopSlot="2668822790"
+          mobileSlot="8451962089"
+        />
+      </div>
+
+      {/* ── Body ────────────────────────────────────────────────────────────
+           Max-width container keeps content readable on wide screens.       */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+
+        {/* ── Trailer ─────────────────────────────────────────────────────
+             TrailerPlayer is a client component that renders a thumbnail
+             with a play button. The <iframe> is only injected on click,
+             preventing the YouTube embed script from blocking page load.    */}
+        {extras?.trailerKey && (
+          <section>
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+              Trailer
+            </h2>
+            <TrailerPlayer trailerKey={extras.trailerKey} title={displayTitle} />
+          </section>
+        )}
+
+        {/* ── Picker Wheels / Community Votes / Quick Takes ───────────────
+             These are SpinPapa's moat — nobody else surfaces community
+             spin wheels or decision-focused Q&A per content item.          */}
+        <TopicInteractionTabs
+          type={type}
+          pageId={pageDoc._id}
+          contentId={relatedId.toString()}
+          taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+          isLoggedIn={!!session}
+          currentUserId={user?._id || null}
+        />
+
+        {/* ── You Might Also Like ─────────────────────────────────────────
+             Related content by overlapping tags, horizontal scroll row.    */}
+        {relatedPages?.length > 0 && (
+          <section>
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+              You Might Also Like
+            </h2>
+            <div
+              className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {relatedPages.map((related) => {
+                const relatedTitle =
+                  related.title?.default ||
+                  related.title?.english ||
+                  related.title?.romaji ||
+                  related.title?.localized ||
+                  related.title?.original ||
+                  "Untitled";
+                return (
+                  <a
+                    key={String(related._id)}
+                    href={`/${related.type}/${related.slug}`}
+                    className="group flex-shrink-0 w-28 sm:w-32 block"
+                  >
+                    <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
+                      {related.cover ? (
+                        <img
+                          src={related.cover}
+                          alt={relatedTitle}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No image</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold truncate group-hover:text-blue-600 transition-colors">
+                      {relatedTitle}
+                    </p>
+                    <p className="text-xs text-gray-400 capitalize mt-0.5">{related.type}</p>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+      </div>
     </div>
   );
 }
