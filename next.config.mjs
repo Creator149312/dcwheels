@@ -2,7 +2,12 @@
 const nextConfig = {
   // output: 'export',
   images: {
-    domains: ["lh3.googleusercontent.com",'s4.anilist.co'],
+    remotePatterns: [
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "s4.anilist.co" },
+      { protocol: "https", hostname: "image.tmdb.org" },
+      { protocol: "https", hostname: "media.rawg.io" },
+    ],
   },
   env: {
     WORK_ENV: process.env.WORK_ENV,

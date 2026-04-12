@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
+import { FiZap } from "react-icons/fi";
 import SharePopup from "@components/SharePopup";
 import AddListItemModal from "@components/lists/AddListItemModal";
 import EditListModal from "@components/lists/EditListModal";
@@ -55,6 +56,37 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
     const data = await res.json();
     setList(data.list);
     setEditModalOpen(false);
+  }
+
+  // ✅ Spin this list on the home wheel
+  function spinList() {
+    const segments = list.items
+      .map((i) => (i.type === "entity" ? i.name : i.word))
+      .filter(Boolean)
+      .map((text) => ({ text }));
+
+    if (segments.length === 0) return;
+
+    const wheelObject = {
+      title: list.name,
+      description: list.description || "",
+      data: segments,
+      wheelData: {
+        segColors: [
+          "#EE4040", "#F0CF50", "#815CD1", "#3DA5E0",
+          "#34A24F", "#F9AA1F", "#EC3F3F", "#FF9000",
+        ],
+        spinDuration: 5,
+        maxNumberOfOptions: 100,
+        innerRadius: 15,
+        removeWinnerAfterSpin: false,
+        customPopupDisplayMessage: "The Winner is...",
+        fontSize: 1,
+      },
+    };
+
+    localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
+    window.location.href = "/";
   }
 
   // ✅ Add new item
@@ -139,6 +171,14 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
           <p className="text-gray-500 dark:text-gray-400 mt-4">
             {list.description}
           </p>
+          <button
+            onClick={spinList}
+            disabled={list.items.length === 0}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
+          >
+            <FiZap size={15} />
+            Spin this List
+          </button>
         </div>
       </div>
 

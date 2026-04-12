@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
 import ReactionTest from "@models/reactiontest";
+import Wheel from "@models/wheel";
 import User from "@models/user";
 
 export async function PATCH(req) {
@@ -33,14 +34,21 @@ export async function PATCH(req) {
       entityId,
     });
 
+    let likeCountDelta = 0;
+
     if (existing) {
       if (existing.reactionType === reactionType) {
         // Same reaction → remove it
         await ReactionTest.deleteOne({ _id: existing._id });
+        if (reactionType === "like") likeCountDelta = -1;
       } else {
         // Switch reaction type
+        const wasLike = existing.reactionType === "like";
+        const isLike = reactionType === "like";
         existing.reactionType = reactionType;
         await existing.save();
+        if (wasLike && !isLike) likeCountDelta = -1;
+        if (!wasLike && isLike) likeCountDelta = 1;
       }
     } else {
       await ReactionTest.create({
@@ -49,6 +57,12 @@ export async function PATCH(req) {
         entityId,
         reactionType,
       });
+      if (reactionType === "like") likeCountDelta = 1;
+    }
+
+    // Update denormalized likeCount on Wheel
+    if (entityType === "wheel" && likeCountDelta !== 0) {
+      await Wheel.updateOne({ _id: entityId }, { $inc: { likeCount: likeCountDelta } });
     }
 
     const allReactions = await ReactionTest.find({ entityType, entityId });

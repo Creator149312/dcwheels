@@ -1,3 +1,6 @@
+// LEGACY — replaced by ReactionTest model (models/reactiontest.js)
+// This model is no longer used by any active code.
+// Safe to delete once you confirm no DB collection migration is needed.
 import mongoose, { Schema, models } from "mongoose";
 
 const ReactionSchema = new Schema(

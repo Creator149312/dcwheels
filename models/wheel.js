@@ -46,6 +46,8 @@ const wheelSchema = new Schema(
         advOptions: false,
       },
     },
+    viewCount: { type: Number, default: 0 },
+    likeCount: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -57,6 +59,8 @@ wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing uni
 // New indexes for performance improvements 
 wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
 wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency
+wheelSchema.index({ viewCount: -1 }); // speeds up popular by views
+wheelSchema.index({ likeCount: -1 }); // speeds up popular by likes
 
 const Wheel = models.Wheel || mongoose.model("Wheel", wheelSchema);
 

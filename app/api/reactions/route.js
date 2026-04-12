@@ -1,3 +1,6 @@
+// LEGACY — this route is no longer called by any client component.
+// Active reaction handling is in /api/reactiontest/toggle.
+// Safe to delete.
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import Reaction from "@/models/reaction";

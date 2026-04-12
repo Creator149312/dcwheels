@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession, signIn } from "next-auth/react";
+import toast from "react-hot-toast";
 
 export default function FollowButton({
   entityType,
@@ -49,7 +50,7 @@ export default function FollowButton({
         setCount(followerCount);
         onToggle?.(nextState, followerCount);
       } else {
-        alert(error || "Unable to update follow status");
+        toast.error(error || "Unable to update follow status");
       }
     } catch (err) {
       console.error("Follow error:", err);

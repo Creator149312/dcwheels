@@ -6,18 +6,21 @@ import { sessionUserId } from "@utils/SessionData";
 import { connectMongoDB } from "@lib/mongodb";
 
 export async function GET() {
-  await connectMongoDB
+  await connectMongoDB();
   const userId = await sessionUserId();
+
+  if (!userId) return NextResponse.json({ history: [] }, { status: 401 });
 
   const visits = await Visit.find({ userId })
     .sort({ visitedAt: -1 })
-    .limit(50)
+    .limit(20)
     .lean();
 
   const wheelIds = visits.map(v => v.wheelId);
-  const wheels = await Wheel.find({ _id: { $in: wheelIds } }).lean();
+  const wheels = await Wheel.find({ _id: { $in: wheelIds } })
+    .select("title _id")
+    .lean();
 
-  // Map wheels by id to preserve order
   const byId = new Map(wheels.map(w => [String(w._id), w]));
   const history = visits
     .map(v => byId.get(String(v.wheelId)))

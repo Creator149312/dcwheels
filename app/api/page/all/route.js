@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Page from "@models/page";
 
+// Cache public wheel listing for 2 minutes at the CDN edge
+export const revalidate = 120;
+
 export async function GET(req) {
   await connectMongoDB();
 

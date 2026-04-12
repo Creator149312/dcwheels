@@ -11,8 +11,6 @@ import {
   renderMovieCard,
 } from "./TopicPagesHelperFunctions";
 
-import FiltersBarWrapper from "./FiltersBarWrapper";
-
 const BASE_URL = apiConfig.baseUrl;
 
 export async function generateMetadata({ params }) {
@@ -52,48 +50,24 @@ export async function generateMetadata({ params }) {
 // ---------- Main Page ----------
 export default async function TopicListPage({ params, searchParams }) {
   const type = params.type; // "anime", "movie", "game", "character"
-  const search = searchParams?.search || "";
-  const genre = searchParams?.genre || "";
-  const year = searchParams?.year || "";
   const page = Math.max(1, parseInt(searchParams?.page || "1"));
 
   let items = [];
-  let genresList = [];
 
   if (type === "anime") {
-    items = await fetchAnime({ search, genre, year, page });
-    genresList = [
-      "Action",
-      "Adventure",
-      "Comedy",
-      "Drama",
-      "Fantasy",
-      "Romance",
-      "Sci-Fi",
-    ];
+    items = await fetchAnime({ page });
   }
 
   if (type === "movie") {
-    items = await fetchMovies({ search, genres: genre, year, page });
-    genresList = ["28", "12", "16", "35", "80", "18", "10751"]; // TMDB genre IDs
+    items = await fetchMovies({ page });
   }
 
   if (type === "game") {
-    items = await fetchGames({ search, genres: genre, year, page });
-    genresList = [
-      "action",
-      "adventure",
-      "rpg",
-      "strategy",
-      "shooter",
-      "puzzle",
-      "sports",
-    ];
+    items = await fetchGames({ page });
   }
 
   if (type === "character") {
-    items = await fetchCharacters({ search, page });
-    genresList = ["Main", "Supporting", "Male", "Female", "Villain", "Hero"];
+    items = await fetchCharacters({ page });
   }
 
   const typeLabel =
@@ -111,15 +85,7 @@ export default async function TopicListPage({ params, searchParams }) {
     <div className="p-6 bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
       <div className="mb-6">
         {/* Container switches layout based on screen size */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          {/* ✅ Heading always on top-left */}
-          <h1 className="text-3xl font-bold">{typeLabel}</h1>
-
-          {/* ✅ FiltersBarWrapper moves below heading on mobile, right on desktop */}
-          <div className="w-full md:w-auto">
-            <FiltersBarWrapper genresList={genresList} />
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold">{typeLabel}</h1>
       </div>
 
       {/* ✅ Content Grid */}
@@ -143,9 +109,6 @@ export default async function TopicListPage({ params, searchParams }) {
           <div className="mt-6 flex justify-center gap-4">
             {page > 1 && (
               <form method="get">
-                <input type="hidden" name="search" value={search} />
-                <input type="hidden" name="genre" value={genre} />
-                <input type="hidden" name="year" value={year} />
                 <input type="hidden" name="page" value={page - 1} />
                 <button className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
                   ← Prev
@@ -155,9 +118,6 @@ export default async function TopicListPage({ params, searchParams }) {
 
             {items.length === 20 && (
               <form method="get">
-                <input type="hidden" name="search" value={search} />
-                <input type="hidden" name="genre" value={genre} />
-                <input type="hidden" name="year" value={year} />
                 <input type="hidden" name="page" value={page + 1} />
                 <button className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
                   Next →

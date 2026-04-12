@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Visit from "@models/visit";
+import Wheel from "@models/wheel";
 import { sessionUserId } from "@utils/SessionData";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
@@ -34,14 +35,17 @@ export async function POST(req) {
     // Optional: cast wheelId to ObjectId to avoid type mismatch
     const wheelObjectId = new mongoose.Types.ObjectId(wheelId);
 
-    // 4) Optional dedupe (uncomment if you want)
-    // const recent = await Visit.findOne({ userId, wheelId: wheelObjectId }).sort({ visitedAt: -1 });
-    // if (recent && Date.now() - recent.visitedAt.getTime() < 5 * 60_000) {
-    //   return NextResponse.json({ ok: true, deduped: true });
-    // }
+    // 4) Dedupe: skip if same user visited same wheel within last 5 minutes
+    const recent = await Visit.findOne({ userId, wheelId: wheelObjectId }).sort({ visitedAt: -1 }).lean();
+    if (recent && Date.now() - new Date(recent.visitedAt).getTime() < 5 * 60_000) {
+      return NextResponse.json({ ok: true, deduped: true });
+    }
 
-    // 5) Create visit
-    await Visit.create({ userId, wheelId: wheelObjectId });
+    // 5) Create visit + increment viewCount (atomic, single $inc operation)
+    await Promise.all([
+      Visit.create({ userId, wheelId: wheelObjectId }),
+      Wheel.updateOne({ _id: wheelObjectId }, { $inc: { viewCount: 1 } }),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

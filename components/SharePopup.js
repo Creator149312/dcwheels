@@ -11,6 +11,7 @@ import {
   FaTimes,
   FaLink,
 } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 export default function SharePopup({
   platforms = ["facebook", "twitter", "linkedin", "whatsapp", "telegram", "email"],
@@ -29,7 +30,7 @@ export default function SharePopup({
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(url);
-    alert("Link copied!");
+    toast.success("Link copied!");
   };
 
   const platformLinks = {

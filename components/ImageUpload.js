@@ -4,6 +4,7 @@ import { SegmentsContext } from "@app/SegmentsContext";
 import { useContext, useState } from "react";
 import { FaImage } from "react-icons/fa";
 import imageCompression from "browser-image-compression";
+import toast from "react-hot-toast";
 
 const regex = /src="([^"]+)"/;
 
@@ -42,7 +43,7 @@ const ImageUpload = ({ selectedIndex, segData }) => {
         console.log(error);
       }
     } else {
-      alert("Please select a valid image file.");
+      toast.error("Please select a valid image file.");
     }
   };
 
