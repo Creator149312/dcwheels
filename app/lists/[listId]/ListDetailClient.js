@@ -61,9 +61,18 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
   // ✅ Spin this list on the home wheel
   function spinList() {
     const segments = list.items
-      .map((i) => (i.type === "entity" ? i.name : i.word))
-      .filter(Boolean)
-      .map((text) => ({ text }));
+      .map((i) => {
+        if (i.type === "entity") {
+          return {
+            text: i.name,
+            entityType: i.entityType || null,
+            slug: i.slug || null,
+            image: i.image || null,
+          };
+        }
+        return i.word ? { text: i.word } : null;
+      })
+      .filter(Boolean);
 
     if (segments.length === 0) return;
 

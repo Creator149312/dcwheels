@@ -66,14 +66,18 @@ export const prepareData = (
         }
       }
     } else {
-      if (seg.includes("<img")) {
-        const regex = /src="([^"]+)"/;
-        const imgUrl = regex.exec(seg)[1];
+      const imgUri = segData[i].image
+        ? segData[i].image
+        : seg.includes("<img")
+        ? /src="([^"]+)"/.exec(seg)?.[1]
+        : null;
+
+      if (imgUri) {
         result.push({
           option: seg,
           style: { backgroundColor: col },
           image: {
-            uri: imgUrl,
+            uri: imgUri,
             sizeMultiplier: getImageSizeMultiplierValue(segData.length),
           },
           optionSize: 1,

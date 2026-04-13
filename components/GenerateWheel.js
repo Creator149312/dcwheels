@@ -8,6 +8,15 @@ import { useContext, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import toast from "react-hot-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "./ui/dialog";
+
 const HOME_URL = "https://www.spinpapa.com";
 
 const GenerateWheel = () => {
@@ -88,12 +97,16 @@ const GenerateWheel = () => {
 
       // Simulate progress to 100% as we render the list
       setProgress(100);
+      setLoadingTxt("Success! 🎉");
+      
+      setTimeout(() => {
+        setLoading(false);
+        handleClosePopup();
+      }, 1000);
     } catch (error) {
       console.error(error);
       setProgress(0); // Reset progress on error
-    } finally {
       setLoading(false);
-      handleClosePopup();
     }
   };
 
@@ -108,76 +121,70 @@ const GenerateWheel = () => {
   return (
     <>
       {isHomepage && (
-        <div className="relative">
-          {/* Button to open popup */}
-          <Button onClick={handleOpenPopup}>
-            <span>
+        <Dialog open={isPopupVisible} onOpenChange={setIsPopupVisible}>
+          <DialogTrigger asChild>
+            <Button onClick={handleOpenPopup} className="shadow-sm">
               <FaMagic size={15} className="mr-2" />
-            </span>
-            Smart Wheel
-          </Button>
-          {/* Popup Modal */}
-          {isPopupVisible && (
-            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-11/12 max-w-2xl shadow-lg overflow-y-auto space-y-6">
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Smart Wheel Builder
-                </h1>
+              Smart Wheel
+            </Button>
+          </DialogTrigger>
 
-                {/* Prompt input */}
-                <input
-                  type="text"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter your prompt in less than 25 words"
-                  className="w-full p-3 rounded-md bg-gray-100 dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+          <DialogContent className="sm:max-w-xl md:max-w-2xl bg-card border shadow-lg overflow-y-auto rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-foreground">
+                Smart Wheel Builder
+              </DialogTitle>
+            </DialogHeader>
 
-                {/* Loading spinner + progress bar */}
-                {loading && (
-                  <div className="flex flex-col items-center space-y-4">
-                    {/* Spinning image with height 50px (h-12 = 48px) */}
-                    <img
-                      src="/spin-wheel-logo.png"
-                      alt="Loading"
-                      className="h-12 animate-spin"
-                    />
+            <div className="space-y-6 py-4">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Enter your prompt in less than 25 words"
+                disabled={loading}
+                maxLength={100}
+                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
 
-                    {/* Progress bar */}
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-green-500 transition-all duration-500 ease-out"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {loadingTxt}
-                    </p>
+              {loading && (
+                <div className="flex flex-col items-center space-y-4">
+                  <img
+                    src="/spin-wheel-logo.png"
+                    alt="Loading"
+                    className="h-12 animate-spin"
+                  />
+                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500 ease-out"
+                      style={{ width: `${progress}%` }}
+                    ></div>
                   </div>
-                )}
-                {/* Buttons: Horizontal layout */}
-                <div className="flex justify-start space-x-4">
-                  <button
-                    onClick={handleGenerateClick}
-                    disabled={loading}
-                    className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 transition"
-                  >
-                    {loading ? "Generating.." : "Generate"}
-                  </button>
-                  {!loading && (
-                    <button
-                      onClick={handleClosePopup}
-                      className="py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition"
-                    >
-                      Close
-                    </button>
-                  )}
+                  <p className="text-sm text-muted-foreground">{loadingTxt}</p>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button
+                onClick={handleGenerateClick}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                {loading ? "Generating..." : "Generate"}
+              </Button>
+              {!loading && (
+                <Button
+                  variant="outline"
+                  onClick={handleClosePopup}
+                  className="w-full sm:w-auto"
+                >
+                  Close
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

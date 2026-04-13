@@ -1,15 +1,7 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useContext } from "react";
 import { useSession } from "next-auth/react";
-import apiConfig from "@utils/ApiUrlConfig";
-import {
-  sanitizeInputForDB,
-  validateListDescription,
-  validateListTitle,
-} from "@utils/Validator";
-import toast from "react-hot-toast";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,15 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import Tooltip from "./Tooltip";
-import { handleAction } from "@utils/HelperFunctions";
-
-function getQueryParams() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    type: params.get("type"),
-    id: params.get("id"),
-  };
-}
+import { useSaveWheel } from "./useSaveWheel";
 
 export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
@@ -42,339 +26,131 @@ export default function SaveWheelBtn({ segmentsData }) {
   const createdBy = useSession().data?.user?.email;
   const { segData, wheelData, coins, setCoins } = useContext(SegmentsContext);
 
-  const [isSaving, setisSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [showDataDialog, setShowDataDialog] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showDataDialog, setShowDataDialog] = useState(false);
+  const [selectedWheel, setSelectedWheel] = useState(null);
 
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-
-  const router = useRouter();
-
-  const fetchUsers = async () => {
-    if (createdBy !== undefined) {
-      try {
-        const response = await fetch(
-          `${apiConfig.apiUrl}/wheel/user/${createdBy}`,
-          { cache: "no-store" }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch lists");
-        }
-
-        const data = await response.json();
-        setUsers(data.lists);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
+  const {
+    savedWheels,
+    fetchSavedWheels,
+    saveWheel,
+    isSaving,
+    error,
+    setError,
+  } = useSaveWheel({ createdBy, segData, wheelData, coins, setCoins });
 
   const handleSubmit = async (e) => {
-    setError("");
     e.preventDefault();
-    setisSaving(true);
-
-    if (!title || !description || !segData) {
-      setError("Title, description and Data are required.");
-      setisSaving(false);
-      return;
-    }
-
-    let vlt = validateListTitle(title);
-    let vld = validateListDescription(description);
-
-    if (vlt.length !== 0) {
-      setError(vlt);
-      setisSaving(false);
-      return;
-    }
-    if (vld.length !== 0) {
-      setError(vld);
-      setisSaving(false);
-      return;
-    }
-
-    try {
-      const titleToStore = sanitizeInputForDB(title);
-      const descriptionToStore = sanitizeInputForDB(description);
-
-      if (selectedUser) {
-        const data = [...segData];
-        const res = await fetch(
-          `${apiConfig.apiUrl}/wheel/${selectedUser._id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-type": "application/json",
-            },
-            body: JSON.stringify({
-              title: titleToStore,
-              description: descriptionToStore,
-              data,
-              wheelData,
-            }),
-          }
-        );
-
-        let resObj = await res.json();
-
-        if (resObj?.error) {
-          setError("Failed to Update a wheel");
-          toast.error("Failed to Update Wheel");
-        } else {
-          handleAction({
-            actionType: "use",
-            amount: parseInt(10),
-            coins,
-            setCoins,
-            event: e,
-          });
-          router.push("/dashboard");
-        }
-      } else {
-        const data = [...segData];
-        const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
-          method: "POST",
-          headers: {
-            "Content-type": "application/json",
-          },
-          body: JSON.stringify({
-            title: titleToStore,
-            description: descriptionToStore,
-            data,
-            createdBy,
-            wheelData,
-          }),
-        });
-
-        let resObj = await res.json();
-        // console.log("Res Obj = ", resObj);
-
-        if (resObj?.error) {
-          setError("Failed to create a wheel");
-          toast.error("Failed to Create Wheel");
-        } else {
-          router.push("/dashboard");
-        }
-      }
-    } catch (error) {
-      setError(error);
-    } finally {
-      setisSaving(false);
+    const success = await saveWheel({ title, description, selectedWheel, e });
+    if (success) {
+      setShowDataDialog(false);
     }
   };
 
-  const handleSubmitWithUrlParams = async (e) => {
-    setError("");
-    e.preventDefault();
-    setisSaving(true);
-
-    if (!title || !description || !segData) {
-      setError("Title, description and Data are required.");
-      setisSaving(false);
-      return;
-    }
-
-    let vlt = validateListTitle(title);
-    let vld = validateListDescription(description);
-
-    const { id, type } = getQueryParams();
-
-    // ✅ Conditionally construct relatedTo
-    let relatedTo;
-    if (id && type && ["anime", "movie", "game"].includes(type)) {
-      relatedTo = { type, id };
-    }
-
-    if (vlt.length !== 0) {
-      setError(vlt);
-      setisSaving(false);
-      return;
-    }
-
-    if (vld.length !== 0) {
-      setError(vld);
-      setisSaving(false);
-      return;
-    }
-
-    try {
-      const titleToStore = sanitizeInputForDB(title);
-      const descriptionToStore = sanitizeInputForDB(description);
-      const data = [...segData];
-
-      if (selectedUser) {
-        // ✅ Update flow
-        const body = {
-          title: titleToStore,
-          description: descriptionToStore,
-          data,
-          wheelData,
-        };
-
-        if (relatedTo) {
-          body.relatedTo = relatedTo;
-        }
-
-        const res = await fetch(
-          `${apiConfig.apiUrl}/wheel/${selectedUser._id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-type": "application/json",
-            },
-            body: JSON.stringify(body),
-          }
-        );
-
-        const resObj = await res.json();
-
-        if (resObj?.error) {
-          setError("Failed to Update a wheel");
-          toast.error("Failed to Update Wheel");
-        } else {
-          handleAction({
-            actionType: "use",
-            amount: parseInt(10),
-            coins,
-            setCoins,
-            event: e,
-          });
-          router.push("/dashboard");
-        }
-      } else {
-        // ✅ Create flow
-        const body = {
-          title: titleToStore,
-          description: descriptionToStore,
-          data,
-          createdBy,
-          wheelData,
-        };
-
-        if (relatedTo) {
-          body.relatedTo = relatedTo;
-        }
-
-        const res = await fetch(`${apiConfig.apiUrl}/wheel`, {
-          method: "POST",
-          headers: {
-            "Content-type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
-
-        const resObj = await res.json();
-
-        if (resObj?.error) {
-          setError("Failed to create a wheel");
-          toast.error("Failed to Create Wheel");
-        } else {
-          router.push("/dashboard");
-        }
-      }
-    } catch (error) {
-      setError(error);
-    } finally {
-      setisSaving(false);
-    }
-  };
-
-  const handleUserChange = (e) => {
-    const user = users.find((user) => user._id === e.target.value);
-    setSelectedUser(user);
-    setTitle(user.title);
-    setDescription(user.description);
+  const handleWheelChange = (e) => {
+    const wheel = savedWheels.find((w) => w._id === e.target.value);
+    setSelectedWheel(wheel);
+    setTitle(wheel ? wheel.title : "New Wheel");
+    setDescription(wheel ? wheel.description : "This is my new wheel");
+    setError(null);
   };
 
   return (
-    <Dialog>
+    <Dialog open={showDataDialog} onOpenChange={setShowDataDialog}>
       <DialogTrigger asChild>
-        <div className="flex flex-col items-center justify-center py-2">
+        <div className="flex flex-col items-center justify-center py-2 h-7 w-auto">
           <Tooltip text="Save Wheel on Cloud">
             <Button
-              size={"lg"}
-              variant={"default"}
+              size="sm"
+              variant="default"
               disabled={isSaving}
-              onClick={fetchUsers}
-              className="mx-1 p-2 text-sm rounded-md focus:outline-none"
+              onClick={() => {
+                setShowDataDialog(true);
+                fetchSavedWheels();
+              }}
+              className="px-4 py-1 flex h-9 items-center gap-2 text-sm shadow-sm"
             >
               {isSaving ? (
                 "Saving..."
               ) : (
                 <>
-                  Save
-                  <FaCloudUploadAlt size={20} className="ml-1" />
+                  Save <FaCloudUploadAlt size={18} />
                 </>
               )}
             </Button>
           </Tooltip>
         </div>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+
+      <DialogContent className="sm:max-w-md bg-card rounded-xl">
         <DialogHeader>
-          <DialogTitle>Wheel Data</DialogTitle>
-          <DialogDescription>Add wheel title and description</DialogDescription>
+          <DialogTitle>Save Wheel</DialogTitle>
+          <DialogDescription>
+            Store your wheel securely on the cloud.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmitWithUrlParams}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="update-wheel" className="text-sm font-medium">
                 Update Existing Wheel
               </Label>
               <select
-                value={selectedUser?._id || ""}
-                onChange={handleUserChange}
-                className="col-span-3"
+                id="update-wheel"
+                value={selectedWheel?._id || ""}
+                onChange={handleWheelChange}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="" disabled>
-                  Select a Wheel to update
+                  Select a wheel to overwrite...
                 </option>
-                {users.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {user.title}
+                {savedWheels.map((wheel) => (
+                  <option key={wheel._id} value={wheel._id}>
+                    {wheel.title}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name Your Wheel
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Wheel Title
               </Label>
               <Input
                 id="name"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="col-span-3"
+                placeholder="Enter a catchy title"
+                maxLength={45}
+                className="h-10 w-full"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium">
                 Description
               </Label>
               <Textarea
                 id="description"
                 value={description}
-                placeholder="Enter Wheel Description in about 75 to 100 words"
-                className="col-span-3"
+                maxLength={200}
+                placeholder="What is this wheel for? (75 - 100 words)"
+                className="min-h-[100px] w-full resize-none"
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <div className="flex flex-col align-middle">
-              <Button type="submit" size={"lg"} variant={"default"}>
-                {isSaving ? "Saving..." : "Save Wheel"}
-              </Button>
-              <p className="text-rose-600 my-2">{error ? error : ""}</p>
-            </div>
+          <DialogFooter className="mt-6 flex sm:justify-between items-center">
+            {error && (
+              <p className="text-sm text-destructive flex-1 pr-4">{error}</p>
+            )}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="w-full sm:w-auto"
+            >
+              {isSaving ? "Saving..." : selectedWheel ? "Update Wheel" : "Save as New"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

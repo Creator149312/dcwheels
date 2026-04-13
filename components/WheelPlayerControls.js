@@ -7,7 +7,6 @@ import {
   MdFullscreenExit,
   MdEdit,
 } from "react-icons/md";
-import { useState } from "react";
 
 export default function WheelPlayerControls({
   handleSpinClick,
@@ -19,27 +18,11 @@ export default function WheelPlayerControls({
   saveWheelData,
   currentPath,
   router,
+  muted,
+  setMuted,
 }) {
-  const [volume, setVolume] = useState(100);
-  const [muted, setMuted] = useState(false);
-
   const toggleMute = () => {
     setMuted((prev) => !prev);
-    if (!muted && volume > 0) {
-      setVolume(0);
-    } else if (muted && volume === 0) {
-      setVolume(100);
-    }
-  };
-
-  const handleVolumeChange = (e) => {
-    const newVolume = Number(e.target.value);
-    setVolume(newVolume);
-    if (newVolume === 0) {
-      setMuted(true);
-    } else {
-      setMuted(false);
-    }
   };
 
   return (
@@ -54,27 +37,14 @@ export default function WheelPlayerControls({
           {mustSpin ? <MdPause size={24} /> : <MdPlayArrow size={24} />}
         </button>
 
-        {/* Volume + Mute/Unmute */}
-        {/* <div className="flex items-center gap-2">
-          <button
-            onClick={toggleMute}
-            className="p-2 rounded hover:bg-white/20 transition"
-          >
-            {muted || volume === 0 ? (
-              <MdVolumeOff size={24} />
-            ) : (
-              <MdVolumeUp size={24} />
-            )}
-          </button>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            className="w-24 accent-red-500 cursor-pointer"
-            onChange={handleVolumeChange}
-          />
-        </div> */}
+        {/* Mute/Unmute */}
+        <button
+          onClick={toggleMute}
+          className="p-2 rounded hover:bg-white/20 transition"
+          title={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? <MdVolumeOff size={24} /> : <MdVolumeUp size={24} />}
+        </button>
       </div>
 
       {/* Right Controls: Fullscreen */}

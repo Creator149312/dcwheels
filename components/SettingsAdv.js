@@ -1,7 +1,6 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import { AiOutlineClose } from "react-icons/ai"; // Close icon for modal
 import { FaTools } from "react-icons/fa";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
@@ -330,6 +329,15 @@ const themes = [
  * @returns a popup window for all the wheel settings like theme, spin duration and max number of segments to show
  */
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "./ui/dialog";
+
 const SettingsAdv = ({ advOptions }) => {
   const {
     handleWheelSettingsChange,
@@ -432,202 +440,183 @@ const SettingsAdv = ({ advOptions }) => {
   }, [wheelData]);
 
   return (
-    <Tooltip text="Customize Wheel">
-      <Button
-        className="my-1 px-2 py-0 h-7 text-xs"
-        onClick={() => setIsOpen(true)}
-      >
-        <FaTools size={20} />
-      </Button>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Tooltip text="Customize Wheel">
+        <DialogTrigger asChild>
+          <Button className="my-1 px-2 py-0 h-7 text-xs">
+            <FaTools size={20} />
+          </Button>
+        </DialogTrigger>
+      </Tooltip>
 
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-10 flex justify-center items-center">
-            <div className="max-w-[90vw] bg-white p-6 rounded-lg dark:bg-gray-800 dark:text-white">
-              <div className="flex justify-end">
-                <button
-                  onClick={handleClose}
-                  className="text-gray-500 mb-2 dark:text-gray-400"
-                >
-                  <AiOutlineClose size={20} />
-                </button>
-              </div>
-              <Tabs defaultValue="appearance" className="">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
-                </TabsList>
-                <TabsContent value="appearance">
-                  <div>
-                    {/* Theme Selection with Drop-down */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">Select Theme</h3>
-                      <select
-                        onChange={(e) => {
-                          const theme =
-                            e.target.value === "Current"
-                              ? currentTheme
-                              : themes.find((t) => t.name === e.target.value);
-                          handleThemeChange(theme);
-                        }}
-                        value={selectedTheme.name}
-                        className="mt-2 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                      >
-                        <option
-                          key={currentTheme.name}
-                          value={currentTheme.name}
-                        >
-                          {" "}
-                          {currentTheme.name}{" "}
-                        </option>
-                        {themes.map((theme) => (
-                          <option key={theme.name} value={theme.name}>
-                            {theme.name}
-                          </option>
-                        ))}
-                      </select>
+      <DialogContent className="max-w-[90vw] md:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Wheel Settings</DialogTitle>
+        </DialogHeader>
 
-                      {/* Grid of colors for the selected theme */}
-                      <div className="mt-2 grid grid-cols-5 gap-2">
-                        {selectedTheme.colors.map((color, index) => (
-                          <div
-                            key={index}
-                            className="h-8 rounded-md"
-                            style={{
-                              backgroundColor: color,
-                              border: "1px solid #ddd",
-                            }}
-                          ></div>
-                        ))}
-                      </div>
-                    </div>
+        <Tabs defaultValue="appearance" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-                    {/* Range Input for Size Adjustment */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">
-                        Max number of Options on Wheel - {maxOptions}
-                      </h3>
-                      <input
-                        type="range"
-                        min="4"
-                        max={MAX_OPTIONS_ON_WHEEL}
-                        step="1"
-                        value={maxOptions}
-                        onChange={onMaxOptionsChange}
-                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
-                      />
-                      <div className="flex justify-between text-sm mt-2">
-                        <span>4</span>
-                        <span>100</span>
-                      </div>
-                    </div>
+          <TabsContent value="appearance" className="space-y-4 pt-4">
+            {/* Theme Selection with Drop-down */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium leading-none">Select Theme</h3>
+              <select
+                onChange={(e) => {
+                  const theme =
+                    e.target.value === "Current"
+                      ? currentTheme
+                      : themes.find((t) => t.name === e.target.value);
+                  handleThemeChange(theme);
+                }}
+                value={selectedTheme.name}
+                className="w-full flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option key={currentTheme.name} value={currentTheme.name}>
+                  {currentTheme.name}
+                </option>
+                {themes.map((theme) => (
+                  <option key={theme.name} value={theme.name}>
+                    {theme.name}
+                  </option>
+                ))}
+              </select>
 
-                    {/* Range Input for Inner Radius Adjustment */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">
-                        Inner Radius - {innerRadius}
-                      </h3>
-                      <input
-                        type="range"
-                        min="4"
-                        max={30}
-                        step="1"
-                        value={innerRadius}
-                        onChange={onInnerRadiusChange}
-                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
-                      />
-                      <div className="flex justify-between text-sm mt-2">
-                        <span>4</span>
-                        <span>30 </span>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="settings">
-                  <div>
-                    {/* Range Input for Size Adjustment */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">
-                        Spin Duration - {spinDuration}
-                      </h3>
-                      <input
-                        type="range"
-                        min="1"
-                        max={MAX_SPIN_TIME}
-                        step="1"
-                        value={spinDuration}
-                        onChange={onSpinDurationChange}
-                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
-                      />
-                      <div className="flex justify-between text-sm mt-2">
-                        <span>Fast</span>
-                        <span>Slow</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-row justify-between">
-                      <h4 className="text-lg font-medium">
-                        Auto Remove Winner
-                      </h4>
-                      <input
-                        type="checkbox"
-                        checked={rmvWinnerAfterSpin}
-                        onChange={onRmvWinnerAfterSpinChange} // Update visibility for the segment
-                        className="w-8 dark:bg-gray-700 dark:ring-2 dark:ring-gray-600"
-                      />
-                    </div>
-
-                    <div className="mt-4">
-                      <h4 className="text-lg font-medium">
-                        Display Popup with Message
-                      </h4>
-                      <input
-                        type="text"
-                        value={customPopupDisplayMessage}
-                        onChange={onCustomPopupDisplayMessageChange} // Update text for the segment
-                        className="mt-2 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                        placeholder="Enter Message"
-                      />
-                    </div>
-                    {/* Range Input for Size Adjustment */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium">
-                        Font Size - {fontSize}
-                      </h3>
-                      <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        step="1"
-                        value={fontSize}
-                        onChange={onFontSizeChange}
-                        className="w-full mt-2 h-2 bg-gray-200 rounded-lg dark:bg-gray-600"
-                      />
-                      <div className="flex justify-between text-sm mt-2">
-                        <span>1</span>
-                        <span>50</span>
-                      </div>
-                    </div>
-
-                    {/* Additional Settings (e.g., Image Upload, etc.) */}
-                    {/* Uncomment and implement as necessary */}
-                  </div>
-                </TabsContent>
-              </Tabs>
-              {/* Cancel and Apply Buttons */}
-              <div className="mt-6 flex justify-end space-x-4">
-                <Button
-                  onClick={handleApply}
-                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                >
-                  Apply
-                </Button>
+              {/* Grid of colors for the selected theme */}
+              <div className="grid grid-cols-5 gap-2">
+                {selectedTheme.colors.map((color, index) => (
+                  <div
+                    key={index}
+                    className="h-8 rounded-md border"
+                    style={{
+                      backgroundColor: color,
+                    }}
+                  ></div>
+                ))}
               </div>
             </div>
-          </div>
-        </>
-      )}
-    </Tooltip>
+
+            {/* Range Input for Size Adjustment */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium leading-none">
+                Max Options Displayed ({maxOptions})
+              </h3>
+              <input
+                type="range"
+                min="4"
+                max={MAX_OPTIONS_ON_WHEEL}
+                step="1"
+                value={maxOptions}
+                onChange={onMaxOptionsChange}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>4</span>
+                <span>{MAX_OPTIONS_ON_WHEEL}</span>
+              </div>
+            </div>
+
+            {/* Range Input for Inner Radius Adjustment */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium leading-none">
+                Inner Radius ({innerRadius})
+              </h3>
+              <input
+                type="range"
+                min="0"
+                max={50}
+                step="1"
+                value={innerRadius}
+                onChange={onInnerRadiusChange}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0</span>
+                <span>50</span>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4 pt-4">
+            {/* Range Input for Size Adjustment */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium leading-none">
+                Spin Duration ({spinDuration}s)
+              </h3>
+              <input
+                type="range"
+                min="1"
+                max={MAX_SPIN_TIME}
+                step="1"
+                value={spinDuration}
+                onChange={onSpinDurationChange}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Fast</span>
+                <span>Slow</span>
+              </div>
+            </div>
+
+            <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-medium">Auto Remove Winner</h4>
+                <div className="text-xs text-muted-foreground">
+                  Remove the winning segment from next spin
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={rmvWinnerAfterSpin}
+                onChange={onRmvWinnerAfterSpinChange}
+                className="w-4 h-4 cursor-pointer"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium leading-none">
+                Applaud Message
+              </h4>
+              <input
+                type="text"
+                value={customPopupDisplayMessage}
+                onChange={onCustomPopupDisplayMessageChange}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="The Winner is..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium leading-none">
+                Font Size ({fontSize})
+              </h3>
+              <input
+                type="range"
+                min="10"
+                max="50"
+                step="1"
+                value={fontSize}
+                onChange={onFontSizeChange}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Small</span>
+                <span>Large</span>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter className="mt-6">
+          <Button onClick={handleApply}>
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

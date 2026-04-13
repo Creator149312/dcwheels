@@ -9,20 +9,19 @@ import { useRouter, usePathname } from "next/navigation";
 import MobileSearchBar from "@components/MobileSearchBar";
 import { BiSidebar } from "react-icons/bi";
 import { GiCartwheel } from "react-icons/gi";
+import CreateWheelModal from "@components/CreateWheelModal";
 
 const Navbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const { status, data: session } = useSession();
   const router = useRouter();
   const currentPath = usePathname();
 
-  const handleNewWheelClick = (event) => {
+  const handleCreateClick = (event) => {
     event.preventDefault();
-    localStorage.removeItem("SpinpapaWheel");
     setOpen(false);
-    if (currentPath === "/") {
-      window.location.reload();
-    } else router.push("/");
+    setCreateModalOpen(true);
   };
 
   return (
@@ -62,7 +61,7 @@ const Navbar = ({ onToggleSidebar }) => {
           {/* RESTORED: Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1">
             <button
-              onClick={handleNewWheelClick}
+              onClick={handleCreateClick}
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
             >
               <PlusCircle size={18} />
@@ -137,9 +136,9 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
 
         <nav className="flex flex-col gap-3">
-          <a href="/" onClick={handleNewWheelClick} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20">
+          <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 w-full">
              <PlusCircle size={22} /> Create New Wheel
-          </a>
+          </button>
           <a href="/recommendation" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
              <Sparkles className="text-yellow-500" size={22} /> Surprise Me
           </a>
@@ -155,6 +154,10 @@ const Navbar = ({ onToggleSidebar }) => {
           </div>
         </nav>
       </div>
+      <CreateWheelModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </nav>
   );
 };

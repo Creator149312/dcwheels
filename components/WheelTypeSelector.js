@@ -18,12 +18,26 @@ const WheelTypeSelector = ({
     setSelectedType(event.target.value);
   };
 
+  const labels = {
+    basic: "Basic",
+    advanced: "Advanced",
+    learn: "Learn",
+    quiz: "Quiz",
+  };
+
   return (
-    <div>
-      <select value={selectedType} onChange={handleChange}>
+    <div className="flex items-center gap-2 my-2">
+      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+        Wheel Type
+      </label>
+      <select
+        value={selectedType}
+        onChange={handleChange}
+        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+      >
         {types.map((type, index) => (
           <option key={index} value={type}>
-            {type}
+            {labels[type] ?? type}
           </option>
         ))}
       </select>

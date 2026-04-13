@@ -103,6 +103,13 @@ const containsDuplicates = (element) =>
 
               {/* Winner Display */}
               <div>
+                {winner?.image && (
+                  <img
+                    src={winner.image}
+                    alt={winner.text}
+                    className="w-28 h-40 object-cover rounded-lg mx-auto mb-3 shadow-md"
+                  />
+                )}
                 {wheelType === "quiz" && winner?.question ? (
                   <MCQQuestion questionData={winner.question} />
                 ) : (
@@ -139,6 +146,15 @@ const containsDuplicates = (element) =>
               >
                 Share
               </Button> */}
+
+              {winner?.slug && winner?.entityType && (
+                <Button
+                  onClick={() => window.location.href = `/${winner.entityType}/${winner.slug}`}
+                  variant="default"
+                >
+                  Explore
+                </Button>
+              )}
 
               {wheelType !== "quiz" && !wheelData.removeWinnerAfterSpin && (
                 <>

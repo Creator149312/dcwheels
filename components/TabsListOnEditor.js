@@ -5,8 +5,6 @@ import {
   FaEye,
   FaEyeSlash,
   FaPencilRuler,
-  FaExpand,
-  FaRegWindowClose,
 } from "react-icons/fa";
 import Tooltip from "./Tooltip";
 import SettingsAdv from "./SettingsAdv";
@@ -16,8 +14,6 @@ const TabsListOnEditor = ({
   resultList,
   isVisible,
   toggleVisibility,
-  handleToggle,
-  isFullScreen,
   advOptions
 }) => {
   return (
@@ -43,15 +39,6 @@ const TabsListOnEditor = ({
 
         {/* <Settings /> */}
         <SettingsAdv advOptions={advOptions}/>
-        {/* Button to Handle FullScreen Toggle */}
-        <Tooltip text="Fullscreen">
-          <Button
-            onClick={handleToggle}
-            className={`my-1 px-2 py-0 h-7 text-xs`}
-          >
-            <FaExpand size={20} />
-          </Button>
-        </Tooltip>
       </div>
     </>
   );
