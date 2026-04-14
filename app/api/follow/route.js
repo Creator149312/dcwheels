@@ -6,8 +6,13 @@ import { connectMongoDB } from "@/lib/mongodb";
 import Follow from "@/models/follow";
 import User from "@/models/user";
 import mongoose from "mongoose";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 export async function POST(req) {
+  const ip = getIpFromRequest(req);
+  const { limited, retryAfter } = await checkRateLimit(ip, "/api/follow");
+  if (limited) return rateLimitResponse(retryAfter);
+
   try {
     await connectMongoDB();
 

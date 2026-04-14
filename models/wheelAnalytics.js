@@ -3,15 +3,25 @@ import mongoose, { Schema, models } from "mongoose";
 //the following data is mainly used for wheelAnalyticss which are indexed /wheels
 const wheelAnalyticsSchema = new Schema(
   {
-    views: { type: Number, required: true },
-    likes: { type: Number, required: true },
-    dislikes: { type: Number, required: true },
-    wheel: { type: Schema.Types.ObjectId, ref: "Wheel" },
+    view_count: { type: Number, required: true, default: 0 },
+    spin_count: { type: Number, required: true, default: 0 },
+    likes: { type: Number, required: true, default: 0 },
+    dislikes: { type: Number, required: true, default: 0 },
+    wheel: {
+      type: Schema.Types.ObjectId,
+      ref: "Wheel",
+      required: true,
+      unique: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+wheelAnalyticsSchema.index({ view_count: -1 });
+wheelAnalyticsSchema.index({ spin_count: -1 });
 
 const WheelAnalytics = models.WheelAnalytics || mongoose.model("WheelAnalytics", wheelAnalyticsSchema);
 

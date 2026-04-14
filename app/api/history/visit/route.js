@@ -7,8 +7,13 @@ import { sessionUserId } from "@utils/SessionData";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User from "@models/user";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 export async function POST(req) {
+  const ip = getIpFromRequest(req);
+  const { limited, retryAfter } = await checkRateLimit(ip, "/api/history/visit");
+  if (limited) return rateLimitResponse(retryAfter);
+
   try {
     await connectMongoDB();
 

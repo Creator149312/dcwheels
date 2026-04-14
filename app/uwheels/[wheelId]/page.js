@@ -5,6 +5,8 @@ import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
+import { headers } from "next/headers";
+import { incrementWheelViewCount, shouldTrackView } from "@lib/wheelAnalytics";
 
 const adminCommonID = "gauravsingh9314@gmail.com";
 
@@ -97,6 +99,11 @@ export default async function Page({ params }) {
   const session = await getServerSession(authOptions);
   const wordsList = await fetchWheelData(params.wheelId);
 
+  const requestHeaders = headers();
+  if (wordsList && shouldTrackView(requestHeaders)) {
+    await incrementWheelViewCount(params.wheelId);
+  }
+
   const relatedWheels =
     wordsList?.tags && wordsList.tags.length > 0
       ? await fetchRelatedWheels(wordsList.tags)
@@ -110,6 +117,7 @@ export default async function Page({ params }) {
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={wordsList?.wheelData ?? null}
             relatedWheels={relatedWheels}
+            wheelId={params.wheelId}
           />
 
           <WheelInfoSection

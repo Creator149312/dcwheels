@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
 import { FiZap } from "react-icons/fi";
 import SharePopup from "@components/SharePopup";
@@ -10,6 +10,8 @@ import EditListModal from "@components/lists/EditListModal";
 
 export default function ListDetailClient({ initialList, listId, isOwner }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isContentMode = searchParams.get("mode") === "content";
 
   const [list, setList] = useState(initialList);
   const [listMenuOpen, setListMenuOpen] = useState(false);
@@ -155,6 +157,21 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Content Mode Banner */}
+      {isContentMode && (
+        <div className="mb-6 flex items-center gap-4 rounded-xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+          <FiZap size={18} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-sm font-medium flex-1">You&apos;re in Content Wheel mode. Click <strong>Spin this List</strong> below to load it into the wheel.</span>
+          <button
+            onClick={spinList}
+            disabled={list.items.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
+          >
+            <FiZap size={14} /> Spin Now
+          </button>
         </div>
       )}
 

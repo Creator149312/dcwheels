@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import MCQQuestion from "@app/test/questions/MCQQuestion";
 import PostForm from "./posts/PostForm";
+import ShareableResultCard from "./ShareableResultCard";
 
 const WinnerPopup = ({
   winner,
@@ -126,6 +127,10 @@ const containsDuplicates = (element) =>
                 )}
               </div>
             </div>
+
+            {wheelType !== "quiz" && (
+              <ShareableResultCard winner={winner} wheelTitle={wheelData?.title} />
+            )}
 
             {/* Action Buttons */}
             <div className="flex justify-end flex-wrap gap-2">

@@ -164,6 +164,7 @@ function HistorySection() {
 export default function UserDashboard() {
   const { status, data: session } = useSession();
   const router = useRouter();
+  const isAdmin = session?.user?.email === "gauravsingh9314@gmail.com";
 
   if (status === "loading") {
     return (
@@ -197,13 +198,23 @@ export default function UserDashboard() {
             Hey, {name} 👋
           </h1>
         </div>
-        <a
-          href="/dashboard/account"
-          className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5"
-        >
-          <Settings size={13} />
-          Settings
-        </a>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <a
+              href="/dashboard/admin/preview-generator"
+              className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
+            >
+              Preview Generator
+            </a>
+          )}
+          <a
+            href="/dashboard/account"
+            className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5"
+          >
+            <Settings size={13} />
+            Settings
+          </a>
+        </div>
       </div>
 
       {/* Stacked sections */}

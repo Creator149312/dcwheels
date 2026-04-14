@@ -5,8 +5,13 @@ import { connectMongoDB } from "@/lib/mongodb";
 import ReactionTest from "@models/reactiontest";
 import Wheel from "@models/wheel";
 import User from "@models/user";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 export async function PATCH(req) {
+  const ip = getIpFromRequest(req);
+  const { limited, retryAfter } = await checkRateLimit(ip, "/api/reactiontest/toggle");
+  if (limited) return rateLimitResponse(retryAfter);
+
   try {
     await connectMongoDB();
     const session = await getServerSession(authOptions);

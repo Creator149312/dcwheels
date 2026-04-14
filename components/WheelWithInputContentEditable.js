@@ -19,6 +19,7 @@ const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
   relatedWheels,
+  wheelId = null,
 }) => {
   const { wheelData, segData, setSegData, data, MAX_SPIN_TIME, wheelType } =
     useContext(SegmentsContext);
@@ -42,7 +43,7 @@ const WheelWithInputContentEditable = ({
     handleSpinClick,
     handleStopSpinning,
     saveWheelData,
-  } = useWheelState({ newSegments, wheelPresetSettings });
+  } = useWheelState({ newSegments, wheelPresetSettings, wheelId });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const wheelContainerRef = useRef(null);

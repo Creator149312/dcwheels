@@ -12,7 +12,7 @@ import { usePathname } from "next/navigation";
 import { useWheelSounds } from "./useWheelSounds";
 import toast from "react-hot-toast";
 
-export function useWheelState({ newSegments, wheelPresetSettings }) {
+export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
   const {
     resultList,
     setResultList,
@@ -27,6 +27,8 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
     wheelTitle,
     wheelDescription,
     advancedOptions,
+    wheelType,
+    setWheelType,
   } = useContext(SegmentsContext);
 
   const currentPath = usePathname();
@@ -48,6 +50,7 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
     const wheelObject = {
       title: wheelTitle || "Default Title",
       description: wheelDescription || "Default Description",
+      type: wheelType || "basic",
       data: segData,
       wheelData: wheelData,
     };
@@ -78,7 +81,11 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
     if (!mustSpin) {
       setShowOverlay(false);
       setMustSpin(true);
-      startTicking((wheelData.spinDuration / MAX_SPIN_TIME) * 1000 * MAX_SPIN_TIME);
+      // react-custom-roulette total animation = (2600 + 750 + 8000) * spinDurationProp
+      // spinDurationProp = wheelData.spinDuration / MAX_SPIN_TIME
+      const spinDurationProp = wheelData.spinDuration / MAX_SPIN_TIME;
+      const actualSpinMs = 11350 * spinDurationProp;
+      startTicking(actualSpinMs);
       const newPrizeNumber = advancedOptions
         ? pickRandomWinner()
         : Math.floor(
@@ -113,6 +120,25 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
       setWinner(segData[prizeNumber]);
       setResultList([...resultList, segData[prizeNumber]]);
     }
+
+    if (wheelId) {
+      fetch("/api/wheel-analytics/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wheelId }),
+        keepalive: true,
+      })
+        .then((res) => {
+          if (res.ok && typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("wheel:spin-counted", { detail: { wheelId } })
+            );
+          }
+        })
+        .catch(() => {
+          // Silent analytics failure by design.
+        });
+    }
   };
 
   // Sync data when segments/wheel settings change
@@ -127,8 +153,9 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
     );
     setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
     setSegTxtfontSize(calculateFontSizeOfText(maxlengthOfSegmentText, segData));
-    if (localStorageWheel !== null) saveWheelData(segData, wheelData);
-  }, [segData, wheelData, advancedOptions]);
+    // Save on home page always so wheel type and data survive a refresh
+    if (currentPath === "/") saveWheelData(segData, wheelData);
+  }, [segData, wheelData, advancedOptions, wheelType]);
 
   // Initialize from localStorage or props on mount
   useEffect(() => {
@@ -139,6 +166,7 @@ export function useWheelState({ newSegments, wheelPresetSettings }) {
       if (wheelFromBrowserStorage !== null) {
         const localSegData = wheelFromBrowserStorage.data;
         const localWheelData = wheelFromBrowserStorage.wheelData;
+        if (wheelFromBrowserStorage.type) setWheelType(wheelFromBrowserStorage.type);
         setSegData(localSegData);
         setWheelData(localWheelData);
 

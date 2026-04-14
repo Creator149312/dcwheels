@@ -1,5 +1,6 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import {
   fetchRelatedWheels,
@@ -8,6 +9,7 @@ import {
 import WheelInfoSection from "@components/WheelMeta";
 import { getServerSession } from "@node_modules/next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { incrementWheelViewCount, shouldTrackView } from "@lib/wheelAnalytics";
 
 export const revalidate = false;
 
@@ -42,6 +44,11 @@ export default async function Home({ params }) {
 
   if (pageData === undefined) redirect("/");
 
+  const requestHeaders = headers();
+  if (shouldTrackView(requestHeaders)) {
+    await incrementWheelViewCount(pageData.wheel._id.toString());
+  }
+
   // remove username fetching so that I can reduce DB queries
   // const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();
   // if (user) username = user.name;
@@ -56,6 +63,7 @@ export default async function Home({ params }) {
           newSegments={ensureArrayOfObjects(pageData.wheel.data)}
           wheelPresetSettings={pageData.wheel.wheelData}
           relatedWheels={relatedWheels}
+          wheelId={pageData.wheel._id.toString()}
         />
       </div>
 

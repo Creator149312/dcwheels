@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { FaComment } from "react-icons/fa";
@@ -20,6 +21,49 @@ export default function WheelInfoSection({
   pageData = null,
 }) {
   const openLoginPrompt = useLoginPrompt();
+  const [engagement, setEngagement] = useState({ view_count: 0, spin_count: 0 });
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadAnalytics() {
+      try {
+        const res = await fetch(`/api/wheel-analytics/${wheelId}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!ignore) {
+          setEngagement({
+            view_count: json?.analytics?.view_count || 0,
+            spin_count: json?.analytics?.spin_count || 0,
+          });
+        }
+      } catch {
+        // Silent analytics failure by design.
+      }
+    }
+
+    loadAnalytics();
+
+    const onSpinCounted = (event) => {
+      const eventWheelId = event?.detail?.wheelId;
+      if (eventWheelId !== wheelId) return;
+      setEngagement((prev) => ({
+        ...prev,
+        spin_count: (prev.spin_count || 0) + 1,
+      }));
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("wheel:spin-counted", onSpinCounted);
+    }
+
+    return () => {
+      ignore = true;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("wheel:spin-counted", onSpinCounted);
+      }
+    };
+  }, [wheelId]);
+
   // const [username, setUsername] = useState("");
 
   // useEffect(() => {
@@ -93,6 +137,10 @@ export default function WheelInfoSection({
       {/* Date */}
       <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line mb-4">
         {timeAgo(wordsList.createdAt)}
+      </p>
+
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        Viewed {engagement.view_count.toLocaleString()} times • Spun {engagement.spin_count.toLocaleString()} times
       </p>
 
       {/* Description */}

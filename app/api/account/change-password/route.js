@@ -4,8 +4,13 @@ import { connectMongoDB } from "@lib/mongodb";
 import User from "@models/user";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 export async function POST(req) {
+  const ip = getIpFromRequest(req);
+  const { limited, retryAfter } = await checkRateLimit(ip, "/api/account/change-password");
+  if (limited) return rateLimitResponse(retryAfter);
+
   await connectMongoDB();
 
   const session = await getServerSession(authOptions);

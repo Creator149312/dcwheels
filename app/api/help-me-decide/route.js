@@ -19,7 +19,7 @@ export async function GET(req) {
       : 20;
 
     const currentUser = session?.user?.email
-      ? await User.findOne({ email: session.user.email })
+      ? await User.findOne({ email: session.user.email }).select("_id").lean()
       : null;
 
     const questions = await Question.find({
@@ -35,55 +35,65 @@ export async function GET(req) {
       return NextResponse.json([], { status: 200 });
     }
 
+    const questionIds = questions.map((q) => q._id);
     const wheelIds = [...new Set(questions.map((q) => String(q.contentId)))];
+
+    // Batch: all vote counts in one aggregate
+    const rawVoteCounts = await QuestionVote.aggregate([
+      { $match: { questionId: { $in: questionIds } } },
+      {
+        $group: {
+          _id: { questionId: "$questionId", optionIndex: "$optionIndex" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Build map: questionId (string) → count array
+    const voteMap = new Map();
+    for (const q of questions) {
+      voteMap.set(String(q._id), Array(q.options.length).fill(0));
+    }
+    for (const vc of rawVoteCounts) {
+      const qId = String(vc._id.questionId);
+      const arr = voteMap.get(qId);
+      if (arr && vc._id.optionIndex >= 0 && vc._id.optionIndex < arr.length) {
+        arr[vc._id.optionIndex] = vc.count;
+      }
+    }
+
+    // Batch: user votes in one query
+    const userVoteMap = new Map(); // questionId (string) → optionIndex
+    if (currentUser) {
+      const userVotes = await QuestionVote.find({
+        questionId: { $in: questionIds },
+        userId: currentUser._id,
+      })
+        .select("questionId optionIndex")
+        .lean();
+      for (const v of userVotes) {
+        userVoteMap.set(String(v.questionId), v.optionIndex);
+      }
+    }
+
+    // Batch: wheel metadata
     const wheels = await Wheel.find({ _id: { $in: wheelIds } })
       .select("title description")
       .lean();
-
     const wheelById = new Map(wheels.map((w) => [String(w._id), w]));
 
-    const feed = await Promise.all(
-      questions.map(async (q) => {
-        const voteCounts = await QuestionVote.aggregate([
-          { $match: { questionId: q._id } },
-          {
-            $group: {
-              _id: "$optionIndex",
-              count: { $sum: 1 },
-            },
-          },
-        ]);
-
-        const counts = Array(q.options.length).fill(0);
-        voteCounts.forEach((vc) => {
-          if (vc._id >= 0 && vc._id < counts.length) {
-            counts[vc._id] = vc.count;
-          }
-        });
-
-        const userVote = currentUser
-          ? await QuestionVote.findOne({
-              questionId: q._id,
-              userId: currentUser._id,
-            })
-          : null;
-
-        const wheel = wheelById.get(String(q.contentId));
-
-        return {
-          ...q,
-          voteCounts: counts,
-          userVoteIndex: userVote?.optionIndex ?? null,
-          wheel: wheel
-            ? {
-                _id: wheel._id,
-                title: wheel.title,
-                description: wheel.description,
-              }
-            : null,
-        };
-      })
-    );
+    const feed = questions.map((q) => {
+      const qId = String(q._id);
+      const wheel = wheelById.get(String(q.contentId));
+      return {
+        ...q,
+        voteCounts: voteMap.get(qId) ?? Array(q.options.length).fill(0),
+        userVoteIndex: userVoteMap.has(qId) ? userVoteMap.get(qId) : null,
+        wheel: wheel
+          ? { _id: wheel._id, title: wheel.title, description: wheel.description }
+          : null,
+      };
+    });
 
     return NextResponse.json(feed, { status: 200 });
   } catch (err) {
@@ -94,3 +104,4 @@ export async function GET(req) {
     );
   }
 }
+
