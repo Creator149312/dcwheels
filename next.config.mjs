@@ -29,6 +29,41 @@ const nextConfig = {
         destination: "https://www.domainconverters.com/",
         permanent: true,
       },
+      {
+        source: "/games",
+        destination: "/game",
+        permanent: false,
+      },
+      {
+        source: "/movies",
+        destination: "/movie",
+        permanent: false,
+      },
+      {
+        source: "/characters",
+        destination: "/character",
+        permanent: false,
+      },
+      {
+        source: "/music",
+        destination: "/tags/music",
+        permanent: false,
+      },
+      {
+        source: "/sports",
+        destination: "/tags/sports",
+        permanent: false,
+      },
+      {
+        source: "/travel",
+        destination: "/tags/travel",
+        permanent: false,
+      },
+      {
+        source: "/food",
+        destination: "/tags/food",
+        permanent: false,
+      },
     ];
   },
 };

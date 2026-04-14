@@ -25,7 +25,7 @@ const Navbar = ({ onToggleSidebar }) => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[60] h-14 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-900 transition-all duration-300">
+    <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-900 transition-all duration-300">
       <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-2 md:px-4">
         
         {/* Left: Sidebar Toggle & Logo */}

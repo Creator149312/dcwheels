@@ -3,7 +3,9 @@
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { FaComment } from "react-icons/fa";
+import Link from "next/link";
 import CommentsPanel from "./comments/CommentsPanel";
+import QuestionsPanel from "@components/qna/QuestionsPanel";
 import { timeAgo } from "@utils/HelperFunctions";
 import Description from "./description/Description";
 
@@ -69,6 +71,12 @@ export default function WheelInfoSection({
               follow: false,
             }}
           />
+          <Link
+            href="/help-me-decide"
+            className="px-3 py-1.5 rounded-full border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition"
+          >
+            Help Me Decide Feed
+          </Link>
           <button
             onClick={() => {
               const el = document.getElementById("comments");
@@ -89,6 +97,24 @@ export default function WheelInfoSection({
 
       {/* Description */}
       <Description pageData={pageData} wordsList={wordsList} />
+
+      {/* Ask the Crowd */}
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Ask the Crowd</h2>
+          <span className="text-xs text-gray-500">
+            Published here and on the Help Me Decide feed
+          </span>
+        </div>
+        <QuestionsPanel
+          type="wheel"
+          contentId={wheelId}
+          isLoggedIn={!!session}
+          openLoginPrompt={openLoginPrompt}
+          currentUserId={session?.user?.id}
+          layout="vertical"
+        />
+      </section>
 
       {/* Comments */}
       <CommentsPanel

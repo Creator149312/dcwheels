@@ -116,7 +116,10 @@ export default function MobileSearchBar() {
             <HiSearch size={24} />
           </button>
         ) : (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 px-4 py-3 flex items-center shadow-lg animate-in slide-in-from-top duration-200">
+          <div
+            className="fixed top-0 left-0 right-0 z-[120] bg-white dark:bg-gray-900 px-4 py-3 flex items-center shadow-lg animate-in slide-in-from-top duration-200"
+            style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+          >
             <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500">
               <HiArrowLeft size={22} />
             </button>
@@ -137,7 +140,10 @@ export default function MobileSearchBar() {
 
         {/* Mobile Suggestions Dropdown */}
         {isMobileSearchOpen && suggestions.length > 0 && (
-          <div className="fixed top-[64px] left-0 right-0 mx-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className="fixed left-0 right-0 mx-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl z-[120] overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+            style={{ top: "calc(4.25rem + env(safe-area-inset-top))" }}
+          >
             {suggestions.map((s) => (
               <button
                 key={s._id}

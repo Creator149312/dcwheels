@@ -4,7 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
 import { GiCartwheel } from "react-icons/gi";
 import { FaGraduationCap, FaSlidersH } from "react-icons/fa";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Film } from "lucide-react";
 
 const WHEEL_TYPES = [
   {
@@ -28,6 +28,16 @@ const WHEEL_TYPES = [
     ring: "focus-visible:ring-purple-400",
   },
   {
+    type: "content",
+    icon: <Film size={32} className="text-emerald-500" />,
+    label: "Content Wheel",
+    description: "Spin saved lists like games, movies, and characters.",
+    badge: "Trending",
+    badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    border: "hover:border-emerald-400 dark:hover:border-emerald-500",
+    ring: "focus-visible:ring-emerald-400",
+  },
+  {
     type: "advanced",
     icon: <FaSlidersH size={32} className="text-orange-500" />,
     label: "Advanced Wheel",
@@ -44,6 +54,12 @@ export default function CreateWheelModal({ open, onClose }) {
   const currentPath = usePathname();
 
   const handleSelect = (type) => {
+    if (type === "content") {
+      onClose();
+      router.push("/lists?mode=content");
+      return;
+    }
+
     // Store chosen type so SegmentsContext can bootstrap correct defaults
     localStorage.setItem("SpinpapaWheelType", type);
     // Clear any previously saved wheel

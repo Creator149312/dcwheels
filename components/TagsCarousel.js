@@ -4,6 +4,8 @@ import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function TagsCarousel() {
+  const quickLinks = [{ label: "All", href: "/tags" }];
+
   const [tags] = useState([
     "Characters", "Gaming", "Anime", "Games", "Education", "Fun",
     "Vocabulary", "Music", "Travel", "Multiplayer", "Sports",
@@ -71,13 +73,26 @@ export default function TagsCarousel() {
             scrollbarWidth: 'none',
             WebkitOverflowScrolling: 'touch' 
           }}
-          className="flex overflow-x-auto gap-2 px-6 items-center h-full [&::-webkit-scrollbar]:hidden"
+          className="flex overflow-x-auto gap-1.5 px-3 md:px-6 items-center h-full [&::-webkit-scrollbar]:hidden"
         >
+          {quickLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
+                         bg-blue-600 text-white
+                         hover:bg-blue-700
+                         transition-all duration-200 flex-shrink-0"
+            >
+              {link.label}
+            </a>
+          ))}
+
           {tags.map((tag, index) => (
             <a
               key={`${tag}-${index}`}
               href={`/tags/${tag.toLowerCase().replace(/\s+/g, "-")}`}
-              className="whitespace-nowrap px-4 py-1.5 text-xs font-semibold rounded-full
+              className="whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
                          bg-gray-100 dark:bg-gray-800/50 
                          text-gray-600 dark:text-gray-400
                          hover:bg-blue-600 hover:text-white
@@ -88,7 +103,7 @@ export default function TagsCarousel() {
             </a>
           ))}
           {/* Invisible spacer to ensure right-side padding works */}
-          <div className="flex-shrink-0 w-10 h-1" />
+          <div className="flex-shrink-0 w-4 md:w-8 h-1" />
         </div>
 
         {/* Right Shadow/Arrow */}

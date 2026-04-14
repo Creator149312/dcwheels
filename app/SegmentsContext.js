@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import defaultWheelJSON from "@data/formatJSON";
 // import { fetchCoinsFromStorage } from "@utils/HelperFunctions";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
@@ -26,33 +26,33 @@ export const SegmentsProvider = ({ children }) => {
     defaultWheelJSON.description
   );
 
-  const [wheelType, setWheelType] = useState(() => {
-    if (typeof window === "undefined") return defaultWheelJSON?.type ?? "basic";
-    // Read the type chosen in CreateWheelModal (key NOT removed yet — segData reads it next)
-    const chosen = localStorage.getItem("SpinpapaWheelType");
-    return chosen ?? defaultWheelJSON?.type ?? "basic";
-  });
+  const [wheelType, setWheelType] = useState(defaultWheelJSON?.type ?? "basic");
 
   const [wheelData, setWheelData] = useState(defaultWheelJSON.wheelData);
-  const [segData, setSegData] = useState(() => {
-    if (typeof window === "undefined") return defaultWheelJSON.data;
-    const chosen = localStorage.getItem("SpinpapaWheelType");
-    // Consume the key here so it isn't re-applied if the user refreshes manually
-    if (chosen) localStorage.removeItem("SpinpapaWheelType");
-    if (chosen === "quiz") {
-      return [
-        { text: "Q1", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
-        { text: "Q2", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
-        { text: "Q3", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
-      ];
-    }
-    return defaultWheelJSON.data;
-  });
+  const [segData, setSegData] = useState(defaultWheelJSON.data);
   const [data, setData] = useState([]);
   const [segments, setSegments] = useState([]);
   const [userInputText, setUserInputText] = useState(
     "Purple\nView\nViolot\nVulgar\nBowl\nPile"
   );
+
+  useEffect(() => {
+    const chosen = localStorage.getItem("SpinpapaWheelType");
+    if (!chosen) return;
+
+    localStorage.removeItem("SpinpapaWheelType");
+    setWheelType(chosen);
+
+    if (chosen === "quiz") {
+      setSegData([
+        { text: "Q1", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
+        { text: "Q2", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
+        { text: "Q3", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
+      ]);
+    } else {
+      setSegData(defaultWheelJSON.data);
+    }
+  }, []);
 
   const handleWheelSettingsChange = (newSettings) => {
     setWheelData((prevWheelData) => ({

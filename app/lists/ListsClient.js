@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function ListsClient({ initialLists }) {
+  const searchParams = useSearchParams();
+  const isContentMode = searchParams.get("mode") === "content";
   const [lists, setLists] = useState(initialLists);
   const [skip, setSkip] = useState(20);
   const [loading, setLoading] = useState(false);
@@ -45,6 +48,12 @@ export default function ListsClient({ initialLists }) {
       <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
         All Lists
       </h1>
+
+      {isContentMode && (
+        <div className="mb-6 rounded-xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+          Select a list to spin it as a Content Wheel.
+        </div>
+      )}
 
       {lists.length === 0 && (
         <div className="text-gray-500 dark:text-gray-400 text-center mt-20">
