@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import sharp from "sharp";
 
 const adminCommonID = "gauravsingh9314@gmail.com";
 
@@ -35,7 +36,7 @@ export async function GET(req) {
   await connectMongoDB();
 
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 100), 500);
+  const limit = Math.min(Number(searchParams.get("limit") || 100), 5000);
 
   try {
     const wheels = await Wheel.find({
@@ -83,9 +84,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
 
-    const blobPath = `wheel-previews/${wheelId}-${Date.now()}.png`;
+    const slug = (wheel.title || "wheel")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
 
-    const uploaded = await put(blobPath, file, {
+    const blobPath = `wheel-previews/${slug}-${wheelId}.webp`;
+
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const optimizedBuffer = await sharp(fileBuffer)
+      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 90 })
+      .toBuffer();
+
+    const uploaded = await put(blobPath, optimizedBuffer, {
       access: "public",
       addRandomSuffix: false,
       token: process.env.BLOB_READ_WRITE_TOKEN,

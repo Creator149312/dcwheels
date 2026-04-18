@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Page from "@models/page";
+import "@models/wheel";
 
 // Cache public wheel listing for 2 minutes at the CDN edge
 export const revalidate = 120;
@@ -20,6 +21,7 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate("wheel", "wheelPreview")
       .lean();
 
     // ✅ Format response
@@ -27,6 +29,7 @@ export async function GET(req) {
       _id: wheel._id.toString(),
       title: wheel.title,
       slug: wheel.slug,
+      wheelPreview: wheel.wheel?.wheelPreview || null,
       createdAt: wheel.createdAt,
       updatedAt: wheel.updatedAt,
     }));

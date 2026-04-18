@@ -1,8 +1,8 @@
 "use client";
 import { createContext, useEffect, useRef, useState } from "react";
 import defaultWheelJSON from "@data/formatJSON";
-// import { fetchCoinsFromStorage } from "@utils/HelperFunctions";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
+import { normalizeSegments, createSegment } from "@utils/segmentUtils";
 
 export const SegmentsContext = createContext();
 export const SegmentsProvider = ({ children }) => {
@@ -29,8 +29,8 @@ export const SegmentsProvider = ({ children }) => {
   const [wheelType, setWheelType] = useState(defaultWheelJSON?.type ?? "basic");
 
   const [wheelData, setWheelData] = useState(defaultWheelJSON.wheelData);
-  const [segData, setSegData] = useState(defaultWheelJSON.data);
-  const [data, setData] = useState([]);
+  const [segData, setSegData] = useState(normalizeSegments(defaultWheelJSON.data));
+  const [data, setData] = useState([{ option: "Loading...", style: { backgroundColor: "#EE4040" } }]);
   const [segments, setSegments] = useState([]);
   const [userInputText, setUserInputText] = useState(
     "Purple\nView\nViolot\nVulgar\nBowl\nPile"
@@ -44,13 +44,13 @@ export const SegmentsProvider = ({ children }) => {
     setWheelType(chosen);
 
     if (chosen === "quiz") {
-      setSegData([
+      setSegData(normalizeSegments([
         { text: "Q1", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
         { text: "Q2", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
         { text: "Q3", question: "", options: ["", "", "", ""], correctIndex: 0, weight: 1, visible: true },
-      ]);
+      ]));
     } else {
-      setSegData(defaultWheelJSON.data);
+      setSegData(normalizeSegments(defaultWheelJSON.data));
     }
   }, []);
 
@@ -62,10 +62,10 @@ export const SegmentsProvider = ({ children }) => {
   };
 
   const prepareDataForEditorSwitch = (advOptions) => {
-    // console.log("ADV OPT = ", advOptions);
     if (advOptions) {
       setSegData((prevSegData) =>
         prevSegData.map((segment, index) => ({
+          ...segment,
           text: segment.text,
           weight: segment?.weight ? segment.weight : 1,
           visible: segment?.visible ? segment.visible : true,
@@ -77,21 +77,28 @@ export const SegmentsProvider = ({ children }) => {
     } else {
       html.current = segmentsToHTMLTxt(segData);
       setSegData((prevSegData) =>
-        prevSegData.map((segment) => ({ text: segment.text }))
+        prevSegData.map((segment) => ({
+          id: segment.id,
+          text: segment.text,
+          type: segment.type || "basic",
+          image: segment.image || null,
+          payload: segment.payload || {},
+        }))
       );
     }
   };
 
   // Add a new segment
   const addSegment = (index) => {
-    const newSegment = { text: "New", weight: 1, visible: true };
     if (index >= 0) {
       setSegData((prevSegData) => {
         const newSegData = JSON.parse(JSON.stringify(prevSegData[index]));
+        // Give the duplicate a new id
+        newSegData.id = createSegment().id;
         return [...prevSegData, newSegData];
       });
     } else {
-      setSegData((prevSegData) => [...prevSegData, newSegment]);
+      setSegData((prevSegData) => [...prevSegData, createSegment()]);
     }
   };
 

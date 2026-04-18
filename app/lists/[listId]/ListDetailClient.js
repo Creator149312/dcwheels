@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
 import { FiZap } from "react-icons/fi";
 import SharePopup from "@components/SharePopup";
+import { createSegment } from "@utils/segmentUtils";
 import AddListItemModal from "@components/lists/AddListItemModal";
 import EditListModal from "@components/lists/EditListModal";
 
@@ -65,14 +66,19 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
     const segments = list.items
       .map((i) => {
         if (i.type === "entity") {
-          return {
-            text: i.name,
+          return createSegment(i.name, {
+            type: "entity",
+            image: i.image || null,
+            payload: {
+              entityType: i.entityType || null,
+              entityId: i.entityId || i._id || null,
+              slug: i.slug || null,
+            },
             entityType: i.entityType || null,
             slug: i.slug || null,
-            image: i.image || null,
-          };
+          });
         }
-        return i.word ? { text: i.word } : null;
+        return i.word ? createSegment(i.word) : null;
       })
       .filter(Boolean);
 
@@ -81,6 +87,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
     const wheelObject = {
       title: list.name,
       description: list.description || "",
+      type: "basic",
       data: segments,
       wheelData: {
         segColors: [

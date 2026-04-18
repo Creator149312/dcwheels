@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import {
   prepareData,
@@ -25,7 +25,9 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
     setWheelData,
     MAX_SPIN_TIME,
     wheelTitle,
+    setWheelTitle,
     wheelDescription,
+    setWheelDescription,
     advancedOptions,
     wheelType,
     setWheelType,
@@ -45,6 +47,7 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [muted, setMuted] = useState(false);
   const { startTicking, stopTicking, playVictory } = useWheelSounds(muted);
+  const initializedRef = useRef(false);
 
   const saveWheelData = (segData, wheelData) => {
     const wheelObject = {
@@ -142,64 +145,57 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
   };
 
   // Sync data when segments/wheel settings change
+  const renderCountRef = useRef(0);
   useEffect(() => {
     setData(
       prepareData(
         segData,
         wheelData.segColors,
         maxlengthOfSegmentText,
-        advancedOptions
+        advancedOptions,
+        wheelData.mysteryMode
       )
     );
     setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
     setSegTxtfontSize(calculateFontSizeOfText(maxlengthOfSegmentText, segData));
-    // Save on home page always so wheel type and data survive a refresh
-    if (currentPath === "/") saveWheelData(segData, wheelData);
+    // Skip saving until mount effect has loaded and its state changes have settled.
+    // Render 0 = initial, render 1 = mount effect state committed. Save from render 2+.
+    if (currentPath === "/") {
+      renderCountRef.current++;
+      if (renderCountRef.current > 2) saveWheelData(segData, wheelData);
+    }
   }, [segData, wheelData, advancedOptions, wheelType]);
 
   // Initialize from localStorage or props on mount
   useEffect(() => {
     if (currentPath === "/") {
       const wheelFromBrowserStorage = getWheelData();
-      setLocalStorageWheel(wheelFromBrowserStorage);
+      initializedRef.current = true;
 
-      if (wheelFromBrowserStorage !== null) {
-        const localSegData = wheelFromBrowserStorage.data;
-        const localWheelData = wheelFromBrowserStorage.wheelData;
-        if (wheelFromBrowserStorage.type) setWheelType(wheelFromBrowserStorage.type);
-        setSegData(localSegData);
-        setWheelData(localWheelData);
+      // Use localStorage data if it exists, otherwise fall back to defaults
+      const localSegData = wheelFromBrowserStorage?.data || newSegments;
+      const localWheelData = wheelFromBrowserStorage?.wheelData || wheelData;
 
-        const initialMaxLength = calculateMaxLengthOfText(localSegData);
-        setMaxlengthOfSegmentText(initialMaxLength);
-        setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, localSegData));
-        setPrizeNumber(Math.floor(Math.random() * localSegData.length));
-        setData(
-          prepareData(
-            localSegData.length,
-            localWheelData.segColors,
-            initialMaxLength,
-            advancedOptions
-          )
-        );
-        html.current = segmentsToHTMLTxt(localSegData);
-      } else {
-        const initialMaxLength = calculateMaxLengthOfText(newSegments);
-        setMaxlengthOfSegmentText(initialMaxLength);
-        setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, newSegments));
-        setSegData(newSegments);
-        setPrizeNumber(Math.floor(Math.random() * newSegments.length));
-        setData(
-          prepareData(
-            newSegments,
-            wheelData.segColors,
-            maxlengthOfSegmentText,
-            advancedOptions
-          )
-        );
-        html.current = segmentsToHTMLTxt(newSegments);
-        saveWheelData(newSegments, wheelData);
-      }
+      if (wheelFromBrowserStorage?.type) setWheelType(wheelFromBrowserStorage.type);
+      if (wheelFromBrowserStorage?.title) setWheelTitle(wheelFromBrowserStorage.title);
+      if (wheelFromBrowserStorage?.description) setWheelDescription(wheelFromBrowserStorage.description);
+      setSegData(localSegData);
+      setWheelData(localWheelData);
+
+      const initialMaxLength = calculateMaxLengthOfText(localSegData);
+      setMaxlengthOfSegmentText(initialMaxLength);
+      setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, localSegData));
+      setPrizeNumber(Math.floor(Math.random() * localSegData.length));
+      setData(
+        prepareData(
+          localSegData,
+          localWheelData.segColors,
+          initialMaxLength,
+          advancedOptions,
+          localWheelData.mysteryMode
+        )
+      );
+      html.current = segmentsToHTMLTxt(localSegData);
     } else {
       setSegData(newSegments);
       const initialMaxLength = calculateMaxLengthOfText(newSegments);
@@ -211,7 +207,8 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
           newSegments,
           wheelData.segColors,
           maxlengthOfSegmentText,
-          advancedOptions
+          advancedOptions,
+          wheelData.mysteryMode
         )
       );
       html.current = segmentsToHTMLTxt(newSegments);

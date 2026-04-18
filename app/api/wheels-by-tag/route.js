@@ -23,7 +23,7 @@ export async function GET(req) {
     const wheels = await Wheel.find({
       tags: { $elemMatch: { $regex: `^${tag}$`, $options: "i" } }
     })
-      .select("title slug") // Ensure you select whatever you use for href
+      .select("title slug wheelPreview") // Ensure you select whatever you use for href
       .sort({ createdAt: -1 }) // Usually best to show newest wheels first
       .skip(skip)
       .limit(limit);

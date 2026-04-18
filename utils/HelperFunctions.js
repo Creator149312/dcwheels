@@ -1,3 +1,5 @@
+import { normalizeSegment, normalizeSegments } from "@utils/segmentUtils";
+
 export function replaceDashWithUnderscore(str) {
   if (str.length === 0) return str;
   return str.replace(/-/g, "_");
@@ -29,12 +31,13 @@ export const prepareData = (
   segData,
   colData,
   maxlengthOfSegmentText,
-  advOptions
+  advOptions,
+  mysteryMode = false
 ) => {
   const result = [];
   const colDataLength = colData.length;
   for (let i = 0; i < segData.length; i++) {
-    const seg = segData[i].text;
+    const seg = mysteryMode ? "❓" : segData[i].text;
     const colIndex = i % colDataLength;
     const col = colData[colIndex];
 
@@ -66,7 +69,9 @@ export const prepareData = (
         }
       }
     } else {
-      const imgUri = segData[i].image
+      const imgUri = mysteryMode
+        ? null
+        : segData[i].image
         ? segData[i].image
         : seg.includes("<img")
         ? /src="([^"]+)"/.exec(seg)?.[1]
@@ -146,17 +151,22 @@ export const ensureArrayOfObjects = (arr) => {
         return null; // Or handle the error as you see fit for invalid items
       }
     })
-    .filter((item) => item !== null); // Remove any invalid items
+    .filter((item) => item !== null)
+    .map((item) => normalizeSegment(item)); // Ensure id, type, payload
 };
 
 //get the wheel data storage in browser localstorage
 export const getWheelData = () => {
   if (typeof window !== "undefined" && window.localStorage) {
-    // console.log("Fetching Wheel Object....");
     const data = window.localStorage.getItem("SpinpapaWheel");
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    // Normalize segments on read for backward compatibility
+    if (parsed && Array.isArray(parsed.data)) {
+      parsed.data = normalizeSegments(parsed.data);
+    }
+    return parsed;
   } else {
-    // console.log("Local Storage or Window Object Now available");
     return null;
   }
 };

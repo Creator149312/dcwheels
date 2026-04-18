@@ -6,6 +6,7 @@ import {
   prepareData,
   segmentsToHTMLTxt,
 } from "@utils/HelperFunctions";
+import { normalizeSegments } from "@utils/segmentUtils";
 import { useContext, useState } from "react";
 import { FaUpload } from "react-icons/fa";
 
@@ -34,7 +35,7 @@ const ImportLocalWheel = ({ afterImport }) => {
 
           html.current = segmentsToHTMLTxt(importedData.data);
           setWheelData(importedData.wheelData);
-          setSegData(importedData.data);
+          setSegData(normalizeSegments(importedData.data));
 
           setadvancedOptions(importedData.editorData.advancedOptions);
           handleAction({

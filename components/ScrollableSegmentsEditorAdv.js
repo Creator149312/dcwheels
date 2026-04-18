@@ -33,7 +33,7 @@ const ScrollableSegmentsEditorAdv = () => {
             className="flex items-center space-x-2 mt-2 bg-gray-100 dark:bg-gray-700 py-1 px-1 shadow-md"
           >
             {/* Input Field for Segment Text */}
-            {segment.text.includes('data:image') ? <div dangerouslySetInnerHTML={{__html: segment.text}} className="w-full"></div> : 
+            {segment.type === "image" || segment.text.includes('data:image') ? <div dangerouslySetInnerHTML={{__html: segment.text}} className="w-full"></div> : 
             <input
               type="text"
               value={segment.text}

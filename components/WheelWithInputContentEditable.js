@@ -104,13 +104,14 @@ const WheelWithInputContentEditable = ({
               setSegData={setSegData}
               setShowCelebration={setShowCelebration}
               mustSpin={mustSpin}
+              wheelId={wheelId}
             />
           )}
 
           {showOverlay && (
             <div
               onClick={handleSpinClick}
-              className="z-10 absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer"
+              className="z-40 absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer rounded-2xl"
             >
               <span
                 className="text-4xl font-bold text-white animate-pulse drop-shadow-lg select-none"
@@ -124,13 +125,14 @@ const WheelWithInputContentEditable = ({
           {/* Wheel */}
           <div
             onClick={handleSpinClick}
-            className={`flex items-center justify-center w-full ${
+            className={`relative flex items-center justify-center w-full ${
               isFullScreen ? "flex-1" : "min-h-[24rem]"
             }`}
           >
+            {data.length > 0 && (
             <Wheel
               mustStartSpinning={mustSpin}
-              prizeNumber={prizeNumber}
+              prizeNumber={prizeNumber >= 0 ? prizeNumber : 0}
               data={data.slice(
                 0,
                 data.length < wheelData.maxNumberOfOptions
@@ -158,6 +160,32 @@ const WheelWithInputContentEditable = ({
                 },
               }}
             />
+            )}
+
+            {/* Center Branding Overlay */}
+            {(wheelData.centerText || wheelData.centerImage) && wheelData.innerRadius > 0 && (
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center z-20 pointer-events-none overflow-hidden"
+                style={{
+                  width: `${wheelData.innerRadius}%`, // Scales perfectly within the inner radius hole
+                  aspectRatio: "1 / 1", // Forces it to stay a perfect circle
+                  maxWidth: "150px", // Safety limits just in case
+                  maxHeight: "150px",
+                }}
+              >
+                {wheelData.centerImage ? (
+                  <img
+                    src={wheelData.centerImage}
+                    alt="Center Design"
+                    className="w-full h-full object-cover rounded-full pointer-events-none"
+                  />
+                ) : (
+                  <span className="text-[12px] md:text-sm font-black text-slate-700 uppercase tracking-wide truncate px-1 text-center bg-white w-full h-full flex items-center justify-center rounded-full border-2 border-slate-200 shadow-sm">
+                    {wheelData.centerText}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <WheelPlayerControls

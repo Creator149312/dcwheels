@@ -6,6 +6,9 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import Tooltip from "./Tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import imageCompression from "browser-image-compression";
+import toast from "react-hot-toast";
+import { FaImage, FaSpinner } from "react-icons/fa";
 
 const themes = [
   {
@@ -366,6 +369,62 @@ const SettingsAdv = ({ advOptions }) => {
   const [innerRadius, setInnerRadius] = useState(
     wheelData?.innerRadius ? wheelData.innerRadius : 1
   );
+  const [mysteryMode, setMysteryMode] = useState(
+    wheelData?.mysteryMode || false
+  );
+  const [centerText, setCenterText] = useState(
+    wheelData?.centerText || ""
+  );
+  const [centerImage, setCenterImage] = useState(
+    wheelData?.centerImage || ""
+  );
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 400,
+        useWebWorker: true,
+      });
+
+      const formData = new FormData();
+      formData.append("file", compressed, compressed.name || "center-image.webp");
+
+      const res = await fetch("/api/upload-segment-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || "Upload failed");
+      }
+
+      const { url } = await res.json();
+      setCenterImage(url);
+      setCenterText(""); // clear text if image is uploaded
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error(error.message || "Failed to upload image. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImageUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+  };
 
   // Handle theme change
   const handleThemeChange = (theme) => {
@@ -412,6 +471,9 @@ const SettingsAdv = ({ advOptions }) => {
       customPopupDisplayMessage,
       fontSize,
       innerRadius,
+      mysteryMode,
+      centerText,
+      centerImage,
     });
 
     setIsOpen(false); // Close the modal after applying changes
@@ -426,6 +488,9 @@ const SettingsAdv = ({ advOptions }) => {
     setCustomPopupDisplayMessage(wheelData.customPopupDisplayMessage);
     setFontSize(wheelData.fontSize);
     setInnerRadius(wheelData.innerRadius);
+    setMysteryMode(wheelData?.mysteryMode || false);
+    setCenterText(wheelData?.centerText || "");
+    setCenterImage(wheelData?.centerImage || "");
 
     if (advOptions) {
       setSegData((prevSegData) =>
@@ -473,13 +538,13 @@ const SettingsAdv = ({ advOptions }) => {
                   handleThemeChange(theme);
                 }}
                 value={selectedTheme.name}
-                className="w-full flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option key={currentTheme.name} value={currentTheme.name}>
+                <option key={currentTheme.name} value={currentTheme.name} className="dark:bg-gray-800">
                   {currentTheme.name}
                 </option>
                 {themes.map((theme) => (
-                  <option key={theme.name} value={theme.name}>
+                  <option key={theme.name} value={theme.name} className="dark:bg-gray-800">
                     {theme.name}
                   </option>
                 ))}
@@ -527,7 +592,7 @@ const SettingsAdv = ({ advOptions }) => {
               <input
                 type="range"
                 min="0"
-                max={50}
+                max="30"
                 step="1"
                 value={innerRadius}
                 onChange={onInnerRadiusChange}
@@ -535,9 +600,68 @@ const SettingsAdv = ({ advOptions }) => {
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0</span>
-                <span>50</span>
+                <span>30</span>
               </div>
             </div>
+
+            {/* Center Branding Content */}
+            <div className="space-y-2 border-t pt-4 mt-2">
+              <h3 className="text-sm font-medium leading-none">Center Branding</h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={centerText}
+                  onChange={(e) => {
+                    setCenterText(e.target.value);
+                    if (e.target.value) setCenterImage(""); // clear image if text is entered
+                  }}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Center Text (e.g. SPIN)"
+                />
+                <div className="text-xs text-center text-muted-foreground">OR</div>
+                
+                {/* Drag and Drop Image Upload */}
+                <div
+                  onDrop={onDrop}
+                  onDragOver={onDragOver}
+                  onClick={() => document.getElementById('center-image-upload').click()}
+                  className={`w-full h-16 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer transition-colors ${
+                    uploadingImage ? 'opacity-50 cursor-wait' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    id="center-image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleImageUpload(e.target.files[0]);
+                      }
+                    }}
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage ? (
+                    <div className="flex items-center text-muted-foreground text-sm">
+                      <FaSpinner className="animate-spin mr-2" /> Uploading...
+                    </div>
+                  ) : centerImage ? (
+                    <div className="flex items-center space-x-2">
+                      <img src={centerImage} alt="Center" className="h-10 w-10 object-cover rounded-full shadow-sm" />
+                      <span className="text-xs text-blue-500 hover:text-blue-700 underline" onClick={(e) => {
+                        e.stopPropagation(); // prevent opening file dialog
+                        setCenterImage("");
+                      }}>Remove Image</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-muted-foreground text-sm">
+                      <FaImage className="mr-2" size={16} /> Click or drag image here
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4 pt-4">
@@ -607,6 +731,23 @@ const SettingsAdv = ({ advOptions }) => {
                 <span>Large</span>
               </div>
             </div>
+
+            {/* Mystery Mode */}
+            <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-medium">Mystery Wheel</h4>
+                <div className="text-xs text-muted-foreground">
+                  Hide segment text until a spin reveals the winner
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={mysteryMode}
+                onChange={(e) => setMysteryMode(e.target.checked)}
+                className="w-4 h-4 cursor-pointer"
+              />
+            </div>
+
           </TabsContent>
         </Tabs>
 

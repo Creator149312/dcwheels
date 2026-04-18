@@ -16,9 +16,12 @@ const defaultWheelJSON = {
     spinDuration: 5,
     maxNumberOfOptions: 100, //this is max number of options to show on wheel
     innerRadius: 15,
+    centerText: "",
+    centerImage: "",
     removeWinnerAfterSpin: false,
     customPopupDisplayMessage: "The Winner is...",
-    fontSize: 1
+    fontSize: 1,
+    mysteryMode: false
   },
   editorData: {
     advOptions: false,

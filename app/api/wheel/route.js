@@ -3,6 +3,19 @@ import Wheel from "@models/wheel";
 import { validateListDescription, validateListTitle } from "@utils/Validator";
 import { NextResponse } from "next/server";
 
+// Strip base64 images from segment data before persisting to DB.
+// Blob URLs (https://...) are kept; data:image/... strings are removed.
+function sanitizeSegments(data) {
+  if (!Array.isArray(data)) return data;
+  return data.map((seg) => {
+    if (seg?.image && typeof seg.image === "string" && seg.image.startsWith("data:")) {
+      const { image, ...rest } = seg;
+      return rest;
+    }
+    return seg;
+  });
+}
+
 //sending request to create a list
 export async function POST(request) {
   let error = "";
@@ -21,7 +34,7 @@ export async function POST(request) {
       const creationData = await Wheel.create({
         title,
         description,
-        data,
+        data: sanitizeSegments(data),
         createdBy,
         wheelData,
         relatedTo

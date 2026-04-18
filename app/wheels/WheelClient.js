@@ -10,7 +10,7 @@ export default function WheelsClient({ initialWheels }) {
   const [skip, setSkip] = useState(20);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialWheels.length >= 20);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(null);
 
   // Handle responsive ad logic
   useEffect(() => {
@@ -45,7 +45,8 @@ export default function WheelsClient({ initialWheels }) {
   }
 
   // Define intervals: Every 6 items on mobile, 10 on desktop
-  const adInterval = isMobile ? 6 : 10;
+  // null means not mounted yet — suppress ads until client determines device
+  const adInterval = isMobile === null ? null : isMobile ? 6 : 10;
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors">
@@ -62,7 +63,7 @@ export default function WheelsClient({ initialWheels }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         {wheels.map((wheel, index) => {
           // Check if we should show an ad after this specific item
-          const showAd = (index + 1) % adInterval === 0;
+          const showAd = adInterval !== null && (index + 1) % adInterval === 0;
 
           return (
             <Fragment key={wheel._id || index}>
@@ -70,10 +71,19 @@ export default function WheelsClient({ initialWheels }) {
                 href={`/wheels/${wheel.slug}`}
                 className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-blue-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/5"
               >
-                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800">
-                  <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
-                    {wheel.title?.charAt(0).toUpperCase()}
-                  </span>
+                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                  {wheel.wheelPreview ? (
+                    <img 
+                      src={wheel.wheelPreview} 
+                      alt={wheel.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
+                      {wheel.title?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-3 md:p-4">

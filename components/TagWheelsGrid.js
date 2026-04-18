@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Fragment, useEffect } from "react";
+import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import apiConfig from "@utils/ApiUrlConfig";
 import AdsUnit from "./ads/AdsUnit";
@@ -10,7 +11,7 @@ export default function TagWheelsGrid({ initialWheels, tagId }) {
   const [skip, setSkip] = useState(20);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialWheels.length >= 20);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(null);
 
   useEffect(() => {
     const checkDevice = () => setIsMobile(window.innerWidth < 1024);
@@ -42,13 +43,13 @@ export default function TagWheelsGrid({ initialWheels, tagId }) {
     }
   }
 
-  const adInterval = isMobile ? 6 : 10;
+  const adInterval = isMobile === null ? null : isMobile ? 6 : 10;
 
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         {wheels.map((wheel, index) => {
-          const showAd = (index + 1) % adInterval === 0;
+          const showAd = adInterval !== null && (index + 1) % adInterval === 0;
 
           return (
             <Fragment key={wheel._id || index}>
@@ -56,10 +57,20 @@ export default function TagWheelsGrid({ initialWheels, tagId }) {
                 href={`/uwheels/${wheel._id}`}
                 className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-blue-500 transition-all duration-300 active:scale-[0.98]"
               >
-                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800">
-                  <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform">
-                    {wheel.title?.charAt(0).toUpperCase()}
-                  </span>
+                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                  {wheel.wheelPreview ? (
+                    <Image
+                      src={wheel.wheelPreview}
+                      alt={wheel.title}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform">
+                      {wheel.title?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="p-4 flex-1">
                   <h3 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">

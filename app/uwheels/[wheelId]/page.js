@@ -79,10 +79,34 @@ export async function generateMetadata({ params }) {
   const listdata = await fetchWheelData(params.wheelId);
 
   if (listdata) {
-    return {
+    const meta = {
       title: listdata.title,
       description: `Explore ${listdata.title} and spin to pick a random choice.`,
     };
+
+    if (listdata.wheelPreview) {
+      meta.openGraph = {
+        title: listdata.title,
+        description: meta.description,
+        type: "website",
+        images: [
+          {
+            url: listdata.wheelPreview,
+            width: 400,
+            height: 400,
+            alt: listdata.title,
+          },
+        ],
+      };
+      meta.twitter = {
+        card: "summary_large_image",
+        title: listdata.title,
+        description: meta.description,
+        images: [listdata.wheelPreview],
+      };
+    }
+
+    return meta;
   }
 
   return {

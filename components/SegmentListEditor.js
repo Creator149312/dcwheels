@@ -4,6 +4,8 @@ import { SegmentsContext } from "@app/SegmentsContext";
 import { FaTrashAlt, FaPlus, FaImage, FaClipboardList, FaEye, FaEyeSlash, FaCopy, FaRandom, FaSortAlphaDown } from "react-icons/fa";
 import imageCompression from "browser-image-compression";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
+import { createSegment } from "@utils/segmentUtils";
+import toast from "react-hot-toast";
 
 export default function SegmentListEditor() {
   const { segData, setSegData, updateSegment, deleteSegment, addSegment, html, advancedOptions, wheelData } =
@@ -17,13 +19,21 @@ export default function SegmentListEditor() {
     try {
       const compressed = await imageCompression(file, {
         maxSizeMB: 1,
-        maxWidthOrHeight: 200,
+        maxWidthOrHeight: 400,
         useWebWorker: true,
       });
-      const reader = new FileReader();
-      reader.onload = (e) => updateSegment(index, "image", e.target.result);
-      reader.readAsDataURL(compressed);
-    } catch {}
+      const formData = new FormData();
+      formData.append("file", compressed, compressed.name || "segment-image.webp");
+      const res = await fetch("/api/upload-segment-image", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      updateSegment(index, "image", url);
+    } catch {
+      toast.error("Image upload failed. Please try again.");
+    }
   };
 
   const handleRemoveImage = (e, index) => {
@@ -38,7 +48,7 @@ export default function SegmentListEditor() {
       .map((l) => l.trim())
       .filter(Boolean);
     if (lines.length === 0) return;
-    const newSegments = lines.map((text) => ({ text, weight: 1, visible: true }));
+    const newSegments = lines.map((text) => createSegment(text));
     setSegData(newSegments);
     html.current = segmentsToHTMLTxt(newSegments);
     setBulkMode(false);

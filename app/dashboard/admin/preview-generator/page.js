@@ -24,12 +24,15 @@ function getSegmentText(segment) {
   return "Option";
 }
 
-function getSegmentColor(segment, index) {
+function getSegmentColor(segment, index, segColors) {
   if (segment && typeof segment === "object") {
     if (typeof segment.color === "string") return segment.color;
     if (segment.style && typeof segment.style.backgroundColor === "string") {
       return segment.style.backgroundColor;
     }
+  }
+  if (segColors && segColors.length > 0) {
+    return segColors[index % segColors.length];
   }
   return FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
@@ -41,12 +44,16 @@ function drawWheelPreview(canvas, wheel) {
   }
 
   const size = canvas.width;
+  const isSmallCanvas = size <= 512;
   const center = size / 2;
-  const radius = size * 0.42;
+  const radius = size * 0.45;
 
   const rawSegments = Array.isArray(wheel?.data) && wheel.data.length > 0 ? wheel.data : ["Option"];
   const segments = rawSegments.slice(0, 24);
   const arcSize = (Math.PI * 2) / segments.length;
+  
+  const wheelData = wheel?.wheelData || {};
+  const segColors = wheelData.segColors || [];
 
   ctx.clearRect(0, 0, size, size);
 
@@ -54,12 +61,10 @@ function drawWheelPreview(canvas, wheel) {
   ctx.fillStyle = "#f8fafc";
   ctx.fillRect(0, 0, size, size);
 
-  // Title
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "bold 26px sans-serif";
-  ctx.textAlign = "center";
-  const title = (wheel?.title || "Wheel").slice(0, 64);
-  ctx.fillText(title, center, 44);
+  // Math scaling
+  const titleFontSize = isSmallCanvas ? 16 : 26;
+  const segmentFontSize = isSmallCanvas ? 11 : 14;
+  const footerFontSize = isSmallCanvas ? 10 : 14;
 
   // Wheel segments
   for (let i = 0; i < segments.length; i += 1) {
@@ -70,16 +75,18 @@ function drawWheelPreview(canvas, wheel) {
     ctx.moveTo(center, center);
     ctx.arc(center, center, radius, start, end);
     ctx.closePath();
-    ctx.fillStyle = getSegmentColor(segments[i], i);
+    ctx.fillStyle = getSegmentColor(segments[i], i, segColors);
     ctx.fill();
 
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = isSmallCanvas ? 1 : 2;
     ctx.stroke();
 
     const label = getSegmentText(segments[i]).replace(/<[^>]+>/g, "").trim() || "Option";
     const angle = start + arcSize / 2;
-    const textRadius = radius * 0.68;
+    const paddingMultiplier = wheelData?.textDistance || 80;
+    const textRadius = radius * (paddingMultiplier / 100) * 0.85; // Adjusted to stay within canvas boundaries effectively
+    
     const tx = center + Math.cos(angle) * textRadius;
     const ty = center + Math.sin(angle) * textRadius;
 
@@ -89,27 +96,49 @@ function drawWheelPreview(canvas, wheel) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#111827";
-    ctx.font = "600 14px sans-serif";
-    const maxChars = 16;
+    ctx.font = `600 ${segmentFontSize}px sans-serif`;
+    const maxChars = isSmallCanvas ? 12 : 16;
     const shortLabel = label.length > maxChars ? `${label.slice(0, maxChars - 2)}..` : label;
     ctx.fillText(shortLabel, 0, 0);
     ctx.restore();
   }
 
-  // Center cap + border
-  ctx.beginPath();
-  ctx.arc(center, center, radius * 0.18, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = "#0f172a";
-  ctx.stroke();
+  // Draw inner radius (donut hole) or center cap
+  const innerRadiusPercent = wheelData?.innerRadius || 0;
+  if (innerRadiusPercent > 0) {
+    const minInnerPercent = Math.min(innerRadiusPercent, 60);
+    const innerRadiusPx = radius * (minInnerPercent / 100);
+    ctx.beginPath();
+    ctx.arc(center, center, innerRadiusPx, 0, Math.PI * 2);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fill();
+    ctx.lineWidth = isSmallCanvas ? 1 : 2;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(center, center, radius * 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = isSmallCanvas ? 2 : 4;
+    ctx.strokeStyle = "#0f172a";
+    ctx.stroke();
+  }
+
+  // Center Text Branding
+  if (wheelData?.centerText) {
+    ctx.fillStyle = "#0f172a";
+    ctx.font = `bold ${isSmallCanvas ? 14 : 20}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(wheelData.centerText, center, center);
+  }
 
   // Footer
   ctx.fillStyle = "#334155";
-  ctx.font = "500 14px sans-serif";
+  ctx.font = `500 ${footerFontSize}px sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText("spinpapa.com", center, size - 24);
+  ctx.fillText("spinpapa.com", center, size - (isSmallCanvas ? 12 : 24));
 }
 
 async function canvasToBlob(canvas) {
@@ -120,7 +149,7 @@ async function canvasToBlob(canvas) {
         return;
       }
       resolve(blob);
-    }, "image/png");
+    }, "image/webp", 1.0);
   });
 }
 
@@ -143,7 +172,7 @@ export default function WheelPreviewGeneratorPage() {
   const fetchMissingPreviewWheels = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/wheel-preview?limit=250", { cache: "no-store" });
+      const res = await fetch("/api/admin/wheel-preview?limit=4000", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data?.error || "Failed to load wheels");
@@ -178,7 +207,7 @@ export default function WheelPreviewGeneratorPage() {
 
         const form = new FormData();
         form.append("wheelId", wheel._id);
-        form.append("file", new File([blob], `${wheel._id}.png`, { type: "image/png" }));
+        form.append("file", new File([blob], `${wheel._id}.webp`, { type: "image/webp" }));
 
         const uploadRes = await fetch("/api/admin/wheel-preview", {
           method: "POST",
@@ -208,6 +237,7 @@ export default function WheelPreviewGeneratorPage() {
       for (const wheel of listSnapshot) {
         try {
           await generatePreviewForWheel(wheel);
+          await new Promise((resolve) => setTimeout(resolve, 300));
         } catch (error) {
           appendLog(`Failed: ${wheel.title} (${error.message})`);
         }
@@ -227,7 +257,7 @@ export default function WheelPreviewGeneratorPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <canvas ref={hiddenCanvasRef} width={1200} height={1200} className="hidden" />
+      <canvas ref={hiddenCanvasRef} width={400} height={400} className="hidden" />
 
       <div className="flex items-center justify-between">
         <div>

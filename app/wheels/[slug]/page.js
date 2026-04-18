@@ -20,10 +20,35 @@ export async function generateMetadata({ params }) {
 
   if (pageData === undefined) redirect("/"); //this is done to ensure only valid urls are loaded and all others are redirected to homepage.
 
-  return {
+  const metadata = {
     title: pageData.title,
     description: pageData.description,
   };
+
+  // Add Open Graph image for SEO indexing if wheelPreview exists
+  if (pageData.wheel?.wheelPreview) {
+    metadata.openGraph = {
+      title: pageData.title,
+      description: pageData.description,
+      type: "website",
+      images: [
+        {
+          url: pageData.wheel.wheelPreview,
+          width: 400,
+          height: 400,
+          alt: pageData.title,
+        },
+      ],
+    };
+    metadata.twitter = {
+      card: "summary_large_image",
+      title: pageData.title,
+      description: pageData.description,
+      images: [pageData.wheel.wheelPreview],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function Home({ params }) {

@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, ArrowRight, Plus, Layers, BookMarked, Clock } from "lucide-react";
+import { Settings, ArrowRight, Plus, Layers, BookMarked, Zap } from "lucide-react";
 import apiConfig from "@utils/ApiUrlConfig";
 
 // ── Small row card shared by all sections ─────────────────────────────────
@@ -126,33 +126,38 @@ function ListsSection() {
   );
 }
 
-// ── History section ────────────────────────────────────────────────────────
-function HistorySection() {
+// ── Decisions section ──────────────────────────────────────────────────────
+function DecisionsSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/history/list")
+    fetch("/api/decision-log")
       .then((r) => r.json())
-      .then((d) => setItems((d.history || []).slice(0, 4)))
+      .then((d) => setItems((d.decisions || []).slice(0, 4)))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <Section
-      icon={Clock}
-      title="Recently Visited"
+      icon={Zap}
+      title="My Decisions"
       action={null}
     >
       {loading ? (
         <RowSkeleton />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">No visit history yet. Go spin something!</p>
+        <p className="text-sm text-gray-400">No decisions yet. Spin a wheel and commit to it!</p>
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
-            <RowCard key={item._id} href={`/uwheels/${item._id}`} title={item.title} />
+            <RowCard
+              key={item._id}
+              href={item.wheelId ? `/uwheels/${item.wheelId}` : "#"}
+              title={item.result}
+              meta={`${item.wheelTitle}${item.note ? ` · ${item.note}` : ""}`}
+            />
           ))}
         </div>
       )}
@@ -221,7 +226,7 @@ export default function UserDashboard() {
       <div className="space-y-10">
         <WheelsSection email={session.user.email} />
         <ListsSection />
-        <HistorySection />
+        <DecisionsSection />
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import ListSelector from "./lists/ListSelector";
 import EditorSwitchWithPopup from "./EditorSwitchWithPopup";
 import SegmentListEditor from "./SegmentListEditor";
 import QuizSegmentEditor from "./QuizSegmentEditor";
-import WheelTypeSelector from "./WheelTypeSelector";
 import ContentEditableDivResult from "./ContentEditableDivResult";
 import GenerateWheel from "@components/GenerateWheel";
 import SaveImportComponent from "./SaveImportComponent";
@@ -60,7 +59,6 @@ export default function WheelEditor({
               style={{ display: isVisible ? "block" : "none" }}
             >
               <ListSelector html={html} setSegData={setSegData} />
-              <WheelTypeSelector />
               {wheelType === "quiz" ? (
                 <QuizSegmentEditor />
               ) : (

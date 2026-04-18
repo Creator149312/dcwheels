@@ -64,6 +64,7 @@ export default function WheelPlayerWrapper(
         setSegData={setSegData}
         setShowCelebration={setShowCelebration}
         mustSpin={mustSpin}
+        wheelId={null}
       />
 
       {showOverlay && (

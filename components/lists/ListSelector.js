@@ -2,6 +2,7 @@
 import { useContext, useState } from "react";
 import useLists from "@utils/customHooks/useLists";
 import { generateRandomizedMCQsBasic } from "@utils/HelperFunctions";
+import { createSegment } from "@utils/segmentUtils";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useSession } from "next-auth/react";
 import useUnifiedLists from "@utils/customHooks/useUnifiedLists";
@@ -23,9 +24,8 @@ const ListSelector = ({ html, setSegData }) => {
   const [selectedType, setSelectedType] = useState("");
   const { status, data: session } = useSession();
 
-  // Using the custom hook to fetch lists
-  // const { lists, loading, error } = useLists(null, true);
-  const {lists, loading, error} = useUnifiedLists(null, true);
+  // Using the custom hook to fetch lists lazily
+  const { lists, loading, error, fetched, fetchLists } = useUnifiedLists();
 
   // Handle select change
   const handleListChange = (e) => {
@@ -68,18 +68,29 @@ const ListSelector = ({ html, setSegData }) => {
  const prepareBasicWheel = () => {
   if (!listData) return;
 
-  // Normalize all items into { text: "..." }
+  // Normalize all items into segments with id, type, payload
   const wordsText = listData.items.map((item) => {
     if (item.type === "word") {
-      return { text: item.word };
+      return createSegment(item.word);
     }
 
     if (item.type === "entity") {
-      return { text: item.name };
+      return createSegment(item.name, {
+        type: "entity",
+        image: item.image || null,
+        payload: {
+          entityType: item.entityType || null,
+          entityId: item.entityId || null,
+          slug: item.slug || null,
+        },
+        entityType: item.entityType || null,
+        entityId: item.entityId || null,
+        slug: item.slug || null,
+      });
     }
 
     // fallback for unknown types
-    return { text: "Unknown" };
+    return createSegment("Unknown");
   });
 
   setadvancedOptions(false);
@@ -135,7 +146,6 @@ const ListSelector = ({ html, setSegData }) => {
     setIsModalOpen(false);
   };
 
-  if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -145,10 +155,11 @@ const ListSelector = ({ html, setSegData }) => {
           <select
             value={selectedListId || ""}
             onChange={handleListChange}
+            onFocus={fetchLists}
             className="w-full py-1 px-3 border rounded-lg bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-white"
           >
             <option value="" disabled>
-              Select a List to Load
+              {loading ? "Loading lists..." : "Select a List to Load"}
             </option>
             {lists.map((list) => (
               // <option key={list._id} value={list._id}>
