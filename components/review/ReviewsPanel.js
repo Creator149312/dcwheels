@@ -7,13 +7,16 @@ import ReviewList from "./ReviewList";
 import apiConfig from "@utils/ApiUrlConfig";
 
 // layout prop is forwarded to ReviewList.
-// Pass layout="horizontal" to render reviews as a horizontal scroll row.
+// formPosition = "top" (default) | "bottom" — controls whether the write-review
+// form appears before or after the review list. Use "bottom" so readers see
+// social proof (existing reviews) before the write-review CTA.
 export default function ReviewsPanel({
   type,
   contentId,
   isLoggedIn,
   openLoginPrompt,
   layout = "vertical",
+  formPosition = "top",
 }) {
   const [recommend, setRecommend] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,38 +82,26 @@ export default function ReviewsPanel({
 
   return (
     <div className="space-y-6">
-      {/* Review creation */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 mb-3">
-          <span className="text-sm font-medium mb-2 sm:mb-0">
-            Do you recommend this {type}?
-          </span>
-          <ReviewRecommendToggle
-            value={recommend}
-            onChange={handleRecommendChange}
-            disabled={submitting}
-            isLoggedIn={isLoggedIn}
-            openLoginPrompt={openLoginPrompt}
-          />
-        </div>
+      {/* Write-review form — position determined by formPosition prop */}
+      {formPosition === "top" && (
+        <ReviewCreationBlock
+          type={type}
+          recommend={recommend}
+          submitting={submitting}
+          isLoggedIn={isLoggedIn}
+          openLoginPrompt={openLoginPrompt}
+          onRecommendChange={handleRecommendChange}
+          onSubmit={handleSubmit}
+        />
+      )}
 
-        {recommend !== null && (
-          <div className="mt-3 rounded-md border border-gray-300 dark:border-gray-700 p-3">
-            <ReviewForm
-              recommend={recommend}
-              onSubmit={handleSubmit}
-              submitting={submitting}
-              minChars={50}
-              isLoggedIn={isLoggedIn}
-              openLoginPrompt={openLoginPrompt}
-            />
-          </div>
+      {/* Review list — visible first when formPosition="bottom" */}
+      <div>
+        {reviews.length > 0 && (
+          <h4 className="text-sm font-semibold mb-2">
+            User Reviews ({reviews.length})
+          </h4>
         )}
-      </div>
-
-      {/* Review list */}
-      <div>
-        <h4 className="text-sm font-semibold mb-2">User Reviews</h4>
         {loading ? (
           <p className="text-sm text-gray-500">Loading reviews…</p>
         ) : (
@@ -122,6 +113,60 @@ export default function ReviewsPanel({
           />
         )}
       </div>
+
+      {/* Write-review form at the bottom (social-proof-first pattern) */}
+      {formPosition === "bottom" && (
+        <ReviewCreationBlock
+          type={type}
+          recommend={recommend}
+          submitting={submitting}
+          isLoggedIn={isLoggedIn}
+          openLoginPrompt={openLoginPrompt}
+          onRecommendChange={handleRecommendChange}
+          onSubmit={handleSubmit}
+        />
+      )}
+    </div>
+  );
+}
+
+// Extracted form block to avoid duplication between top/bottom positions.
+function ReviewCreationBlock({
+  type,
+  recommend,
+  submitting,
+  isLoggedIn,
+  openLoginPrompt,
+  onRecommendChange,
+  onSubmit,
+}) {
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 mb-3">
+        <span className="text-sm font-medium mb-2 sm:mb-0">
+          Do you recommend this {type}?
+        </span>
+        <ReviewRecommendToggle
+          value={recommend}
+          onChange={onRecommendChange}
+          disabled={submitting}
+          isLoggedIn={isLoggedIn}
+          openLoginPrompt={openLoginPrompt}
+        />
+      </div>
+
+      {recommend !== null && (
+        <div className="mt-3 rounded-md border border-gray-300 dark:border-gray-700 p-3">
+          <ReviewForm
+            recommend={recommend}
+            onSubmit={onSubmit}
+            submitting={submitting}
+            minChars={50}
+            isLoggedIn={isLoggedIn}
+            openLoginPrompt={openLoginPrompt}
+          />
+        </div>
+      )}
     </div>
   );
 }

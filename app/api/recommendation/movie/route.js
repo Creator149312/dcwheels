@@ -22,7 +22,7 @@ export async function GET(req) {
   url.searchParams.set("vote_average.gte", "7"); // good rating
   url.searchParams.set("vote_count.gte", "200"); // enough votes to be reliable
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
   const data = await res.json();
 
   let filtered = (data.results || []).filter((m) => m.poster_path);
@@ -33,5 +33,5 @@ export async function GET(req) {
   }
 
   // Return a handful of candidates, client picks first unseen
-  return Response.json(filtered.slice(0, 5));
+  return Response.json(filtered.slice(0, 10));
 }

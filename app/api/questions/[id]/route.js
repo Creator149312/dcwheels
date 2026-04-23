@@ -88,19 +88,29 @@ export async function DELETE(req, { params }) {
     }
 
     const { id } = params;
-    const userId = session.user.id;
+
+    // Resolve the caller's MongoDB _id — prefer JWT-stored id, fall back to email lookup
+    let callerId = session.user.id;
+    if (!callerId) {
+      const caller = await User.findOne({ email: session.user.email }).select("_id").lean();
+      callerId = caller?._id?.toString();
+    }
+
+    if (!callerId) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     const question = await Question.findById(id);
     if (!question) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (String(question.createdBy) !== userId /* && !session.user.isAdmin */) {
+    if (String(question.createdBy) !== callerId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await Question.findByIdAndDelete(id);
-    await QuestionVote.deleteMany({ questionId: id }); // ✅ Clean up votes
+    await QuestionVote.deleteMany({ questionId: id });
 
     return NextResponse.json({ success: true });
   } catch (err) {

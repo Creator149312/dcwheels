@@ -1,6 +1,3 @@
-// LEGACY — replaced by ReactionTest model (models/reactiontest.js)
-// This model is no longer used by any active code.
-// Safe to delete once you confirm no DB collection migration is needed.
 import mongoose, { Schema, models } from "mongoose";
 
 const ReactionSchema = new Schema(
@@ -11,27 +8,41 @@ const ReactionSchema = new Schema(
       required: true,
       index: true,
     },
-    contentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "TopicPage",
+
+    // The type of entity being reacted to (post, review, question, comment, etc.)
+    entityType: {
+      type: String,
+      enum: ["post", "review", "question", "comment", "topicpage", "wheel"],
       required: true,
       index: true,
     },
-    type: {
+
+    // The specific entity's ID
+    entityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+
+    // Reaction type (default to "like" for now, but can expand later)
+    reactionType: {
       type: String,
-      enum: ["anime", "movie", "game", "custom"],
+      enum: ["like", "heart", "laugh", "sad", "angry"],
+      default: "like",
       required: true,
     },
-    reaction: { type: String, required: true }, // e.g., "like", "heart", "excited"
   },
   { timestamps: true }
 );
 
-// Enforce 1 active reaction per user per content
-ReactionSchema.index({ userId: 1, contentId: 1 }, { unique: true });
+// If you only want ONE reaction of any type per user per entity:
+ReactionSchema.index({ userId: 1, entityType: 1, entityId: 1 }, { unique: true });
 
-// If you later want to allow multiple different reactions from the same user on the same content,
-// change the unique index to include reaction: index({ userId: 1, contentId: 1, reaction: 1 }, { unique: true })
+// For counting reactions by entity (used in getContentStats)
+ReactionSchema.index({ entityType: 1, entityId: 1, reactionType: 1 });
+
+// If you want to allow multiple reaction types from same user on same entity:
+// ReactionSchema.index({ userId: 1, entityType: 1, entityId: 1, reactionType: 1 }, { unique: true });
 
 const Reaction = models.Reaction || mongoose.model("Reaction", ReactionSchema);
 export default Reaction;

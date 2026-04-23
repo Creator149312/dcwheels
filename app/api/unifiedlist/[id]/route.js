@@ -1,5 +1,6 @@
 // app/api/lists/[id]/route.js
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth"; // if using next-auth
@@ -110,6 +111,10 @@ export async function PUT(req, { params }) {
 
     await list.save();
 
+    // Bust ISR cache for both the index and this detail page.
+    revalidatePath("/lists");
+    revalidatePath(`/lists/${id}`);
+
     return NextResponse.json(
       {
         message: "List updated",
@@ -152,6 +157,9 @@ export async function DELETE(req, { params }) {
         { status: 404 }
       );
     }
+
+    revalidatePath("/lists");
+    revalidatePath(`/lists/${id}`);
 
     return NextResponse.json(
       { message: "List deleted successfully" },

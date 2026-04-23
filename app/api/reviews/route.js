@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongodb";
 import Review from "@models/review";
-import ReactionTest from "@models/reactiontest"; // NEW: import your unified Reaction model
+import Reaction from "@models/reaction"; // Unified reaction model
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import User from "@models/user";
@@ -75,14 +75,14 @@ export async function GET(req) {
     // Attach likes info from Reaction model
     const enhanced = await Promise.all(
       reviews.map(async (r) => {
-        const likesCount = await ReactionTest.countDocuments({
+        const likesCount = await Reaction.countDocuments({
           entityType: "review",
           entityId: r._id,
           reactionType: "like",
         });
 
         const likedByCurrentUser = currentUser
-          ? await ReactionTest.exists({
+          ? await Reaction.exists({
               entityType: "review",
               entityId: r._id,
               reactionType: "like",

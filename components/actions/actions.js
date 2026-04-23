@@ -23,8 +23,10 @@ import {
   ensureArrayOfObjects,
   replaceUnderscoreWithDash,
 } from "@utils/HelperFunctions";
-import ReactionTest from "@models/reactiontest";
+import Reaction from "@models/reaction";
 import Follow from "@models/follow";
+import Comment from "@models/comment";
+import WheelAnalytics from "@models/wheelAnalytics";
 import apiConfig from "@utils/ApiUrlConfig";
 import { OpenAI } from "openai";
 import ApiLog from "@models/apilogs";
@@ -368,16 +370,35 @@ export const verifyUserEmailbyToken = async (token) => {
 };
 
 export async function getPageDataBySlug(slug) {
-  //check if token is valid
   await connectMongoDB();
 
-  // const pageData = await Page.findOne({ slug }).populate("wheel");
-  const pageData = await Page.findOne({ slug })
-    .select("title description content wheel")
-    .populate("wheel")
-    .lean();
+  // Single aggregation with $lookup — replaces the prior .populate() pattern
+  // which issued 2 sequential round-trips (Page findOne → Wheel findOne).
+  // This halves DB latency for /wheels/[slug] at scale.
+  const results = await Page.aggregate([
+    { $match: { slug } },
+    { $limit: 1 },
+    {
+      $lookup: {
+        from: "wheels", // Mongoose pluralizes "Wheel" → "wheels"
+        localField: "wheel",
+        foreignField: "_id",
+        as: "wheel",
+      },
+    },
+    { $addFields: { wheel: { $arrayElemAt: ["$wheel", 0] } } },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        content: 1,
+        wheel: 1,
+      },
+    },
+  ]);
 
-  return pageData;
+  // Preserve legacy contract: caller checks `pageData === undefined` for 404 redirect.
+  return results[0] || undefined;
 }
 
 export async function fetchRelatedWheels(tags) {
@@ -387,6 +408,97 @@ export async function fetchRelatedWheels(tags) {
     // { cache: "no-store" } // or { next: { revalidate: 60 } } for caching
   );
   return await res.json();
+}
+
+/**
+ * Direct DB fetch for a wheel by ObjectId.
+ * Use this in SSR contexts instead of HTTP self-calling /api/wheel/[id] —
+ * avoids the extra serverless invocation + JSON round-trip (~200-400ms saved).
+ */
+export async function getWheelById(wheelId) {
+  if (!wheelId || !mongoose.Types.ObjectId.isValid(wheelId)) return null;
+  await connectMongoDB();
+  return Wheel.findOne({ _id: wheelId }).lean();
+}
+
+/**
+ * Paginated wheels filtered by a single tag.
+ * Used by `/tags/[tagId]` (SSR) and the "Load more" client action.
+ *
+ * Perf notes:
+ *   - Lowercases the tag so the equality match can use the `tags: 1` index.
+ *     Wheel.tags is normalised on write (see models/wheel.js setter).
+ *   - `.lean()` returns plain JS objects — faster + smaller payload.
+ *   - Caller should prefer cursor-based pagination for deep pages
+ *     (see P1 audit); this keeps skip/limit for backward-compat.
+ */
+export async function getWheelsByTag(tag, { limit = 20, skip = 0 } = {}) {
+  if (!tag || typeof tag !== "string") return [];
+  await connectMongoDB();
+
+  const normalized = tag.toLowerCase().trim();
+
+  return Wheel.find({ tags: normalized })
+    .select("title slug wheelPreview createdAt")
+    .sort({ createdAt: -1 })
+    .skip(Math.max(0, parseInt(skip, 10) || 0))
+    .limit(Math.max(1, Math.min(100, parseInt(limit, 10) || 20)))
+    .lean();
+}
+
+/**
+ * Direct DB aggregation for tag-based related wheels.
+ * Mirrors /api/related-wheels/advanced but called in-process for SSR use.
+ */
+export async function getRelatedWheelsByTags(tags, currentId = null) {
+  if (!Array.isArray(tags) || tags.length === 0) return [];
+  await connectMongoDB();
+
+  const excludeId =
+    currentId && mongoose.Types.ObjectId.isValid(currentId)
+      ? new mongoose.Types.ObjectId(currentId)
+      : null;
+
+  const pipeline = [
+    {
+      $match: {
+        tags: { $in: tags },
+        ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+      },
+    },
+    {
+      $addFields: {
+        overlapCount: {
+          $size: {
+            $filter: {
+              input: "$tags",
+              as: "tag",
+              cond: { $in: ["$$tag", tags] },
+            },
+          },
+        },
+      },
+    },
+    { $match: { overlapCount: { $gte: 1 } } },
+    { $sort: { overlapCount: -1, createdAt: -1 } },
+    { $limit: 20 },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        wheelPreview: 1,
+        tags: 1,
+        overlapCount: 1,
+      },
+    },
+  ];
+
+  const candidates = await Wheel.aggregate(pipeline);
+
+  // Diversity injection — same logic as /api/related-wheels/advanced
+  const topOverlap = candidates.slice(0, 7);
+  const shuffled = candidates.slice(7).sort(() => 0.5 - Math.random());
+  return [...topOverlap, ...shuffled.slice(0, 3)];
 }
 
 export async function getAllWheelPages() {
@@ -487,77 +599,156 @@ export async function storeWheelDataToDatabase(initialJSONData) {
  * @param {string} params.entityId   - ObjectId string
  */
 
-export async function getContentStats({ entityType, entityId, show }) {
+export async function getContentStats({ entityType, entityId, show, userEmail, userId: passedUserId }) {
   await connectMongoDB();
 
   const id = mongoose.Types.ObjectId.isValid(entityId)
     ? new mongoose.Types.ObjectId(entityId)
     : entityId;
 
-  // Identify current user
+  // Resolve userId — prefer passed ID (from session.user.id), fall back to email lookup
   let userId = null;
   try {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.email) {
-      const user = await User.findOne({ email: session.user.email }).lean();
+    if (passedUserId && mongoose.Types.ObjectId.isValid(passedUserId)) {
+      userId = new mongoose.Types.ObjectId(passedUserId);
+    } else if (userEmail) {
+      const user = await User.findOne({ email: userEmail })
+        .select("_id")
+        .lean();
       if (user) userId = user._id;
+    } else {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        userId = new mongoose.Types.ObjectId(session.user.id);
+      } else if (session?.user?.email) {
+        const user = await User.findOne({ email: session.user.email })
+          .select("_id")
+          .lean();
+        if (user) userId = user._id;
+      }
     }
   } catch (err) {
-    console.error("Session lookup failed:", err);
+    console.error("User lookup failed:", err);
   }
+
+  // Build all queries in parallel instead of sequential
+  const queries = [];
+  const queryKeys = [];
+
+  if (show?.like) {
+    // Use countDocuments instead of aggregate — much cheaper with compound index
+    queries.push(
+      Reaction.countDocuments({ entityType, entityId: id, reactionType: "like" })
+    );
+    queryKeys.push("likeCount");
+
+    if (userId) {
+      queries.push(
+        Reaction.findOne({ entityType, entityId: id, userId })
+          .select("reactionType")
+          .lean()
+      );
+      queryKeys.push("userReact");
+    }
+  }
+
+  if (show?.follow) {
+    queries.push(
+      Follow.countDocuments({ entityType, entityId: id })
+    );
+    queryKeys.push("followCount");
+
+    if (userId) {
+      queries.push(
+        Follow.findOne({ entityType, entityId: id, userId }).lean()
+      );
+      queryKeys.push("userFollow");
+    }
+  }
+
+  const results = await Promise.all(queries);
+
+  // Map results back by key
+  const resultMap = {};
+  queryKeys.forEach((key, i) => { resultMap[key] = results[i]; });
 
   const result = {};
 
-  // --- Reactions ---
   if (show?.like) {
-    const reactionAgg = await ReactionTest.aggregate([
-      { $match: { entityType, entityId: id } },
-      { $group: { _id: "$reactionType", count: { $sum: 1 } } },
-    ]);
-
-    const reactions = {};
-    const reactedByUser = {};
-
-    reactionAgg.forEach(({ _id, count }) => {
-      reactions[_id] = count;
-      reactedByUser[_id] = false;
-    });
-
-    if (userId) {
-      const userReacts = await ReactionTest.find({
-        entityType,
-        entityId: id,
-        userId,
-      }).lean();
-
-      userReacts.forEach((r) => {
-        reactedByUser[r.reactionType] = true;
-      });
-    }
-
-    result.reactions = reactions;
-    result.reactedByUser = reactedByUser;
+    result.reactions = { like: resultMap.likeCount || 0 };
+    result.reactedByUser = {
+      like: !!resultMap.userReact,
+    };
   }
 
-  // --- Follows ---
   if (show?.follow) {
-    result.followCount = await Follow.countDocuments({
-      entityType,
-      entityId: id,
-    });
-
-    result.isFollowing = false;
-    if (userId) {
-      const existingFollow = await Follow.findOne({
-        entityType,
-        entityId: id,
-        userId,
-      }).lean();
-      if (existingFollow) result.isFollowing = true;
-    }
+    result.followCount = resultMap.followCount || 0;
+    result.isFollowing = !!resultMap.userFollow;
   }
 
   return result;
+}
+
+/**
+ * Batched wheel-page hydration data.
+ * Replaces 3 separate client calls (/api/wheel-analytics/:id,
+ * /api/comments/count, getContentStats) with a single parallel DB round-trip.
+ *
+ * Called from SSR (page.js) to pass as `initialMeta` prop so the client
+ * renders with real numbers immediately — no 0→N flicker, no client fetch.
+ *
+ * Also powers /api/wheel/:id/meta for any client-side refresh scenarios.
+ *
+ * @param {string} wheelId - The wheel's ObjectId.
+ * @param {string|null} userId - Optional current user id for `reactedByUser`.
+ */
+export async function getWheelMeta(wheelId, userId = null) {
+  if (!wheelId || !mongoose.Types.ObjectId.isValid(wheelId)) {
+    return null;
+  }
+  await connectMongoDB();
+
+  const wheelObjectId = new mongoose.Types.ObjectId(wheelId);
+  const userObjectId =
+    userId && mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : null;
+
+  // Run all 4 independent reads in parallel.
+  const [analytics, commentCount, likeCount, userReact] = await Promise.all([
+    WheelAnalytics.findOne({ wheel: wheelObjectId })
+      .select("view_count spin_count")
+      .lean(),
+    Comment.countDocuments({
+      entityType: "wheel",
+      entityId: wheelObjectId,
+      parentCommentId: null,
+    }),
+    Reaction.countDocuments({
+      entityType: "wheel",
+      entityId: wheelObjectId,
+      reactionType: "like",
+    }),
+    userObjectId
+      ? Reaction.findOne({
+          entityType: "wheel",
+          entityId: wheelObjectId,
+          userId: userObjectId,
+        })
+          .select("reactionType")
+          .lean()
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    analytics: {
+      view_count: analytics?.view_count || 0,
+      spin_count: analytics?.spin_count || 0,
+    },
+    commentCount: commentCount || 0,
+    reactions: { like: likeCount || 0 },
+    reactedByUser: { like: !!userReact },
+  };
 }
 
 /**

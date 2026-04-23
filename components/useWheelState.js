@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useContext, useRef, useMemo } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import {
   prepareData,
@@ -11,6 +11,71 @@ import {
 import { usePathname } from "next/navigation";
 import { useWheelSounds } from "./useWheelSounds";
 import toast from "react-hot-toast";
+
+const IMAGES_LS_KEY = "SpinpapaWheelImages";
+
+// Content-based fingerprint for a data: URL. Cheap (no crypto) but unique
+// enough to dedupe identical images — e.g. when the user duplicates a segment
+// many times, all N copies share one storage slot instead of N.
+function imgFingerprint(dataUrl) {
+  return `${dataUrl.length}:${dataUrl.slice(-48)}`;
+}
+
+// Build a content-deduped image store:
+//   { images: { [hash]: dataUrl }, refs: { [segId]: hash } }
+// This is what actually gets written to localStorage.
+function splitSegImages(segData) {
+  const images = {};
+  const refs = {};
+  const lightSegData = segData.map((seg) => {
+    if (typeof seg.image === "string" && seg.image.startsWith("data:")) {
+      const hash = imgFingerprint(seg.image);
+      if (!images[hash]) images[hash] = seg.image;
+      refs[seg.id] = hash;
+      return { ...seg, image: null };
+    }
+    return seg;
+  });
+  return { lightSegData, images, refs };
+}
+
+function readImageStore() {
+  if (typeof window === "undefined") return { images: {}, refs: {} };
+  try {
+    const raw = window.localStorage.getItem(IMAGES_LS_KEY);
+    if (!raw) return { images: {}, refs: {} };
+    const parsed = JSON.parse(raw);
+    // Backward compat: older format was a flat { [segId]: dataUrl } map.
+    if (parsed && parsed.images && parsed.refs) return parsed;
+    if (parsed && typeof parsed === "object") {
+      const images = {};
+      const refs = {};
+      for (const [id, url] of Object.entries(parsed)) {
+        if (typeof url !== "string" || !url.startsWith("data:")) continue;
+        const hash = imgFingerprint(url);
+        if (!images[hash]) images[hash] = url;
+        refs[id] = hash;
+      }
+      return { images, refs };
+    }
+    return { images: {}, refs: {} };
+  } catch {
+    return { images: {}, refs: {} };
+  }
+}
+
+// Rehydrate full data URLs into segData after load.
+function rehydrateSegImages(segData) {
+  if (!segData || !Array.isArray(segData)) return segData;
+  const { images, refs } = readImageStore();
+  if (!Object.keys(images).length) return segData;
+  return segData.map((seg) => {
+    if (seg.image) return seg;
+    const hash = refs[seg.id];
+    const dataUrl = hash ? images[hash] : null;
+    return dataUrl ? { ...seg, image: dataUrl } : seg;
+  });
+}
 
 export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
   const {
@@ -48,20 +113,59 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
   const [muted, setMuted] = useState(false);
   const { startTicking, stopTicking, playVictory } = useWheelSounds(muted);
   const initializedRef = useRef(false);
+  const lastImageSigRef = useRef("");
+  const quotaWarnedRef = useRef(false);
 
   const saveWheelData = (segData, wheelData) => {
-    const wheelObject = {
-      title: wheelTitle || "Default Title",
-      description: wheelDescription || "Default Description",
-      type: wheelType || "basic",
-      data: segData,
-      wheelData: wheelData,
-    };
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        window.localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
-      } catch (e) {
-        toast.error("Error saving wheel, Please try again after sometime!");
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      const { lightSegData, images, refs } = splitSegImages(segData);
+      const wheelObject = {
+        title: wheelTitle || "Default Title",
+        description: wheelDescription || "Default Description",
+        type: wheelType || "basic",
+        data: lightSegData,
+        wheelData: wheelData,
+      };
+      window.localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
+
+      // Persist image store separately — only when the unique image set
+      // actually changes. This prevents rewriting multi-MB base64 blobs on
+      // every keystroke, and dedupes duplicated segments so N copies of the
+      // same image share one slot instead of N.
+      const imageSig = Object.keys(images).sort().join("|");
+      const refsSig = Object.entries(refs)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, h]) => `${id}=${h}`)
+        .join("|");
+      const combinedSig = `${imageSig}##${refsSig}`;
+      if (combinedSig !== lastImageSigRef.current) {
+        lastImageSigRef.current = combinedSig;
+        try {
+          if (imageSig.length) {
+            window.localStorage.setItem(
+              IMAGES_LS_KEY,
+              JSON.stringify({ images, refs })
+            );
+          } else {
+            window.localStorage.removeItem(IMAGES_LS_KEY);
+          }
+        } catch (quotaErr) {
+          // localStorage has a ~5MB per-origin quota. At that size we just
+          // stop persisting images locally — they still work in memory until
+          // the wheel is saved to the server. Warn once per session.
+          if (!quotaWarnedRef.current) {
+            quotaWarnedRef.current = true;
+            toast("Too many local images to cache — save your wheel to keep them.", { icon: "ℹ️" });
+          }
+          try { window.localStorage.removeItem(IMAGES_LS_KEY); } catch {}
+        }
+      }
+    } catch (e) {
+      // Non-image localStorage failure (e.g. private browsing) — warn once.
+      if (!quotaWarnedRef.current) {
+        quotaWarnedRef.current = true;
+        toast.error("Error saving wheel locally. Your changes still work in this tab.");
       }
     }
   };
@@ -144,27 +248,38 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
     }
   };
 
-  // Sync data when segments/wheel settings change
+  // Memoize the expensive transform — only recompute when real inputs change.
+  // Identity is stable across unrelated re-renders so downstream <Wheel> doesn't
+  // get a new array reference every time something unrelated re-renders.
+  const preparedData = useMemo(
+    () => prepareData(
+      segData,
+      wheelData.segColors,
+      maxlengthOfSegmentText,
+      advancedOptions,
+      wheelData.mysteryMode
+    ),
+    [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, advancedOptions]
+  );
+
+  // Debounced sync to context `data` + localStorage save. Text keystrokes burst
+  // through this effect; without debouncing, every keypress would re-render the
+  // whole wheel and do a synchronous JSON.stringify of the full wheel state.
   const renderCountRef = useRef(0);
   useEffect(() => {
-    setData(
-      prepareData(
-        segData,
-        wheelData.segColors,
-        maxlengthOfSegmentText,
-        advancedOptions,
-        wheelData.mysteryMode
-      )
-    );
-    setMaxlengthOfSegmentText(calculateMaxLengthOfText(segData));
-    setSegTxtfontSize(calculateFontSizeOfText(maxlengthOfSegmentText, segData));
-    // Skip saving until mount effect has loaded and its state changes have settled.
-    // Render 0 = initial, render 1 = mount effect state committed. Save from render 2+.
-    if (currentPath === "/") {
-      renderCountRef.current++;
-      if (renderCountRef.current > 2) saveWheelData(segData, wheelData);
-    }
-  }, [segData, wheelData, advancedOptions, wheelType]);
+    const maxLen = calculateMaxLengthOfText(segData);
+    setMaxlengthOfSegmentText(maxLen);
+    setSegTxtfontSize(calculateFontSizeOfText(maxLen, segData));
+
+    const t = setTimeout(() => {
+      setData(preparedData);
+      if (currentPath === "/") {
+        renderCountRef.current++;
+        if (renderCountRef.current > 2) saveWheelData(segData, wheelData);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [preparedData, segData, wheelData, advancedOptions, wheelType]);
 
   // Initialize from localStorage or props on mount
   useEffect(() => {
@@ -173,8 +288,19 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
       initializedRef.current = true;
 
       // Use localStorage data if it exists, otherwise fall back to defaults
-      const localSegData = wheelFromBrowserStorage?.data || newSegments;
+      const rawSegData = wheelFromBrowserStorage?.data || newSegments;
+      const localSegData = rehydrateSegImages(rawSegData);
       const localWheelData = wheelFromBrowserStorage?.wheelData || wheelData;
+
+      // Seed image signature from hydrated segments so the first real save
+      // doesn't unnecessarily rewrite the image store.
+      const { images: seedImages, refs: seedRefs } = splitSegImages(localSegData);
+      const seedImgSig = Object.keys(seedImages).sort().join("|");
+      const seedRefSig = Object.entries(seedRefs)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, h]) => `${id}=${h}`)
+        .join("|");
+      lastImageSigRef.current = `${seedImgSig}##${seedRefSig}`;
 
       if (wheelFromBrowserStorage?.type) setWheelType(wheelFromBrowserStorage.type);
       if (wheelFromBrowserStorage?.title) setWheelTitle(wheelFromBrowserStorage.title);

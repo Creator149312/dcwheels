@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
 import { FiZap } from "react-icons/fi";
 import SharePopup from "@components/SharePopup";
@@ -9,10 +10,11 @@ import { createSegment } from "@utils/segmentUtils";
 import AddListItemModal from "@components/lists/AddListItemModal";
 import EditListModal from "@components/lists/EditListModal";
 
-export default function ListDetailClient({ initialList, listId, isOwner }) {
+export default function ListDetailClient({ initialList, listId, isOwner: isOwnerProp }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isContentMode = searchParams.get("mode") === "content";
+  const { data: session } = useSession();
 
   const [list, setList] = useState(initialList);
   const [listMenuOpen, setListMenuOpen] = useState(false);
@@ -20,6 +22,16 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const listMenuRef = useRef(null);
+
+  // Owner check runs client-side via the session so the server page can be
+  // CDN-cached regardless of who requests it. `isOwnerProp` is accepted for
+  // back-compat / SSR fallback during initial hydration.
+  const isOwner = useMemo(() => {
+    if (typeof isOwnerProp === "boolean") return isOwnerProp;
+    const uid = session?.user?.id;
+    return !!uid && list?.userId && uid === list.userId;
+  }, [isOwnerProp, session?.user?.id, list?.userId]);
+
 
   // ✅ Close menu when clicking outside
   useEffect(() => {
@@ -130,7 +142,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
       : null;
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 relative">
+    <div className="px-4 py-4 md:px-6 bg-gray-50 dark:bg-gray-900 relative">
 
       {/* ✅ Actions Menu (Owner Only) */}
       {isOwner && (
@@ -169,7 +181,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
 
       {/* Content Mode Banner */}
       {isContentMode && (
-        <div className="mb-6 flex items-center gap-4 rounded-xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
           <FiZap size={18} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span className="text-sm font-medium flex-1">You&apos;re in Content Wheel mode. Click <strong>Spin this List</strong> below to load it into the wheel.</span>
           <button
@@ -183,8 +195,8 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
       )}
 
       {/* ✅ Header */}
-      <div className="flex items-center mb-6">
-        <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-6 rounded overflow-hidden">
+      <div className="flex items-center mb-4">
+        <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-4 rounded-lg overflow-hidden">
           {coverImage ? (
             <img src={coverImage} className="w-full h-full object-cover" />
           ) : (
@@ -195,19 +207,19 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
         </div>
 
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {list.name}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {list.items.length} items
           </p>
-          <p className="text-gray-500 dark:text-gray-400 mt-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
             {list.description}
           </p>
           <button
             onClick={spinList}
             disabled={list.items.length === 0}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
+            className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
           >
             <FiZap size={15} />
             Spin this List
@@ -216,7 +228,7 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
       </div>
 
       {/* ✅ Items */}
-      <div className="space-y-4 overflow-y-auto pr-2">
+      <div className="space-y-2 overflow-y-auto pr-2">
         {list.items.map((item, index) => {
           const isEntity = item.type === "entity";
           const isWord = item.type === "word";
@@ -231,10 +243,10 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
           return (
             <div
               key={safeId}
-              className="group flex items-center justify-between bg-white dark:bg-gray-800 shadow rounded-lg p-3"
+              className="group flex items-center justify-between bg-white dark:bg-gray-800 shadow rounded-lg p-2"
             >
               <div className="flex items-center">
-                <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded mr-4 overflow-hidden">
+                <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded mr-3 overflow-hidden flex-shrink-0">
                   {thumbnail ? (
                     <img src={thumbnail} className="w-full h-full object-cover" />
                   ) : (
@@ -250,20 +262,20 @@ export default function ListDetailClient({ initialList, listId, isOwner }) {
                     <>
                       <a
                         href={`/${item.entityType}/${item.slug}`}
-                        className="font-semibold text-lg hover:underline text-gray-900 dark:text-gray-100"
+                        className="font-semibold text-sm hover:underline text-gray-900 dark:text-gray-100"
                       >
                         {item.name}
                       </a>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                         {item.entityType}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">
                         {item.word}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {item.wordData?.startsWith("data:image")
                           ? "Image"
                           : item.wordData || ""}

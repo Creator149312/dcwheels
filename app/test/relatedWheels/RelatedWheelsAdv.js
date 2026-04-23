@@ -33,7 +33,7 @@ export default function RelatedContent({ currentTags }) {
     <div className="space-y-4 max-h-[400px] overflow-y-auto">
       {items.map((item) => {
         // Different fields depending on type
-        const thumbnail = type === "wheels" ? null : item.cover; // topic pages use .cover
+        const thumbnail = type === "wheels" ? item.wheelPreview : item.cover;
         const title =
           type === "wheels"
             ? item.title
@@ -70,11 +70,11 @@ export default function RelatedContent({ currentTags }) {
                 <span className="font-medium text-sm line-clamp-2 text-gray-900 dark:text-gray-100">
                   {title}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {type === "wheels"
-                    ? item.data?.length
-                    : item.tags?.length || 0}
-                </span>
+                {type === "pages" && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {item.tags?.length || 0} tags
+                  </span>
+                )}
               </div>
             </a>
           </div>

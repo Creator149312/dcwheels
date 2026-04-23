@@ -1,78 +1,26 @@
 import { validateObjectID } from "@utils/Validator";
-import apiConfig from "@utils/ApiUrlConfig";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
-import { headers } from "next/headers";
-import { incrementWheelViewCount, shouldTrackView } from "@lib/wheelAnalytics";
+import ViewTracker from "@components/ViewTracker";
+import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
 
-const adminCommonID = "gauravsingh9314@gmail.com";
-
-// Updated Shared fetcher for wheel data, longer caching if wheel is created by admin otherwise it is short
-// async function fetchWheelData(id) {
-//   if (!validateObjectID(id)) return null;
-
-//   try {
-//     const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
-//       // ✅ enable caching with revalidation
-//       next: { revalidate: 360 }, // cache for 2 minutes
-//     });
-
-//     if (!response.ok) throw new Error("Failed to fetch wheel");
-
-//     const data = await response.json();
-//     return data.list || null;
-//   } catch (err) {
-//     console.error("Wheel fetch failed:", err);
-//     return null;
-//   }
-// }
+// ISR: revalidate user-wheel pages every 10 minutes.
+// View tracking runs client-side via <ViewTracker /> so this page can be
+// CDN-cached instead of invoking analytics on every request.
+export const revalidate = 600;
 
 async function fetchWheelData(id) {
-  if (!validateObjectID(id)) return null;
-
-  try {
-    // Decide cache duration before fetching
-    // Default short cache (6 minutes), longer cache (1 week) if admin
-    const response = await fetch(`${apiConfig.apiUrl}/wheel/${id}`);
-
-    if (!response.ok) throw new Error("Failed to fetch wheel");
-
-    const data = await response.json();
-    const wheel = data.list || null;
-
-    if (!wheel) return null;
-
-    const createdByAdmin = wheel?.createdBy === adminCommonID;
-
-    // Pick cache duration based on admin flag
-    const cacheDuration = createdByAdmin ? 604800 : 120;
-    //  console.log("Created By Admin = " + createdByAdmin + " Cache Duration =" + cacheDuration);
-
-    // Return wheel data with correct cache duration applied
-    const cachedResponse = await fetch(`${apiConfig.apiUrl}/wheel/${id}`, {
-      next: { revalidate: cacheDuration },
-    });
-
-    if (!cachedResponse.ok) throw new Error("Failed to fetch wheel with cache");
-
-    const cachedData = await cachedResponse.json();
-    return cachedData.list || null;
-  } catch (err) {
-    console.error("Wheel fetch failed:", err);
-    return null;
-  }
+  // Direct DB call (bypasses HTTP self-call to /api/wheel/[id]).
+  // Saves ~200-400ms TTFB + one serverless invocation per page load.
+  return getWheelById(id);
 }
 
-async function fetchRelatedWheels(tags) {
-  // ✅ Fetch on the server
-  const res = await fetch(
-    `${apiConfig.apiUrl}/related-wheels/advanced?tags=${tags.join(",")}`
-    // { cache: "no-store" } // or { next: { revalidate: 60 } } for caching
-  );
-  return await res.json();
+async function fetchRelatedWheels(tags, currentId) {
+  // Direct DB aggregation (bypasses HTTP self-call to /api/related-wheels/advanced).
+  return getRelatedWheelsByTags(tags, currentId);
 }
 
 export async function generateMetadata({ params }) {
@@ -120,23 +68,32 @@ export async function generateMetadata({ params }) {
  *  Page Component
  */
 export default async function Page({ params }) {
-  const session = await getServerSession(authOptions);
-  const wordsList = await fetchWheelData(params.wheelId);
-
-  const requestHeaders = headers();
-  if (wordsList && shouldTrackView(requestHeaders)) {
-    await incrementWheelViewCount(params.wheelId);
+  // Early exit on invalid ObjectId — avoids a useless DB round-trip.
+  if (!validateObjectID(params.wheelId)) {
+    return <div>Invalid wheel ID.</div>;
   }
 
-  const relatedWheels =
+  // Fetch wheel data and session in parallel
+  const [session, wordsList] = await Promise.all([
+    getServerSession(authOptions),
+    fetchWheelData(params.wheelId),
+  ]);
+
+  // Fetch related wheels only if tags exist (don't block initial render)
+  const [relatedWheels, initialMeta] = await Promise.all([
     wordsList?.tags && wordsList.tags.length > 0
-      ? await fetchRelatedWheels(wordsList.tags)
-      : [];
+      ? fetchRelatedWheels(wordsList.tags, params.wheelId)
+      : Promise.resolve([]),
+    wordsList
+      ? getWheelMeta(params.wheelId, session?.user?.id || null)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div>
       {wordsList ? (
         <>
+          <ViewTracker wheelId={params.wheelId} />
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={wordsList?.wheelData ?? null}
@@ -148,6 +105,7 @@ export default async function Page({ params }) {
             wordsList={wordsList}
             session={session}
             wheelId={params.wheelId}
+            initialMeta={initialMeta}
           />
         </>
       ) : (

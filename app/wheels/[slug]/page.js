@@ -1,17 +1,21 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import {
   fetchRelatedWheels,
   getPageDataBySlug,
+  getWheelMeta,
 } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
-import { getServerSession } from "@node_modules/next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import { incrementWheelViewCount, shouldTrackView } from "@lib/wheelAnalytics";
+import ViewTracker from "@components/ViewTracker";
 
-export const revalidate = false;
+// Admin-curated /wheels/[slug] pages change infrequently — revalidate once a day.
+// No session/headers calls here, so Next.js can fully static-render the page
+// and the CDN will serve ~99% of requests without touching the origin.
+// Session-dependent UI (reactions, follow state) is resolved client-side via
+// useSession() inside WheelMeta / StatsBar. View tracking runs client-side
+// via <ViewTracker />.
+export const revalidate = 86400; // 1 day
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -54,67 +58,44 @@ export async function generateMetadata({ params }) {
 export default async function Home({ params }) {
   const slug = params.slug;
 
-  const session = await getServerSession(authOptions);
-  // const startDB = performance.now();
   const pageData = await getPageDataBySlug(slug);
-  // const endDB = performance.now();
-  // const relatedWheels = await fetchRelatedWheels(pageData.wheel.tags);
-
-  const relatedWheels =
-    pageData.wheel?.tags && pageData.wheel.tags.length > 0
-      ? await fetchRelatedWheels(pageData.wheel.tags)
-      : [];
-  // console.log("PAGEDATA = ", pageData);
-  // console.log(`⏱️ Database fetch time: ${(endDB - startDB).toFixed(2)} ms`);
 
   if (pageData === undefined) redirect("/");
 
-  const requestHeaders = headers();
-  if (shouldTrackView(requestHeaders)) {
-    await incrementWheelViewCount(pageData.wheel._id.toString());
-  }
+  const wheelIdStr = pageData.wheel._id.toString();
 
-  // remove username fetching so that I can reduce DB queries
-  // const user = await User.findOne({ email: pageData.wheel.createdBy }).lean();
-  // if (user) username = user.name;
-
-  // const startRender = performance.now();
+  // Pre-fetch related wheels + public wheel meta (analytics, reactions,
+  // comment count). `userId = null` keeps the response user-agnostic so the
+  // rendered HTML is cacheable. Per-user reaction state is resolved client-side.
+  const [relatedWheels, initialMeta] = await Promise.all([
+    pageData.wheel?.tags && pageData.wheel.tags.length > 0
+      ? fetchRelatedWheels(pageData.wheel.tags)
+      : Promise.resolve([]),
+    getWheelMeta(wheelIdStr, null),
+  ]);
 
   return (
     <div className="flex flex-col">
+      {/* Client-only view counter — decoupled so this page stays static */}
+      <ViewTracker wheelId={wheelIdStr} />
+
       {/* Main Wheel Section */}
       <div className="relative">
         <WheelWithInputContentEditable
           newSegments={ensureArrayOfObjects(pageData.wheel.data)}
           wheelPresetSettings={pageData.wheel.wheelData}
           relatedWheels={relatedWheels}
-          wheelId={pageData.wheel._id.toString()}
+          wheelId={wheelIdStr}
         />
       </div>
 
-      {/* Information Section */}
+      {/* Information Section — resolves session client-side via useSession() */}
       <WheelInfoSection
         wordsList={pageData.wheel}
-        session={session}
         wheelId={pageData.wheel._id}
-        // username={username}
         pageData={pageData}
+        initialMeta={initialMeta}
       />
     </div>
-    // <div>
-    //   <WheelWithInputContentEditable
-    //     newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-    //     wheelPresetSettings={pageData.wheel.wheelData}
-    //     relatedWheels={relatedWheels}
-    //   />
-
-    //   <WheelInfoSection
-    //     wordsList={pageData.wheel}
-    //     session={session}
-    //     wheelId={pageData.wheel._id}
-    //     // username={username}
-    //     pageData={pageData}
-    //   />
-    // </div>
   );
 }

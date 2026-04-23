@@ -1,4 +1,12 @@
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
+
+// Homepage is pure static marketing + a client-side wheel editor. No per-user
+// data is fetched server-side, so let Next.js keep the rendered shell at the
+// CDN edge forever — it only changes when we redeploy. This turns every
+// homepage hit into a static asset lookup instead of a serverless invocation.
+export const dynamic = "force-static";
+export const revalidate = false;
+
 export default async function Home() {
   return (
     <div className="mx-auto">

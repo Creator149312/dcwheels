@@ -73,7 +73,7 @@ const Navbar = ({ onToggleSidebar }) => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
             >
               <Sparkles size={18} />
-              Surprise
+              Can't Decide?
             </a>
 
             {/* Explore Dropdown */}
@@ -140,7 +140,7 @@ const Navbar = ({ onToggleSidebar }) => {
              <PlusCircle size={22} /> Create New Wheel
           </button>
           <a href="/recommendation" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-             <Sparkles className="text-yellow-500" size={22} /> Surprise Me
+             <Sparkles className="text-yellow-500" size={22} /> Can't Decide?
           </a>
           
           <div className="border-t border-gray-100 dark:border-gray-800 my-4 pt-6">

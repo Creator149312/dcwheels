@@ -1,4 +1,5 @@
 import { AniList } from "@spkrbox/anilist";
+import { OpenAI } from "openai";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import Question from "@models/question";
@@ -9,17 +10,25 @@ import WorthItVote from "@components/WorthItVote";
 import AddToListButton from "@components/AddToListButton";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import User from "@models/user";
-import StatsBar from "../StatsBar";
-import SaveButton from "@components/SaveButton";
 import AdaptiveLeaderBoardAds from "@components/ads/AdaptiveLeaderBoardAds";
 
 const BASE_URL = apiConfig.baseUrl;
 
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE_URL = "https://api.rawg.io/api";
+
+// ISR: re-render at most once per day. No session / no headers() usage in
+// this Server Component, so Next.js can fully statically render and cache
+// each content page at the CDN edge. Session-aware UI lives in
+// TopicInteractionTabs (client) via useSession().
+export const revalidate = 86400; // 1 day
+
+// In-process OpenAI client — used for fire-and-forget description rewrites.
+// Created lazily so the page module can still load at build time when the
+// OPENAI_API_KEY is not set in the environment.
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // --- External API Fetchers ---
 async function fetchAnimeFromAnilist(id) {
@@ -134,6 +143,41 @@ async function fetchAnimeExtras(animeId) {
 }
 
 /**
+ * Fetches anime characters from AniList.
+ * Returns { characters[] } where each character has { id, name, image }.
+ * Limited to 12 characters, sorted by appearance role.
+ */
+async function fetchAnimeCharacters(animeId) {
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        characters(sort: ROLE, perPage: 12) {
+          nodes {
+            id
+            name { full }
+            image { large }
+          }
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { id: animeId } }),
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const characters = data.data?.Media?.characters?.nodes || [];
+    return characters.filter((c) => c && c.name?.full && c.image?.large);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Fetches store links for a game from RAWG.
  * The detail endpoint (/games/{id}) has store metadata (name, domain) but
  * its url fields are always empty. The sub-endpoint (/games/{id}/stores)
@@ -197,6 +241,70 @@ async function getRelatedPages(tags, currentId) {
   }
 }
 
+// Tiered wheel discovery for a TopicPage.
+//
+// 1. PRIMARY — wheels explicitly linked via `relatedTopics` (multikey index
+//    on {type, id}). These are the most semantically correct matches: the
+//    wheel author (or admin) picked this exact entity. A "GTA or Need for
+//    Speed Picker" will show up on BOTH the GTA and the Need for Speed
+//    TopicPages because it has two entries in relatedTopics.
+//
+// 2. FALLBACK — tag-overlap aggregation fills any remaining slots up to
+//    the limit. This catches older wheels that were never explicitly
+//    linked but share genre tags, and any wheel whose author didn't pick
+//    a topic at save time. Excludes wheels already returned by the
+//    primary pass so there are no duplicates.
+async function fetchTaggedWheels(tags, relatedId, type) {
+  const LIMIT = 20;
+  const PROJECTION = "_id title description wheelPreview createdAt";
+
+  try {
+    // Primary: explicit relatedTopics match. Do NOT filter on wheelPreview
+    // here — an explicit topic link is the strongest signal we have, so we
+    // show the wheel even if its preview image hasn't been generated yet
+    // (the card just renders a placeholder). Only the tag-overlap fallback
+    // below keeps the preview filter, because there "no preview" often
+    // correlates with a half-baked wheel.
+    const direct = await Wheel.find({
+      relatedTopics: { $elemMatch: { type, id: String(relatedId) } },
+    })
+      .select(PROJECTION)
+      .sort({ createdAt: -1 })
+      .limit(LIMIT)
+      .lean();
+
+    if (direct.length >= LIMIT || !tags?.length) return direct;
+
+    // Fallback: tag-overlap, excluding wheels we already have.
+    const excludeIds = direct.map((w) => w._id);
+    const fallback = await Wheel.aggregate([
+      {
+        $match: {
+          tags: { $in: tags },
+          wheelPreview: { $ne: null },
+          _id: { $nin: excludeIds },
+        },
+      },
+      {
+        $addFields: {
+          overlapCount: {
+            $size: {
+              $filter: { input: "$tags", as: "t", cond: { $in: ["$$t", tags] } },
+            },
+          },
+        },
+      },
+      { $sort: { overlapCount: -1, createdAt: -1 } },
+      { $limit: LIMIT - direct.length },
+      { $project: { _id: 1, title: 1, description: 1, wheelPreview: 1, createdAt: 1 } },
+    ]);
+
+    return [...direct, ...fallback];
+  } catch {
+    return [];
+  }
+}
+
 function extractId(param) {
   const id = parseInt(param.split("-")[0], 10);
   return isNaN(id) ? null : id;
@@ -215,7 +323,6 @@ export async function getOrCreateTopicPage(type, relatedId) {
     if (!media) return null;
 
     const rawDescription = media.description?.replace(/<[^>]+>/g, "") || "";
-    const rewritten = await rewriteDescription(rawDescription, "anime");
 
     newDoc = {
       type: "anime",
@@ -224,7 +331,7 @@ export async function getOrCreateTopicPage(type, relatedId) {
       slug: `${media.id}-${slugify(media.title.romaji || media.title.english)}`,
       title: media.title,
       cover: media.coverImage?.extraLarge || media.coverImage?.large,
-      description: rewritten || rawDescription,
+      description: rawDescription,
       tags: (media.genres || [])
         .map((g) => (g ? g.toLowerCase() : null))
         .filter(Boolean),
@@ -239,7 +346,6 @@ export async function getOrCreateTopicPage(type, relatedId) {
     if (!media) return null;
 
     const rawDescription = media.overview || "";
-    const rewritten = await rewriteDescription(rawDescription, "movie");
 
     newDoc = {
       type: "movie",
@@ -250,7 +356,7 @@ export async function getOrCreateTopicPage(type, relatedId) {
       cover: media.poster_path
         ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
         : "",
-      description: rewritten || rawDescription,
+      description: rawDescription,
       tags: (media.genres || []).map((g) => g.name.toLowerCase()),
       details: {
         runtime: media.runtime,
@@ -264,7 +370,6 @@ export async function getOrCreateTopicPage(type, relatedId) {
     if (!media) return null;
 
     const rawDescription = media.description_raw || "";
-    const rewritten = await rewriteDescription(rawDescription, "game");
 
     newDoc = {
       type: "game",
@@ -273,7 +378,7 @@ export async function getOrCreateTopicPage(type, relatedId) {
       slug: `${media.id}-${slugify(media.name)}`,
       title: { default: media.name },
       cover: media.background_image || "",
-      description: rewritten || rawDescription,
+      description: rawDescription,
       tags: (media.genres || []).map((g) => g.name.toLowerCase()),
       details: {
         platform: (media.platforms || [])
@@ -290,7 +395,6 @@ export async function getOrCreateTopicPage(type, relatedId) {
 
     // Strip HTML tags from AniList description
     const rawDescription = character.description?.replace(/<[^>]+>/g, "") || "";
-    const rewritten = await rewriteDescription(rawDescription, "character");
 
     // Prefer English-friendly name if available
     newDoc = {
@@ -306,7 +410,7 @@ export async function getOrCreateTopicPage(type, relatedId) {
         // native: character.name?.native || "",
       },
       cover: character.image?.large || character.image?.medium,
-      description: rewritten || rawDescription,
+      description: rawDescription,
       tags: (character.media?.nodes || [])
         .map((m) => m?.title?.romaji?.toLowerCase())
         .filter(Boolean),
@@ -350,6 +454,16 @@ export async function getOrCreateTopicPage(type, relatedId) {
         );
       }
     }
+
+    // Fire-and-forget description rewrite. The first visitor sees the raw
+    // external description (Anilist/TMDB/RAWG); by the time a second visitor
+    // arrives, the rewritten SEO-friendly version is persisted. Saves ~3-8s
+    // off the first render without giving up the uniqueness benefit.
+    if (openai && newDoc.description) {
+      rewriteAndPersist(pageDoc._id, newDoc.description, type).catch((err) =>
+        console.error("rewriteAndPersist failed:", err)
+      );
+    }
   } catch (err) {
     if (err.code === 11000) {
       // Duplicate key — another request created it just now
@@ -363,20 +477,30 @@ export async function getOrCreateTopicPage(type, relatedId) {
   return pageDoc?.toObject?.() || pageDoc || null;
 }
 
-// lib/rewrite.js
-export async function rewriteDescription(originalText, type) {
-  if (!originalText) return "";
-
+/**
+ * Background rewrite — called fire-and-forget after a TopicPage is created.
+ * Runs OpenAI directly in-process (no HTTP self-call) and updates the doc.
+ * Errors are swallowed so a failed rewrite never breaks anything for users.
+ */
+async function rewriteAndPersist(topicPageId, originalText, type) {
+  if (!openai || !originalText) return;
   const prompt = `Rewrite the following ${type} description in a casual descriptive way in 100 words. Make it sound unique and engaging:\n\n"${originalText}"`;
-
-  const res = await fetch(`${apiConfig.apiUrl}/ai/rewrite-description`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-
-  const data = await res.json();
-  return data.rewrittenText || originalText;
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 300,
+    });
+    const rewritten = response.choices?.[0]?.message?.content?.trim();
+    if (rewritten) {
+      await TopicPage.updateOne(
+        { _id: topicPageId },
+        { $set: { description: rewritten } }
+      );
+    }
+  } catch (err) {
+    console.error("OpenAI rewrite failed:", err);
+  }
 }
 
 export async function generateMetadata({ params }) {
@@ -422,8 +546,12 @@ export async function generateMetadata({ params }) {
 }
 
 // --- Generic Dynamic Page ---
+//
+// IMPORTANT: Do NOT call getServerSession(), headers(), or cookies() here.
+// Any request-scoped API would force this page off the static render path
+// and defeat the `revalidate` CDN cache above. Session state is resolved
+// on the client inside TopicInteractionTabs via useSession().
 export default async function TopicPageDetail({ params }) {
-  const session = await getServerSession(authOptions);
   const { type, slug } = params;
   const relatedId = extractId(slug);
   if (!relatedId) return <div>Invalid URL</div>;
@@ -438,9 +566,9 @@ export default async function TopicPageDetail({ params }) {
     media = pageDoc;
   }
 
-  // Fetch trailer/streaming extras, related pages, and tagged wheels in parallel
+  // Fetch trailer/streaming extras, related pages, tagged wheels, and characters in parallel
   // to minimise total server latency on first load.
-  const [extras, relatedPages, taggedWheels] = await Promise.all([
+  const [extras, relatedPages, taggedWheels, animeCharacters] = await Promise.all([
     type === "movie"
       ? fetchMovieExtras(relatedId)
       : type === "anime"
@@ -449,21 +577,9 @@ export default async function TopicPageDetail({ params }) {
       ? fetchGameExtras(relatedId)
       : Promise.resolve({ trailerKey: null, streaming: [] }),
     getRelatedPages(pageDoc.tags || [], pageDoc._id),
-    Wheel.find({ "relatedTo.type": type, "relatedTo.id": pageDoc.relatedId })
-      .sort({ createdAt: -1 })
-      .lean(),
+    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type),
+    type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]),
   ]);
-
-  let user = null;
-  if (session) {
-    // Find user by email
-    user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
-    }
-  }
 
   // Resolve the display title once — referenced in hero, meta, and actions
   const displayTitle =
@@ -751,9 +867,10 @@ export default async function TopicPageDetail({ params }) {
           type={type}
           pageId={pageDoc._id}
           contentId={relatedId.toString()}
+          contentSlug={pageDoc.slug}
+          contentTags={pageDoc.tags || []}
           taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-          isLoggedIn={!!session}
-          currentUserId={user?._id || null}
+          animeCharacters={type === "anime" ? animeCharacters : []}
         />
 
         {/* ── You Might Also Like ─────────────────────────────────────────

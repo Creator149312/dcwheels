@@ -74,10 +74,10 @@ const WheelWithInputContentEditable = ({
 
   return (
     <>
-      <div className="grid lg:grid-cols-12 gap-x-6 gap-y-4 max-w-7xl mx-auto px-4 mt-6">
+      <div className="grid lg:grid-cols-12 xl:grid-cols-8 gap-x-2 gap-y-1 max-w-7xl mx-auto px-2 mt-2">
         <div
           ref={wheelContainerRef}
-          className={`bg-card border shadow-sm flex flex-col items-center text-card-foreground lg:mb-0 lg:col-span-7 xl:col-span-8 mx-auto transition-all duration-300 ease-in-out ${
+          className={`bg-card border shadow-sm flex flex-col items-center text-card-foreground lg:mb-0 lg:col-span-7 xl:col-span-5 mx-auto transition-all duration-300 ease-in-out ${
             isFullScreen
               ? "fixed inset-0 z-50 bg-black rounded-none border-none shadow-none"
               : "relative w-full rounded-2xl overflow-hidden"

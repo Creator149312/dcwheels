@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import GAnalytics from "./GAnalytics";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
-import Footer from "@components/Footer";
+import ConditionalFooter from "@components/ConditionalFooter";
 import AdsScriptLoader from "@components/ads/AdsScriptLoader";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -48,7 +48,7 @@ export default function RootLayout({ children }) {
             </LoginPromptProvider>
           </SegmentsProvider>
         </ThemeProvider>
-        <Footer />
+        <ConditionalFooter />
         <AdsScriptLoader />
       </body>
     </html>

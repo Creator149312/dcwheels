@@ -25,8 +25,14 @@ export default function WheelEditor({
     html,
     advancedOptions,
     setadvancedOptions,
+    prepareDataForEditorSwitch,
     wheelType,
   } = useContext(SegmentsContext);
+
+  const handleAdvancedToggle = (val) => {
+    prepareDataForEditorSwitch(val);
+    setadvancedOptions(val);
+  };
 
   const [isVisible, setIsVisible] = useState(true);
   const toggleVisibility = () => setIsVisible((prev) => !prev);
@@ -34,7 +40,7 @@ export default function WheelEditor({
   if (isFullScreen) return null;
 
   return (
-    <div className="bg-card text-card-foreground border shadow-sm p-4 lg:col-span-5 xl:col-span-4 rounded-2xl">
+    <div className="bg-card text-card-foreground border shadow-sm p-2 lg:col-span-5 xl:col-span-3 rounded-2xl">
       {currentPath === "/" ? (
         <>
           <Tabs
@@ -65,7 +71,7 @@ export default function WheelEditor({
                 <>
                   <EditorSwitchWithPopup
                     advOpt={advancedOptions}
-                    setAdvOpt={setadvancedOptions}
+                    setAdvOpt={handleAdvancedToggle}
                   />
                   <SegmentListEditor />
                 </>

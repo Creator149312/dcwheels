@@ -1,5 +1,6 @@
 import { slugify } from "@utils/HelperFunctions";
 import { AniList, MediaType } from "@spkrbox/anilist";
+import { unstable_cache } from "next/cache";
 import SaveButton from "@components/SaveButton";
 
 export function renderAnimeCard(anime) {
@@ -120,15 +121,20 @@ export function renderCharacterCard(character) {
 }
 
 //All Fetch Functions based on Type of Content to render
+// External APIs (AniList/TMDB/RAWG) are rate-limited and cost money per
+// call at scale. Wrap them with Next's data cache so identical queries
+// within the TTL serve from cache instead of hitting the upstream API.
+const EXTERNAL_API_REVALIDATE = 3600; // 1 hour
+
 // ---------- Anime Fetch ----------
-export async function fetchAnime({
+const _fetchAnimeUncached = async ({
   search,
   genre,
   year,
-  page = 1,
-  perPage = 20,
-  sort = "POPULARITY_DESC",
-}) {
+  page,
+  perPage,
+  sort,
+}) => {
   const client = new AniList();
   const response = await client.media.search({
     type: MediaType.ANIME,
@@ -143,24 +149,41 @@ export async function fetchAnime({
   if (year)
     media = media.filter((anime) => anime.startDate?.year == parseInt(year));
 
-  // ✅ filter out anime without cover images
   media = media.filter((anime) => anime.coverImage?.large);
-
   return media;
+};
+
+const _cachedFetchAnime = unstable_cache(_fetchAnimeUncached, ["fetch-anime"], {
+  revalidate: EXTERNAL_API_REVALIDATE,
+  tags: ["external-anilist"],
+});
+
+export async function fetchAnime({
+  search,
+  genre,
+  year,
+  page = 1,
+  perPage = 20,
+  sort = "POPULARITY_DESC",
+}) {
+  return _cachedFetchAnime({ search, genre, year, page, perPage, sort });
 }
 
 // ---------- Movie Fetch ----------
 export async function fetchMovies({ search, genres, year, page = 1 }) {
   const API_KEY = process.env.TMDB_API_KEY;
+  const fetchOpts = {
+    next: { revalidate: EXTERNAL_API_REVALIDATE, tags: ["external-tmdb"] },
+  };
   if (search) {
     const url = new URL(`https://api.themoviedb.org/3/search/movie`);
     url.searchParams.set("api_key", API_KEY);
     url.searchParams.set("language", "en-US");
     url.searchParams.set("query", search);
     url.searchParams.set("page", page);
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, fetchOpts);
     const data = await res.json();
-    return (data.results || []).filter((movie) => movie.poster_path); // ✅ filter here
+    return (data.results || []).filter((movie) => movie.poster_path);
   }
   const url = new URL(`https://api.themoviedb.org/3/discover/movie`);
   url.searchParams.set("api_key", API_KEY);
@@ -168,9 +191,9 @@ export async function fetchMovies({ search, genres, year, page = 1 }) {
   url.searchParams.set("page", page);
   if (genres) url.searchParams.set("with_genres", genres);
   if (year) url.searchParams.set("primary_release_year", year);
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, fetchOpts);
   const data = await res.json();
-  return (data.results || []).filter((movie) => movie.poster_path); // ✅ filter here
+  return (data.results || []).filter((movie) => movie.poster_path);
 }
 
 
@@ -193,19 +216,16 @@ export async function fetchGames({
   if (genres) url.searchParams.set("genres", genres);
   if (year) url.searchParams.set("dates", `${year}-01-01,${year}-12-31`);
 
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, {
+    next: { revalidate: EXTERNAL_API_REVALIDATE, tags: ["external-rawg"] },
+  });
   const data = await res.json();
 
   return (data.results || []).filter((game) => game.background_image);
 }
 
 // ---------- Characters Fetch ----------
-export async function fetchCharacters({
-  search,
-  page = 1,
-  perPage = 20,
-  sort = "FAVOURITES_DESC", // AniList supports sorting by favourites/popularity
-}) {
+const _fetchCharactersUncached = async ({ search, page, perPage, sort }) => {
   const client = new AniList();
   const response = await client.character.search({
     search: search || undefined,
@@ -215,9 +235,21 @@ export async function fetchCharacters({
   });
 
   let characters = response.characters || [];
-
-  // ✅ filter out characters without images
   characters = characters.filter((char) => char.image?.large);
-
   return characters;
+};
+
+const _cachedFetchCharacters = unstable_cache(
+  _fetchCharactersUncached,
+  ["fetch-characters"],
+  { revalidate: EXTERNAL_API_REVALIDATE, tags: ["external-anilist"] }
+);
+
+export async function fetchCharacters({
+  search,
+  page = 1,
+  perPage = 20,
+  sort = "FAVOURITES_DESC",
+}) {
+  return _cachedFetchCharacters({ search, page, perPage, sort });
 }

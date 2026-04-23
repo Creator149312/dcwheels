@@ -6,6 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
+import { isAdminEmail } from "@utils/auth/isAdmin";
 
 const validateForm = async (data) => {
   let err = {};
@@ -66,45 +67,89 @@ export const authOptions = {
   ],
   session: {
     strategy: "jwt",
+    // Explicit TTLs so tokens aren't carried forever. 30-day absolute
+    // lifetime with a 24h refresh window matches NextAuth defaults but
+    // pins them so later upstream changes don't silently shift behaviour.
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/",
   },
   callbacks: {
+    async jwt({ token, user, account }) {
+      // Only runs on initial sign-in (when `user` is present)
+      if (!user) return token;
+
+      if (account?.provider === "credentials") {
+        // credentials authorize() returns the full Mongoose document
+        token.mongoId = user._id?.toString?.();
+        token.role = user.role || (isAdminEmail(user.email) ? "admin" : "user");
+      } else if (account?.provider === "google") {
+        // For Google, the user is created in signIn() callback above.
+        // Look up the DB record by email to get the MongoDB _id + role.
+        try {
+          await connectMongoDB();
+          const dbUser = await User.findOne({ email: user.email })
+            .select("_id role")
+            .lean();
+          if (dbUser) {
+            token.mongoId = dbUser._id.toString();
+            token.role =
+              dbUser.role || (isAdminEmail(user.email) ? "admin" : "user");
+          }
+        } catch {
+          // Non-fatal — session.user.id will just be undefined; fallback by email will be used
+        }
+      }
+
+      // Ensure a sensible default even if the lookup branches above miss.
+      if (!token.role) {
+        token.role = isAdminEmail(token.email || user?.email) ? "admin" : "user";
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (token?.mongoId) {
+        session.user.id = token.mongoId;
+      }
+      if (token?.role) {
+        session.user.role = token.role;
+      }
+      return session;
+    },
     async signIn({ user, account }) {
       if (account.provider === "google") {
         const { name, email } = user;
         try {
           await connectMongoDB();
-          const userExists = await User.findOne({ email });
+          const userExists = await User.findOne({ email })
+            .select("_id")
+            .lean();
 
           if (!userExists) {
-            const res = await fetch(`${apiConfig.apiUrl}/user`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                name,
-                email,
-                password: '',
-                emailVerified: true,
-                authMethod: 'google', 
-              }),
+            // Create the user directly instead of round-tripping through
+            // /api/user — saves one HTTP hop + cold start during sign-in.
+            await User.create({
+              name,
+              email,
+              password: "",
+              emailVerified: true,
+              authMethod: "google",
+              role: isAdminEmail(email) ? "admin" : "user",
             });
-
-            if (res.ok) {
-              return user;
-            }
           }
+          return user;
         } catch (error) {
+          console.error("Google signIn user upsert failed:", error?.message);
           return null;
         }
-      }else if(account.provider === "credentials"){
-        if(user.emailVerified === true){
+      } else if (account.provider === "credentials") {
+        if (user.emailVerified === true) {
           return user;
-        }else{
+        } else {
           return null;
         }
       }

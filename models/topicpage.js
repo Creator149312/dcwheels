@@ -80,6 +80,17 @@ const TopicPageSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Indexes — without these every getOrCreateTopicPage / getRelatedPages query
+// degrades to a full collection scan.
+// 1) Unique compound for the primary lookup `findOne({ type, relatedId })`
+//    called on every page load. `unique` also prevents duplicate topic pages.
+// 2) Multikey on tags for the `getRelatedPages` aggregation `$in` match.
+// 3) Sort index for recency.
+TopicPageSchema.index({ type: 1, relatedId: 1 }, { unique: true });
+TopicPageSchema.index({ tags: 1 });
+TopicPageSchema.index({ createdAt: -1 });
+
 const TopicPage =
   models.TopicPage || mongoose.model("TopicPage", TopicPageSchema);
 export default TopicPage;

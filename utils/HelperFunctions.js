@@ -45,19 +45,20 @@ export const prepareData = (
       if (seg.includes("<img")) {
         const regex = /src="([^"]+)"/;
         const imgUrl = regex.exec(seg)[1];
-        if (segData[i].visible) {
+        if (segData[i].visible !== false) {
           result.push({
             option: seg,
             style: { backgroundColor: segData[i].color },
             image: {
               uri: imgUrl,
               sizeMultiplier: getImageSizeMultiplierValue(segData.length),
+              landscape: segData[i].imageLandscape || false,
             },
             optionSize: Number(segData[i].weight),
           });
         }
       } else {
-        if (segData[i].visible) {
+        if (segData[i].visible !== false) {
           result.push({
             option:
               seg.length > maxlengthOfSegmentText
@@ -84,6 +85,7 @@ export const prepareData = (
           image: {
             uri: imgUri,
             sizeMultiplier: getImageSizeMultiplierValue(segData.length),
+            landscape: segData[i].imageLandscape || false,
           },
           optionSize: 1,
         });

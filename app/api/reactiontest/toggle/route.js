@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
-import ReactionTest from "@models/reactiontest";
+import Reaction from "@models/reaction";
 import Wheel from "@models/wheel";
 import User from "@models/user";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
@@ -33,7 +33,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const existing = await ReactionTest.findOne({
+    const existing = await Reaction.findOne({
       userId: user._id,
       entityType,
       entityId,
@@ -44,7 +44,7 @@ export async function PATCH(req) {
     if (existing) {
       if (existing.reactionType === reactionType) {
         // Same reaction → remove it
-        await ReactionTest.deleteOne({ _id: existing._id });
+        await Reaction.deleteOne({ _id: existing._id });
         if (reactionType === "like") likeCountDelta = -1;
       } else {
         // Switch reaction type
@@ -56,7 +56,7 @@ export async function PATCH(req) {
         if (!wasLike && isLike) likeCountDelta = 1;
       }
     } else {
-      await ReactionTest.create({
+      await Reaction.create({
         userId: user._id,
         entityType,
         entityId,
@@ -70,10 +70,15 @@ export async function PATCH(req) {
       await Wheel.updateOne({ _id: entityId }, { $inc: { likeCount: likeCountDelta } });
     }
 
-    const allReactions = await ReactionTest.find({ entityType, entityId });
-    const count = allReactions.filter(r => r.reactionType === reactionType).length;
+    // Count only the reactions matching the toggled type, using an indexed
+    // count query instead of pulling every reaction doc into memory.
+    const count = await Reaction.countDocuments({
+      entityType,
+      entityId,
+      reactionType,
+    });
 
-    const reactedByCurrentUser = await ReactionTest.exists({
+    const reactedByCurrentUser = await Reaction.exists({
       userId: user._id,
       entityType,
       entityId,

@@ -1,5 +1,6 @@
 // app/api/lists/[id]/items/[itemId]/route.js
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth";
@@ -46,6 +47,9 @@ export async function DELETE(req, { params }) {
     // or: list.items.pull({ _id: itemId });
 
     await list.save();
+
+    revalidatePath("/lists");
+    revalidatePath(`/lists/${id}`);
 
     return NextResponse.json(
       {

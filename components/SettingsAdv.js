@@ -391,25 +391,20 @@ const SettingsAdv = ({ advOptions }) => {
         useWebWorker: true,
       });
 
-      const formData = new FormData();
-      formData.append("file", compressed, compressed.name || "center-image.webp");
-
-      const res = await fetch("/api/upload-segment-image", {
-        method: "POST",
-        body: formData,
+      // Store as a data: URL. Wheel-save (useSaveWheel) pushes this to
+      // Blob storage only if the user commits the wheel.
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(compressed);
       });
 
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "Upload failed");
-      }
-
-      const { url } = await res.json();
-      setCenterImage(url);
-      setCenterText(""); // clear text if image is uploaded
-      toast.success("Image uploaded successfully");
+      setCenterImage(dataUrl);
+      setCenterText(""); // clear text if image is set
+      toast.success("Image added");
     } catch (error) {
-      toast.error(error.message || "Failed to upload image. Please try again.");
+      toast.error(error.message || "Failed to set image. Please try again.");
     } finally {
       setUploadingImage(false);
     }

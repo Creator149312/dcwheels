@@ -2,6 +2,7 @@
 import { Card } from "@components/ui/card";
 import apiConfig from "@utils/ApiUrlConfig";
 import { Fragment, Suspense } from "react";
+import Link from "next/link";
 import { Search, ArrowRight, Layers, Sparkles, Plus } from "lucide-react";
 import AdsUnit from "@components/ads/AdsUnit";
 import AnimeSection from "./AnimeSection";
@@ -33,17 +34,18 @@ export default async function Page({ params, searchParams }) {
   const searchtitle = decodeURIComponent(params.titlesearch);
   const activeType = searchParams?.type || "wheels";
 
+  // Always fetch the wheel search result — cheap and cached (s-maxage=300),
+  // and lets us surface the wheel count in the tab bar even when the user
+  // is viewing a non-wheel tab ("Wheels (8)"). Improves discovery without
+  // adding rendering cost per tab switch.
   let list = [];
   let total = 0;
-
-  if (activeType === "wheels") {
-    try {
-      const data = await fetchInitialWheels(searchtitle);
-      list = data.list || [];
-      total = data.total || 0;
-    } catch {
-      list = [];
-    }
+  try {
+    const data = await fetchInitialWheels(searchtitle);
+    list = data.list || [];
+    total = data.total || 0;
+  } catch {
+    list = [];
   }
 
   return (
@@ -70,21 +72,28 @@ export default async function Page({ params, searchParams }) {
            style={{ scrollbarWidth: "none" }}>
         {TABS.map((tab) => {
           const isActive = activeType === tab.key;
+          const href =
+            tab.key === "wheels"
+              ? `/search/${encodeURIComponent(params.titlesearch)}`
+              : `/search/${encodeURIComponent(params.titlesearch)}?type=${tab.key}`;
+          // Surface wheel count inline — "🎡 Wheels (8)" — so visitors on
+          // other tabs can see there are wheel results without switching.
+          const label =
+            tab.key === "wheels" && total > 0 ? `${tab.label} (${total})` : tab.label;
           return (
-            <a
+            <Link
               key={tab.key}
-              href={tab.key === "wheels"
-                ? `/search/${encodeURIComponent(params.titlesearch)}`
-                : `/search/${encodeURIComponent(params.titlesearch)}?type=${tab.key}`
-              }
+              href={href}
+              prefetch={false}
+              scroll={false}
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-colors
                 ${isActive
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
             >
-              {tab.label}
-            </a>
+              {label}
+            </Link>
           );
         })}
       </div>

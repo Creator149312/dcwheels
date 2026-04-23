@@ -2,6 +2,7 @@
 
 import { GiCartwheel } from "react-icons/gi";
 import { HiLightningBolt } from "react-icons/hi";
+import Image from "next/image";
 
 export default function RelatedWheels({ relatedWheels }) {
   return (
@@ -23,18 +24,27 @@ export default function RelatedWheels({ relatedWheels }) {
             href={`/uwheels/${wheel._id}`}
             className="group flex items-center gap-3 p-2 rounded-xl bg-transparent hover:bg-gray-50 dark:hover:bg-blue-500/5 border border-transparent hover:border-gray-100 dark:hover:border-blue-500/20 transition-all duration-200 active:scale-[0.98]"
           >
-            {/* Small Compact Icon */}
-            <div className="relative flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-600 transition-colors">
-              <GiCartwheel className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-white transition-colors" />
+            {/* Thumbnail */}
+            <div className="relative flex-shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+              {wheel.wheelPreview ? (
+                <Image
+                  src={wheel.wheelPreview}
+                  alt=""
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                  <GiCartwheel className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-white transition-colors" />
+                </div>
+              )}
             </div>
 
-            {/* Text content - Tightened spacing */}
+            {/* Title */}
             <div className="flex flex-col min-w-0 leading-tight">
-              <span className="font-bold text-xs line-clamp-1 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              <span className="font-bold text-xs line-clamp-2 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                 {wheel.title}
-              </span>
-              <span className="text-[9px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
-                {wheel.data?.length || 0} Options
               </span>
             </div>
           </a>

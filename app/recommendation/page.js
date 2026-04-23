@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState } from "react";
 import { fetchAnime } from "@/lib/fetchAnime";
-import { fetchMovies } from "@/lib/fetchMovie";
 import QuestionStep from "./QuestionStep";
 import ResultsGrid from "./ResultGrid";
-import { Sparkles, RotateCcw, RefreshCw, Clapperboard, MonitorPlay, ChevronLeft } from "lucide-react";
+import SpinWheelModal from "./SpinWheelModal";
+import { Sparkles, RefreshCw, Clapperboard, MonitorPlay, Dices } from "lucide-react";
 
 function ResultSkeleton() {
   return (
@@ -25,6 +25,7 @@ export default function RecommendationPage() {
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [seenIds, setSeenIds] = useState([]);
+  const [showWheel, setShowWheel] = useState(false);
 
   const moodMapAnime = { Lighthearted: "Comedy", Intense: "Action" };
   const moodMapMovie = { Lighthearted: "Comedy", Intense: "Action" };
@@ -85,10 +86,10 @@ export default function RecommendationPage() {
           sort: "POPULARITY_DESC",
         });
         const unseen = recs.filter((r) => !seenIds.includes(r.id));
-        if (unseen.length > 0) {
-          const pick = unseen[Math.floor(Math.random() * Math.min(unseen.length, 5))];
-          setResults([pick]);
-          setSeenIds((prev) => [...prev, pick.id]);
+        const picks = unseen.slice(0, 6);
+        if (picks.length > 0) {
+          setResults(picks);
+          setSeenIds((prev) => [...prev, ...picks.map((p) => p.id)]);
         }
       } else {
         const genreMap = { Action: 28, Comedy: 35, Drama: 18, Horror: 27, Romance: 10749, "Sci-Fi": 878 };
@@ -99,9 +100,10 @@ export default function RecommendationPage() {
         const res = await fetch(`/api/recommendation/movie?${params.toString()}`);
         const recs = await res.json();
         const unseen = recs.filter((r) => !seenIds.includes(r.id));
-        if (unseen.length > 0) {
-          setResults([unseen[0]]);
-          setSeenIds((prev) => [...prev, unseen[0].id]);
+        const picks = unseen.slice(0, 6);
+        if (picks.length > 0) {
+          setResults(picks);
+          setSeenIds((prev) => [...prev, ...picks.map((p) => p.id)]);
         }
       }
     } catch (err) {
@@ -119,13 +121,16 @@ export default function RecommendationPage() {
   };
 
   return (
-   <main className="max-w-md mx-auto px-4 py-4 space-y-4">
+   <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
       {/* Tightened Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="p-2 bg-blue-600 rounded-lg text-white">
           <Sparkles size={20} />
         </div>
-        <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Surprise Me</h1>
+        <div>
+          <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Can't Decide?</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">We'll pick for you</p>
+        </div>
       </div>
 
       {mode && step <= questions.length && (
@@ -160,8 +165,14 @@ export default function RecommendationPage() {
           <ResultsGrid results={results} loading={loading} />
           <div className="flex gap-2">
             <button onClick={() => fetchRecommendations(mode, answers)} className="flex-1 py-3 bg-blue-600 text-white font-black rounded-xl text-xs uppercase tracking-widest"><RefreshCw size={14} className="inline mr-2" /> Reshuffle</button>
+            {results.length > 1 && (
+              <button onClick={() => setShowWheel(true)} className="flex-1 py-3 bg-purple-600 text-white font-black rounded-xl text-xs uppercase tracking-widest"><Dices size={14} className="inline mr-2" /> Spin!</button>
+            )}
             <button onClick={() => setMode(null) || setStep(0)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 font-black rounded-xl text-xs uppercase tracking-widest">Restart</button>
           </div>
+          {showWheel && results.length > 1 && (
+            <SpinWheelModal results={results} mode={mode} onClose={() => setShowWheel(false)} />
+          )}
         </div>
       )}
     </main>

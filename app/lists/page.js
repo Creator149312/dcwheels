@@ -1,9 +1,10 @@
 // app/lists/page.js
-import apiConfig from "@utils/ApiUrlConfig";
 import ListsClient from "./ListsClient";
-import { cookies } from "next/headers";
+import { getPublicLists } from "@lib/lists";
 
-// app/lists/page.js
+// Public browse page — fully cacheable. Lists aren't edit-hot so 5 min ISR
+// is plenty; /lists/[listId] detail pages use their own revalidation.
+export const revalidate = 300;
 
 export const metadata = {
   title: "All Lists",
@@ -23,18 +24,6 @@ export const metadata = {
 
 
 export default async function ListsPage() {
-  const cookieStore = cookies();
-
-  const res = await fetch(`${apiConfig.apiUrl}/unifiedlist/all?limit=20&skip=0`, {
-    method: "GET",
-    cache: "no-store",
-    headers: {
-      Cookie: cookieStore.toString(),
-    },
-  });
-
-  const data = await res.json();
-  const lists = data.lists || [];
-
+  const lists = await getPublicLists({ limit: 20, skip: 0 });
   return <ListsClient initialLists={lists} />;
 }

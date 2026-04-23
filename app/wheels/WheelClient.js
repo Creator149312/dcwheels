@@ -49,9 +49,9 @@ export default function WheelsClient({ initialWheels }) {
   const adInterval = isMobile === null ? null : isMobile ? 6 : 10;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen transition-colors">
-      <header className="mb-8 border-b border-gray-100 dark:border-gray-900 pb-4">
-        <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white">
+    <div className="max-w-7xl mx-auto px-4 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6 bg-white dark:bg-gray-950 min-h-screen transition-colors">
+      <header className="mb-4 border-b border-gray-100 dark:border-gray-900 pb-3">
+        <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">
           All <span className="text-blue-600">Wheels</span>
         </h1>
       </header>
@@ -60,7 +60,7 @@ export default function WheelsClient({ initialWheels }) {
         <div className="text-gray-500 text-center mt-20">No wheels found.</div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {wheels.map((wheel, index) => {
           // Check if we should show an ad after this specific item
           const showAd = adInterval !== null && (index + 1) % adInterval === 0;
@@ -86,8 +86,8 @@ export default function WheelsClient({ initialWheels }) {
                   )}
                 </div>
 
-                <div className="p-3 md:p-4">
-                  <h3 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
+                <div className="p-2 md:p-3">
+                  <h3 className="text-xs md:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
                     {wheel.title}
                   </h3>
                 </div>
@@ -95,8 +95,8 @@ export default function WheelsClient({ initialWheels }) {
 
               {/* ✅ Responsive Ad Injection using col-span-full */}
               {showAd && (
-                <div className="col-span-full my-4 md:my-6">
-                  <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
+                <div className="col-span-full my-2 md:my-3">
+                  <div className="w-full py-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
                     <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export default function WheelsClient({ initialWheels }) {
       </div>
 
       {hasMore && (
-        <div className="flex flex-col items-center justify-center mt-12 mb-10">
+        <div className="flex flex-col items-center justify-center mt-8 mb-6">
           <button
             onClick={loadMore}
             disabled={loading}

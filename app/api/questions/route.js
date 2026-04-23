@@ -5,7 +5,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Question from "@models/question";
 import QuestionVote from "@models/questionvote"
 import User from "@models/user";
-import ReactionTest from "@models/reactiontest";
+import Reaction from "@models/reaction";
 
 export async function POST(req) {
   try {
@@ -15,7 +15,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { type, text, contentType, contentId, options } = await req.json();
+    const { type, text, contentType, contentId, options, contentSlug, contentTags } = await req.json();
 
     if (!type || !text || !contentType || !contentId) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -38,6 +38,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Build tags: slug-derived tag + parent content tags
+    // Slug tag: strip numeric prefix from slug (e.g. "1539104-jujutsu-kaisen" → "jujutsu-kaisen")
+    const derivedTags = [];
+    if (contentSlug) {
+      const slugTag = contentSlug.replace(/^\d+-/, "").toLowerCase().trim();
+      if (slugTag) derivedTags.push(slugTag);
+    }
+    if (Array.isArray(contentTags)) {
+      for (const t of contentTags) {
+        const cleaned = t.toLowerCase().trim();
+        if (cleaned && !derivedTags.includes(cleaned)) derivedTags.push(cleaned);
+      }
+    }
+
     const question = await Question.create({
       type,
       text,
@@ -45,6 +59,8 @@ export async function POST(req) {
       contentId,
       options: finalOptions,
       createdBy: user._id,
+      contentSlug: contentSlug || null,
+      tags: derivedTags,
     });
 
     return NextResponse.json(question, { status: 201 });
@@ -85,14 +101,14 @@ export async function GET(req) {
     const enhanced = await Promise.all(
       questions.map(async (q) => {
         // ✅ Likes
-        const likesCount = await ReactionTest.countDocuments({
+        const likesCount = await Reaction.countDocuments({
           entityType: "question",
           entityId: q._id,
           reactionType: "like",
         });
 
         const likedByCurrentUser = currentUser
-          ? await ReactionTest.exists({
+          ? await Reaction.exists({
               entityType: "question",
               entityId: q._id,
               reactionType: "like",

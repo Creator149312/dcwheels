@@ -20,7 +20,7 @@ function sanitizeSegments(data) {
 export async function POST(request) {
   let error = "";
   try {
-    const { title, description, data, createdBy, wheelData , relatedTo} =
+    const { title, description, data, createdBy, wheelData, relatedTopics, tags } =
       await request.json();
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
@@ -37,7 +37,13 @@ export async function POST(request) {
         data: sanitizeSegments(data),
         createdBy,
         wheelData,
-        relatedTo
+        relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
+        // Tags are lowercased + trimmed by the schema setter; we still
+        // filter out non-strings and empties here as a defensive layer
+        // against malformed client payloads.
+        tags: Array.isArray(tags)
+          ? tags.filter((t) => typeof t === "string" && t.trim().length > 0)
+          : [],
       });
       // console.log("Creation Data", creationData);
       return NextResponse.json({
@@ -48,7 +54,11 @@ export async function POST(request) {
       return NextResponse.json({ error });
     }
   } catch (e) {
-    return NextResponse.json({ error });
+    console.error("POST /api/wheel failed:", e);
+    return NextResponse.json(
+      { error: e?.message || "Failed to create wheel" },
+      { status: 500 }
+    );
   }
 }
 

@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 export default function QuestionComposer({
   type,               // contentType: "anime", "movie", "game"
   contentId,
+  contentSlug,        // slug of parent TopicPage e.g. "1539104-jujutsu-kaisen"
+  contentTags,        // tags[] from parent TopicPage
   isLoggedIn,
   onCreated,
   openLoginPrompt,
@@ -54,6 +56,8 @@ export default function QuestionComposer({
           contentType: type,
           contentId,
           options: qType === "open" ? [] : options.filter((o) => o.trim()),
+          contentSlug: contentSlug || null,
+          contentTags: Array.isArray(contentTags) ? contentTags : [],
         }),
       });
       if (!res.ok) throw new Error("Failed to create question");

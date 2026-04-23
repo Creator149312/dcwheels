@@ -6,22 +6,47 @@ import { useState } from "react";
 export default function AddListItemModal({ isOpen, onClose, onAdd }) {
   const [word, setWord] = useState("");
   const [wordData, setWordData] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   if (!isOpen) return null;
 
-  function handleSubmit() {
-    const isWord = word.trim() !== "" && wordData.trim() !== "";
+  // If the user pasted a base64 data URL into the textarea, push the image
+  // to blob storage first and swap in the returned URL before persisting.
+  // Plain text values (and already-hosted URLs) pass through unchanged.
+  async function materializeValue(value) {
+    if (typeof value !== "string" || !value.startsWith("data:")) return value;
+    setUploading(true);
+    try {
+      const res = await fetch("/api/upload/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl: value }),
+      });
+      if (!res.ok) throw new Error(`upload failed: ${res.status}`);
+      const { url } = await res.json();
+      return url || value;
+    } catch (err) {
+      console.warn("image upload failed, falling back to data URL:", err);
+      return value;
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSubmit() {
+    const resolved = await materializeValue(wordData);
+    const isWord = word.trim() !== "" && resolved.trim() !== "";
 
     const payload = isWord
       ? {
           type: "word",
           word,
-          wordData,
+          wordData: resolved,
         }
       : {
           type: "entity",
           name: word,
-          image: wordData,
+          image: resolved,
           entityType: "custom",
         };
 
@@ -72,9 +97,10 @@ export default function AddListItemModal({ isOpen, onClose, onAdd }) {
 
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={uploading}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
           >
-            Add
+            {uploading ? "Uploading..." : "Add"}
           </button>
         </div>
       </div>

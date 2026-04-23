@@ -3,16 +3,30 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+// Static fallback — used until the API responds or if it fails
+const STATIC_TAGS = [
+  "Characters", "Gaming", "Anime", "Games", "Education", "Fun",
+  "Vocabulary", "Music", "Travel", "Multiplayer", "Sports",
+  "Movies", "Fashion", "Cities", "Challenge", "Cooking",
+  "Food", "Fitness", "Family", "Relationships", "Phonics",
+  "Lifestyle", "Math", "Science",
+].map((t) => ({ name: t.toLowerCase().replace(/\s+/g, "-"), label: t, type: "popular" }));
+
 export default function TagsCarousel() {
   const quickLinks = [{ label: "All", href: "/tags" }];
 
-  const [tags] = useState([
-    "Characters", "Gaming", "Anime", "Games", "Education", "Fun",
-    "Vocabulary", "Music", "Travel", "Multiplayer", "Sports",
-    "Movies", "Fashion", "Cities", "Challenge", "Cooking",
-    "Food", "Fitness", "Family", "Relationships", "Phonics",
-    "Lifestyle", "Math", "Science",
-  ]);
+  const [tags, setTags] = useState(STATIC_TAGS);
+
+  useEffect(() => {
+    fetch("/api/trending-tags")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.tags?.length > 0) setTags(data.tags);
+      })
+      .catch(() => {
+        // keep static fallback
+      });
+  }, []);
 
   const scrollRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -90,16 +104,19 @@ export default function TagsCarousel() {
 
           {tags.map((tag, index) => (
             <a
-              key={`${tag}-${index}`}
-              href={`/tags/${tag.toLowerCase().replace(/\s+/g, "-")}`}
-              className="whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
-                         bg-gray-100 dark:bg-gray-800/50 
-                         text-gray-600 dark:text-gray-400
-                         hover:bg-blue-600 hover:text-white
-                         dark:hover:bg-blue-600 dark:hover:text-white
-                         transition-all duration-200 flex-shrink-0"
+              key={`${tag.name}-${index}`}
+              href={`/tags/${tag.name}`}
+              className={`whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
+                         transition-all duration-200 flex-shrink-0
+                         ${tag.type === "seasonal"
+                           ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500"
+                           : tag.type === "trending"
+                           ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white"
+                           : "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white"
+                         }`}
             >
-              {tag}
+              {tag.type === "seasonal" && "🔥 "}
+              {tag.label}
             </a>
           ))}
           {/* Invisible spacer to ensure right-side padding works */}

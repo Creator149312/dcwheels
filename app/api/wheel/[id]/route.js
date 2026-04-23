@@ -17,15 +17,36 @@ function sanitizeSegments(data) {
 export async function PUT(request, { params }) {
   const {id} = params;
 
-  const { title, description, data, wheelData, relatedTo } = await request.json();
+  const { title, description, data, wheelData, relatedTopics, tags } = await request.json();
   await connectMongoDB();
-  await Wheel.findByIdAndUpdate(id, { title, description, data: sanitizeSegments(data), wheelData, relatedTo });
+
+  // Only patch relatedTopics / tags when the client actually sent them.
+  // Otherwise a partial update (e.g. title-only save) would clobber those
+  // fields to undefined.
+  const update = {
+    title,
+    description,
+    data: sanitizeSegments(data),
+    wheelData,
+  };
+  if (Array.isArray(relatedTopics)) {
+    update.relatedTopics = relatedTopics;
+  }
+  if (Array.isArray(tags)) {
+    update.tags = tags.filter(
+      (t) => typeof t === "string" && t.trim().length > 0
+    );
+  }
+
+  await Wheel.findByIdAndUpdate(id, update);
   return NextResponse.json({ message: "Wheel updated" }, { status: 200 });
 }
 
 export async function GET(request, { params }) {
   const { id } = params;
   await connectMongoDB();
-  const list = await Wheel.findOne({ _id: id });
+  // .lean() returns a plain JS object instead of a hydrated Mongoose document.
+  // Safe here because we only serialise to JSON — no mongoose instance methods used.
+  const list = await Wheel.findOne({ _id: id }).lean();
   return NextResponse.json({ list }, { status: 200 });
 }

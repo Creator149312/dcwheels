@@ -6,6 +6,16 @@ import { FaImage } from "react-icons/fa";
 import imageCompression from "browser-image-compression";
 import toast from "react-hot-toast";
 
+// Convert a File/Blob to a data: URL string.
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 const ImageUpload = ({ selectedIndex, segData }) => {
   const { updateSegment } = useContext(SegmentsContext);
   const imgValue = segData[selectedIndex]?.image || segData[selectedIndex]?.text || "";
@@ -25,29 +35,26 @@ const ImageUpload = ({ selectedIndex, segData }) => {
     try {
       setUploading(true);
 
-      // Compress before upload
+      // Compress client-side only. Store as data: URL in segment state and
+      // defer the Blob upload to save-time (SaveWheelBtn / useSaveWheel).
+      // This avoids burning storage on wheels that are never saved.
       const compressed = await imageCompression(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 400,
         useWebWorker: true,
       });
 
-      const formData = new FormData();
-      formData.append("file", compressed, compressed.name || "segment-image.webp");
-
-      const res = await fetch("/api/upload-segment-image", {
-        method: "POST",
-        body: formData,
+      const dataUrl = await fileToDataUrl(compressed);
+      // Detect orientation so the wheel can render the image correctly
+      const imageLandscape = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
+        img.onerror = () => resolve(false);
+        img.src = dataUrl;
       });
-
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "Upload failed");
-      }
-
-      const { url } = await res.json();
-      setImageUrl(url);
-      updateSegment(selectedIndex, "image", url);
+      setImageUrl(dataUrl);
+      updateSegment(selectedIndex, "image", dataUrl);
+      updateSegment(selectedIndex, "imageLandscape", imageLandscape);
     } catch (error) {
       toast.error(error.message || "Image upload failed. Please try again.");
     } finally {

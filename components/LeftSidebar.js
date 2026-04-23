@@ -20,17 +20,16 @@ export default function LeftSidebar({ isOpen, onClose }) {
   return (
     <>
       {/* 1. Desktop Rail (Always visible) */}
-      <aside className="hidden md:block fixed top-14 left-0 h-[calc(100vh-3.5rem)] w-20 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-900 z-30">
-        {/* ... existing rail code ... */}
-        <ul className="flex flex-col items-center space-y-2 pt-6">
+      <aside className="hidden md:block fixed top-12 left-0 h-[calc(100vh-3rem)] w-16 bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-900 z-30">
+        <ul className="flex flex-col items-center space-y-0.5 pt-3">
           {NAV_ITEMS.map((item) => (
-            <li key={item.href} className="w-full px-2">
+            <li key={item.href} className="w-full px-1.5">
               <a
                 href={item.href}
-                className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${isActive(item.href) ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600" : "text-gray-500"}`}
+                className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${isActive(item.href) ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600" : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900"}`}
               >
-                <item.icon size={20} />
-                <span className="text-[10px] mt-1.5 font-bold">
+                <item.icon size={18} />
+                <span className="text-[10px] mt-1 font-bold">
                   {item.label}
                 </span>
               </a>
@@ -56,18 +55,18 @@ export default function LeftSidebar({ isOpen, onClose }) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-14 flex items-center px-6 border-b border-gray-100 dark:border-gray-900 md:hidden">
-          <span className="font-black text-blue-600">MENU</span>
+        <div className="h-12 flex items-center px-5 border-b border-gray-100 dark:border-gray-900 md:hidden">
+          <span className="font-black text-blue-600 text-sm">MENU</span>
         </div>
 
-        <nav className="px-3 pt-6">
-          <ul className="space-y-1.5">
+        <nav className="px-2.5 pt-3">
+          <ul className="space-y-0.5">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <a
                   href={item.href}
-                  onClick={onClose} // Auto-close menu when link is clicked
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm ${
                     isActive(item.href)
                       ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 font-bold"
                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-50"

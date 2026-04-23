@@ -176,7 +176,7 @@ const WinnerPopup = ({
                   <img
                     src={winner.image}
                     alt={winner.text}
-                    className="w-28 h-40 object-cover rounded-lg mx-auto mb-3 shadow-md"
+                    className="max-w-[200px] max-h-[200px] w-auto h-auto object-contain rounded-lg mx-auto mb-3 shadow-md"
                   />
                 )}
                 {winner?.type === "quiz" && winner?.question ? (
@@ -255,17 +255,6 @@ const WinnerPopup = ({
 
               {/* ── Group 2: Utility Actions ──────────────────────────── */}
               <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                {/* Re-spin */}
-                <button
-                  onClick={closePopup}
-                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="Spin Again"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                  </svg>
-                </button>
-
                 {/* Add to List (icon-only wrapper) */}
                 {winner?.type === "entity" && winner?.payload?.entityId && (
                   <AddToListButton

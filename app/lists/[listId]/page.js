@@ -1,15 +1,15 @@
-import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { validateObjectID } from "@utils/Validator";
-import apiConfig from "@utils/ApiUrlConfig";
+import { getListById } from "@lib/lists";
 import ListDetailClient from "./ListDetailClient";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import { sessionUserId } from "@utils/SessionData";
+
+// Public list detail is CDN-cacheable for a minute. Owner-only UI bits are
+// resolved client-side via useSession() in ListDetailClient.
+export const revalidate = 60;
 
 export async function generateMetadata({ params }) {
   const { listId } = params;
 
-  // ✅ Validate ObjectId
   if (!validateObjectID(listId)) {
     return {
       title: "List Not Found",
@@ -18,27 +18,8 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  let list = null;
-
-  try {
-    const res = await fetch(`${apiConfig.apiUrl}/unifiedlist/${listId}`, {
-      method: "GET",
-      cache: "no-store",
-    });
-
-    if (res.status === 404) {
-      return {
-        title: "List Not Found",
-        description: "The requested list does not exist.",
-        robots: "noindex",
-      };
-    }
-
-    const data = await res.json();
-    list = data.list || null;
-  } catch (err) {
-    list = null;
-  }
+  // React.cache() dedupes this with the page body's call below — one DB hit.
+  const list = await getListById(listId);
 
   if (list) {
     const title = list.name || "User List";
@@ -63,33 +44,17 @@ export async function generateMetadata({ params }) {
 export default async function ListDetailPage({ params }) {
   const { listId } = params;
 
-  const res = await fetch(`${apiConfig.apiUrl}/unifiedlist/${listId}`, {
-    method: "GET",
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    return (
-      <div className="p-6 text-center text-red-500 dark:text-red-400">
-        {res.status === 404 ? "List not found." : "Failed to load list."}
-      </div>
-    );
+  if (!validateObjectID(listId)) {
+    notFound();
   }
 
-  const data = await res.json();
-  const list = data.list;
+  const list = await getListById(listId);
 
-  // ✅ Get logged-in user (optional)
-  const session = await getServerSession(authOptions);
-  let loggedInUserId = null;
-  if (session?.user?.email) {
-    loggedInUserId = await sessionUserId(session.user.email);
+  if (!list) {
+    notFound();
   }
 
-  // ✅ Compare with list.userId
-  const isOwner = loggedInUserId === list.userId;
-
-  return (
-    <ListDetailClient initialList={list} listId={listId} isOwner={isOwner} />
-  );
+  // Owner check moved to client (useSession in ListDetailClient) so this
+  // page remains CDN-cacheable for anonymous and authenticated users alike.
+  return <ListDetailClient initialList={list} listId={listId} />;
 }

@@ -104,6 +104,17 @@ export async function GET(req) {
       // 4. Sort and limit earlier
       { $sort: { overlapCount: -1, createdAt: -1 } },
       { $limit: 20 }, // candidate pool
+
+      // 5. Return only fields needed for card display — keeps payload small
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          wheelPreview: 1,
+          tags: 1,
+          overlapCount: 1,
+        },
+      },
     ];
 
     const candidates = await Wheel.aggregate(pipeline);

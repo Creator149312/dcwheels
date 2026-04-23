@@ -44,13 +44,13 @@ export default function ListsClient({ initialLists }) {
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+    <div className="px-4 py-3 md:px-6 md:py-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
         All Lists
       </h1>
 
       {isContentMode && (
-        <div className="mb-6 rounded-xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+        <div className="mb-4 rounded-xl border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
           Select a list to spin it as a Content Wheel.
         </div>
       )}
@@ -62,7 +62,7 @@ export default function ListsClient({ initialLists }) {
       )}
 
       {/* ✅ Lists Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {lists.map((list) => {
           const cover = getCoverImage(list);
 
@@ -88,8 +88,8 @@ export default function ListsClient({ initialLists }) {
               </div>
 
               {/* ✅ Text Content */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+              <div className="p-2.5">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-tight">
                   {list.name}
                 </h3>
 
@@ -97,8 +97,8 @@ export default function ListsClient({ initialLists }) {
                   {list.description || "No description"}
                 </p> */}
 
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">
-                  {list.items.length} items
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {list.itemCount ?? list.items?.length ?? 0} items
                 </p>
               </div>
             </Link>
@@ -108,7 +108,7 @@ export default function ListsClient({ initialLists }) {
 
       {/* ✅ Load More */}
       {hasMore && (
-        <div className="text-center mt-8">
+        <div className="text-center mt-6">
           <button
             onClick={loadMore}
             disabled={loading}

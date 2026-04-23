@@ -4,6 +4,12 @@ import Wheel from "@models/wheel";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+// Public profile is purely informational — no per-request state (no cookies,
+// no session reads). That makes it a great candidate for ISR: regenerate at
+// most every 5 minutes so a redeploy or a new wheel shows up within that
+// window, but serve the cached HTML from the edge otherwise.
+export const revalidate = 300;
+
 // ---------------------------------------------------------------------------
 // Public profile page — /profile/[name]
 //

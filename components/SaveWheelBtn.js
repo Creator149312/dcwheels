@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext } from "react";
+import { useState, useContext, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,25 @@ import { Textarea } from "./ui/textarea";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import Tooltip from "./Tooltip";
 import { useSaveWheel } from "./useSaveWheel";
+import TagInput from "./TagInput";
+
+function useUrlTopic() {
+  const [topic, setTopic] = useState(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type");
+    const id = params.get("id");
+    if (
+      type &&
+      id &&
+      ["anime", "movie", "game", "character", "custom"].includes(type)
+    ) {
+      setTopic({ type, id });
+    }
+  }, []);
+  return topic;
+}
 
 export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
@@ -28,6 +47,8 @@ export default function SaveWheelBtn({ segmentsData }) {
 
   const [showDataDialog, setShowDataDialog] = useState(false);
   const [selectedWheel, setSelectedWheel] = useState(null);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const urlTopic = useUrlTopic();
 
   const {
     savedWheels,
@@ -38,9 +59,18 @@ export default function SaveWheelBtn({ segmentsData }) {
     setError,
   } = useSaveWheel({ createdBy, segData, wheelData, coins, setCoins });
 
+  const handleTagsChange = useCallback((t) => setSelectedTags(t), []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await saveWheel({ title, description, selectedWheel, e });
+    const success = await saveWheel({
+      title,
+      description,
+      selectedWheel,
+      selectedTopics: [],
+      selectedTags,
+      e,
+    });
     if (success) {
       setShowDataDialog(false);
     }
@@ -51,6 +81,9 @@ export default function SaveWheelBtn({ segmentsData }) {
     setSelectedWheel(wheel);
     setTitle(wheel ? wheel.title : "New Wheel");
     setDescription(wheel ? wheel.description : "This is my new wheel");
+    setSelectedTags(
+      wheel && Array.isArray(wheel.tags) ? [...wheel.tags] : []
+    );
     setError(null);
   };
 
@@ -81,7 +114,7 @@ export default function SaveWheelBtn({ segmentsData }) {
         </div>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md bg-card rounded-xl">
+      <DialogContent className="sm:max-w-md bg-card rounded-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Save Wheel</DialogTitle>
           <DialogDescription>
@@ -138,6 +171,19 @@ export default function SaveWheelBtn({ segmentsData }) {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Tags</Label>
+              <TagInput value={selectedTags} onChange={handleTagsChange} />
+            </div>
+
+            {urlTopic && (
+              <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-3 py-2">
+                <span className="text-muted-foreground">Linked to:</span>
+                <span className="font-semibold capitalize">{urlTopic.type}</span>
+                <span className="text-muted-foreground">#{urlTopic.id}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="mt-6 flex sm:justify-between items-center">

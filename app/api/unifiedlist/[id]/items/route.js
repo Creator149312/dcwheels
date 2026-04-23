@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth";
@@ -98,6 +99,9 @@ export async function POST(req, { params }) {
     // ✅ 5. Push item and save
     list.items.push(newItem);
     await list.save();
+
+    revalidatePath("/lists");
+    revalidatePath(`/lists/${id}`);
 
     return NextResponse.json(
       {

@@ -1,6 +1,7 @@
 import { fetchCharacters } from "@app/(content)/[type]/TopicPagesHelperFunctions";
 import { slugify } from "@utils/HelperFunctions";
 import { Search } from "lucide-react";
+import Image from "next/image";
 
 export default async function CharacterSection({ searchtitle }) {
   const characters = await fetchCharacters({ search: searchtitle, page: 1, perPage: 20 });
@@ -24,12 +25,16 @@ export default async function CharacterSection({ searchtitle }) {
           const url = `/character/${item.id}-${slugify(name)}`;
           return (
             <a key={item.id} href={url} className="group">
-              <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm">
-                <img
-                  src={item.image?.large}
-                  alt={name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm relative">
+                {item.image?.large && (
+                  <Image
+                    src={item.image.large}
+                    alt={name}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover"
+                  />
+                )}
               </div>
               <p className="text-sm font-semibold truncate text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
                 {name}

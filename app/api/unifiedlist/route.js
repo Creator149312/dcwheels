@@ -1,5 +1,6 @@
 // app/api/lists/route.js
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth"; // if using next-auth
@@ -98,6 +99,8 @@ export async function POST(req) {
       updatedAt: newList.updatedAt,
       items: [],
     };
+
+    revalidatePath("/lists");
 
     return NextResponse.json({ list: formatted }, { status: 201 });
   } catch (err) {

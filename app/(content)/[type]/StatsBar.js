@@ -1,90 +1,104 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import ReactionButton from "@components/ReactionButton";
-import FollowButton from "@components/FollowButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import SharePopup from "@components/SharePopup";
-import { getContentStats } from "@components/actions/actions"; // Ensure this is client-safe
+import { getContentStats } from "@components/actions/actions";
 
 export default function StatsBar({
   entityType,
   entityId,
-  session,
+  session: sessionProp,
   show = {
     like: true,
     share: true,
     save: true,
     follow: true,
   },
-  onCommentClick,
-  onShareClick,
   onSaveClick,
+  initialStats = null,
 }) {
   const openLoginPrompt = useLoginPrompt();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Prefer the prop for backward-compat; fall back to the client hook so the
+  // component works on CDN-cached static pages where no server session exists.
+  const { data: hookSession } = useSession();
+  const session = sessionProp ?? hookSession;
+  const [stats, setStats] = useState(initialStats);
+  const [loading, setLoading] = useState(!initialStats);
 
   useEffect(() => {
-    async function fetchStats() {
-      try {
-        const result = await getContentStats({ entityType, entityId, show });
-        setStats(result);
-      } catch (error) {
-        console.error("Failed to fetch stats", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+    if (!entityId) return;
+    let ignore = false;
 
-    if (entityId) fetchStats();
-  }, [entityType, entityId]);
+    // Case 1: full SSR stats provided (dynamic page, logged-in or out) — skip fetch.
+    // Case 2: public SSR stats provided but user is logged in — refresh to get
+    //          reactedByUser state (resolves the cached-HTML flicker).
+    // Case 3: no SSR stats — fetch from scratch.
+    const needsUserRefresh =
+      initialStats &&
+      session?.user &&
+      !initialStats.reactedByUser?.like &&
+      show?.like;
+
+    if (initialStats && !needsUserRefresh) return;
+
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    getContentStats({
+      entityType,
+      entityId,
+      show,
+      userId,
+      userEmail,
+    })
+      .then((result) => { if (!ignore) setStats(result); })
+      .catch(() => {})
+      .finally(() => { if (!ignore) setLoading(false); });
+
+    return () => { ignore = true; };
+  }, [entityType, entityId, session?.user, initialStats, show]);
 
   if (!entityId) return null;
 
+  // YouTube-style skeleton: pill shapes that match final buttons
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+        <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+      </div>
+    );
+  }
+
   return (
-    <div className="stats-bar flex items-center gap-2 md:gap-4 text-sm">
-      {/* Loading Placeholder */}
-      {loading && (
-        <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Like pill */}
+      {show.like && stats && (
+        <ReactionButton
+          entityType={entityType}
+          entityId={entityId}
+          reactionType="like"
+          initialCount={stats.reactions?.like || 0}
+          reactedByCurrentUser={stats.reactedByUser?.like || false}
+          isLoggedIn={!!session}
+          openLoginPrompt={openLoginPrompt}
+        />
       )}
 
-      {/* Loaded Stats */}
-      {!loading && stats && (
-        <>
-          {show.like && (
-            <ReactionButton
-              entityType={entityType}
-              entityId={entityId}
-              reactionType="like"
-              initialCount={stats.reactions?.like || 0}
-              reactedByCurrentUser={stats.reactedByUser?.like || false}
-              isLoggedIn={!!session}
-              openLoginPrompt={openLoginPrompt}
-            />
-          )}
+      {/* Share pill */}
+      {show.share && <SharePopup variant="buttoned" />}
 
-          {show.share && <SharePopup variant="buttoned"/>}
-
-          {show.save && (
-            <button
-              onClick={onSaveClick}
-              className="flex items-center gap-1 hover:underline"
-            >
-              📌 {stats.saveCount || 0}
-            </button>
-          )}
-
-          {show.follow && (
-            <FollowButton
-              entityType={entityType}
-              entityId={entityId}
-              initialFollow={stats.isFollowing}
-              initialCount={stats.followCount}
-              openLoginPrompt={openLoginPrompt}
-            />
-          )}
-        </>
+      {/* Save pill */}
+      {show.save && (
+        <button
+          onClick={onSaveClick}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
+        >
+          📌 {stats?.saveCount || 0}
+        </button>
       )}
     </div>
   );

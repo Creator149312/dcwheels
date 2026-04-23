@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
-import ReactionTest from "@models/reactiontest";
+import Reaction from "@models/reaction";
 import User from "@models/user";
 
 export async function GET(req) {
@@ -20,21 +21,51 @@ export async function GET(req) {
       );
     }
 
-    const currentUser = session
-      ? await User.findOne({ email: session.user.email })
-      : null;
+    // Cast entityId so the aggregation match hits the compound index on
+    // { entityType, entityId, reactionType } — a string would force Mongo
+    // to scan every doc to coerce types.
+    let entityIdCast;
+    try {
+      entityIdCast = new mongoose.Types.ObjectId(entityId);
+    } catch {
+      return NextResponse.json({ counts: {}, reactedByCurrentUser: false });
+    }
 
-    const reactions = await ReactionTest.find({ entityType, entityId }).lean();
+    // Resolve the user id (if any) in parallel with the counts aggregation.
+    const currentUserPromise = session?.user?.email
+      ? User.findOne({ email: session.user.email }).select("_id").lean()
+      : Promise.resolve(null);
 
-    // Aggregate counts per reaction type
-    const counts = reactions.reduce((acc, r) => {
-      acc[r.reactionType] = (acc[r.reactionType] || 0) + 1;
+    // Previously this route did `Reaction.find(...).lean()` to load every
+    // reaction doc, then reduced in JS. For a wheel with 10k likes that's
+    // 10k docs + network round-trip per page view. The aggregation below
+    // returns one tiny row per reactionType instead and is covered by the
+    // { entityType, entityId, reactionType } index.
+    const countsPromise = Reaction.aggregate([
+      { $match: { entityType, entityId: entityIdCast } },
+      { $group: { _id: "$reactionType", count: { $sum: 1 } } },
+    ]);
+
+    const [currentUser, countsRows] = await Promise.all([
+      currentUserPromise,
+      countsPromise,
+    ]);
+
+    const counts = countsRows.reduce((acc, row) => {
+      acc[row._id] = row.count;
       return acc;
     }, {});
 
-    const reactedByCurrentUser = currentUser
-      ? reactions.some(r => r.userId.toString() === currentUser._id.toString())
-      : false;
+    // Separate tiny query — exists? — instead of scanning every reaction.
+    let reactedByCurrentUser = false;
+    if (currentUser?._id) {
+      const mine = await Reaction.exists({
+        userId: currentUser._id,
+        entityType,
+        entityId: entityIdCast,
+      });
+      reactedByCurrentUser = Boolean(mine);
+    }
 
     return NextResponse.json({ counts, reactedByCurrentUser });
   } catch (err) {

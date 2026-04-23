@@ -1,30 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import { Star, ArrowRight, Calendar, Users } from "lucide-react";
+import { Star, ArrowRight } from "lucide-react";
 
 /**
- * Utility to create SEO-friendly URLs
+ * Utility to get external URL for anime/movie
  */
-function slugify(str) {
-  if (!str) return "item";
-  return str
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/--+/g, "-");
+function getExternalUrl(item, isAnime) {
+  if (isAnime) return `https://anilist.co/anime/${item.id}`;
+  return `https://www.themoviedb.org/movie/${item.id}`;
 }
 
 export default function ResultsGrid({ results, loading }) {
   // 1. Loading State (Skeleton)
   if (loading) {
     return (
-      <div className="w-full max-w-sm mx-auto animate-pulse">
-        <div className="aspect-[16/10] w-full bg-gray-200 dark:bg-gray-800 rounded-2xl" />
-        <div className="mt-3 h-4 w-2/3 bg-gray-200 dark:bg-gray-800 rounded" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full animate-pulse">
+        {[...Array(6)].map((_, i) => (
+          <div key={i}>
+            <div className="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-800 rounded-2xl" />
+            <div className="mt-2 h-3 w-3/4 bg-gray-200 dark:bg-gray-800 rounded" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -38,85 +34,65 @@ export default function ResultsGrid({ results, loading }) {
     );
   }
 
-  const item = results[0];
-  const isAnime = item.coverImage !== undefined;
-
-  // Data Normalization
-  const title = isAnime 
-    ? (item.title.english || item.title.romaji) 
-    : (item.title || item.name);
-
-  const imageSrc = isAnime
-    ? (item.coverImage.extraLarge || item.coverImage.large)
-    : `https://image.tmdb.org/t/p/w780${item.poster_path}`;
-
-  const rating = isAnime 
-    ? (item.averageScore / 10).toFixed(1) 
-    : item.vote_average?.toFixed(1);
-
-  const releaseYear = isAnime
-    ? item.startDate?.year
-    : item.release_date?.split("-")[0];
-
-  const slug = slugify(title);
-  const url = isAnime ? `/anime/${item.id}-${slug}` : `/movie/${item.id}-${slug}`;
-
   return (
-    <div className="w-full flex justify-center animate-in fade-in zoom-in-95 duration-500">
-      <Link 
-        href={url} 
-        className="group relative w-full max-w-sm bg-gray-900 rounded-2xl overflow-hidden shadow-xl transition-all active:scale-[0.98]"
-      >
-        {/* Compact Aspect Ratio for Mobile (16:10 saves vertical space) */}
-        <div className="relative aspect-[16/10] sm:aspect-square overflow-hidden">
-          <img
-            src={imageSrc}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          {/* Heavy bottom gradient to ensure text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-90" />
-          
-          {/* Top Badge */}
-          <div className="absolute top-3 left-3">
-            <span className="bg-blue-600 text-[9px] font-black text-white px-2 py-0.5 rounded shadow-lg uppercase tracking-tighter">
-              Match Found
-            </span>
-          </div>
-        </div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full animate-in fade-in zoom-in-95 duration-500">
+      {results.map((item) => {
+        const isAnime = item.coverImage !== undefined;
+        const title = isAnime
+          ? (item.title.english || item.title.romaji)
+          : (item.title || item.name);
+        const imageSrc = isAnime
+          ? (item.coverImage.extraLarge || item.coverImage.large)
+          : `https://image.tmdb.org/t/p/w780${item.poster_path}`;
+        const rating = isAnime
+          ? (item.averageScore / 10).toFixed(1)
+          : item.vote_average?.toFixed(1);
+        const releaseYear = isAnime
+          ? item.startDate?.year
+          : item.release_date?.split("-")[0];
+        const url = getExternalUrl(item, isAnime);
 
-        {/* Content Overlay - Positioned over the bottom of the image to save height */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 pt-10">
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-xl font-black text-white leading-tight truncate mb-1">
+        return (
+          <a
+            key={item.id}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative bg-gray-900 rounded-2xl overflow-hidden shadow-lg transition-all active:scale-[0.97] hover:shadow-xl"
+          >
+            <div className="relative aspect-[2/3] overflow-hidden">
+              <img
+                src={imageSrc}
+                alt={title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-90" />
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <h3 className="text-sm font-bold text-white leading-tight line-clamp-2 mb-1">
                 {title}
-              </h2>
-              
-              <div className="flex items-center gap-3">
+              </h3>
+              <div className="flex items-center gap-2 text-[10px]">
                 {rating && rating !== "0.0" && (
-                  <div className="flex items-center gap-1 text-yellow-400 font-bold text-xs">
-                    <Star size={12} fill="currentColor" /> {rating}
-                  </div>
+                  <span className="flex items-center gap-0.5 text-yellow-400 font-bold">
+                    <Star size={10} fill="currentColor" /> {rating}
+                  </span>
                 )}
                 {releaseYear && (
-                  <div className="flex items-center gap-1 text-white/70 font-bold text-xs">
-                    <Calendar size={12} /> {releaseYear}
-                  </div>
+                  <span className="text-white/60 font-bold">{releaseYear}</span>
                 )}
-                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-black text-white/80 uppercase">
+                <span className="px-1 py-0.5 rounded bg-white/10 text-[9px] font-black text-white/70 uppercase">
                   {isAnime ? "Anime" : "Movie"}
                 </span>
               </div>
+              <div className="mt-1 flex items-center gap-1 text-blue-400 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                View Details <ArrowRight size={10} />
+              </div>
             </div>
-
-            {/* Action Icon */}
-            <div className="flex-shrink-0 h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:translate-x-1 transition-transform">
-              <ArrowRight size={20} />
-            </div>
-          </div>
-        </div>
-      </Link>
+          </a>
+        );
+      })}
     </div>
   );
 }

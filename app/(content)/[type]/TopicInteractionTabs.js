@@ -1,12 +1,13 @@
 "use client";
 
+import Image from "next/image";
+import { useSession } from "next-auth/react";
 import CreateWheelButton from "./CreateWheelButton";
 import ReviewsPanel from "@components/review/ReviewsPanel";
 import QuestionsPanel from "@components/qna/QuestionsPanel";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 
-// Consistent section header used across all three stacked blocks.
-// The blue accent bar visually groups title + action together.
+// Consistent section header: blue accent bar + title + optional action.
 function SectionHeader({ title, action }) {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -19,49 +20,104 @@ function SectionHeader({ title, action }) {
   );
 }
 
-// Sections are stacked (no tabs) so all content is visible on scroll.
-// Each section's list scrolls horizontally to keep vertical height compact.
+// Section order (revised for engagement + discovery flow):
+//   1. Anime Characters   — visual hook first (anime only)
+//   2. Community Votes    — quick-tap polls, 2-col grid (break horizontal fatigue)
+//   3. Picker Wheels      — hidden when empty; shown when there's community content
+//   4. Quick Takes        — deep opinions, vertical stacked, form at bottom
 //
-// Order is intentional:
-//   1. Picker Wheels  — SpinPapa's unique feature; shown first and most prominent
-//   2. Community Votes — decision-focused Q&A; unique to SpinPapa
-//   3. Quick Takes     — lightweight reviews; placed last (IMDB does full reviews better)
+// Session is resolved client-side via useSession() — the parent Server
+// Component stays session-free so the page can be CDN-cached.
 export default function TopicInteractionTabs({
   type,
   pageId,
   contentId,
+  contentSlug,
+  contentTags = [],
   taggedWheels = [],
-  isLoggedIn,
-  currentUserId,
+  animeCharacters = [],
 }) {
   const openLoginPrompt = useLoginPrompt();
+  const { data: session } = useSession();
+  const isLoggedIn = !!session?.user;
+  const currentUserId = session?.user?.id || session?.user?._id || null;
 
   return (
     <div className="space-y-12">
 
-      {/* ── 1. Picker Wheels ──────────────────────────────────────────────
-           This is SpinPapa's moat. Every piece of content gets its own
-           community-generated spin wheels for decision-making.
+      {/* ── 1. Anime Characters ──────────────────────────────────────────
+           Visual hook — portraits draw users in before they hit text-heavy
+           sections. Only rendered for anime with character data.           */}
+      {type === "anime" && animeCharacters.length > 0 && (
+        <section>
+          <SectionHeader title="👥 Characters" />
+          <div
+            className="flex overflow-x-auto gap-3 pb-2 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {animeCharacters.map((character) => (
+              <a
+                key={character.id}
+                href={`/character/${character.id}-${character.name.full
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^\w-]/g, "")}`}
+                className="group flex-shrink-0 flex flex-col items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="relative w-24 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <Image
+                    src={character.image.large}
+                    alt={character.name.full}
+                    fill
+                    sizes="96px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <p className="text-xs font-medium text-center text-gray-700 dark:text-gray-300 line-clamp-2 w-24 group-hover:text-blue-600 transition-colors">
+                  {character.name.full}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
-           CreateWheelButton is temporarily commented out — it will be
-           replaced by the contextual "Add to Watchlist / Spin Similar"
-           action flow in the next iteration.                               */}
+      {/* ── 2. Community Votes ────────────────────────────────────────────
+           Quick-tap yes/no + multi polls. Rendered as a 2-column grid so
+           users can see all questions at once without swiping — better for
+           voting engagement. Composer collapsed behind "+ Ask" button.
+           
+           COMMENTED OUT — work in progress                               */}
+      {/* 
       <section>
-        {/* CreateWheelButton routes to the main spinner with this content
-             pre-tagged — users can build a "Spin Similar" wheel instantly.  */}
+        <SectionHeader title="🗳️ Community Votes" />
+        <QuestionsPanel
+          type={type}
+          contentId={pageId}
+          contentSlug={contentSlug}
+          contentTags={contentTags}
+          isLoggedIn={isLoggedIn}
+          openLoginPrompt={openLoginPrompt}
+          currentUserId={currentUserId}
+          layout="grid"
+        />
+      </section>
+      */}
+
+      {/* ── 3. Picker Wheels ──────────────────────────────────────────────
+           SpinPapa's core feature. Hidden when empty to avoid showing a
+           prominent empty state — replaced by a compact inline CTA.       */}
+      <section>
         <SectionHeader
-          title="🎡 Picker Wheels"
+          title={`🎡 Picker Wheels${taggedWheels.length > 0 ? ` (${taggedWheels.length})` : ""}`}
           action={<CreateWheelButton type={type} contentId={contentId} />}
         />
 
         {taggedWheels.length === 0 ? (
-          <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-            <span className="text-2xl">🎡</span>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              No wheels yet for this {type}.{" "}
-              <span className="font-semibold">Be the first to create one!</span>
-            </p>
-          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No wheels yet for this {type} — be the first to{" "}
+            <CreateWheelButton type={type} contentId={contentId} variant="link" /> one!
+          </p>
         ) : (
           <div
             className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
@@ -71,44 +127,47 @@ export default function TopicInteractionTabs({
               <a
                 key={wheel._id}
                 href={`/uwheels/${wheel._id}`}
-                className="group w-52 flex-shrink-0 block bg-gray-50 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl p-4 transition-colors"
+                className="group w-52 flex-shrink-0 block bg-gray-50 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl overflow-hidden transition-colors"
               >
-                {/* Wheel icon accent */}
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-3 text-base">
-                  🎡
+                <div className="relative w-full aspect-square bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                  {wheel.wheelPreview ? (
+                    <Image
+                      src={wheel.wheelPreview}
+                      alt={wheel.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 208px"
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <span className="text-3xl mb-1">🎡</span>
+                      <span className="text-xs text-gray-400 font-medium">No preview</span>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-sm font-semibold truncate mb-1 group-hover:text-blue-600 transition-colors">
-                  {wheel.title}
-                </h3>
-                {wheel.description && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                    {wheel.description}
-                  </p>
-                )}
+                <div className="p-3">
+                  <h3 className="text-sm font-semibold truncate mb-1 group-hover:text-blue-600 transition-colors">
+                    {wheel.title}
+                  </h3>
+                  {wheel.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {wheel.description}
+                    </p>
+                  )}
+                </div>
               </a>
             ))}
           </div>
         )}
       </section>
 
-      {/* ── 2. Community Votes ────────────────────────────────────────────
-           Decision-focused Q&A. Unique to SpinPapa — helps users decide
-           whether to watch/play by seeing how the community voted.         */}
-      <section>
-        <SectionHeader title="🗳️ Community Votes" />
-        <QuestionsPanel
-          type={type}
-          contentId={pageId}
-          isLoggedIn={isLoggedIn}
-          openLoginPrompt={openLoginPrompt}
-          currentUserId={currentUserId}
-          layout="horizontal"
-        />
-      </section>
-
-      {/* ── 3. Quick Takes ────────────────────────────────────────────────
-           Lightweight community reviews. Placed last — for deep-dive
-           opinions after the user has already decided to engage.           */}
+      {/* ── 4. Quick Takes ────────────────────────────────────────────────
+           Lightweight reviews. Vertical stacked — reading requires focus.
+           "Do you recommend?" form rendered after the list so social proof
+           is visible first.
+           
+           COMMENTED OUT — work in progress                               */}
+      {/* 
       <section>
         <SectionHeader title="💬 Quick Takes" />
         <ReviewsPanel
@@ -116,9 +175,11 @@ export default function TopicInteractionTabs({
           contentId={pageId}
           isLoggedIn={isLoggedIn}
           openLoginPrompt={openLoginPrompt}
-          layout="horizontal"
+          layout="vertical"
+          formPosition="bottom"
         />
       </section>
+      */}
 
     </div>
   );

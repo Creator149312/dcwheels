@@ -40,7 +40,10 @@ export async function GET(request, { params }) {
       if (createdBy === session.user.email) {
         //if user abc is requesting for data of user abc
         await connectMongoDB();
-        const lists = await Wheel.find({ createdBy: createdBy });
+        const lists = await Wheel.find({ createdBy: createdBy })
+          .select("_id title description data createdAt wheelPreview tags")
+          .sort({ updatedAt: -1 })
+          .lean();
         return NextResponse.json({ lists }, { status: 200 });
       } else {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

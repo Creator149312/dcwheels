@@ -9,6 +9,17 @@ const nextConfig = {
       { protocol: "https", hostname: "media.rawg.io" },
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
+    // Serve AVIF when the browser accepts it, fall back to WebP. Both are
+    // dramatically smaller than JPEG/PNG (AVIF ~50% of WebP, WebP ~70% of
+    // JPEG). Order matters — the first accepted format wins.
+    formats: ["image/avif", "image/webp"],
+    // Cache optimized variants on the CDN for 30 days instead of the default
+    // 60 seconds. Our source images (wheel previews, blob-hosted user
+    // uploads) are effectively immutable — re-optimizing them every minute
+    // is pure waste on the image-optimizer. If a user replaces an upload,
+    // the new upload gets a new URL (addRandomSuffix: true in lib/uploads),
+    // so cache staleness isn't a concern.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
   env: {
     WORK_ENV: process.env.WORK_ENV,
@@ -64,6 +75,18 @@ const nextConfig = {
         source: "/food",
         destination: "/tags/food",
         permanent: false,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        // Allow embedding /embed/* pages in iframes on any origin
+        source: "/embed/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "ALLOWALL" },
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+        ],
       },
     ];
   },

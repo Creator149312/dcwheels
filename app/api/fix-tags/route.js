@@ -195,9 +195,11 @@ export async function POST(req) {
 
     const cleanTag = (tag) =>
       tag
-        .replace(/[^a-zA-Z0-9]/g, "") // allow uppercase A–Z too
+        .toLowerCase()
         .trim()
-        .toLowerCase(); // normalize to lowercase
+        .replace(/[^a-z0-9\s-]/g, "")   // strip symbols but keep spaces & hyphens
+        .replace(/[\s-]+/g, "-")         // collapse whitespace/hyphens to single hyphen
+        .replace(/(^-|-$)/g, "");        // trim leading/trailing hyphens
 
     // const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

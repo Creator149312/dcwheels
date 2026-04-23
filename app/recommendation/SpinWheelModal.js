@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-export default function SpinWheelModal({ results, onClose }) {
+export default function SpinWheelModal({ results, mode, onClose }) {
   const canvasRef = useRef(null);
   const [winner, setWinner] = useState(null);
 
@@ -20,6 +20,11 @@ export default function SpinWheelModal({ results, onClose }) {
     if (item.coverImage) return item.coverImage.large; // Anime
     if (item.poster_path) return `https://image.tmdb.org/t/p/w300${item.poster_path}`; // Movie
     return "";
+  };
+
+  const getExternalUrl = (item) => {
+    if (item.coverImage) return `https://anilist.co/anime/${item.id}`;
+    return `https://www.themoviedb.org/movie/${item.id}`;
   };
 
   const spinWheel = () => {
@@ -89,12 +94,12 @@ export default function SpinWheelModal({ results, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg relative">
-        <button onClick={onClose} className="absolute top-2 right-2 text-gray-500">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl relative max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">
           ✕
         </button>
-        <h2 className="text-lg font-bold mb-4 text-center">Spin the Wheel!</h2>
+        <h2 className="text-lg font-black mb-4 text-center text-gray-900 dark:text-white">Spin the Wheel!</h2>
         <canvas
           ref={canvasRef}
           width={300}
@@ -104,20 +109,28 @@ export default function SpinWheelModal({ results, onClose }) {
         <div className="text-center mt-4">
           <button
             onClick={spinWheel}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
           >
             Spin Now
           </button>
         </div>
         {winner && (
           <div className="mt-6 text-center">
-            <h3 className="text-lg font-bold">You should watch:</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">You should watch:</h3>
             <img
               src={getItemImage(winner)}
               alt={getItemTitle(winner)}
-              className="w-32 h-44 mx-auto rounded shadow mt-2"
+              className="w-32 h-44 mx-auto rounded-xl shadow mt-2"
             />
-            <p className="mt-2 font-semibold">{getItemTitle(winner)}</p>
+            <p className="mt-2 font-semibold text-gray-900 dark:text-white">{getItemTitle(winner)}</p>
+            <a
+              href={getExternalUrl(winner)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              View Details →
+            </a>
           </div>
         )}
       </div>

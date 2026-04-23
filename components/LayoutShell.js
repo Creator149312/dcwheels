@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Navbar from "@components/navbar/Navbar";
 import MobileNavChrome from "@components/MobileNavChrome";
 import LeftSidebar from "@components/LeftSidebar";
@@ -9,7 +10,14 @@ import RightSidebar from "./RightSidebar";
 import AdaptiveLeaderBoardAds from "./ads/AdaptiveLeaderBoardAds";
 
 export default function LayoutShell({ children }) {
+  const pathname = usePathname();
+  const isEmbed = pathname?.startsWith("/embed/");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  // Embed pages: render bare children with no nav/sidebar/ads chrome
+  if (isEmbed) {
+    return <>{children}</>;
+  }
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
   const closeSidebar = () => setSidebarOpen(false); // Helper to explicitly close
@@ -22,8 +30,8 @@ export default function LayoutShell({ children }) {
       {/* Pass the close function down */}
       <LeftSidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
-      <div className="pt-[calc(6rem+env(safe-area-inset-top))] pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 md:pt-14 md:ml-20 transition-all duration-300">
-        <div className="hidden md:block sticky top-14 z-30 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md">
+      <div className="pt-[calc(5.5rem+env(safe-area-inset-top))] pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 md:pt-12 md:ml-16 transition-all duration-300">
+        <div className="hidden md:block sticky top-12 z-30 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md">
           <TagsCarousel />
         </div>
 

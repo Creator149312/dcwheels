@@ -17,10 +17,12 @@ export async function GET(req) {
     let sortQuery;
     switch (sort) {
       case "views":
+        // view_count comes from WheelAnalytics via $addFields in the aggregate below
         sortQuery = { view_count: -1, createdAt: -1 };
         break;
       case "likes":
-        sortQuery = { likeCount: -1, createdAt: -1 };
+        // like_count is resolved from Wheel.likeCount via $addFields below
+        sortQuery = { like_count: -1, createdAt: -1 };
         break;
       case "trending":
         sortQuery = { trending_score: -1, createdAt: -1 };

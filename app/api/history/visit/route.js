@@ -1,5 +1,6 @@
 // app/api/history/visit/route.ts
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectMongoDB } from "@lib/mongodb";
 import Visit from "@models/visit";
 import Wheel from "@models/wheel";
@@ -46,11 +47,9 @@ export async function POST(req) {
       return NextResponse.json({ ok: true, deduped: true });
     }
 
-    // 5) Create visit + increment viewCount (atomic, single $inc operation)
-    await Promise.all([
-      Visit.create({ userId, wheelId: wheelObjectId }),
-      Wheel.updateOne({ _id: wheelObjectId }, { $inc: { viewCount: 1 } }),
-    ]);
+    // 5) Create visit record only — view_count is tracked separately via
+    //    lib/wheelAnalytics.incrementWheelViewCount (bot-filtered, no auth required)
+    await Visit.create({ userId, wheelId: wheelObjectId });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

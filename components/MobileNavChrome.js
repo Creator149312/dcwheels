@@ -29,6 +29,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [isVisible, setIsVisible] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
 
@@ -82,6 +83,8 @@ export default function MobileNavChrome({ onToggleSidebar }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => { setMounted(true); }, []);
+
   return (
     <>
       <div
@@ -115,7 +118,8 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Toggle theme"
               >
-                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                {/* Render a neutral placeholder until theme is known on client */}
+                {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
 
               <a

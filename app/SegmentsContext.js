@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import defaultWheelJSON from "@data/formatJSON";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { normalizeSegments, createSegment } from "@utils/segmentUtils";
@@ -89,7 +89,7 @@ export const SegmentsProvider = ({ children }) => {
   };
 
   // Add a new segment
-  const addSegment = (index) => {
+  const addSegment = useCallback((index) => {
     if (index >= 0) {
       setSegData((prevSegData) => {
         const newSegData = JSON.parse(JSON.stringify(prevSegData[index]));
@@ -100,21 +100,21 @@ export const SegmentsProvider = ({ children }) => {
     } else {
       setSegData((prevSegData) => [...prevSegData, createSegment()]);
     }
-  };
+  }, []);
 
   // Update a segment's property
-  const updateSegment = (index, field, value) => {
+  const updateSegment = useCallback((index, field, value) => {
     setSegData((prevSegData) =>
       prevSegData.map((segment, i) =>
         i === index ? { ...segment, [field]: value } : segment
       )
     );
-  };
+  }, []);
 
   // Delete a segment
-  const deleteSegment = (index) => {
+  const deleteSegment = useCallback((index) => {
     setSegData((prevSegData) => prevSegData.filter((_, i) => i !== index));
-  };
+  }, []);
 
   return (
     <SegmentsContext.Provider

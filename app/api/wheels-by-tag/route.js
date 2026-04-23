@@ -8,35 +8,29 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const tag = searchParams.get("tag");
-    
+
     // ✅ 1. Parse pagination parameters
     // Default to limit 20, skip 0 if not provided
-    const limit = parseInt(searchParams.get("limit")) || 20;
-    const skip = parseInt(searchParams.get("skip")) || 0;
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit")) || 20));
+    const skip = Math.max(0, parseInt(searchParams.get("skip")) || 0);
 
     if (!tag) {
       return NextResponse.json({ error: "Tag is required" }, { status: 400 });
     }
 
-    // ✅ 2. Fetch only the required slice of data
-    // Added 'slug' (or _id) to select so the frontend can build links
-    const wheels = await Wheel.find({
-      tags: { $elemMatch: { $regex: `^${tag}$`, $options: "i" } }
-    })
-      .select("title slug wheelPreview") // Ensure you select whatever you use for href
-      .sort({ createdAt: -1 }) // Usually best to show newest wheels first
+    // Exact-match on the normalised (lowercased) tag so the query can fully
+    // use the `tags: 1` multikey index. Prior case-insensitive regex caused
+    // only partial index usage on popular tags.
+    const normalized = tag.toLowerCase().trim();
+
+    const wheels = await Wheel.find({ tags: normalized })
+      .select("title slug wheelPreview")
+      .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
-    // ✅ 3. Optional: Get total count for smarter frontend logic
-    // const total = await Wheel.countDocuments({ 
-    //   tags: { $elemMatch: { $regex: `^${tag}$`, $options: "i" } } 
-    // });
-
-    return NextResponse.json({ 
-      wheels,
-      // total // Include this if you want to show "Showing X of Y"
-    });
+    return NextResponse.json({ wheels });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

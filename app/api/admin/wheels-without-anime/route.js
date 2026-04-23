@@ -7,10 +7,15 @@ export async function GET() {
   try {
     await connectMongoDB();
 
+    // Wheels whose relatedTopics array has no entry of type "anime".
+    // Equivalent to the legacy `relatedTo` check but works on the new
+    // many-to-many schema — a wheel linked to *any* anime topic is
+    // excluded, a wheel linked only to other types (or nothing) is listed.
     const wheels = await Wheel.find({
       $or: [
-        { relatedTo: { $exists: false } },
-        { "relatedTo.type": { $ne: "anime" } },
+        { relatedTopics: { $exists: false } },
+        { relatedTopics: { $size: 0 } },
+        { "relatedTopics.type": { $nin: ["anime"] } },
       ],
     })
       .sort({ createdAt: 1 })
