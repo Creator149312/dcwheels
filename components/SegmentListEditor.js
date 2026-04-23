@@ -2,7 +2,7 @@
 import { useContext, useState, useRef, useEffect, memo, useCallback } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { FaTrashAlt, FaPlus, FaImage, FaClipboardList, FaEye, FaEyeSlash, FaCopy, FaRandom, FaSortAlphaDown } from "react-icons/fa";
-import imageCompression from "browser-image-compression";
+import { compressImage } from "@utils/imageCompression";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
 import toast from "react-hot-toast";
@@ -128,7 +128,7 @@ export default function SegmentListEditor() {
   const handleImageUpload = useCallback(async (index, file) => {
     if (!file) return;
     try {
-      const compressed = await imageCompression(file, {
+      const compressed = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 400,
         useWebWorker: true,

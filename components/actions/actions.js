@@ -40,12 +40,19 @@ export const updateNewPassword = async (formData) => {
   let errorData = { error: "" };
   const session = await getServerSession(authOptions);
 
-  errorData.error = validatePassword(formData.get("currentPassword"));
-  errorData.error = validatePassword(formData.get("newPassword"));
-  errorData.error = validatePassword(formData.get("retypeNewPassword"));
+  // Validate all three password fields and surface the FIRST error. The
+  // previous implementation overwrote `errorData.error` on each line, so a
+  // bad currentPassword or newPassword was silently discarded if the
+  // retypeNewPassword check happened to pass, and vice versa.
+  const current = formData.get("currentPassword");
+  const next = formData.get("newPassword");
+  const retype = formData.get("retypeNewPassword");
 
-  if (formData.get("newPassword") !== formData.get("retypeNewPassword"))
-    errorData.error = "Passwords do not match";
+  errorData.error =
+    validatePassword(current) ||
+    validatePassword(next) ||
+    validatePassword(retype) ||
+    (next !== retype ? "Passwords do not match" : "");
 
   if (errorData.error.length !== 0) {
     return errorData;
@@ -54,16 +61,16 @@ export const updateNewPassword = async (formData) => {
   try {
     if (session && errorData.error.length === 0) {
       await connectMongoDB();
-      const userData = await User.find({ email: session.user.email });
+      // Use findOne + lean-ish path — the previous `User.find().[0]` loaded
+      // an array only to throw the rest away, and masked a "no such user"
+      // situation as a crash (userData[0].password on undefined).
+      const userData = await User.findOne({ email: session.user.email });
+      if (!userData) {
+        return { error: "User not found" };
+      }
 
-      ifPasswordsMatch = await bcrypt.compare(
-        formData.get("currentPassword"),
-        userData[0].password
-      );
-      const newhashedPassword = await bcrypt.hash(
-        formData.get("newPassword"),
-        10
-      );
+      ifPasswordsMatch = await bcrypt.compare(current, userData.password);
+      const newhashedPassword = await bcrypt.hash(next, 10);
 
       if (ifPasswordsMatch) {
         const filter = { email: session.user.email };

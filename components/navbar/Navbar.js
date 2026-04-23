@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Menu, X, PlusCircle, Sparkles, LayoutGrid, ChevronDown } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
@@ -38,7 +39,14 @@ const Navbar = ({ onToggleSidebar }) => {
           </button>
 
           <a href="/" className="flex items-center group gap-2">
-            <img src="/spin-wheel-logo.png" alt="logo" className="h-8 w-8 md:h-9 md:w-9" />
+            <Image
+              src="/spin-wheel-logo.png"
+              alt="logo"
+              width="36"
+              height="36"
+              priority
+              className="h-8 w-8 md:h-9 md:w-9"
+            />
             <span className="text-lg md:text-xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">
               Spin<span className="text-blue-600">Papa</span>
             </span>

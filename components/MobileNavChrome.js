@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Home, Compass, PlusCircle, Library, User, Bell, Moon, Sun, Menu } from "lucide-react";
@@ -105,7 +106,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               </button>
 
               <a href="/" className="flex items-center gap-2">
-                <img src="/spin-wheel-logo.png" alt="logo" className="h-8 w-8" />
+                <Image
+                  src="/spin-wheel-logo.png"
+                  alt="logo"
+                  width="32"
+                  height="32"
+                  priority
+                  className="h-8 w-8"
+                />
                 <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white uppercase">
                   Spin<span className="text-blue-600">Papa</span>
                 </span>

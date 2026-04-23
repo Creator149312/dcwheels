@@ -1,10 +1,21 @@
 import React from 'react';
+import Image from 'next/image';
 
 export default function SpinCard({ spin }) {
   return (
     <div className="bg-white dark:bg-gray-800 mb-4 p-4 rounded shadow dark:shadow-md">
       <div className="flex items-center mb-2">
-        <img src={spin.avatar} alt="" className="w-8 h-8 rounded-full mr-2" />
+        {spin.avatar ? (
+          <Image
+            src={spin.avatar}
+            alt=""
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full mr-2 object-cover"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full mr-2 bg-gray-200 dark:bg-gray-700" />
+        )}
         <span className="font-semibold text-black dark:text-white">{spin.user}</span>
         <span className="text-gray-500 dark:text-gray-400 text-sm ml-2">{spin.timestamp}</span>
       </div>

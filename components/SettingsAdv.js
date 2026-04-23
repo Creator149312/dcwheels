@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import Tooltip from "./Tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import imageCompression from "browser-image-compression";
+import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
 import { FaImage, FaSpinner } from "react-icons/fa";
 
@@ -385,7 +385,7 @@ const SettingsAdv = ({ advOptions }) => {
 
     try {
       setUploadingImage(true);
-      const compressed = await imageCompression(file, {
+      const compressed = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 400,
         useWebWorker: true,

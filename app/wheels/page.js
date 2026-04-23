@@ -1,7 +1,15 @@
 // app/wheels/page.js
-import apiConfig from "@utils/ApiUrlConfig";
 import WheelsClient from "./WheelClient";
-import { cookies } from "next/headers";
+import { connectMongoDB } from "@lib/mongodb";
+import Page from "@models/page";
+import "@models/wheel";
+
+// Public listing — safe to cache at the CDN for a few minutes. No session,
+// no cookies, no per-user data. This route previously did an internal HTTP
+// fetch to /api/page/all with `cache: "no-store"` which turned every visit
+// into an origin round-trip + DB query. We now query the DB directly in
+// the Server Component and let Next.js ISR handle caching.
+export const revalidate = 120; // 2 minutes — matches /api/page/all
 
 export const metadata = {
   title: "All Wheels",
@@ -19,22 +27,32 @@ export const metadata = {
   },
 };
 
+async function getInitialWheels(limit = 20, skip = 0) {
+  await connectMongoDB();
+  const rows = await Page.find({})
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("wheel", "wheelPreview")
+    .lean();
+
+  return rows.map((w) => ({
+    _id: w._id.toString(),
+    title: w.title,
+    slug: w.slug,
+    wheelPreview: w.wheel?.wheelPreview || null,
+    createdAt: w.createdAt,
+    updatedAt: w.updatedAt,
+  }));
+}
+
 export default async function WheelsPage() {
-  const cookieStore = cookies();
-
-  const res = await fetch(
-    `${apiConfig.apiUrl}/page/all?limit=20&skip=0`,
-    {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        Cookie: cookieStore.toString(),
-      },
-    }
-  );
-
-  const data = await res.json();
-  const wheels = data.wheels || [];
+  let wheels = [];
+  try {
+    wheels = await getInitialWheels();
+  } catch (err) {
+    console.error("WheelsPage initial load failed:", err);
+  }
 
   return <WheelsClient initialWheels={wheels} />;
 }

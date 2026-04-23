@@ -3,7 +3,7 @@
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useContext, useState } from "react";
 import { FaImage } from "react-icons/fa";
-import imageCompression from "browser-image-compression";
+import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
 
 // Convert a File/Blob to a data: URL string.
@@ -38,7 +38,7 @@ const ImageUpload = ({ selectedIndex, segData }) => {
       // Compress client-side only. Store as data: URL in segment state and
       // defer the Blob upload to save-time (SaveWheelBtn / useSaveWheel).
       // This avoids burning storage on wheels that are never saved.
-      const compressed = await imageCompression(file, {
+      const compressed = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 400,
         useWebWorker: true,

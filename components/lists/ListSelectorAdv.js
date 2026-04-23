@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
 import useLists from "@utils/customHooks/useLists";
-import * as XLSX from "xlsx";
+
+// `xlsx` is ~450KB min+gz. Load it on demand the first time the user picks
+// an .xlsx file rather than shipping it to every editor visitor.
+let xlsxPromise = null;
+const loadXlsx = () => (xlsxPromise ??= import("xlsx"));
 
 const ListSelectorAdv = () => {
   const [selectedListId, setSelectedListId] = useState(null);
@@ -69,7 +73,8 @@ const ListSelectorAdv = () => {
   // Read .xlsx file and extract the first column
   const readXlsxFile = (file) => {
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
+      const XLSX = await loadXlsx();
       const data = new Uint8Array(event.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const sheetName = workbook.SheetNames[0];

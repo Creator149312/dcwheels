@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { fetchAnime } from "@/lib/fetchAnime";
 import QuestionStep from "./QuestionStep";
 import ResultsGrid from "./ResultGrid";
 import SpinWheelModal from "./SpinWheelModal";
 import { Sparkles, RefreshCw, Clapperboard, MonitorPlay, Dices } from "lucide-react";
+
+// NOTE: we previously imported `fetchAnime` from "@/lib/fetchAnime" directly
+// here. That pulled the AniList SDK + graphql (~70KB) into the client bundle
+// for everyone who hit /recommendation. The anime path now goes through
+// /api/recommendation/anime so the SDK stays on the server — same pattern
+// the movie path has used since day one.
 
 function ResultSkeleton() {
   return (
@@ -80,11 +85,13 @@ export default function RecommendationPage() {
     setStep(questions.length); // Move to result view
     try {
       if (targetMode === "anime") {
-        const recs = await fetchAnime({
+        const params = new URLSearchParams({
           genre: finalAnswers.genre,
-          perPage: 15,
+          perPage: "15",
           sort: "POPULARITY_DESC",
         });
+        const res = await fetch(`/api/recommendation/anime?${params.toString()}`);
+        const recs = res.ok ? await res.json() : [];
         const unseen = recs.filter((r) => !seenIds.includes(r.id));
         const picks = unseen.slice(0, 6);
         if (picks.length > 0) {
