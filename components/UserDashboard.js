@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,15 +11,15 @@ import { isAdminSession } from "@utils/auth/isAdmin";
 function RowCard({ href, title, meta, actions }) {
   return (
     <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors group">
-      <a href={href} className="flex-1 min-w-0">
+      <Link href={href} className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{title}</p>
         {meta && <p className="text-xs text-gray-400 mt-0.5">{meta}</p>}
-      </a>
+      </Link>
       <div className="flex items-center gap-1 flex-shrink-0 ml-3">
         {actions}
-        <a href={href}>
+        <Link href={href}>
           <ArrowRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -176,9 +177,9 @@ export default function UserDashboard({ initialData = null }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-gray-500">You need to be logged in to view your dashboard.</p>
-        <a href="/login" className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+        <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors">
           Log in
-        </a>
+        </Link>
       </div>
     );
   }
@@ -205,20 +206,20 @@ export default function UserDashboard({ initialData = null }) {
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <a
+            <Link
               href="/dashboard/admin/preview-generator"
               className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
             >
               Preview Generator
-            </a>
+            </Link>
           )}
-          <a
+          <Link
             href="/dashboard/account"
             className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5"
           >
             <Settings size={13} />
             Settings
-          </a>
+          </Link>
         </div>
       </div>
 

@@ -96,6 +96,11 @@ wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing uni
 wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
 wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency
 wheelSchema.index({ likeCount: -1 }); // speeds up popular by likes
+// Compound index for the /api/wheels/popular ?sort=likes fast-path which
+// sorts by `{ likeCount: -1, createdAt: -1 }`. The two single-field indexes
+// above can't satisfy a multi-key sort — Mongo would still in-memory sort
+// for ties without this compound.
+wheelSchema.index({ likeCount: -1, createdAt: -1 });
 wheelSchema.index({ wheelPreview: 1 }); // speeds up admin filter for missing previews
 // Profile page + dashboard both run `find({ createdBy }).sort({ createdAt: -1 })`.
 // The existing `{ title, createdBy }` index is prefixed by title and can't serve

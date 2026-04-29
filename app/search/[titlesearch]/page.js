@@ -133,7 +133,7 @@ export default async function Page({ params, searchParams }) {
               <div className="grid grid-cols-1 gap-3 md:gap-4">
                 {list.map((item, index) => (
                   <Fragment key={item._id}>
-                    <a href={`/uwheels/${item._id}`} className="group">
+                    <Link href={`/uwheels/${item._id}`} className="group">
                       <Card className="group relative overflow-hidden border-none bg-white dark:bg-gray-900/50 backdrop-blur-sm shadow-sm p-3.5 md:p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 transition-all duration-500" />
                         <div className="relative flex items-center justify-between">
@@ -157,7 +157,7 @@ export default async function Page({ params, searchParams }) {
                           </div>
                         </div>
                       </Card>
-                    </a>
+                    </Link>
                     {(index + 1) % 5 === 0 && <AdsUnit slot={"4694567949"} />}
                   </Fragment>
                 ))}

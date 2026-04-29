@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Static fallback — used until the API responds or if it fails
@@ -63,8 +64,8 @@ export default function TagsCarousel() {
   };
 
   return (
-    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden">
-      <div className="w-full relative flex items-center h-10">
+    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden mt-1">
+      <div className="w-full relative flex items-center py-1.5">
         
         {/* Left Shadow/Arrow */}
         <div className={`absolute left-0 top-0 bottom-0 z-20 flex items-center transition-opacity duration-300 ${showLeftArrow ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
@@ -90,7 +91,7 @@ export default function TagsCarousel() {
           className="flex overflow-x-auto gap-1.5 px-3 md:px-6 items-center h-full [&::-webkit-scrollbar]:hidden"
         >
           {quickLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
               className="whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
@@ -99,11 +100,11 @@ export default function TagsCarousel() {
                          transition-all duration-200 flex-shrink-0"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
 
           {tags.map((tag, index) => (
-            <a
+            <Link
               key={`${tag.name}-${index}`}
               href={`/tags/${tag.name}`}
               className={`whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full
@@ -117,7 +118,7 @@ export default function TagsCarousel() {
             >
               {tag.type === "seasonal" && "🔥 "}
               {tag.label}
-            </a>
+            </Link>
           ))}
           {/* Invisible spacer to ensure right-side padding works */}
           <div className="flex-shrink-0 w-4 md:w-8 h-1" />
@@ -137,97 +138,3 @@ export default function TagsCarousel() {
     </div>
   );
 }
-
-// "use client";
-
-// import { useEffect, useRef, useState } from "react";
-// import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-
-// export default function TagsCarousel() {
-//   const [tags, setTags] = useState([
-//     "games",
-//     "music",
-//     "newyear",
-//     "christmas",
-//     "movies",
-//     "fashion",
-//     "anime",
-//     "challenge",
-//     "sports",
-//     "travel",
-//     "cooking",
-//     "food",
-//     "fitness",
-//     "family",
-//     "relationships",
-//     "education",
-//     "phonics",
-//     "vocabulary",
-//     "lifestyle",
-//     "math",
-//     "science",
-//   ]);
-
-//   const scrollRef = useRef(null);
-
-//   // Scroll left or right by fixed offset
-//   const scroll = (direction) => {
-//     const container = scrollRef.current;
-//     if (!container) return;
-//     const scrollAmount = 200;
-//     container.scrollBy({
-//       left: direction === "left" ? -scrollAmount : scrollAmount,
-//       behavior: "smooth",
-//     });
-//   };
-
-//   return (
-//     <div className="relative px-2 mb-1 md:px-4 pt-4 min-h-12 max-w-full mx-auto dark:bg-gray-950 transition-colors">
-//       {/* Left Arrow */}
-//       <button
-//         onClick={() => scroll("left")}
-//         className="absolute left-0 top-1/2 -translate-y-1/2 mt-1 mx-1 md:mx-2 z-10 bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-md"
-//       >
-//         <HiChevronLeft className="text-lg md:text-2xl text-gray-700 dark:text-gray-200" />
-//       </button>
-
-//       {/* Tag Scroll Area */}
-//       <div
-//         ref={scrollRef}
-//         className="overflow-x-auto overflow-y-hidden touch-pan-x"
-//         style={{
-//           scrollbarWidth: "none", // Firefox
-//           msOverflowStyle: "none", // IE/Edge
-//         }}
-//       >
-//         <style jsx>{`
-//           div::-webkit-scrollbar {
-//             display: none; /* Chrome, Safari */
-//           }
-//         `}</style>
-
-//         <div className="flex gap-2 md:gap-3 snap-x px-6 md:px-8">
-//           {tags.map((tag) => (
-//             <a
-//               key={tag}
-//               href={`/tags/${encodeURIComponent(tag).toLowerCase()}`}
-//               className="px-2 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-bold border rounded-md shrink-0 snap-start
-//               bg-white text-black border-gray-300 hover:bg-gray-100
-//               dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
-//             >
-//               {tag}
-//             </a>
-//           ))}
-//         </div>
-//       </div>
-
-//       {/* Right Arrow */}
-//       <button
-//         onClick={() => scroll("right")}
-//         className="absolute right-0 top-1/2 -translate-y-1/2 mt-1 mx-1 md:mx-2 z-10 bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-md"
-//       >
-//         <HiChevronRight className="text-lg md:text-2xl text-gray-700 dark:text-gray-200" />
-//       </button>
-//     </div>
-//   );
-// }

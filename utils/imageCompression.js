@@ -2,9 +2,9 @@
 //
 // The library is ~60KB min+gz and is only needed the first time a user
 // actually picks an image. Importing it statically adds that weight to every
-// editor page load (4 call sites across SegmentListEditor, SettingsAdv,
-// ImageUpload and ContentEditableDivImageTest). Going through this helper
-// keeps the import out of the main bundle until the first upload click.
+// editor page load (call sites: SegmentListEditor, SettingsAdv, ImageUpload).
+// Going through this helper keeps the import out of the main bundle until
+// the first upload click.
 
 let modulePromise = null;
 

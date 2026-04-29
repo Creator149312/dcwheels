@@ -26,7 +26,8 @@ export async function POST(request) {
   if (limited) return NextResponse.json({ ok: true, tracked: false });
 
   try {
-    const { wheelId } = await request.json();
+    const body = await request.json();
+    const { wheelId } = body;
     if (!wheelId) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
@@ -36,7 +37,13 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, tracked: false });
     }
 
-    await incrementWheelViewCount(wheelId).catch(() => {});
+    // The client samples 1-in-N to reduce function invocations. When a ping
+    // does land, it tells us how many views it represents so the persisted
+    // count tracks reality. Clamp to [1, 10] so a tampered client can’t
+    // arbitrarily inflate counts.
+    const sampleN = Math.max(1, Math.min(10, Number(body.sampleN) || 1));
+
+    await incrementWheelViewCount(wheelId, sampleN).catch(() => {});
     return NextResponse.json({ ok: true, tracked: true });
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });

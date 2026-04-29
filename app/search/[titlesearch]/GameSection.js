@@ -1,6 +1,7 @@
 import { fetchGames } from "@app/(content)/[type]/TopicPagesHelperFunctions";
 import { Search } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function GameSection({ searchtitle }) {
   const games = await fetchGames({ search: searchtitle, page: 1, page_size: 20 });
@@ -18,7 +19,7 @@ export default async function GameSection({ searchtitle }) {
         {games.map((item) => {
           const url = `/game/${item.id}-${item.slug}`;
           return (
-            <a key={item.id} href={url} className="group">
+            <Link key={item.id} href={url} className="group">
               <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm relative">
                 {item.background_image && (
                   <Image
@@ -36,7 +37,7 @@ export default async function GameSection({ searchtitle }) {
               <p className="text-xs text-gray-400 mt-0.5">
                 {item.released?.slice(0, 4) || "—"} · {item.genres?.[0]?.name || ""}
               </p>
-            </a>
+            </Link>
           );
         })}
       </div>

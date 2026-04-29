@@ -24,7 +24,6 @@ export default function WheelPlayerPanel({ title = "Sample Wheel", wheelCanvasId
   const handlePlay = () => {
     setIsPlaying(!isPlaying);
     // Optionally trigger canvas spin
-    console.log("Play/Pause");
   };
 
   const handleFullscreen = () => {

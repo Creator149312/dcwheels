@@ -2,6 +2,7 @@ import { fetchMovies } from "@app/(content)/[type]/TopicPagesHelperFunctions";
 import { slugify } from "@utils/HelperFunctions";
 import { Search } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function MovieSection({ searchtitle }) {
   const movies = await fetchMovies({ search: searchtitle, page: 1 });
@@ -19,7 +20,7 @@ export default async function MovieSection({ searchtitle }) {
         {movies.map((item) => {
           const url = `/movie/${item.id}-${slugify(item.title)}`;
           return (
-            <a key={item.id} href={url} className="group">
+            <Link key={item.id} href={url} className="group">
               <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm relative">
                 {item.poster_path && (
                   <Image
@@ -37,7 +38,7 @@ export default async function MovieSection({ searchtitle }) {
               <p className="text-xs text-gray-400 mt-0.5">
                 {item.release_date?.slice(0, 4) || "—"}
               </p>
-            </a>
+            </Link>
           );
         })}
       </div>

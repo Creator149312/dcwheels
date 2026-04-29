@@ -7,7 +7,6 @@ import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { FaComment, FaCode } from "react-icons/fa";
 import { TbSwitch3 } from "react-icons/tb";
 import CommentsPanel from "./comments/CommentsPanel";
-import QuestionsPanel from "@components/qna/QuestionsPanel";
 import { timeAgo } from "@utils/HelperFunctions";
 import Description from "./description/Description";
 import EmbedCodePopup from "@components/EmbedCodePopup";
@@ -94,29 +93,10 @@ export default function WheelInfoSection({
     };
   }, [wheelId, initialMeta]);
 
-  // const [username, setUsername] = useState("");
-
-  // useEffect(() => {
-  //   async function fetchUsername() {
-  //     if (wordsList?.createdBy) {
-  //       try {
-  //         const res = await fetch(`/api/user?email=${wordsList.createdBy}`);
-  //         if (res.ok) {
-  //           const data = await res.json();
-  //           setUsername(data.name);
-  //         }
-  //       } catch (err) {
-  //         console.error("Failed to fetch username", err);
-  //       }
-  //     }
-  //   }
-  //   fetchUsername();
-  // }, [wordsList?.createdBy]);
-
   return (
-    <div className="mt-1 px-4 text-gray-900 dark:text-gray-100">
+    <div className="mt-4 sm:mt-6 max-w-7xl mx-auto px-2 sm:px-4 text-gray-900 dark:text-gray-100">
       {/* Title */}
-      <h1 className="text-lg sm:text-xl font-semibold mb-0.5">
+      <h1 className="text-xl sm:text-2xl font-semibold mb-0.5">
         {wordsList.title}
       </h1>
 
@@ -143,7 +123,7 @@ export default function WheelInfoSection({
         </div>
 
         {/* Right: Action Buttons */}
-        <div className="flex items-center gap-4 text-sm lg:mr-48">
+        <div className="flex items-center gap-4 text-sm">
           <StatsBar
             entityType="wheel"
             entityId={wheelId}
@@ -163,14 +143,6 @@ export default function WheelInfoSection({
               follow: false,
             }}
           />
-          {/* Help Me Decide — temporarily disabled, will re-enable later
-          <Link
-            href="/help-me-decide"
-            className="px-3 py-1.5 rounded-full border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition"
-          >
-            Help Me Decide Feed
-          </Link>
-          */}
           <button
             onClick={() => {
               setShowComments((prev) => !prev);
@@ -201,25 +173,6 @@ export default function WheelInfoSection({
 
       {/* Description */}
       <Description pageData={pageData} wordsList={wordsList} />
-
-      {/* Ask the Crowd — temporarily disabled
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold">Ask the Crowd</h2>
-          <span className="text-xs text-gray-500">
-            Published here and on the Help Me Decide feed
-          </span>
-        </div>
-        <QuestionsPanel
-          type="wheel"
-          contentId={wheelId}
-          isLoggedIn={!!session}
-          openLoginPrompt={openLoginPrompt}
-          currentUserId={session?.user?.id}
-          layout="vertical"
-        />
-      </section>
-      */}
 
       {/* Comments — only load when user clicks the Comments button */}
       <CommentsPanel

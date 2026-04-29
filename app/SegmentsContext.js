@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import defaultWheelJSON from "@data/formatJSON";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { normalizeSegments, createSegment } from "@utils/segmentUtils";
@@ -54,39 +54,42 @@ export const SegmentsProvider = ({ children }) => {
     }
   }, []);
 
-  const handleWheelSettingsChange = (newSettings) => {
+  const handleWheelSettingsChange = useCallback((newSettings) => {
     setWheelData((prevWheelData) => ({
       ...prevWheelData,
       ...newSettings,
     }));
-  };
+  }, []);
 
-  const prepareDataForEditorSwitch = (advOptions) => {
+  const prepareDataForEditorSwitch = useCallback((advOptions) => {
     if (advOptions) {
+      // Switching to Advanced — top up missing weight/visible/color defaults
+      // without dropping any existing fields.
       setSegData((prevSegData) =>
         prevSegData.map((segment, index) => ({
           ...segment,
-          text: segment.text,
           weight: segment?.weight ? segment.weight : 1,
-          visible: segment?.visible ? segment.visible : true,
+          visible: segment?.visible !== undefined ? segment.visible : true,
           color: segment?.color
             ? segment.color
             : wheelData.segColors[index % wheelData.segColors.length],
         }))
       );
     } else {
+      // Switching to Basic — preserve every field. Previously this branch
+      // explicitly dropped weight/visible/color/imageLandscape/quiz fields,
+      // causing data loss on Advanced→Basic→Advanced round-trips.
       html.current = segmentsToHTMLTxt(segData);
       setSegData((prevSegData) =>
         prevSegData.map((segment) => ({
-          id: segment.id,
-          text: segment.text,
+          ...segment,
           type: segment.type || "basic",
-          image: segment.image || null,
+          image: segment.image ?? null,
           payload: segment.payload || {},
         }))
       );
     }
-  };
+  }, [segData, wheelData.segColors]);
 
   // Add a new segment
   const addSegment = useCallback((index) => {
@@ -116,42 +119,70 @@ export const SegmentsProvider = ({ children }) => {
     setSegData((prevSegData) => prevSegData.filter((_, i) => i !== index));
   }, []);
 
+  // Memoize the context value so consumers only re-render when one of the
+  // tracked pieces of state actually changes. Without this, every render of
+  // <SegmentsProvider> rebuilds the value object identity and forces every
+  // useContext(SegmentsContext) consumer to re-render.
+  const value = useMemo(
+    () => ({
+      segments,
+      html,
+      resultList,
+      setResultList,
+      userInputText,
+      setUserInputText,
+      deleteSegment,
+      prepareDataForEditorSwitch,
+      updateSegment,
+      addSegment,
+      data,
+      segData,
+      advancedOptions,
+      setadvancedOptions,
+      setSegData,
+      setData,
+      wheelData,
+      coins,
+      setCoins,
+      setWheelData,
+      MAX_OPTIONS_ON_WHEEL,
+      MAX_SPIN_TIME,
+      INNER_RADIUS,
+      FONT_SIZE,
+      setWheelDescription,
+      setWheelTitle,
+      wheelTitle,
+      wheelDescription,
+      wheelType,
+      setWheelType,
+      handleWheelSettingsChange,
+    }),
+    [
+      segments,
+      resultList,
+      userInputText,
+      deleteSegment,
+      prepareDataForEditorSwitch,
+      updateSegment,
+      addSegment,
+      data,
+      segData,
+      advancedOptions,
+      wheelData,
+      coins,
+      MAX_OPTIONS_ON_WHEEL,
+      MAX_SPIN_TIME,
+      INNER_RADIUS,
+      FONT_SIZE,
+      wheelTitle,
+      wheelDescription,
+      wheelType,
+      handleWheelSettingsChange,
+    ]
+  );
+
   return (
-    <SegmentsContext.Provider
-      value={{
-        segments,
-        html,
-        resultList,
-        setResultList,
-        userInputText,
-        setUserInputText,
-        deleteSegment,
-        prepareDataForEditorSwitch,
-        updateSegment,
-        addSegment,
-        data,
-        segData,
-        advancedOptions,
-        setadvancedOptions,
-        setSegData,
-        setData,
-        wheelData,
-        coins,
-        setCoins,
-        setWheelData,
-        MAX_OPTIONS_ON_WHEEL,
-        MAX_SPIN_TIME,
-        INNER_RADIUS,
-        FONT_SIZE,
-        setWheelDescription,
-        setWheelTitle,
-        wheelTitle,
-        wheelDescription,
-        wheelType,
-        setWheelType,
-        handleWheelSettingsChange,
-      }}
-    >
+    <SegmentsContext.Provider value={value}>
       {children}
     </SegmentsContext.Provider>
   );

@@ -135,8 +135,8 @@ export default function RecommendationPage() {
           <Sparkles size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Can't Decide?</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">We'll pick for you</p>
+          <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Can&apos;t Decide?</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">We&apos;ll pick for you</p>
         </div>
       </div>
 

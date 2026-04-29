@@ -39,9 +39,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Optional: log which one is being removed
-    console.log("Removing item", { itemId, item });
-
     // ✅ 4. Remove item using pull / remove
     item.deleteOne(); // marks it for removal
     // or: list.items.pull({ _id: itemId });

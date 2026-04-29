@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import SaveWheelLocally from "./SaveWheelLocally";
 import { useSession } from "next-auth/react";
 import SaveWheelBtn from "./SaveWheelBtn";
@@ -24,9 +25,9 @@ const SaveImportComponent = ({ onImport, segments }) => {
       ) : (
         <>
           <p className="my-2 flex justify-center items-center">
-            <a href="/login" className="underline mx-2">
+            <Link href="/login" className="underline mx-2">
               Login
-            </a>
+            </Link>
             to save your wheels
           </p>
         </>

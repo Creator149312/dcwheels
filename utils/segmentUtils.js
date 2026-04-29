@@ -19,8 +19,14 @@ function getUUID() {
  * Infer segment type from existing fields.
  */
 function inferType(seg) {
-  if (seg.question || seg.options) return "quiz";
-  if (seg.entityType || seg.entityId) return "entity";
+  if (seg.question || seg.options || seg.payload?.question) return "quiz";
+  if (
+    seg.entityType ||
+    seg.entityId ||
+    seg.payload?.entityType ||
+    seg.payload?.entityId
+  )
+    return "entity";
   if (seg.image) return "image";
   return "basic";
 }
@@ -36,7 +42,25 @@ export function normalizeSegment(seg) {
   // Already normalized — has id and type
   if (seg.id && seg.type) return seg;
 
-  const type = seg.type || inferType(seg);
+  // Legacy migration: older wheels stored images as raw HTML inside `text`,
+  // e.g. text = '<img src="data:image/png;base64,...">Mario'. Lift the image
+  // out so SegmentListEditor's thumbnail + advanced-mode rendering both work,
+  // and the user doesn't see raw HTML in the text input.
+  let migratedText = seg.text || "";
+  let migratedImage = seg.image || null;
+  if (
+    !migratedImage &&
+    typeof migratedText === "string" &&
+    migratedText.includes("<img")
+  ) {
+    const m = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i.exec(migratedText);
+    if (m && m[1]) {
+      migratedImage = m[1];
+      migratedText = migratedText.replace(m[0], "").trim();
+    }
+  }
+
+  const type = seg.type || inferType({ ...seg, image: migratedImage });
   const payload = seg.payload || {};
 
   // Migrate type-specific fields into payload if not already there
@@ -55,22 +79,23 @@ export function normalizeSegment(seg) {
 
   return {
     id: seg.id || getUUID(),
-    text: seg.text || "",
+    text: migratedText,
     type,
-    image: seg.image || null,
+    image: migratedImage,
     payload,
     // Preserve rendering fields if present
     ...(seg.color != null && { color: seg.color }),
     ...(seg.weight != null && { weight: seg.weight }),
     ...(seg.visible != null && { visible: seg.visible }),
+    ...(seg.imageLandscape != null && { imageLandscape: seg.imageLandscape }),
     // Keep quiz fields at top level for backward compat with existing consumers
     ...(seg.question != null && { question: seg.question }),
     ...(seg.options != null && { options: seg.options }),
     ...(seg.correctIndex != null && { correctIndex: seg.correctIndex }),
-    // Keep entity fields at top level for backward compat
-    ...(seg.entityType != null && { entityType: seg.entityType }),
-    ...(seg.entityId != null && { entityId: seg.entityId }),
-    ...(seg.slug != null && { slug: seg.slug }),
+    // Entity fields live exclusively in `payload` — top-level duplication
+    // was dropped to halve storage on entity wheels. WinnerPopup already
+    // reads `payload.entityType` first, with top-level as a defensive
+    // fallback for any in-flight legacy segments.
   };
 }
 

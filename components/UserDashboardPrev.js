@@ -1,6 +1,6 @@
-
 "use client";
 
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import WheelList from "@components/WheelList";
 import { useRouter } from "next/navigation";
@@ -39,9 +39,9 @@ export default function UserDashboard() {
   if (!session?.user?.email) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <a href="/login">
+        <Link href="/login">
           <Button size="lg">Login to see your Dashboard</Button>
-        </a>
+        </Link>
       </div>
     );
   }

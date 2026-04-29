@@ -1,80 +1,44 @@
 "use client";
 import { useEffect } from "react";
 
+// Loads the AdSense script lazily on first user intent. Each <ins> slot
+// is responsible for its own push({}) call (see AdsUnit, AdaptiveLeaderBoardAds);
+// pushes made before this loader fires are queued in the adsbygoogle array
+// and processed automatically once the script initialises.
+//
+// Listener strategy: `scroll` covers passive readers, `pointerdown` covers
+// tap/click on any pointer device. `mousemove` was intentionally dropped —
+// it fires constantly and burns CPU during the most TBT-sensitive window.
+// `{ once: true, passive: true }` means the listeners self-detach on first
+// fire and don't block scroll.
 const AdsScriptLoader = () => {
-  let scriptLoaded = false;
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      const adElements = document.querySelectorAll(".adsbygoogle"); // Select all ad slots
+    if (typeof document === "undefined") return;
 
-      const isMobile = () => /Mobi|Android/i.test(navigator.userAgent);
+    let loaded = false;
+    const loadAdsScript = () => {
+      if (loaded) return;
+      loaded = true;
 
-      const loadAdsScript = () => {
-        const script = document.createElement("script");
-        script.src =
-          "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6746947892342481";
-        script.crossorigin = "anonymous";
-        script.async = true;
-        script.onload = () => {
-          //if it is desktop device we load ads after script is loaded
-          var ads = document.getElementsByClassName("adsbygoogle").length;
-          for (var i = 0; i < ads; i++) {
-            try {
-              (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch (e) {}
-          }
+      const script = document.createElement("script");
+      script.src =
+        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6746947892342481";
+      script.crossOrigin = "anonymous";
+      script.async = true;
+      document.body.appendChild(script);
+    };
 
-          scriptLoaded = true;
-        };
-        document.body.appendChild(script);
-      };
+    const opts = { once: true, passive: true };
+    document.addEventListener("scroll", loadAdsScript, opts);
+    document.addEventListener("pointerdown", loadAdsScript, opts);
 
-      const handleInteraction = () => {
-        // clearTimeout(timeoutId);
-        if (!scriptLoaded) {
-          loadAdsScript();
-        }
-      };
-
-      if (isMobile()) {
-        document.addEventListener("scroll", handleInteraction);
-        document.addEventListener("touchstart", handleInteraction);
-      } else {
-        const events = [
-          "mousemove",
-          "click",
-          "scroll",
-          "keypress",
-          "touchstart",
-        ];
-        events.forEach((event) => {
-          document.addEventListener(event, handleInteraction);
-        });
-      }
-
-      return () => {
-        if (isMobile()) {
-          document.removeEventListener("scroll", handleInteraction);
-          document.removeEventListener("touchstart", handleInteraction);
-        } else {
-          const events = [
-            "mousemove",
-            "click",
-            "scroll",
-            "keypress",
-            "touchstart",
-          ];
-          events.forEach((event) => {
-            document.removeEventListener(event, handleInteraction);
-          });
-        }
-      };
-    }
+    return () => {
+      document.removeEventListener("scroll", loadAdsScript, opts);
+      document.removeEventListener("pointerdown", loadAdsScript, opts);
+    };
   }, []);
 
-  return (
-    <div></div>
-  );
+  return null;
 };
 
 export default AdsScriptLoader;

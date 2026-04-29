@@ -1,13 +1,16 @@
+import { cache } from "react";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import {
-  fetchRelatedWheels,
   getPageDataBySlug,
+  getRelatedWheelsByTags,
   getWheelMeta,
 } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
+import { connectMongoDB } from "@/lib/mongodb";
+import Page from "@models/page";
 
 // Admin-curated /wheels/[slug] pages change infrequently — revalidate once a day.
 // No session/headers calls here, so Next.js can fully static-render the page
@@ -17,10 +20,38 @@ import ViewTracker from "@components/ViewTracker";
 // via <ViewTracker />.
 export const revalidate = 86400; // 1 day
 
+// Pre-render the indexed admin pages at build time. Anything outside the
+// list still renders on-demand and then gets cached via `revalidate`. Mirrors
+// the pattern already in /tags/[tagId]. Cap at 200 so a future flood of new
+// admin pages can't blow up build time.
+export async function generateStaticParams() {
+  try {
+    await connectMongoDB();
+    const pages = await Page.find({ indexed: true })
+      .select("slug")
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+    return pages.filter((p) => p.slug).map((p) => ({ slug: p.slug }));
+  } catch (err) {
+    // If DB is unreachable at build time, fall back to fully on-demand
+    // rendering instead of failing the whole build.
+    console.error("generateStaticParams (/wheels) failed:", err);
+    return [];
+  }
+}
+
+// React.cache() dedupes the slug lookup between generateMetadata and the
+// page body — without this every cold ISR fill ran the same aggregation
+// twice.
+const getCachedPageData = cache(async (slug) => {
+  return getPageDataBySlug(slug);
+});
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
 
-  const pageData = await getPageDataBySlug(slug);
+  const pageData = await getCachedPageData(slug);
 
   if (pageData === undefined) redirect("/"); //this is done to ensure only valid urls are loaded and all others are redirected to homepage.
 
@@ -58,7 +89,7 @@ export async function generateMetadata({ params }) {
 export default async function Home({ params }) {
   const slug = params.slug;
 
-  const pageData = await getPageDataBySlug(slug);
+  const pageData = await getCachedPageData(slug);
 
   if (pageData === undefined) redirect("/");
 
@@ -67,9 +98,12 @@ export default async function Home({ params }) {
   // Pre-fetch related wheels + public wheel meta (analytics, reactions,
   // comment count). `userId = null` keeps the response user-agnostic so the
   // rendered HTML is cacheable. Per-user reaction state is resolved client-side.
+  // `getRelatedWheelsByTags` is a direct DB aggregation — replaces the prior
+  // HTTP self-call to /api/related-wheels/advanced and saves one serverless
+  // invocation per cold ISR fill.
   const [relatedWheels, initialMeta] = await Promise.all([
     pageData.wheel?.tags && pageData.wheel.tags.length > 0
-      ? fetchRelatedWheels(pageData.wheel.tags)
+      ? getRelatedWheelsByTags(pageData.wheel.tags, wheelIdStr)
       : Promise.resolve([]),
     getWheelMeta(wheelIdStr, null),
   ]);

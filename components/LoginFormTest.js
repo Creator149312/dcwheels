@@ -151,10 +151,10 @@ export default function LoginForm({ onSuccess, onCancel }) {
       )}
 
       <div className="text-center">
-        <a href="/register" className="text-sm text-gray-700">
+        <Link href="/register" className="text-sm text-gray-700">
           Don’t have an account?{" "}
           <span className="text-blue-600 underline">Register</span>
-        </a>
+        </Link>
       </div>
 
       <div className="flex justify-center">

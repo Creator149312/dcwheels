@@ -1,11 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useSession } from "next-auth/react";
 import CreateWheelButton from "./CreateWheelButton";
-import ReviewsPanel from "@components/review/ReviewsPanel";
-import QuestionsPanel from "@components/qna/QuestionsPanel";
-import { useLoginPrompt } from "@app/LoginPromptProvider";
 
 // Consistent section header: blue accent bar + title + optional action.
 function SectionHeader({ title, action }) {
@@ -20,14 +16,14 @@ function SectionHeader({ title, action }) {
   );
 }
 
-// Section order (revised for engagement + discovery flow):
+// Section order:
 //   1. Anime Characters   — visual hook first (anime only)
-//   2. Community Votes    — quick-tap polls, 2-col grid (break horizontal fatigue)
-//   3. Picker Wheels      — hidden when empty; shown when there's community content
-//   4. Quick Takes        — deep opinions, vertical stacked, form at bottom
+//   2. Picker Wheels      — SpinPapa's core feature; hidden when empty
 //
-// Session is resolved client-side via useSession() — the parent Server
-// Component stays session-free so the page can be CDN-cached.
+// Community Votes (QuestionsPanel) and Quick Takes (ReviewsPanel) are
+// intentionally not rendered yet — the panels exist but the surrounding
+// UX is still being designed. When ready, re-add the imports + sections;
+// don't ship dead JSX in the meantime.
 export default function TopicInteractionTabs({
   type,
   pageId,
@@ -37,11 +33,6 @@ export default function TopicInteractionTabs({
   taggedWheels = [],
   animeCharacters = [],
 }) {
-  const openLoginPrompt = useLoginPrompt();
-  const { data: session } = useSession();
-  const isLoggedIn = !!session?.user;
-  const currentUserId = session?.user?.id || session?.user?._id || null;
-
   return (
     <div className="space-y-12">
 
@@ -82,29 +73,7 @@ export default function TopicInteractionTabs({
         </section>
       )}
 
-      {/* ── 2. Community Votes ────────────────────────────────────────────
-           Quick-tap yes/no + multi polls. Rendered as a 2-column grid so
-           users can see all questions at once without swiping — better for
-           voting engagement. Composer collapsed behind "+ Ask" button.
-           
-           COMMENTED OUT — work in progress                               */}
-      {/* 
-      <section>
-        <SectionHeader title="🗳️ Community Votes" />
-        <QuestionsPanel
-          type={type}
-          contentId={pageId}
-          contentSlug={contentSlug}
-          contentTags={contentTags}
-          isLoggedIn={isLoggedIn}
-          openLoginPrompt={openLoginPrompt}
-          currentUserId={currentUserId}
-          layout="grid"
-        />
-      </section>
-      */}
-
-      {/* ── 3. Picker Wheels ──────────────────────────────────────────────
+      {/* ── 2. Picker Wheels ──────────────────────────────────────────────
            SpinPapa's core feature. Hidden when empty to avoid showing a
            prominent empty state — replaced by a compact inline CTA.       */}
       <section>
@@ -160,26 +129,6 @@ export default function TopicInteractionTabs({
           </div>
         )}
       </section>
-
-      {/* ── 4. Quick Takes ────────────────────────────────────────────────
-           Lightweight reviews. Vertical stacked — reading requires focus.
-           "Do you recommend?" form rendered after the list so social proof
-           is visible first.
-           
-           COMMENTED OUT — work in progress                               */}
-      {/* 
-      <section>
-        <SectionHeader title="💬 Quick Takes" />
-        <ReviewsPanel
-          type={type}
-          contentId={pageId}
-          isLoggedIn={isLoggedIn}
-          openLoginPrompt={openLoginPrompt}
-          layout="vertical"
-          formPosition="bottom"
-        />
-      </section>
-      */}
 
     </div>
   );

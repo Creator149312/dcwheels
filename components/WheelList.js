@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import RemoveListBtn from "./RemoveListBtn";
 import { HiPencilAlt } from "react-icons/hi";
 import { HiOutlineEye } from "react-icons/hi";
@@ -19,7 +20,10 @@ export default function WordLists({ createdBy }) {
       try {
         const response = await fetch(
           `${apiConfig.apiUrl}/wheel/user/${createdBy}`,
-          { cache: "no-store" }
+          // Allow Next's data layer to cache identical user-wheel-list payloads
+          // for 30s. The save flow already optimistically updates the local
+          // list, so brief staleness on cross-tab views is acceptable.
+          { next: { revalidate: 30 } }
         );
 
         if (!response.ok) {
@@ -58,9 +62,9 @@ export default function WordLists({ createdBy }) {
               <p className="text-lg font-bold m-1">{item.title}</p>
               <div className="flex items-center mt-1">
                 <div className="mx-2">{item.data.length} Options</div>
-                <a href={`/uwheels/${item._id}`} className="mx-2">
+                <Link href={`/uwheels/${item._id}`} className="mx-2">
                   <HiOutlineEye size={24} />
-                </a>
+                </Link>
                 <SharePopup
                   url={`/uwheels/${item._id}`}
                   variant="simple"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useContext } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import apiConfig from "@utils/ApiUrlConfig";
@@ -219,9 +220,9 @@ export default function ShareWheelBtn({ segmentsData }) {
         </Dialog>
       ) : (
         <p className="my-2 flex justify-center items-center">
-          <a href="/login" className="underline mx-2">
+          <Link href="/login" className="underline mx-2">
             Login
-          </a>
+          </Link>
           to share wheels
         </p>
       )}

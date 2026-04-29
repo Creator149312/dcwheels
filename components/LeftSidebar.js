@@ -24,7 +24,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
         <ul className="flex flex-col items-center space-y-0.5 pt-3">
           {NAV_ITEMS.map((item) => (
             <li key={item.href} className="w-full px-1.5">
-              <a
+              <Link
                 href={item.href}
                 className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${isActive(item.href) ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600" : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900"}`}
               >
@@ -32,7 +32,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
                 <span className="text-[10px] mt-1 font-bold">
                   {item.label}
                 </span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -63,7 +63,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
           <ul className="space-y-0.5">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <a
+                <Link
                   href={item.href}
                   onClick={onClose}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm ${
@@ -74,7 +74,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
                 >
                   <item.icon size={18} />
                   <span className="text-sm">{item.label}</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -83,115 +83,3 @@ export default function LeftSidebar({ isOpen, onClose }) {
     </>
   );
 }
-
-// "use client";
-
-// import Link from "next/link";
-// import { usePathname } from "next/navigation";
-// import {
-//   FaHome,
-//   FaGamepad,
-//   FaFilm,
-//   FaFan,   // ✅ Anime icon
-//   FaUser,  // ✅ Character icon
-// } from "react-icons/fa";
-
-// export default function LeftSidebar({ isOpen }) {
-//   const pathname = usePathname();
-
-//   const collapsedItemClass = (path) =>
-//     `flex flex-col items-center justify-center h-20 w-16 text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition ${
-//       pathname === path
-//         ? "bg-gray-200 dark:bg-gray-700 font-semibold"
-//         : "text-gray-700 dark:text-gray-200"
-//     }`;
-
-//   const expandedItemClass = (path) =>
-//     `flex items-center gap-3 px-4 py-3 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition ${
-//       pathname === path
-//         ? "bg-gray-200 dark:bg-gray-700 font-semibold"
-//         : "text-gray-700 dark:text-gray-200"
-//     }`;
-
-//   return (
-//     <>
-//       {/* Collapsed Sidebar (always visible) */}
-//       <aside className="hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-16 bg-white dark:bg-slate-950 z-30">
-//         <ul className="space-y-2 pt-4">
-//           <li>
-//             <a href="/" className={collapsedItemClass("/")}>
-//               <FaHome size={24} />
-//               <span>Home</span>
-//             </a>
-//           </li>
-//           <li>
-//             <a href="/game" className={collapsedItemClass("/game")}>
-//               <FaGamepad size={24} />
-//               <span>Games</span>
-//             </a>
-//           </li>
-//           <li>
-//             <a href="/anime" className={collapsedItemClass("/anime")}>
-//               <FaFan size={24} />
-//               <span>Anime</span>
-//             </a>
-//           </li>
-//           <li>
-//             <a href="/movie" className={collapsedItemClass("/movie")}>
-//               <FaFilm size={24} />
-//               <span>Movies</span>
-//             </a>
-//           </li>
-//           <li>
-//             <a href="/character" className={collapsedItemClass("/character")}>
-//               <FaUser size={24} />
-//               <span>Characters</span>
-//             </a>
-//           </li>
-//         </ul>
-//       </aside>
-
-//       {/* Full Sidebar Overlay */}
-//       <aside
-//         className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white dark:bg-slate-950 z-50 transition-transform duration-300 ${
-//           isOpen ? "translate-x-0" : "-translate-x-full"
-//         }`}
-//       >
-//         <nav className="px-2 pt-4">
-//           <ul className="space-y-2">
-//             <li>
-//               <a href="/" className={expandedItemClass("/")}>
-//                 <FaHome size={18} />
-//                 Home
-//               </a>
-//             </li>
-//             <li>
-//               <a href="/game" className={expandedItemClass("/game")}>
-//                 <FaGamepad size={18} />
-//                 Games
-//               </a>
-//             </li>
-//             <li>
-//               <a href="/anime" className={expandedItemClass("/anime")}>
-//                 <FaFan size={18} />
-//                 Anime
-//               </a>
-//             </li>
-//             <li>
-//               <a href="/movie" className={expandedItemClass("/movie")}>
-//                 <FaFilm size={18} />
-//                 Movies
-//               </a>
-//             </li>
-//             <li>
-//               <a href="/character" className={expandedItemClass("/character")}>
-//                 <FaUser size={18} />
-//                 Characters
-//               </a>
-//             </li>
-//           </ul>
-//         </nav>
-//       </aside>
-//     </>
-//   );
-// }

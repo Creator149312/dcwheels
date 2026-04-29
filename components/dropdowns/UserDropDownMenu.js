@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@components/ui/dropdown-menu";
 import SignOut from "@components/user/SignOut";
+import Link from "next/link";
 import { HiOutlineUserCircle } from "react-icons/hi";
 import { HiOutlineLogout } from "react-icons/hi";
 import { HiOutlinePresentationChartBar } from "react-icons/hi";
@@ -35,7 +36,7 @@ const UserDropDownMenu = ({ name, setOpen }) => {
 
         <DropdownMenuItem>
           <HiOutlinePresentationChartBar size={20} className="mr-2" />
-          <a href="/dashboard">Dashboard</a>
+          <Link href="/dashboard">Dashboard</Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem>

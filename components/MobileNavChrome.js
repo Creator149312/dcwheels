@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Home, Compass, PlusCircle, Library, User, Bell, Moon, Sun, Menu } from "lucide-react";
@@ -13,7 +14,7 @@ const SCROLL_THRESHOLD = 10;
 
 function BottomNavItem({ href, icon, label, active }) {
   return (
-    <a
+    <Link
       href={href}
       className={`flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors ${
         active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
@@ -21,7 +22,7 @@ function BottomNavItem({ href, icon, label, active }) {
     >
       {icon}
       <span>{label}</span>
-    </a>
+    </Link>
   );
 }
 
@@ -105,7 +106,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 <Menu size={20} />
               </button>
 
-              <a href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2">
                 <Image
                   src="/spin-wheel-logo.png"
                   alt="logo"
@@ -117,7 +118,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white uppercase">
                   Spin<span className="text-blue-600">Papa</span>
                 </span>
-              </a>
+              </Link>
             </div>
 
             <div className="flex items-center gap-1">
@@ -130,13 +131,13 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
 
-              <a
+              <Link
                 href="/dashboard"
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Notifications"
               >
                 <Bell size={20} />
-              </a>
+              </Link>
 
               <MobileSearchBar />
             </div>

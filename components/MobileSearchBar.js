@@ -1,10 +1,11 @@
 'use client';
-import { useState, useCallback, useRef, useEffect } from 'react';
-import debounce from 'lodash.debounce';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { HiSearch, HiArrowLeft, HiX } from 'react-icons/hi';
 import { Zap } from 'lucide-react';
 
 export default function MobileSearchBar() {
+  const router = useRouter();
   const [isMobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -22,33 +23,49 @@ export default function MobileSearchBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchSuggestions = async (q) => {
-    if (q.length < 2) {
+  // Native 300ms debounce on `query` → fetch suggestions. Replaces the
+  // single-use `lodash.debounce` dep — saves a module without changing
+  // behaviour. Cleanup cancels the pending timeout on every keystroke and
+  // on unmount, and the AbortController kills any in-flight request that
+  // would otherwise resolve into stale state.
+  useEffect(() => {
+    if (query.length < 2) {
       setSuggestions([]);
       return;
     }
-    try {
-      const res = await fetch(`/api/wheel/suggest?query=${encodeURIComponent(q)}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setSuggestions(data.suggestions || []);
-    } catch (err) {
-      setSuggestions([]);
-    }
-  };
-
-  const debouncedFetch = useCallback(debounce(fetchSuggestions, 300), []);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/wheel/suggest?query=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setSuggestions(data.suggestions || []);
+      } catch (err) {
+        if (err.name !== 'AbortError') setSuggestions([]);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [query]);
 
   const handleChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
-    debouncedFetch(value);
+    setQuery(e.target.value);
   };
 
   const handleSubmit = () => {
     const cleaned = query.trim().replace(/\?/g, '_').toLowerCase();
     if (cleaned) {
-      window.location.href = `/search/${encodeURIComponent(cleaned)}`;
+      // Client-side nav keeps the app shell + AdSense slots mounted across
+      // the search transition (vs window.location.href which forces a full
+      // page reload + re-fetch of all globals).
+      setSuggestions([]);
+      setMobileSearchOpen(false);
+      router.push(`/search/${encodeURIComponent(cleaned)}`);
     }
   };
 
@@ -60,7 +77,7 @@ export default function MobileSearchBar() {
     setSuggestions([]);
     setMobileSearchOpen(false);
     // Directly go to the specific wheel page using its ID
-    window.location.href = `/uwheels/${s._id}`;
+    router.push(`/uwheels/${s._id}`);
   };
 
   return (

@@ -76,13 +76,15 @@ export async function POST(req) {
         };
         if (s.type === "entity" && s.entityId) {
           out.type = "entity";
-          out.entityType = String(s.entityType || entityType).slice(0, 20);
-          out.entityId = s.entityId;
-          if (s.slug) out.slug = String(s.slug).slice(0, 120);
+          // Entity metadata lives in payload only — top-level duplication
+          // was dropped to halve storage on entity wheels.
+          const eType = String(s.entityType || entityType).slice(0, 20);
+          const eId = s.entityId;
+          const eSlug = s.slug ? String(s.slug).slice(0, 120) : undefined;
           out.payload = {
-            entityType: out.entityType,
-            entityId: out.entityId,
-            ...(out.slug && { slug: out.slug }),
+            entityType: eType,
+            entityId: eId,
+            ...(eSlug && { slug: eSlug }),
           };
         }
         return out;

@@ -6,7 +6,6 @@ import Wheel from "@/models/wheel"; // adjust path if needed
 await connectMongoDB();
 
 export async function POST(req) {
-  console.log("inside");
   const { limit } = await req.json();
 
   try {

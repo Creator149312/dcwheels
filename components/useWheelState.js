@@ -262,23 +262,37 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
     [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, advancedOptions]
   );
 
-  // Debounced sync to context `data` + localStorage save. Text keystrokes burst
-  // through this effect; without debouncing, every keypress would re-render the
-  // whole wheel and do a synchronous JSON.stringify of the full wheel state.
+  // Wheel update vs localStorage save have very different latency budgets:
+  //   - Wheel sync should feel instant — defer only one animation frame so
+  //     React can batch keystroke bursts but the user still sees their edits
+  //     reflected immediately on the wheel.
+  //   - localStorage save is expensive (JSON.stringify + image-store split +
+  //     potentially MBs of base64). Keep it debounced longer to avoid burning
+  //     main-thread time on every keystroke.
   const renderCountRef = useRef(0);
   useEffect(() => {
     const maxLen = calculateMaxLengthOfText(segData);
     setMaxlengthOfSegmentText(maxLen);
     setSegTxtfontSize(calculateFontSizeOfText(maxLen, segData));
 
-    const t = setTimeout(() => {
+    // Push wheel data on the next frame — instant from the user's POV.
+    const raf = requestAnimationFrame(() => {
       setData(preparedData);
-      if (currentPath === "/") {
+    });
+
+    // Debounce the heavy localStorage write separately.
+    let saveTimer;
+    if (currentPath === "/") {
+      saveTimer = setTimeout(() => {
         renderCountRef.current++;
         if (renderCountRef.current > 2) saveWheelData(segData, wheelData);
-      }
-    }, 250);
-    return () => clearTimeout(t);
+      }, 500);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (saveTimer) clearTimeout(saveTimer);
+    };
   }, [preparedData, segData, wheelData, advancedOptions, wheelType]);
 
   // Initialize from localStorage or props on mount

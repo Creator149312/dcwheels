@@ -24,7 +24,6 @@ async function generateValidJsonResponse(contentFormats) {
       });
 
       let rawContent = response.choices[0].message.content.trim();
-      console.log("Raw OpenAI response:", rawContent);
 
       // Try parsing as-is
       try {

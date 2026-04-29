@@ -42,15 +42,22 @@ export const prepareData = (
     const col = colData[colIndex];
 
     if (advOptions) {
-      if (seg.includes("<img")) {
-        const regex = /src="([^"]+)"/;
-        const imgUrl = regex.exec(seg)[1];
+      // Advanced mode previously only checked seg.text for embedded <img>,
+      // which made uploads via SegmentListEditor (which set seg.image instead)
+      // disappear from the wheel after toggling to Advanced. Mirror the basic
+      // branch and prefer seg.image when present.
+      const advImgUri = segData[i].image
+        ? segData[i].image
+        : seg.includes("<img")
+        ? /src="([^"]+)"/.exec(seg)?.[1]
+        : null;
+      if (advImgUri) {
         if (segData[i].visible !== false) {
           result.push({
             option: seg,
             style: { backgroundColor: segData[i].color },
             image: {
-              uri: imgUrl,
+              uri: advImgUri,
               sizeMultiplier: getImageSizeMultiplierValue(segData.length),
               landscape: segData[i].imageLandscape || false,
             },

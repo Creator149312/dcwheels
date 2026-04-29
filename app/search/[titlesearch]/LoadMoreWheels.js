@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Fragment } from "react";
+import Link from "next/link";
 import { Card } from "@components/ui/card";
 import apiConfig from "@utils/ApiUrlConfig";
 import { Layers, ArrowRight, Loader2 } from "lucide-react";
@@ -45,7 +46,7 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
 
           return (
             <Fragment key={item._id || `loadmore-${i}`}>
-              <a href={`/uwheels/${item._id}`} className="block group w-full">
+              <Link href={`/uwheels/${item._id}`} className="block group w-full">
                 {/* Enhanced Card: Added w-full and matched padding/hover effects to parent page */}
                 <Card className="relative overflow-hidden p-3.5 md:p-6 border-none bg-white dark:bg-gray-900/50 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 transition-all duration-500" />
@@ -79,7 +80,7 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
                     </div>
                   </div>
                 </Card>
-              </a>
+              </Link>
 
               {/* ✅ Responsive Ad Injection */}
               {showAd && <AdsUnit slot={"4694567949"} />}

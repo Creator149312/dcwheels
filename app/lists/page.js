@@ -1,4 +1,5 @@
 // app/lists/page.js
+import { Suspense } from "react";
 import ListsClient from "./ListsClient";
 import { getPublicLists } from "@lib/lists";
 
@@ -25,5 +26,9 @@ export const metadata = {
 
 export default async function ListsPage() {
   const lists = await getPublicLists({ limit: 20, skip: 0 });
-  return <ListsClient initialLists={lists} />;
+  return (
+    <Suspense fallback={null}>
+      <ListsClient initialLists={lists} />
+    </Suspense>
+  );
 }

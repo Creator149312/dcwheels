@@ -1,5 +1,7 @@
 import { AniList } from "@spkrbox/anilist";
 import { OpenAI } from "openai";
+import { cache } from "react";
+import Image from "next/image";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import Question from "@models/question";
@@ -477,6 +479,15 @@ export async function getOrCreateTopicPage(type, relatedId) {
   return pageDoc?.toObject?.() || pageDoc || null;
 }
 
+// Cached wrapper. generateMetadata + the page body both call this; without
+// React.cache() each cold render triggered TWO external API calls
+// (Anilist/TMDB/RAWG) and TWO DB upserts — the duplicate-key try/catch
+// inside getOrCreateTopicPage exists precisely because of that race.
+const getCachedTopicPage = cache(async (type, relatedId) => {
+  await connectMongoDB();
+  return getOrCreateTopicPage(type, relatedId);
+});
+
 /**
  * Background rewrite — called fire-and-forget after a TopicPage is created.
  * Runs OpenAI directly in-process (no HTTP self-call) and updates the doc.
@@ -509,8 +520,7 @@ export async function generateMetadata({ params }) {
   if (!relatedId)
     return { title: "Not Found", description: "Content not found." };
 
-  await connectMongoDB();
-  const pageDoc = await getOrCreateTopicPage(type, relatedId);
+  const pageDoc = await getCachedTopicPage(type, relatedId);
   if (!pageDoc)
     return { title: "Not Found", description: "Content not found." };
 
@@ -556,8 +566,7 @@ export default async function TopicPageDetail({ params }) {
   const relatedId = extractId(slug);
   if (!relatedId) return <div>Invalid URL</div>;
 
-  await connectMongoDB();
-  const pageDoc = await getOrCreateTopicPage(type, relatedId);
+  const pageDoc = await getCachedTopicPage(type, relatedId);
   let media;
   if (!pageDoc) {
     return <div>Not found</div>;
@@ -606,9 +615,13 @@ export default async function TopicPageDetail({ params }) {
         {/* Row 1: poster + title / CTA */}
         <div className="flex gap-4 items-start">
           {pageDoc.cover && (
-            <img
+            <Image
               src={pageDoc.cover}
               alt={displayTitle}
+              width={120}
+              height={160}
+              priority
+              sizes="120px"
               className="w-[120px] flex-shrink-0 rounded-xl shadow-lg aspect-[3/4] object-cover"
             />
           )}
@@ -722,9 +735,13 @@ export default async function TopicPageDetail({ params }) {
 
           {/* Poster */}
           {pageDoc.cover && (
-            <img
+            <Image
               src={pageDoc.cover}
               alt={displayTitle}
+              width={208}
+              height={277}
+              priority
+              sizes="208px"
               className="w-52 flex-shrink-0 rounded-xl shadow-lg aspect-[3/4] object-cover"
             />
           )}

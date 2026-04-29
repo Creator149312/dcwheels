@@ -408,15 +408,6 @@ export async function getPageDataBySlug(slug) {
   return results[0] || undefined;
 }
 
-export async function fetchRelatedWheels(tags) {
-  // ✅ Fetch on the server
-  const res = await fetch(
-    `${apiConfig.apiUrl}/related-wheels/advanced?tags=${tags.join(",")}`
-    // { cache: "no-store" } // or { next: { revalidate: 60 } } for caching
-  );
-  return await res.json();
-}
-
 /**
  * Direct DB fetch for a wheel by ObjectId.
  * Use this in SSR contexts instead of HTTP self-calling /api/wheel/[id] —
@@ -548,10 +539,6 @@ export async function storeWheelDataToDatabase(initialJSONData) {
     const dataObjectForSegments = ensureArrayOfObjects(wheelData.segments);
 
     const wheelExists = await Wheel.findOne({ title: wheelData.title });
-    if (wheelExists) {
-      console.log("Wheel Exists in DB \n", wheelExists);
-      console.log("For title wheelData.title = ", wheelData.title);
-    }
     let wheel = null;
 
     if (wheelExists) {

@@ -2,6 +2,7 @@ import { fetchCharacters } from "@app/(content)/[type]/TopicPagesHelperFunctions
 import { slugify } from "@utils/HelperFunctions";
 import { Search } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function CharacterSection({ searchtitle }) {
   const characters = await fetchCharacters({ search: searchtitle, page: 1, perPage: 20 });
@@ -24,7 +25,7 @@ export default async function CharacterSection({ searchtitle }) {
             "Unnamed";
           const url = `/character/${item.id}-${slugify(name)}`;
           return (
-            <a key={item.id} href={url} className="group">
+            <Link key={item.id} href={url} className="group">
               <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm relative">
                 {item.image?.large && (
                   <Image
@@ -42,7 +43,7 @@ export default async function CharacterSection({ searchtitle }) {
               <p className="text-xs text-gray-400 mt-0.5">
                 {item.gender || "—"}{item.age ? ` · ${item.age}` : ""}
               </p>
-            </a>
+            </Link>
           );
         })}
       </div>

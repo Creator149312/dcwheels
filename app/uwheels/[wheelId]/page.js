@@ -1,27 +1,29 @@
+import { cache } from "react";
 import { validateObjectID } from "@utils/Validator";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
 import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
 
-// ISR: revalidate user-wheel pages every 10 minutes.
+// ISR: revalidate user-wheel pages every 30 minutes.
 // View tracking runs client-side via <ViewTracker /> so this page can be
-// CDN-cached instead of invoking analytics on every request.
-export const revalidate = 600;
+// CDN-cacheable. Per-user state (current user's reaction, follow status,
+// auth-only buttons) is resolved client-side via useSession() inside
+// WheelInfoSection — DO NOT call getServerSession() here, it forces
+// dynamic rendering and defeats the CDN cache for every visitor.
+export const revalidate = 1800;
 
-async function fetchWheelData(id) {
-  // Direct DB call (bypasses HTTP self-call to /api/wheel/[id]).
-  // Saves ~200-400ms TTFB + one serverless invocation per page load.
+// React.cache() dedupes the call so generateMetadata + the page body share
+// a single DB round-trip per render. Without this, every cold ISR fill ran
+// the same query twice.
+const fetchWheelData = cache(async (id) => {
   return getWheelById(id);
-}
+});
 
-async function fetchRelatedWheels(tags, currentId) {
-  // Direct DB aggregation (bypasses HTTP self-call to /api/related-wheels/advanced).
+const fetchRelatedWheels = cache(async (tags, currentId) => {
   return getRelatedWheelsByTags(tags, currentId);
-}
+});
 
 export async function generateMetadata({ params }) {
   const listdata = await fetchWheelData(params.wheelId);
@@ -73,19 +75,19 @@ export default async function Page({ params }) {
     return <div>Invalid wheel ID.</div>;
   }
 
-  // Fetch wheel data and session in parallel
-  const [session, wordsList] = await Promise.all([
-    getServerSession(authOptions),
-    fetchWheelData(params.wheelId),
-  ]);
+  // Single fetch — generateMetadata above already triggered the cached call,
+  // so this is a no-op DB hit thanks to React.cache().
+  const wordsList = await fetchWheelData(params.wheelId);
 
-  // Fetch related wheels only if tags exist (don't block initial render)
+  // userId = null keeps the rendered HTML user-agnostic so the CDN can cache
+  // it. The client component re-fetches a personalised meta payload after
+  // hydration if the user is signed in.
   const [relatedWheels, initialMeta] = await Promise.all([
     wordsList?.tags && wordsList.tags.length > 0
       ? fetchRelatedWheels(wordsList.tags, params.wheelId)
       : Promise.resolve([]),
     wordsList
-      ? getWheelMeta(params.wheelId, session?.user?.id || null)
+      ? getWheelMeta(params.wheelId, null)
       : Promise.resolve(null),
   ]);
 
@@ -103,7 +105,6 @@ export default async function Page({ params }) {
 
           <WheelInfoSection
             wordsList={wordsList}
-            session={session}
             wheelId={params.wheelId}
             initialMeta={initialMeta}
           />

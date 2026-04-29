@@ -16,8 +16,9 @@ export default function RelatedWheels({ relatedWheels }) {
         <div className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800 ml-2" />
       </div>
 
-      {/* Compact List Container */}
-      <div className="space-y-1.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
+      {/* Compact List Container — height is driven by the parent aside
+          (which stretches to match the wheel card via grid stretch). */}
+      <div className="space-y-1.5 pr-1">
         {relatedWheels.map((wheel) => (
           <a
             key={wheel._id}

@@ -6,7 +6,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req) {
   const { prompt } = await req.json();
- console.log("Prompt Received");
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -20,7 +19,6 @@ export async function POST(req) {
     });
 
     const tagsText = response.choices[0].message.content.trim();
-    console.log("Tags Txt = ", tagsText)
     // Parse array from AI response
     let tags;
     try {

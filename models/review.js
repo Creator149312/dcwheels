@@ -68,4 +68,9 @@ const ReviewSchema = new Schema(
 
 const Review = models.Review || mongoose.model("Review", ReviewSchema);
 
+// Primary read path: "all reviews for this content, newest first".
+// Without this compound, /api/reviews degrades to a collection scan
+// once review counts grow.
+ReviewSchema.index({ type: 1, contentId: 1, createdAt: -1 });
+
 export default Review;

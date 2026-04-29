@@ -39,6 +39,11 @@ const CommentSchema = new Schema(
 
 // For fast lookups of all comments for an entity
 CommentSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
+// The reply-count $lookup in /api/comments uses `parentCommentId` as the
+// foreign field. Without an index this is a collection scan per top-level
+// comment returned (N lookups × full scan). Index makes each $lookup an
+// equality probe on an indexed field.
+CommentSchema.index({ parentCommentId: 1 });
 
 const Comment =
   models.Comment || mongoose.model("Comment", CommentSchema);

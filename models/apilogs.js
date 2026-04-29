@@ -22,14 +22,6 @@ const apiLogSchema = new Schema(
       type: Number,
       required: true,
     },
-    // totalTokens: {
-    //   type: Number,
-    //   required: true,
-    // },
-    // costEstimate: {
-    //   type: Number, // store in USD or your currency
-    //   required: true,
-    // },
     responseId: {
       type: String, // optional: OpenAI response ID
     },
@@ -38,6 +30,11 @@ const apiLogSchema = new Schema(
     timestamps: true, // adds createdAt and updatedAt
   }
 );
+
+// Per-user usage queries ("show me my AI history" / admin abuse audits)
+// scan by userId and sort by recency. Without this compound the query is
+// a full collection scan + in-memory sort.
+apiLogSchema.index({ userId: 1, createdAt: -1 });
 
 const ApiLog = models.ApiLog || mongoose.model("ApiLog", apiLogSchema);
 

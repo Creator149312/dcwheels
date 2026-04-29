@@ -78,14 +78,13 @@ const ListSelector = ({ html, setSegData }) => {
       return createSegment(item.name, {
         type: "entity",
         image: item.image || null,
+        // Entity metadata lives in `payload` only — top-level duplication
+        // was dropped to halve storage on entity wheels.
         payload: {
           entityType: item.entityType || null,
           entityId: item.entityId || null,
           slug: item.slug || null,
         },
-        entityType: item.entityType || null,
-        entityId: item.entityId || null,
-        slug: item.slug || null,
       });
     }
 

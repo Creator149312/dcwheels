@@ -49,48 +49,6 @@ export async function POST(req) {
 }
 
 // ✅ Get comments (supports threaded replies via parentCommentId filter)
-// export async function GET(req) {
-//   try {
-//     await connectMongoDB();
-//     const { searchParams } = new URL(req.url);
-//     const entityType = searchParams.get("entityType");
-//     const entityId = searchParams.get("entityId");
-//     const parentCommentId = searchParams.get("parentCommentId"); // can be null or a comment ID
-
-//     if (!entityType || !entityId) {
-//       return NextResponse.json(
-//         { error: "Missing entityType or entityId" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const limit = parseInt(searchParams.get("limit") || "4");
-//     const skip = parseInt(searchParams.get("skip") || "0");
-
-//     const query = { entityType, entityId };
-//     if (parentCommentId === "null") {
-//       query.parentCommentId = null; // top-level comments
-//     } else if (parentCommentId) {
-//       query.parentCommentId = parentCommentId; // replies for a specific comment
-//     }
-
-//     const comments = await Comment.find(query)
-//       .populate("userId", "name avatar")
-//       .sort({ createdAt: -1 })
-//       .skip(skip)
-//       .limit(limit);
-
-//     return NextResponse.json(comments, { status: 200 });
-//   } catch (err) {
-//     console.error("Error fetching comments:", err);
-//     return NextResponse.json(
-//       { error: "Failed to fetch comments" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// ✅ Get comments (supports threaded replies via parentCommentId filter)
 export async function GET(req) {
   try {
     await connectMongoDB();
@@ -121,9 +79,15 @@ export async function GET(req) {
       return NextResponse.json(replies, { status: 200 });
     }
 
-    // Top-level comments with replyCount (YouTube-style)
+    // Top-level comments with replyCount + populated user, in a SINGLE
+    // aggregation. The previous implementation ran the aggregation, then
+    // re-fetched the same docs through Mongoose just to populate `userId`.
+    // We now $lookup users + reply counts inline. Output shape is preserved
+    // exactly: each item is a plain object with the original Comment fields,
+    // `userId` is the populated subset { _id, name, avatar }, and
+    // `replyCount` is appended.
     if (parentCommentId === "null") {
-      const aggregation = await Comment.aggregate([
+      const merged = await Comment.aggregate([
         {
           $match: {
             entityType,
@@ -144,29 +108,24 @@ export async function GET(req) {
           },
         },
         {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+            pipeline: [{ $project: { name: 1, avatar: 1 } }],
+          },
+        },
+        {
           $addFields: {
             replyCount: {
               $ifNull: [{ $arrayElemAt: ["$replies.count", 0] }, 0],
             },
+            userId: { $arrayElemAt: ["$user", 0] },
           },
         },
-        { $project: { replies: 0 } },
+        { $project: { replies: 0, user: 0 } },
       ]);
-
-      // populate user fields after aggregation
-      const ids = aggregation.map((c) => c._id);
-      const docs = await Comment.find({ _id: { $in: ids } }).populate(
-        "userId",
-        "name avatar"
-      );
-      const byId = new Map(docs.map((d) => [String(d._id), d]));
-      const merged = aggregation.map((c) => {
-        const doc = byId.get(String(c._id));
-        return {
-          ...doc.toObject(),
-          replyCount: c.replyCount || 0,
-        };
-      });
 
       return NextResponse.json(merged, { status: 200 });
     }

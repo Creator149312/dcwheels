@@ -2,6 +2,7 @@ import { fetchAnime } from "@app/(content)/[type]/TopicPagesHelperFunctions";
 import { slugify } from "@utils/HelperFunctions";
 import { Search } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function AnimeSection({ searchtitle }) {
   const anime = await fetchAnime({ search: searchtitle, page: 1, perPage: 20 });
@@ -20,7 +21,7 @@ export default async function AnimeSection({ searchtitle }) {
           const title = item.title?.english || item.title?.romaji || "Untitled";
           const url = `/anime/${item.id}-${slugify(title)}`;
           return (
-            <a key={item.id} href={url} className="group">
+            <Link key={item.id} href={url} className="group">
               <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/4] mb-2 group-hover:scale-105 transition-transform duration-200 shadow-sm relative">
                 {item.coverImage?.large && (
                   <Image
@@ -38,7 +39,7 @@ export default async function AnimeSection({ searchtitle }) {
               <p className="text-xs text-gray-400 mt-0.5">
                 {item.startDate?.year || "—"} · {item.format || ""}
               </p>
-            </a>
+            </Link>
           );
         })}
       </div>

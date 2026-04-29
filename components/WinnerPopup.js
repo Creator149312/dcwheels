@@ -203,7 +203,9 @@ const WinnerPopup = ({
               {/* ── Group 1: Primary Actions ──────────────────────────── */}
               {winner?.type !== "quiz" && (
                 <div className="flex gap-2 mb-3">
-                  {/* "I'm Doing This!" — saves decision + closes */}
+                  {/* "Pick this!" — saves decision + closes. Generic phrasing
+                      that reads naturally across all segment types
+                      (activities, food, anime, movies, names, etc.). */}
                   {decisionSaved ? (
                     <p className="flex-1 text-center text-sm text-green-600 dark:text-green-400 font-medium py-2">
                       ✅ Decision saved!
@@ -234,7 +236,7 @@ const WinnerPopup = ({
                       style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}cc)` }}
                       disabled={saving}
                     >
-                      I&apos;m doing this! ⚡
+                      I&apos;m picking this! ⚡
                     </Button>
                   )}
 

@@ -29,7 +29,11 @@ export const metadata = {
 
 async function getInitialWheels(limit = 20, skip = 0) {
   await connectMongoDB();
+  // Project only the fields the listing card needs. Without `.select()`, every
+  // Page doc shipped its full content/contentBlocks/data payload over the wire
+  // just to render a title + slug + preview thumbnail.
   const rows = await Page.find({})
+    .select("title slug createdAt updatedAt wheel")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)

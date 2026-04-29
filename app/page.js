@@ -1,3 +1,4 @@
+import Link from "next/link";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 // Homepage is pure static marketing + a client-side wheel editor. No per-user
@@ -210,9 +211,9 @@ export default async function Home() {
           Use it to randomly choose teams or decide the order of players in a
           game. This adds excitement and unpredictability, making activities
           more enjoyable. Try our{" "}
-          <a href="/wheels/truth-dare-wheel" className="text-lg underline">
+          <Link href="/wheels/truth-dare-wheel" className="text-lg underline">
             Truth and Dare Wheel
-          </a>{" "}
+          </Link>{" "}
           or other themed wheels for friendly gatherings.
         </p>
 
@@ -220,13 +221,13 @@ export default async function Home() {
         <p className="mb-3">
           Randomly select teams or decide the order of play to encourage
           fairness and remove bias. Try{" "}
-          <a href="/wheels/nfl-wheel" className="text-lg underline">
+          <Link href="/wheels/nfl-wheel" className="text-lg underline">
             NFL Wheel
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="/wheels/nba-wheel" className="text-lg underline">
+          <Link href="/wheels/nba-wheel" className="text-lg underline">
             NBA Wheel
-          </a>
+          </Link>
           .
         </p>
 
@@ -277,13 +278,13 @@ export default async function Home() {
           Select student names for participation or decide the order of
           presentations. This encourages fairness and keeps lessons engaging.
           Try{" "}
-          <a href="/wheels/alphabet-wheel" className="text-lg underline">
+          <Link href="/wheels/alphabet-wheel" className="text-lg underline">
             Alphabet Wheel
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="/wheels/animal-wheel" className="text-lg underline">
+          <Link href="/wheels/animal-wheel" className="text-lg underline">
             Animal Wheel
-          </a>
+          </Link>
           .
         </p>
 
@@ -291,13 +292,13 @@ export default async function Home() {
         <p className="mb-3">
           Choose player names or determine turn order to add variety and
           excitement. Try{" "}
-          <a href="/wheels/minecraft-wheel" className="text-lg">
+          <Link href="/wheels/minecraft-wheel" className="text-lg">
             Minecraft Wheel
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="/wheels/fortnite-wheel" className="text-lg">
+          <Link href="/wheels/fortnite-wheel" className="text-lg">
             Fortnite Wheel
-          </a>
+          </Link>
           .
         </p>
 

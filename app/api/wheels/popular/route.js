@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 
-// Cache popular list for 5 minutes at the CDN edge
-export const revalidate = 300;
+// Cache popular list for 30 minutes at the CDN edge. Popular/trending
+// rankings don't shift minute-to-minute, and the slow path (full $lookup
+// against wheelanalytics) only runs once per cache miss — longer TTL = ~6×
+// fewer DB hits per day with no perceptible UX change.
+export const revalidate = 1800;
 
 export async function GET(req) {
   try {
@@ -37,7 +40,49 @@ export async function GET(req) {
         break;
     }
 
+    // Fast paths for sort modes whose key lives on the Wheel document itself.
+    // Skipping the $lookup against wheelanalytics turns an O(N) join over the
+    // full collection into a bounded index scan + projection. The shape of
+    // each returned wheel is kept identical to the aggregation path (analytics
+    // counters default to 0) so the consuming React code is unaffected.
+    if (sort === "recent" || sort === "likes") {
+      const cursor = Wheel.find({}, {
+        title: 1,
+        description: 1,
+        tags: 1,
+        createdBy: 1,
+        createdAt: 1,
+        likeCount: 1,
+      })
+        .sort(
+          sort === "likes"
+            ? { likeCount: -1, createdAt: -1 }
+            : { createdAt: -1 }
+        )
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      const docs = await cursor;
+      const wheels = docs.map((w) => ({
+        ...w,
+        likeCount: w.likeCount || 0,
+        view_count: 0,
+        spin_count: 0,
+        trending_score: 0,
+      }));
+      return NextResponse.json({ wheels }, { status: 200 });
+    }
+
     const wheels = await Wheel.aggregate([
+      {
+        $lookup: {
+          from: "wheelanalytics",
+          localField: "_id",
+          foreignField: "wheel",
+          as: "analytics",
+        },
+      },
       {
         $lookup: {
           from: "wheelanalytics",

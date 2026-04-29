@@ -58,8 +58,6 @@ export async function GET(req) {
     const shuffled = candidates.slice(7).sort(() => 0.5 - Math.random());
     const diverseSet = [...topOverlap, ...shuffled.slice(0, 3)]; // 3 diverse
 
-    console.log("Total time for Request in Pages = " + (Date.now() - reqStart));
-
     return NextResponse.json(diverseSet);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
