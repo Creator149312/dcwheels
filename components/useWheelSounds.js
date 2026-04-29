@@ -20,24 +20,55 @@ export function useWheelSounds(muted = false) {
     return ctxRef.current;
   };
 
-  /** Play a single short tick sound */
+  /**
+   * Play a single short tick — modelled after a mechanical clock escapement:
+   *   • a band-pass-filtered noise burst gives the sharp "snap" transient
+   *   • a brief triangle-wave body (~1.6–2 kHz) gives the resonant "tock"
+   * Both decay in ~25 ms so consecutive ticks stay crisp at high spin speeds.
+   */
   const playTick = useCallback(() => {
     if (muted) return;
     try {
       const ctx = getCtx();
+      const now = ctx.currentTime;
+
+      // 1. Noise burst — the percussive "click"
+      const noiseBuffer = ctx.createBuffer(1, 256, ctx.sampleRate);
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < noiseData.length; i++) {
+        noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseData.length);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = "bandpass";
+      noiseFilter.frequency.value = 3500;
+      noiseFilter.Q.value = 1.2;
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.12, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.03);
+
+      // 2. Tonal body — gives the tick its pitched "tock" character
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const oscGain = ctx.createGain();
+      osc.type = "triangle";
+      // Tiny pitch jitter avoids a metronome feel on long spins
+      osc.frequency.setValueAtTime(1700 + Math.random() * 300, now);
+      oscGain.gain.setValueAtTime(0.06, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800 + Math.random() * 400, ctx.currentTime);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.05);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.035);
     } catch {
       // Silently ignore audio errors
     }

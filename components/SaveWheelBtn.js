@@ -42,7 +42,9 @@ function useUrlTopic() {
 export default function SaveWheelBtn({ segmentsData }) {
   const [title, setTitle] = useState("New Wheel");
   const [description, setDescription] = useState("This is my new wheel");
-  const createdBy = useSession().data?.user?.email;
+  const { data: sessionData, status: sessionStatus } = useSession();
+  const createdBy = sessionData?.user?.email;
+  const sessionLoading = sessionStatus === "loading";
   const { segData, wheelData, coins, setCoins } = useContext(SegmentsContext);
 
   const [showDataDialog, setShowDataDialog] = useState(false);
@@ -60,6 +62,18 @@ export default function SaveWheelBtn({ segmentsData }) {
   } = useSaveWheel({ createdBy, segData, wheelData, coins, setCoins });
 
   const handleTagsChange = useCallback((t) => setSelectedTags(t), []);
+
+  // If the user opened the dialog before the session finished resolving,
+  // fetchSavedWheels would have been a no-op (no email -> no user route).
+  // Refetch as soon as the email becomes available so the "Update Existing
+  // Wheel" dropdown actually populates without requiring a manual reopen.
+  useEffect(() => {
+    if (showDataDialog && createdBy) {
+      fetchSavedWheels();
+    }
+    // fetchSavedWheels is recreated each render; tracking createdBy is enough.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDataDialog, createdBy]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,7 +112,10 @@ export default function SaveWheelBtn({ segmentsData }) {
               disabled={isSaving}
               onClick={() => {
                 setShowDataDialog(true);
-                fetchSavedWheels();
+                // If session is still resolving, fetchSavedWheels would no-op
+                // because createdBy is undefined. The useEffect below picks
+                // it up once the email becomes available.
+                if (createdBy) fetchSavedWheels();
               }}
               className="px-4 py-1 flex h-9 items-center gap-2 text-sm shadow-sm"
             >
@@ -131,10 +148,13 @@ export default function SaveWheelBtn({ segmentsData }) {
                 id="update-wheel"
                 value={selectedWheel?._id || ""}
                 onChange={handleWheelChange}
+                disabled={sessionLoading}
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="" disabled>
-                  Select a wheel to overwrite...
+                  {sessionLoading
+                    ? "Loading session\u2026"
+                    : "Select a wheel to overwrite..."}
                 </option>
                 {savedWheels.map((wheel) => (
                   <option key={wheel._id} value={wheel._id}>

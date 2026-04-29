@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useLoginPrompt } from "@app/LoginPromptProvider";
 
 export default function SaveButton({
   type,        // "entity" or "word"
@@ -17,6 +19,8 @@ export default function SaveButton({
   const [newListName, setNewListName] = useState("");
 
   const [savedPopup, setSavedPopup] = useState({ show: false, listName: "" });
+  const { status } = useSession();
+  const openLoginPrompt = useLoginPrompt();
 
   // ✅ Auto-hide popup
   useEffect(() => {
@@ -28,14 +32,14 @@ export default function SaveButton({
     }
   }, [savedPopup.show]);
 
-  // ✅ Fetch lists when modal opens
+  // ✅ Fetch lists when modal opens — guard on auth so guests don't 401.
   useEffect(() => {
-    if (open) {
+    if (open && status === "authenticated") {
       fetch("/api/unifiedlist")
         .then((res) => res.json())
         .then((data) => setLists(data.lists || []));
     }
-  }, [open]);
+  }, [open, status]);
 
   // ✅ Build item payload based on type
   function buildItemPayload() {
@@ -104,7 +108,13 @@ export default function SaveButton({
     <div>
       {/* Save button */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (status !== "authenticated") {
+            openLoginPrompt?.();
+            return;
+          }
+          setOpen(true);
+        }}
         className="w-9 h-9 flex items-center justify-center rounded-full 
              bg-blue-600 text-white shadow-lg hover:bg-blue-700 
              active:scale-95 transition dark:bg-blue-500 dark:hover:bg-blue-600"

@@ -2,8 +2,9 @@
 
 import { useState, Fragment, useEffect } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Compass } from "lucide-react";
 import AdsUnit from "@components/ads/AdsUnit";
+import EmptyState from "@components/EmptyState";
 
 export default function WheelsClient({ initialWheels }) {
   const [wheels, setWheels] = useState(initialWheels);
@@ -57,7 +58,14 @@ export default function WheelsClient({ initialWheels }) {
       </header>
 
       {wheels.length === 0 && !loading && (
-        <div className="text-gray-500 text-center mt-20">No wheels found.</div>
+        <div className="mt-16">
+          <EmptyState
+            icon={Compass}
+            title="No wheels yet"
+            description="Be the first to create a wheel — it only takes a few seconds."
+            action={{ label: "Create a wheel", href: "/" }}
+          />
+        </div>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">

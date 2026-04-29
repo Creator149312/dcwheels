@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useContext, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { SegmentsContext } from "@app/SegmentsContext";
+import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { Button } from "./ui/button";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import MCQQuestion from "@app/test/questions/MCQQuestion";
@@ -18,6 +20,8 @@ const WinnerPopup = ({
 }) => {
   let [open, setOpen] = useState(false);
   const { html, wheelData } = useContext(SegmentsContext);
+  const { status } = useSession();
+  const openLoginPrompt = useLoginPrompt();
   const [decisionSaved, setDecisionSaved] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [note, setNote] = useState("");
@@ -75,6 +79,13 @@ const WinnerPopup = ({
 
   const saveDecision = async (withNote) => {
     if (saving || decisionSaved) return;
+    // Guests can't persist decisions — prompt sign-in instead of firing a
+    // 401 to the server and lying to the user with a fake "saved" toast.
+    if (status !== "authenticated") {
+      setShowNoteInput(false);
+      openLoginPrompt?.();
+      return;
+    }
     setSaving(true);
     try {
       const winnerText = winner?.text || String(winner);
@@ -92,12 +103,10 @@ const WinnerPopup = ({
         setDecisionSaved(true);
         setShowNoteInput(false);
       } else {
-        // Still mark as saved for non-auth users so UI doesn't get stuck
-        setDecisionSaved(true);
+        // Server-side failure (5xx, etc.). Don't fake success.
         setShowNoteInput(false);
       }
     } catch {
-      setDecisionSaved(true);
       setShowNoteInput(false);
     } finally {
       setSaving(false);

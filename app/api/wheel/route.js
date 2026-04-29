@@ -2,6 +2,8 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { validateListDescription, validateListTitle } from "@utils/Validator";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
 
 // Strip base64 images from segment data before persisting to DB.
 // Blob URLs (https://...) are kept; data:image/... strings are removed.
@@ -20,7 +22,16 @@ function sanitizeSegments(data) {
 export async function POST(request) {
   let error = "";
   try {
-    const { title, description, data, createdBy, wheelData, relatedTopics, tags } =
+    // Auth: only logged-in users can create wheels. `createdBy` is derived
+    // server-side from the session — we ignore any value the client sent
+    // so a malicious request can't impersonate another user.
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const createdBy = session.user.email;
+
+    const { title, description, data, wheelData, relatedTopics, tags } =
       await request.json();
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
@@ -78,10 +89,37 @@ export async function GET() {
 //   return NextResponse.json({ lists }, {status: 200});
 // }
 
-// to delete a particular List using it's List ID
+// to delete a particular Wheel using it's Wheel ID. Only the wheel’s
+// creator can delete — enforced via session email match against
+// `createdBy` so other users (and anonymous callers) get a 403.
 export async function DELETE(request) {
-  const id = request.nextUrl.searchParams.get("id");
-  await connectMongoDB();
-  await Wheel.findByIdAndDelete(id);
-  return NextResponse.json({ message: "Wheel deleted" }, { status: 200 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    await connectMongoDB();
+    const wheel = await Wheel.findById(id).select("createdBy").lean();
+    if (!wheel) {
+      return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
+    }
+    if (wheel.createdBy !== session.user.email) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await Wheel.findByIdAndDelete(id);
+    return NextResponse.json({ message: "Wheel deleted" }, { status: 200 });
+  } catch (e) {
+    console.error("DELETE /api/wheel failed:", e);
+    return NextResponse.json(
+      { error: "Failed to delete wheel" },
+      { status: 500 }
+    );
+  }
 }

@@ -83,7 +83,10 @@ const SegmentPropertiesEditorPopup = ({
                       <h4 className="text-lg font-medium">Color for Segment</h4>
                       <input
                         type="color"
-                        value={segment.color}
+                        value={
+                          segment.color ||
+                          wheelData.segColors[index % wheelData.segColors.length]
+                        }
                         onChange={(e) =>
                           updateSegment(index, "color", e.target.value)
                         } // Update color for the segment

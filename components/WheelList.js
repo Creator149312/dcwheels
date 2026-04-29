@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 import apiConfig from "@utils/ApiUrlConfig";
 import { Card } from "./ui/card";
 import SharePopup from "./SharePopup";
+import EmptyState from "./EmptyState";
+import { Layers } from "lucide-react";
 
 export default function WordLists({ createdBy }) {
   const [data, setData] = useState([]);
@@ -76,9 +78,14 @@ export default function WordLists({ createdBy }) {
         ))}
       {/* if data is loading is finished and data array is still empty  */}
       {!isLoading && data.length === 0 && (
-        <p className="text-center text-xl m-4">
-          No Wheels Found. Create Your Wheels and Start Exploring Randomness!
-        </p>
+        <div className="py-8">
+          <EmptyState
+            icon={Layers}
+            title="No wheels yet"
+            description="Create your first wheel and start exploring randomness."
+            action={{ label: "Create a wheel", href: "/" }}
+          />
+        </div>
       )}
     </div>
   );

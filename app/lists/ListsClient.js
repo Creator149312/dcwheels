@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { BookMarked } from "lucide-react";
+import EmptyState from "@components/EmptyState";
 
 export default function ListsClient({ initialLists }) {
   const searchParams = useSearchParams();
@@ -56,8 +58,13 @@ export default function ListsClient({ initialLists }) {
       )}
 
       {lists.length === 0 && (
-        <div className="text-gray-500 dark:text-gray-400 text-center mt-20">
-          No lists found.
+        <div className="mt-16">
+          <EmptyState
+            icon={BookMarked}
+            title="No lists yet"
+            description="Create a list to start collecting items you can spin into decisions."
+            action={{ label: "Browse wheels", href: "/wheels" }}
+          />
         </div>
       )}
 

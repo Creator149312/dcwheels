@@ -8,6 +8,8 @@ import RemoveListBtn from "@components/RemoveListBtn";
 import { HiOutlineEye } from "react-icons/hi";
 import SharePopup from "@components/SharePopup";
 import AIListGenerator from "@components/AIListGenerator";
+import EmptyState from "@components/EmptyState";
+import { BookMarked } from "lucide-react";
 
 const ListDashboard = () => {
   const [lists, setLists] = useState([]);
@@ -75,9 +77,18 @@ const ListDashboard = () => {
       <div>
         <div className="mt-6">
           {lists.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">
-              You have no lists yet. Start by creating one!
-            </p>
+            <div className="py-6">
+              <EmptyState
+                icon={BookMarked}
+                title="No lists yet"
+                description="Create a list to gather words, options, or ideas you can spin later."
+                action={
+                  <Button size="lg" onClick={handleNewListClick}>
+                    Create your first list
+                  </Button>
+                }
+              />
+            </div>
           ) : (
             lists.map((item, index) => (
               <>

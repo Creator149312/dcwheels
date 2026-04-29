@@ -1,13 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import UnifiedListCreationModal from "./UnifiedListCreationModal";
 import { Button } from "@components/ui/button";
+import EmptyState from "@components/EmptyState";
+import { BookMarked } from "lucide-react";
 
 export default function ListDashboardPage() {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { status } = useSession();
 
   const handleNewListClick = () => {
     setIsModalOpen(true);
@@ -37,6 +41,15 @@ export default function ListDashboardPage() {
   };
 
   useEffect(() => {
+    // Wait for session resolution; skip the API call entirely for guests so
+    // the route doesn't 401 on /lists/dashboard.
+    if (status === "loading") return;
+    if (status !== "authenticated") {
+      setLists([]);
+      setLoading(false);
+      return;
+    }
+
     async function fetchLists() {
       try {
         setLoading(true);
@@ -62,7 +75,7 @@ export default function ListDashboardPage() {
     }
 
     fetchLists();
-  }, []);
+  }, [status]);
 
   if (loading) {
     return (
@@ -74,8 +87,22 @@ export default function ListDashboardPage() {
 
   if (!lists || lists.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-        You don’t have any lists yet.
+      <div className="p-6">
+        <EmptyState
+          icon={BookMarked}
+          title="No lists yet"
+          description="Create a list to collect ideas, options, or anything you want to spin into a decision."
+          action={
+            <Button size="lg" onClick={handleNewListClick}>
+              Create your first list
+            </Button>
+          }
+        />
+        <UnifiedListCreationModal
+          isOpen={isModalOpen}
+          closeModal={handleModalClose}
+          addNewList={addNewList}
+        />
       </div>
     );
   }

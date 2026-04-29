@@ -40,6 +40,12 @@ export const prepareData = (
     const seg = mysteryMode ? "❓" : segData[i].text;
     const colIndex = i % colDataLength;
     const col = colData[colIndex];
+    // Override-or-fallback colour model:
+    //   • if the segment has an explicit `color`, it wins (per-segment override)
+    //   • otherwise the wheel’s palette (segColors) drives the slice colour
+    // Same rule for both Basic and Advanced editor modes — theme changes
+    // therefore flow through to every uncustomised segment automatically.
+    const sliceColor = segData[i].color || col;
 
     if (advOptions) {
       // Advanced mode previously only checked seg.text for embedded <img>,
@@ -55,7 +61,7 @@ export const prepareData = (
         if (segData[i].visible !== false) {
           result.push({
             option: seg,
-            style: { backgroundColor: segData[i].color },
+            style: { backgroundColor: sliceColor },
             image: {
               uri: advImgUri,
               sizeMultiplier: getImageSizeMultiplierValue(segData.length),
@@ -71,7 +77,7 @@ export const prepareData = (
               seg.length > maxlengthOfSegmentText
                 ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
                 : seg.substring(0, maxlengthOfSegmentText),
-            style: { backgroundColor: segData[i].color },
+            style: { backgroundColor: sliceColor },
             optionSize: Number(segData[i].weight),
           });
         }
@@ -88,7 +94,7 @@ export const prepareData = (
       if (imgUri) {
         result.push({
           option: seg,
-          style: { backgroundColor: col },
+          style: { backgroundColor: sliceColor },
           image: {
             uri: imgUri,
             sizeMultiplier: getImageSizeMultiplierValue(segData.length),
@@ -102,7 +108,7 @@ export const prepareData = (
             seg.length > maxlengthOfSegmentText
               ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
               : seg.substring(0, maxlengthOfSegmentText),
-          style: { backgroundColor: col },
+          style: { backgroundColor: sliceColor },
           optionSize: 1,
         });
       }

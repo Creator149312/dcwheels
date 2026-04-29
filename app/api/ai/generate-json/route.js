@@ -1,10 +1,14 @@
 import { OpenAI } from "openai";
+import { aiGate } from "@lib/aiGate";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
 });
 
 export async function POST(req) {
+  const blocked = await aiGate(req);
+  if (blocked) return blocked;
+
   const { prompt } = await req.json();
 
   try {

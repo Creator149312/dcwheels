@@ -81,8 +81,12 @@ export function normalizeSegment(seg) {
     id: seg.id || getUUID(),
     text: migratedText,
     type,
-    image: migratedImage,
-    payload,
+    // Storage-saving: only persist `image` / `payload` when they carry data.
+    // All consumers use truthy checks (`seg.image ? … : null`, `seg.payload?.x`),
+    // so an absent key behaves identically to `null` / `{}` at read time and
+    // saves ~14–20 B per empty segment in MongoDB.
+    ...(migratedImage != null && { image: migratedImage }),
+    ...(payload && Object.keys(payload).length > 0 && { payload }),
     // Preserve rendering fields if present
     ...(seg.color != null && { color: seg.color }),
     ...(seg.weight != null && { weight: seg.weight }),
@@ -115,8 +119,6 @@ export function createSegment(text = "New", overrides = {}) {
     id: getUUID(),
     text,
     type: "basic",
-    image: null,
-    payload: {},
     weight: 1,
     visible: true,
     ...overrides,

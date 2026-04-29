@@ -213,7 +213,11 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
       let adjustedWinner = null;
       let j = 0;
       for (let i = 0; i < segData.length; i++) {
-        if (segData[i].visible) {
+        // Match prepareData()'s visibility rule: a segment is visible
+        // unless explicitly set to false. Using `!== false` keeps us in
+        // sync when `visible` is omitted entirely (the storage-saving
+        // path drops it when not set).
+        if (segData[i].visible !== false) {
           if (j === prizeNumber) {
             adjustedWinner = segData[i];
             setPrizeNumber(i);

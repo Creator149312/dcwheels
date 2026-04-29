@@ -1,5 +1,8 @@
 // app/api/fix-tags/route.js
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { isAdminSession } from "@utils/auth/isAdmin";
 import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
 import OpenAI from "openai";
@@ -155,6 +158,11 @@ const bannedWords = [
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req) {
+  const session = await getServerSession(authOptions);
+  if (!isAdminSession(session)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   await connectMongoDB();
 
   const { searchParams } = new URL(req.url);

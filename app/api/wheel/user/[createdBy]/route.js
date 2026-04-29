@@ -2,7 +2,6 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 
 const validateEmail = async (data) => {
@@ -17,17 +16,10 @@ const validateEmail = async (data) => {
   return errors;
 };
 
-export async function PUT(request, { params }) {
-  const { id } = params;
-  const {
-    newTitle: title,
-    newDescription: description,
-    newData: data,
-  } = await request.json();
-  await connectMongoDB();
-  await List.findByIdAndUpdate(id, { title, description, data });
-  return NextResponse.json({ message: "List updated" }, { status: 200 });
-}
+// Note: A previous PUT handler here referenced an undefined `List` model
+// and had no auth — it would have 500'd on first call. Removed entirely
+// because nothing in the codebase invokes PUT on this route. Wheel
+// updates go through PUT /api/wheel/[id] which enforces ownership.
 
 export async function GET(request, { params }) {
   const session = await getServerSession(authOptions);

@@ -1,7 +1,11 @@
 import { callOpenAI } from "@components/actions/actions";
 import { sessionUserId } from "@utils/SessionData";
+import { aiGate } from "@lib/aiGate";
 
 export async function POST(req) {
+  const blocked = await aiGate(req);
+  if (blocked) return blocked;
+
   const { prompt, wordCount } = await req.json();
 
   try {

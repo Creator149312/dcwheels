@@ -1,10 +1,18 @@
 // app/api/admin/wheels-without-anime/route.js
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { isAdminSession } from "@utils/auth/isAdmin";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@/models/wheel";
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminSession(session)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectMongoDB();
 
     // Wheels whose relatedTopics array has no entry of type "anime".

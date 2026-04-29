@@ -1,7 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import CreateWheelButton from "./CreateWheelButton";
+// TODO(create-wheel-cta): Re-enable once the CreateWheelButton flow is
+// tested on /(content)/[type]/[slug] (auth gate, prefilled relatedTo,
+// post-create redirect to the editor with the topic context attached).
+// import CreateWheelButton from "./CreateWheelButton";
 
 // Consistent section header: blue accent bar + title + optional action.
 function SectionHeader({ title, action }) {
@@ -79,13 +82,14 @@ export default function TopicInteractionTabs({
       <section>
         <SectionHeader
           title={`🎡 Picker Wheels${taggedWheels.length > 0 ? ` (${taggedWheels.length})` : ""}`}
-          action={<CreateWheelButton type={type} contentId={contentId} />}
+          // action={<CreateWheelButton type={type} contentId={contentId} />}
         />
 
         {taggedWheels.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            No wheels yet for this {type} — be the first to{" "}
-            <CreateWheelButton type={type} contentId={contentId} variant="link" /> one!
+            No wheels yet for this {type} — check back soon!
+            {/* be the first to{" "}
+            <CreateWheelButton type={type} contentId={contentId} variant="link" /> one! */}
           </p>
         ) : (
           <div

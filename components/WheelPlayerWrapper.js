@@ -103,7 +103,10 @@ export default function WheelPlayerWrapper(
               let adjustedWinner = null;
               let j = 0;
               for (let i = 0; i < segData.length; i++) {
-                if (segData[i].visible) {
+                // `!== false` matches prepareData()'s visibility rule, so
+                // an undefined `visible` (omitted to save storage) still
+                // counts as visible and the winner index lines up.
+                if (segData[i].visible !== false) {
                   if (j === prizeNumber) {
                     adjustedWinner = segData[i];
                     setPrizeNumber(i);

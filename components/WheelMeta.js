@@ -9,7 +9,9 @@ import { TbSwitch3 } from "react-icons/tb";
 import CommentsPanel from "./comments/CommentsPanel";
 import { timeAgo } from "@utils/HelperFunctions";
 import Description from "./description/Description";
-import EmbedCodePopup from "@components/EmbedCodePopup";
+// TODO(embed-feature): Re-enable once we test the /embed/[wheelId] flow
+// end-to-end (responsive sizing, auth-bypass, X-Frame-Options).
+// import EmbedCodePopup from "@components/EmbedCodePopup";
 
 function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : "";
@@ -160,7 +162,10 @@ export default function WheelInfoSection({
             <span>Comments{commentCount > 0 ? ` (${commentCount})` : ""}</span>
           </button>
 
-          {/* Embed button */}
+          {/* Embed button — temporarily hidden pending end-to-end testing
+              of the /embed/[wheelId] viewer (responsive sizing, theming,
+              X-Frame-Options behaviour on partner sites). */}
+          {/*
           <button
             onClick={() => setShowEmbed(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
@@ -168,6 +173,7 @@ export default function WheelInfoSection({
             <FaCode className="text-gray-600 dark:text-gray-300" />
             <span>Embed</span>
           </button>
+          */}
         </div>
       </div>
 
@@ -184,10 +190,12 @@ export default function WheelInfoSection({
         visible={showComments}
       />
 
-      {/* Embed code popup */}
+      {/* Embed code popup — disabled alongside the Embed button above. */}
+      {/*
       {showEmbed && (
         <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
       )}
+      */}
     </div>
   );
 }

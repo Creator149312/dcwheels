@@ -109,7 +109,7 @@ export async function GET() {
     const [seasonal, trending, popular] = await Promise.all([
       Promise.resolve(getSeasonalTags()),
       getTrendingTags(7),
-      getPopularTags(15),
+      getPopularTags(20),
     ]);
 
     // Merge: seasonal first, then trending, then popular to fill

@@ -86,8 +86,8 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
               entityId: i.entityId || i._id || null,
               slug: i.slug || null,
             },
-            entityType: i.entityType || null,
-            slug: i.slug || null,
+            // Top-level entityType / slug intentionally omitted — they live
+            // in `payload` only. WinnerPopup reads payload.entityType first.
           });
         }
         return i.word ? createSegment(i.word) : null;

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useLoginPrompt } from "@app/LoginPromptProvider";
 
 // Maps the content type to a contextual CTA label so users see wording
 // that matches their mental model: you "watch" movies/anime, "play" games.
@@ -33,6 +35,8 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
   const [creating, setCreating]          = useState(false);
   const [newListName, setNewListName]    = useState("");
   const [savedPopup, setSavedPopup]      = useState({ show: false, listName: "" });
+  const { status } = useSession();
+  const openLoginPrompt = useLoginPrompt();
 
   // Auto-dismiss the success toast after 3 s
   useEffect(() => {
@@ -41,13 +45,15 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     return () => clearTimeout(t);
   }, [savedPopup.show]);
 
-  // Fetch the user's lists when the modal first opens
+  // Fetch the user's lists when the modal first opens. Guard on auth so
+  // unauthenticated users never hit /api/unifiedlist and get a 401 —
+  // the modal won't open for them in the first place (see button onClick).
   useEffect(() => {
-    if (!open) return;
+    if (!open || status !== "authenticated") return;
     fetch("/api/unifiedlist")
       .then((r) => r.json())
       .then((d) => setLists(d.lists || []));
-  }, [open]);
+  }, [open, status]);
 
   // Payload shape expected by /api/unifiedlist/[id]/items
   const payload = {
@@ -104,7 +110,13 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
       {/* ── CTA trigger button ──────────────────────────────────────────
            Frosted-glass style so it reads well on the dark hero backdrop. */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (status !== "authenticated") {
+            openLoginPrompt?.();
+            return;
+          }
+          setOpen(true);
+        }}
         className="w-full sm:w-auto inline-flex items-center justify-center gap-2
                    px-5 py-2.5 rounded-full
                    bg-blue-600 hover:bg-blue-700 active:scale-95

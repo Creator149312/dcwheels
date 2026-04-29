@@ -63,16 +63,16 @@ export const SegmentsProvider = ({ children }) => {
 
   const prepareDataForEditorSwitch = useCallback((advOptions) => {
     if (advOptions) {
-      // Switching to Advanced — top up missing weight/visible/color defaults
-      // without dropping any existing fields.
+      // Switching to Advanced — top up weight/visible defaults without
+      // dropping any existing fields. We intentionally do NOT seed `color`:
+      // the renderer falls back to the wheel’s segColors palette when
+      // `segment.color` is null, so theme changes flow through automatically
+      // and we avoid persisting redundant colour strings on every segment.
       setSegData((prevSegData) =>
-        prevSegData.map((segment, index) => ({
+        prevSegData.map((segment) => ({
           ...segment,
           weight: segment?.weight ? segment.weight : 1,
           visible: segment?.visible !== undefined ? segment.visible : true,
-          color: segment?.color
-            ? segment.color
-            : wheelData.segColors[index % wheelData.segColors.length],
         }))
       );
     } else {
@@ -84,12 +84,13 @@ export const SegmentsProvider = ({ children }) => {
         prevSegData.map((segment) => ({
           ...segment,
           type: segment.type || "basic",
-          image: segment.image ?? null,
-          payload: segment.payload || {},
+          // Don't re-add `image: null` / `payload: {}` here — normalizeSegment
+          // omits them when empty to save storage, and all consumers use
+          // truthy checks so absent ⇔ null at read time.
         }))
       );
     }
-  }, [segData, wheelData.segColors]);
+  }, [segData]);
 
   // Add a new segment
   const addSegment = useCallback((index) => {
