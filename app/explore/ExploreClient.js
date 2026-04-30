@@ -172,9 +172,9 @@ export default function ExploreClient({
       )}
 
       {/* ── Mood chips ─────────────────────────────────────────────────── */}
-      {/* Sticky offset matches the route-aware top chrome height in LayoutShell:
-          mobile = 56px header (no tags strip on /explore), desktop = 48px navbar. */}
-      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] md:top-12 z-20 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-gray-100 dark:border-gray-900">
+      {/* Non-sticky: chips scroll away with the page so the mobile top bar
+          (which is itself scroll-aware) stays the only chrome on screen. */}
+      <div className="bg-white/95 dark:bg-gray-950/95 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-gray-100 dark:border-gray-900">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
           {moods.map((m) => {
             const active = m.slug === activeMood || (activeMood === "trending" && m.slug === "trending");
