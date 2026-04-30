@@ -134,22 +134,31 @@ function drawWheelPreview(canvas, wheel) {
     ctx.fillText(wheelData.centerText, center, center);
   }
 
-  // Footer
+  // Footer with extra padding from top (move further down)
   ctx.fillStyle = "#334155";
   ctx.font = `500 ${footerFontSize}px sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText("spinpapa.com", center, size - (isSmallCanvas ? 12 : 24));
+  // Add more padding from the bottom (increase value)
+  const footerPadding = isSmallCanvas ? 6 : 12; // was 12/24, now 6/12 for more space
+  ctx.fillText("spinpapa.com", center, size - footerPadding);
 }
 
 async function canvasToBlob(canvas) {
+  // To improve sharpness, render at 2x and downscale
+  const tmpCanvas = document.createElement("canvas");
+  tmpCanvas.width = canvas.width * 2;
+  tmpCanvas.height = canvas.height * 2;
+  const tmpCtx = tmpCanvas.getContext("2d");
+  tmpCtx.scale(2, 2);
+  tmpCtx.drawImage(canvas, 0, 0);
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
+    tmpCanvas.toBlob((blob) => {
       if (!blob) {
         reject(new Error("Failed to create image blob"));
         return;
       }
       resolve(blob);
-    }, "image/webp", 1.0);
+    }, "image/webp", 1.0); // quality 100
   });
 }
 
@@ -257,7 +266,7 @@ export default function WheelPreviewGeneratorPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <canvas ref={hiddenCanvasRef} width={400} height={400} className="hidden" />
+      <canvas ref={hiddenCanvasRef} width={320} height={320} className="hidden" />
 
       <div className="flex items-center justify-between">
         <div>

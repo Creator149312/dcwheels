@@ -1,7 +1,7 @@
 import "./globals.css";
 import { ThemeProvider } from "./ThemeProvider";
 import { SegmentsProvider } from "./SegmentsContext";
-import { Toaster } from "react-hot-toast";
+import LazyToaster from "@components/LazyToaster";
 import GAnalytics from "./GAnalytics";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
@@ -30,8 +30,16 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Preconnect and dns-prefetch for external image CDNs and analytics */}
+        <link rel="preconnect" href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com" />
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
-        <Toaster />
+        <LazyToaster />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

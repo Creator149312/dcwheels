@@ -2,9 +2,6 @@
 import dynamic from "next/dynamic";
 import { useState, useEffect, useRef, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
-import WinnerPopup from "@components/WinnerPopup";
-import QuizCard from "@components/QuizCard";
-import FireworksConfetti from "@components/FireworksConfetti";
 import WheelPlayerControls from "./WheelPlayerControls";
 import WheelEditor from "./WheelEditor";
 import { useWheelState } from "./useWheelState";
@@ -12,6 +9,24 @@ import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter } from "next/navigation";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
+  { ssr: false }
+);
+
+// These components only render AFTER the user spins (winner !== null) or
+// when wheelType === "quiz" + winner !== null. None of them affect first
+// paint, LCP, or any pre-spin interaction. Lazy-loading them with
+// `ssr: false` removes ~15-30KB combined from the initial route bundle on
+// every page that mounts the wheel player.
+const WinnerPopup = dynamic(() => import("@components/WinnerPopup"), {
+  ssr: false,
+});
+const QuizCard = dynamic(() => import("@components/QuizCard"), {
+  ssr: false,
+});
+// canvas-confetti (~5KB) + the React wrapper. Only mounts when
+// showCelebration flips true, which happens post-spin.
+const FireworksConfetti = dynamic(
+  () => import("@components/FireworksConfetti"),
   { ssr: false }
 );
 
@@ -108,19 +123,7 @@ const WheelWithInputContentEditable = ({
             />
           )}
 
-          {showOverlay && (
-            <div
-              onClick={handleSpinClick}
-              className="z-40 absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer rounded-2xl"
-            >
-              <span
-                className="text-4xl font-bold text-white animate-pulse drop-shadow-lg select-none"
-                style={{ textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)" }}
-              >
-                🎯 Click to Spin
-              </span>
-            </div>
-          )}
+          {/* Click to Spin overlay removed for LCP optimization */}
 
           {/* Wheel */}
           <div

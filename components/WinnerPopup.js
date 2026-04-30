@@ -5,7 +5,7 @@ import { SegmentsContext } from "@app/SegmentsContext";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { Button } from "./ui/button";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
-import MCQQuestion from "@app/test/questions/MCQQuestion";
+import MCQQuestion from "@components/MCQQuestion";
 import ShareableResultCard from "./ShareableResultCard";
 import AddToListButton from "./AddToListButton";
 

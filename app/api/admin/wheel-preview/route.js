@@ -90,11 +90,11 @@ export async function POST(req) {
       .replace(/(^-|-$)/g, "");
 
     const blobPath = `wheel-previews/${slug}-${wheelId}.webp`;
-
     const fileBuffer = Buffer.from(await file.arrayBuffer());
+    // Use 320x320 and quality 85 for wheel previews
     const optimizedBuffer = await sharp(fileBuffer)
-      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 90 })
+      .resize(320, 320, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 85 })
       .toBuffer();
 
     const uploaded = await put(blobPath, optimizedBuffer, {

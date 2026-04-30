@@ -22,28 +22,46 @@ const AdsUnitInner = ({ slot }) => {
     const el = insRef.current;
     if (!el) return;
 
-    const tryPush = () => {
-      if (!el.isConnected) return false;
-      if (el.dataset.adsPushed) return true;
-      if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) {
-        console.log("[AdsUnit] SKIP push: offsetWidth=0 for slot", slot, "on", window.location.pathname);
-        return false;
-      }
+    const doPush = () => {
+      if (!el.isConnected) return;
+      if (el.dataset.adsPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      if (el.offsetWidth === 0) return;
       el.dataset.adsPushed = "1";
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       } catch {
         // Race conditions and dev-only double-invokes: safe to ignore.
       }
+    };
+
+    // Schedule push() during browser idle time so AdSense's forced reflows
+    // (which are unavoidable inside show_ads_impl.js) happen AFTER LCP is
+    // locked in, not during the critical rendering path.
+    // Falls back to setTimeout(0) on browsers without requestIdleCallback.
+    const schedulePush = () => {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(doPush, { timeout: 2000 });
+      } else {
+        setTimeout(doPush, 0);
+      }
+    };
+
+    const tryPush = () => {
+      if (!el.isConnected) return false;
+      if (el.dataset.adsPushed) return true;
+      if (el.getAttribute("data-adsbygoogle-status")) return true;
+      if (el.offsetWidth === 0) return false;
+      schedulePush();
+      // Mark eagerly so a ResizeObserver re-fire can't double-schedule.
+      el.dataset.adsPushed = "1";
       return true;
     };
 
     if (tryPush()) return;
 
-    // Defer push until the slot becomes visible. ResizeObserver fires
-    // whenever the element gains non-zero dimensions (breakpoint cross,
-    // device rotation, parent unhide, etc.).
+    // Wait for the slot to gain non-zero width (sidebar hidden on mobile,
+    // breakpoint cross, device rotation, parent unhide, etc.).
     const ro = new ResizeObserver(() => {
       if (tryPush()) ro.disconnect();
     });
