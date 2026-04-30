@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, PlusCircle, Sparkles, LayoutGrid, ChevronDown } from "lucide-react";
+import { Menu, X, PlusCircle, ChevronDown, Compass, Library } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
 import { HiViewList } from "react-icons/hi";
@@ -82,18 +82,18 @@ const Navbar = ({ onToggleSidebar }) => {
             </button>
 
             <Link
-              href="/recommendation"
+              href="/explore"
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
             >
-              <Sparkles size={18} />
-              Can&apos;t Decide?
+              <Compass size={18} />
+              Explore
             </Link>
 
-            {/* Explore Dropdown */}
+            {/* Browse Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:text-blue-600 rounded-xl">
-                <LayoutGrid size={18} />
-                Explore
+                <Library size={18} />
+                Browse
                 <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
               </button>
 
@@ -152,12 +152,12 @@ const Navbar = ({ onToggleSidebar }) => {
           <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 w-full">
              <PlusCircle size={22} /> Create New Wheel
           </button>
-          <Link href="/recommendation" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-             <Sparkles className="text-yellow-500" size={22} /> Can&apos;t Decide?
+          <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+             <Compass className="text-blue-500" size={22} /> Explore
           </Link>
           
           <div className="border-t border-gray-100 dark:border-gray-800 my-4 pt-6">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-4 px-4 tracking-widest">Explore</p>
+            <p className="text-[10px] font-black uppercase text-gray-400 mb-4 px-4 tracking-widest">Browse</p>
             <Link href="/wheels" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
                <GiCartwheel size={22} className="text-blue-500" /> Browse Wheels
             </Link>

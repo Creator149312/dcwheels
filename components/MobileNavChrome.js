@@ -1,25 +1,39 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Home, Compass, PlusCircle, Library, User, Bell, Moon, Sun, Menu } from "lucide-react";
+import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Bell, Moon, Sun, Menu, X } from "lucide-react";
 import TagsCarousel from "@components/TagsCarousel";
 import MobileSearchBar from "@components/MobileSearchBar";
-import CreateWheelModal from "@components/CreateWheelModal";
+
+// CreateWheelModal is heavy (segment editor + image upload deps) and only
+// rendered after the user taps the + button. Lazy-loading it keeps the
+// mobile nav chunk — which ships on every page — lean.
+const CreateWheelModal = dynamic(
+  () => import("@components/CreateWheelModal"),
+  { ssr: false }
+);
 
 const SCROLL_THRESHOLD = 10;
 
-function BottomNavItem({ href, icon, label, active }) {
+function BottomNavItem({ href, icon, label, active, onClick }) {
+  const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
+    active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+  }`;
+  if (onClick) {
+    return (
+      <button onClick={onClick} className={cls} aria-label={label}>
+        {icon}
+        <span>{label}</span>
+      </button>
+    );
+  }
   return (
-    <Link
-      href={href}
-      className={`flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors ${
-        active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
-      }`}
-    >
+    <Link href={href} className={cls}>
       {icon}
       <span>{label}</span>
     </Link>
@@ -31,43 +45,29 @@ export default function MobileNavChrome({ onToggleSidebar }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [isVisible, setIsVisible] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
 
   const isDark = resolvedTheme === "dark";
 
-  const items = useMemo(
-    () => [
-      { href: "/", label: "Home", icon: <Home size={20} /> },
-      { href: "/games", label: "Explore", icon: <Compass size={20} /> },
-      { href: "/lists", label: "Library", icon: <Library size={20} /> },
-      { href: "/profile", label: "Profile", icon: <User size={20} /> },
-    ],
-    []
-  );
-
   useEffect(() => {
     const updateVisibility = (currentY) => {
       const delta = currentY - lastScrollYRef.current;
 
+      // Always show when near the top
       if (currentY < 20) {
         setIsVisible(true);
         lastScrollYRef.current = currentY;
         return;
       }
 
-      if (Math.abs(delta) < SCROLL_THRESHOLD) {
-        return;
-      }
+      if (Math.abs(delta) < SCROLL_THRESHOLD) return;
 
-      // Requested behavior: hide while scrolling up, show while scrolling down.
-      if (delta < 0) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-
+      // delta > 0 → scrolling DOWN → hide navs
+      // delta < 0 → scrolling UP  → show navs
+      setIsVisible(delta < 0);
       lastScrollYRef.current = currentY;
     };
 
@@ -87,8 +87,17 @@ export default function MobileNavChrome({ onToggleSidebar }) {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Close library sheet when navigating
+  useEffect(() => { setLibraryOpen(false); }, [pathname]);
+
+  const isLibraryActive =
+    pathname.startsWith("/wheels") ||
+    pathname.startsWith("/uwheels") ||
+    pathname.startsWith("/lists");
+
   return (
     <>
+      {/* ── Top mobile bar ─────────────────────────────────────────────── */}
       <div
         className={`fixed top-0 left-0 right-0 z-[70] md:hidden transition-transform duration-300 ${
           isVisible ? "translate-y-0" : "-translate-y-full"
@@ -127,14 +136,13 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Toggle theme"
               >
-                {/* Render a neutral placeholder until theme is known on client */}
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
 
               <Link
                 href="/dashboard"
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Notifications"
+                aria-label="Dashboard"
               >
                 <Bell size={20} />
               </Link>
@@ -144,53 +152,103 @@ export default function MobileNavChrome({ onToggleSidebar }) {
           </div>
         </div>
 
-        <div className="h-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-100/80 dark:border-gray-900/80">
-          <TagsCarousel />
-        </div>
+        {/* /explore renders its own mood chip row; suppress the global tag
+            carousel on that route to avoid two stacked chip rows. */}
+        {!pathname.startsWith("/explore") && (
+          <div className="h-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-100/80 dark:border-gray-900/80">
+            <TagsCarousel />
+          </div>
+        )}
       </div>
 
+      {/* ── Library sub-sheet ──────────────────────────────────────────── */}
+      {libraryOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[65] bg-black/30 backdrop-blur-sm md:hidden"
+            onClick={() => setLibraryOpen(false)}
+          />
+          {/* Sheet */}
+          <div
+            className={`fixed bottom-12 left-0 right-0 z-[68] md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-2xl transition-transform duration-300`}
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Browse</span>
+              <button
+                onClick={() => setLibraryOpen(false)}
+                className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col py-1">
+              <Link
+                href="/wheels"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"
+                onClick={() => setLibraryOpen(false)}
+              >
+                <LayoutGrid size={20} className="text-blue-500" />
+                Browse Wheels
+              </Link>
+              <Link
+                href="/lists"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"
+                onClick={() => setLibraryOpen(false)}
+              >
+                <List size={20} className="text-indigo-500" />
+                My Lists
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Bottom nav ─────────────────────────────────────────────────── */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-[70] md:hidden border-t border-gray-100/80 dark:border-gray-900/80 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md shadow-[0_-6px_20px_rgba(0,0,0,0.08)] transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-[70] md:hidden border-t border-gray-100/80 dark:border-gray-900/80 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-transform duration-300 ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="h-16 px-2 grid grid-cols-5 items-center">
+        {/* h-12 = 48px — sleek but keeps 44px minimum tap target per HIG */}
+        <div className="h-12 px-2 grid grid-cols-5 items-center">
           <BottomNavItem
-            href={items[0].href}
-            label={items[0].label}
-            icon={items[0].icon}
-            active={pathname === items[0].href}
+            href="/"
+            label="Home"
+            icon={<Home size={18} />}
+            active={pathname === "/"}
           />
 
           <BottomNavItem
-            href={items[1].href}
-            label={items[1].label}
-            icon={items[1].icon}
-            active={pathname.startsWith(items[1].href)}
+            href="/explore"
+            label="Explore"
+            icon={<Compass size={18} />}
+            active={pathname.startsWith("/explore")}
           />
 
           <button
             onClick={() => setCreateModalOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
+            className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
             aria-label="Create"
           >
-            <PlusCircle size={26} />
+            <PlusCircle size={22} />
             <span>Create</span>
           </button>
 
           <BottomNavItem
-            href={items[2].href}
-            label={items[2].label}
-            icon={items[2].icon}
-            active={pathname.startsWith(items[2].href)}
+            label="Browse"
+            icon={<Library size={18} />}
+            active={isLibraryActive || libraryOpen}
+            onClick={() => setLibraryOpen((v) => !v)}
           />
 
           <BottomNavItem
-            href={items[3].href}
-            label={items[3].label}
-            icon={items[3].icon}
-            active={pathname.startsWith(items[3].href)}
+            href="/dashboard"
+            label="Profile"
+            icon={<User size={18} />}
+            active={pathname.startsWith("/dashboard") || pathname.startsWith("/profile")}
           />
         </div>
       </nav>

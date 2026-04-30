@@ -13,7 +13,10 @@ export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
     return () => window.removeEventListener("resize", checkSize);
   }, []);
 
-  // Self-push when the chosen variant (mobile vs desktop) is mounted.
+  // Self-push when the chosen variant (mobile vs desktop) is mounted, but
+  // only when the slot has non-zero width. If a parent is hidden at this
+  // breakpoint we wait via ResizeObserver instead of throwing
+  //   `TagError: No slot size for availableWidth=0`.
   //
   // Two-layer guard (see AdsUnit.js for full rationale):
   //   1. `data-ads-pushed` is set synchronously per-<ins>, so isMobile
@@ -25,14 +28,29 @@ export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
   useEffect(() => {
     const el = insRef.current;
     if (!el) return;
-    if (el.dataset.adsPushed) return;
-    if (el.getAttribute("data-adsbygoogle-status")) return;
-    el.dataset.adsPushed = "1";
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // Race conditions and dev-only double-invokes: safe to ignore.
-    }
+
+    const tryPush = () => {
+      if (!el.isConnected) return false;
+      if (el.dataset.adsPushed) return true;
+      if (el.getAttribute("data-adsbygoogle-status")) return true;
+      if (el.offsetWidth === 0) return false;
+      el.dataset.adsPushed = "1";
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
+      }
+      return true;
+    };
+
+    if (tryPush()) return;
+
+    const ro = new ResizeObserver(() => {
+      if (tryPush()) ro.disconnect();
+    });
+    ro.observe(el);
+
+    return () => ro.disconnect();
   }, [isMobile]);
 
   return (

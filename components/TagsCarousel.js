@@ -64,7 +64,7 @@ export default function TagsCarousel() {
   };
 
   return (
-    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden mt-1">
+    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden sm:mt-1">
       <div className="w-full relative flex items-center py-1.5">
         
         {/* Left Shadow/Arrow */}
