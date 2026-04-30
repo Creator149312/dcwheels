@@ -1,56 +1,53 @@
 ﻿"use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-// Single <ins> slot with self-push. Lives inside both the mobile and
-// desktop branches below. The push effect uses the same two-layer guard
-// + idle-time scheduling + ResizeObserver pattern as AdsUnit.js — see
-// that file for the full rationale.
-//
-// CSS-driven visibility note:
-//   The hidden variant (e.g. desktop branch on a phone) has
-//   `display: none` via Tailwind's `hidden` class, so its <ins> reports
-//   `offsetWidth === 0`. Our `tryPush` guard skips it. ResizeObserver
-//   never fires for a `display:none` element, so the hidden variant
-//   stays unpushed — no slot is burned, no TagError thrown. When the
-//   breakpoint crosses, the newly-revealed branch's ResizeObserver fires
-//   exactly once and pushes.
-function AdSlot({ slot, width, height, className }) {
+function AdSlot({ slot, width, minHeight, className }) {
   const insRef = useRef(null);
+  // adReady prevents Google from seeing this tag until width > 0
+  const [adReady, setAdReady] = useState(false);
 
   useEffect(() => {
     const el = insRef.current;
     if (!el) return;
 
     const doPush = () => {
-      if (!el.isConnected) return;
-      if (el.dataset.adsPushed) return;
-      if (el.getAttribute("data-adsbygoogle-status")) return;
-      if (el.offsetWidth === 0) return;
-      el.dataset.adsPushed = "1";
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // Race conditions and dev-only double-invokes: safe to ignore.
-      }
-    };
+      if (
+        !el.isConnected ||
+        el.dataset.adsPushed ||
+        el.getAttribute("data-adsbygoogle-status")
+      )
+        return;
 
-    const schedulePush = () => {
-      if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(doPush, { timeout: 2000 });
-      } else {
-        setTimeout(doPush, 0);
+      // Strict check to prevent TagError
+      if (el.offsetWidth === 0) return;
+
+      // 1. Reveal class to Google
+      setAdReady(true);
+
+      // 2. Mark as pushed
+      el.dataset.adsPushed = "1";
+
+      // 3. Trigger push after a tiny delay to ensure class is applied
+      try {
+        setTimeout(() => {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }, 50);
+      } catch (error) {
+        console.error("[AdSlot] push failed", slot, error);
       }
     };
 
     const tryPush = () => {
-      if (!el.isConnected) return false;
-      if (el.dataset.adsPushed) return true;
-      if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) return false;
-      schedulePush();
-      el.dataset.adsPushed = "1";
-      return true;
+      if (el.offsetWidth > 0) {
+        if (typeof requestIdleCallback !== "undefined") {
+          requestIdleCallback(doPush, { timeout: 1000 });
+        } else {
+          setTimeout(doPush, 100);
+        }
+        return true;
+      }
+      return false;
     };
 
     if (tryPush()) return;
@@ -59,41 +56,42 @@ function AdSlot({ slot, width, height, className }) {
       if (tryPush()) ro.disconnect();
     });
     ro.observe(el);
-
     return () => ro.disconnect();
-  }, []);
+  }, [slot]);
 
   return (
     <ins
       ref={insRef}
-      className={`adsbygoogle ${className || ""}`}
-      style={{ display: "inline-block", width: `${width}px`, height: `${height}px` }}
+      // "adsbygoogle" class is ONLY added if adReady is true
+      className={`${adReady ? "adsbygoogle" : ""} ${className || ""}`}
+      style={{
+        display: "block",
+        width: "100%",
+        minWidth: `${width}px`,
+        minHeight: `${minHeight}px`,
+      }}
       data-ad-client="ca-pub-6746947892342481"
       data-ad-slot={slot}
+      data-ad-format="horizontal"
+      data-full-width-responsive="false"
     />
   );
 }
 
-function AdaptiveLeaderBoardAdsInner({ desktopSlot, mobileSlot }) {
-  // Render BOTH variants, control visibility with CSS (`hidden sm:block`).
-  // This eliminates the JS-driven layout shift that occurred when the old
-  // `useState(isMobile)` first rendered the desktop card on a phone, then
-  // flipped to mobile after hydration. Now SSR + hydration agree from the
-  // first paint, and the breakpoint switch is pure CSS — zero CLS.
-  //
-  // The `display:none` branch's <ins> has zero width, so its push() guard
-  // skips it (see AdSlot above). Only the visible variant ever pushes.
+function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
   return (
-    <div className="w-full my-2">
-      {/* Mobile: visible below sm (640px) — bare 320×50 banner. */}
-      <div className="flex justify-center overflow-hidden sm:hidden">
-        <AdSlot slot={mobileSlot} width={320} height={50} />
+    <div className="w-full my-4">
+      {/* Mobile Slot: Hidden on desktop via sm:hidden. 
+          AdSlot will only 'activate' if this container is visible. */}
+      <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-gray-50/50 dark:bg-gray-900/20">
+        <AdSlot slot={mobileSlot} width={320} minHeight={50} />
       </div>
 
-      {/* Desktop: visible from sm up — card-style 728×90 leaderboard. */}
-      <div className="hidden sm:flex w-full bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl items-center justify-center overflow-hidden">
-        <div className="w-full max-w-[728px] h-[100px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm mx-auto overflow-hidden">
-          <AdSlot slot={desktopSlot} width={728} height={90} />
+      {/* Desktop Slot: Hidden on mobile via hidden sm:flex. 
+          AdSlot will stay 'dormant' on mobile devices. */}
+      <div className="hidden sm:flex w-full bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl items-center justify-center overflow-hidden min-h-[120px]">
+        <div className="w-full max-w-[728px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm mx-auto overflow-hidden">
+          <AdSlot slot={desktopSlot} width={728} minHeight={90} />
         </div>
       </div>
     </div>
@@ -101,14 +99,6 @@ function AdaptiveLeaderBoardAdsInner({ desktopSlot, mobileSlot }) {
 }
 
 export default function AdaptiveLeaderBoardAds(props) {
-  // LayoutShell renders this above {children}, so it persists across <Link>
-  // navigations. Re-key on pathname so each route gets a fresh <ins> +
-  // adsbygoogle.push() instead of holding the first page's ad forever.
   const pathname = usePathname();
-  return (
-    <AdaptiveLeaderBoardAdsInner
-      key={`${pathname}:${props.desktopSlot}:${props.mobileSlot}`}
-      {...props}
-    />
-  );
+  return <AdaptiveLeaderBoardInner key={pathname} {...props} />;
 }
