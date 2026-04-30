@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
-export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
+function AdaptiveLeaderBoardAdsInner({ desktopSlot, mobileSlot }) {
   const [isMobile, setIsMobile] = useState(false);
   const insRef = useRef(null);
 
@@ -33,7 +34,10 @@ export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
       if (!el.isConnected) return false;
       if (el.dataset.adsPushed) return true;
       if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) return false;
+      if (el.offsetWidth === 0) {
+        console.log("[AdaptiveLeaderBoardAds] SKIP push: offsetWidth=0 for slot", isMobile ? mobileSlot : desktopSlot, "on", window.location.pathname);
+        return false;
+      }
       el.dataset.adsPushed = "1";
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -54,11 +58,10 @@ export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
   }, [isMobile]);
 
   return (
-    <div className="w-full bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] flex flex-col items-center justify-center transition-all">
-      <div className="w-full max-w-[728px] h-[100px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm mx-auto overflow-hidden">
-        
-        {isMobile ? (
-          /* Mobile Ad - 320x50 fits perfectly in your 100px height */
+    <div className="w-full my-2">
+      {isMobile ? (
+        // Mobile: no decorative chrome, just center the 320×50 unit.
+        <div className="flex justify-center overflow-hidden">
           <ins
             ref={insRef}
             className="adsbygoogle"
@@ -66,21 +69,34 @@ export default function AdaptiveLeaderBoardAds({ desktopSlot, mobileSlot }) {
             data-ad-client="ca-pub-6746947892342481"
             data-ad-slot={mobileSlot}
           />
-        ) : (
-          /* Desktop Ad - 728x90 fits perfectly in your 100px height */
-          <ins
-            ref={insRef}
-            className="adsbygoogle"
-            style={{ display: "inline-block", width: "728px", height: "90px" }}
-            data-ad-client="ca-pub-6746947892342481"
-            data-ad-slot={desktopSlot}
-          />
-        )}
-
-      </div>
-      {/* <span className="text-[9px] text-gray-400 mt-1 uppercase tracking-widest font-medium">
-        Advertisement
-      </span> */}
+        </div>
+      ) : (
+        // Desktop: keep the card-style wrapper — it fits the wider layout.
+        <div className="w-full bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl flex items-center justify-center overflow-hidden">
+          <div className="w-full max-w-[728px] h-[100px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm mx-auto overflow-hidden">
+            <ins
+              ref={insRef}
+              className="adsbygoogle"
+              style={{ display: "inline-block", width: "728px", height: "90px" }}
+              data-ad-client="ca-pub-6746947892342481"
+              data-ad-slot={desktopSlot}
+            />
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function AdaptiveLeaderBoardAds(props) {
+  // LayoutShell renders this above {children}, so it persists across <Link>
+  // navigations. Re-key on pathname so each route gets a fresh <ins> +
+  // adsbygoogle.push() instead of holding the first page's ad forever.
+  const pathname = usePathname();
+  return (
+    <AdaptiveLeaderBoardAdsInner
+      key={`${pathname}:${props.desktopSlot}:${props.mobileSlot}`}
+      {...props}
+    />
   );
 }

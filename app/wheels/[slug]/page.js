@@ -9,30 +9,52 @@ import {
 } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
+import AdsUnit from "@components/ads/AdsUnit";
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
 
-// Admin-curated /wheels/[slug] pages change infrequently — revalidate once a day.
-// No session/headers calls here, so Next.js can fully static-render the page
-// and the CDN will serve ~99% of requests without touching the origin.
+// Admin-curated /wheels/[slug] pages change infrequently — revalidate once a
+// week. No session/headers calls here, so Next.js can fully static-render the
+// page and the CDN serves ~99% of requests without touching the origin.
 // Session-dependent UI (reactions, follow state) is resolved client-side via
-// useSession() inside WheelMeta / StatsBar. View tracking runs client-side
-// via <ViewTracker />.
-export const revalidate = 86400; // 1 day
+// useSession() inside WheelMeta / StatsBar. View tracking runs client-side via
+// <ViewTracker />. When an admin edits a page we can bust just that slug with
+// revalidateTag('page:<slug>') instead of waiting out the timer.
+export const revalidate = 604800; // 7 days
 
-// Pre-render the indexed admin pages at build time. Anything outside the
-// list still renders on-demand and then gets cached via `revalidate`. Mirrors
-// the pattern already in /tags/[tagId]. Cap at 200 so a future flood of new
-// admin pages can't blow up build time.
+// Pre-render the highest-value indexed admin pages at build time. Anything
+// outside the list still renders on-demand and then gets cached via
+// `revalidate`, so the long tail costs nothing extra in build time.
+//
+// Sort by `wheel.likeCount` (popularity) rather than `createdAt`: the pages
+// most likely to be hit first by crawlers and users are the ones already
+// getting engagement, not the newest ones. Note that `likeCount` lives on the
+// Wheel doc, not the Page, so we $lookup through the `wheel` ref.
+//
+// Cap at 500 — beyond that the marginal benefit drops sharply (most pages
+// get <1 visit/day, so pre-building them just burns CI minutes for cache
+// entries no one warms).
 export async function generateStaticParams() {
   try {
     await connectMongoDB();
-    const pages = await Page.find({ indexed: true })
-      .select("slug")
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean();
-    return pages.filter((p) => p.slug).map((p) => ({ slug: p.slug }));
+    const rows = await Page.aggregate([
+      { $match: { indexed: true, slug: { $ne: null } } },
+      {
+        $lookup: {
+          from: "wheels",
+          localField: "wheel",
+          foreignField: "_id",
+          as: "wheel",
+        },
+      },
+      { $unwind: { path: "$wheel", preserveNullAndEmptyArrays: true } },
+      // `ifNull` keeps wheels with no likes from being sorted as `null` first.
+      { $addFields: { _likeCount: { $ifNull: ["$wheel.likeCount", 0] } } },
+      { $sort: { _likeCount: -1, createdAt: -1 } },
+      { $limit: 500 },
+      { $project: { slug: 1 } },
+    ]);
+    return rows.filter((p) => p.slug).map((p) => ({ slug: p.slug }));
   } catch (err) {
     // If DB is unreachable at build time, fall back to fully on-demand
     // rendering instead of failing the whole build.
@@ -130,6 +152,11 @@ export default async function Home({ params }) {
         pageData={pageData}
         initialMeta={initialMeta}
       />
+
+      {/* Bottom-of-page ad — shown on both mobile and desktop after all
+          content is consumed, where engagement is still high but UX impact
+          is lowest. Slot 9397002286 is a responsive display unit. */}
+      <AdsUnit slot="9397002286" />
     </div>
   );
 }

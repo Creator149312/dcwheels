@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
-const AdsUnit = ({ slot }) => {
+const AdsUnitInner = ({ slot }) => {
   const insRef = useRef(null);
 
   // Self-push on mount, but only when the <ins> actually has non-zero width.
@@ -25,8 +26,10 @@ const AdsUnit = ({ slot }) => {
       if (!el.isConnected) return false;
       if (el.dataset.adsPushed) return true;
       if (el.getAttribute("data-adsbygoogle-status")) return true;
-      // offsetWidth covers both display:none ancestors and zero-width parents.
-      if (el.offsetWidth === 0) return false;
+      if (el.offsetWidth === 0) {
+        console.log("[AdsUnit] SKIP push: offsetWidth=0 for slot", slot, "on", window.location.pathname);
+        return false;
+      }
       el.dataset.adsPushed = "1";
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -67,4 +70,13 @@ const AdsUnit = ({ slot }) => {
   );
 };
 
-export default AdsUnit;
+export default function AdsUnit({ slot }) {
+  // The component lives inside LayoutShell / RightSidebar which DON'T unmount
+  // on client-side <Link> navigation. Without a route-keyed remount, the
+  // <ins> element carries `data-adsbygoogle-status` from the first page and
+  // refuses any further push() — so users see the same ad across 20 pages.
+  // Keying the inner component on pathname forces a fresh <ins> per route
+  // and a corresponding adsbygoogle.push() on each navigation.
+  const pathname = usePathname();
+  return <AdsUnitInner key={`${pathname}:${slot}`} slot={slot} />;
+}

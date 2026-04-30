@@ -13,6 +13,7 @@ import AddToListButton from "@components/AddToListButton";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
 import AdaptiveLeaderBoardAds from "@components/ads/AdaptiveLeaderBoardAds";
+import AdsUnit from "@components/ads/AdsUnit";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -941,6 +942,11 @@ export default async function TopicPageDetail({ params }) {
         )}
 
       </div>
+
+      {/* Bottom-of-page ad — placed after all content sections (hero, interactions,
+          You Might Also Like) where users have finished consuming the page.
+          Shown on both mobile and desktop. */}
+      <AdsUnit slot="9397002286" />
     </div>
   );
 }

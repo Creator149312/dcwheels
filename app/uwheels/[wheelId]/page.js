@@ -4,6 +4,7 @@ import WheelWithInputContentEditable from "@components/WheelWithInputContentEdit
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
+import AdsUnit from "@components/ads/AdsUnit";
 import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
 
 // ISR: revalidate user-wheel pages every 30 minutes.
@@ -108,6 +109,10 @@ export default async function Page({ params }) {
             wheelId={params.wheelId}
             initialMeta={initialMeta}
           />
+
+          {/* Bottom-of-page ad — shown after all content on both mobile
+              and desktop. Same slot pattern as /wheels/[slug]. */}
+          <AdsUnit slot="9397002286" />
         </>
       ) : (
         <div>
