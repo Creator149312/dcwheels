@@ -32,11 +32,29 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         {/* Preconnect and dns-prefetch for external image CDNs and analytics */}
-        <link rel="preconnect" href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com" />
-        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <head>
+          {/* Priority 1: Your own assets */}
+          <link
+            rel="preconnect"
+            href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com"
+            crossOrigin="anonymous"
+          />
+
+          {/* Priority 2: AdSense (The "Pipes") */}
+          <link
+            rel="preconnect"
+            href="https://pagead2.googlesyndication.com"
+            crossOrigin="anonymous"
+          />
+          <link
+            rel="preconnect"
+            href="https://googleads.g.doubleclick.net"
+            crossOrigin="anonymous"
+          />
+
+          {/* Priority 3: DNS Prefetch as a secondary fallback */}
+          <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        </head>
       </head>
       <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
         <LazyToaster />
