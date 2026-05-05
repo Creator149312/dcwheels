@@ -1,10 +1,11 @@
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { validateObjectID } from "@utils/Validator";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
 import AdsUnit from "@components/ads/AdsUnit";
+import RelatedWheels from "@components/RelatedWheels";
 import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
 
 // ISR: revalidate user-wheel pages every 30 minutes.
@@ -80,18 +81,6 @@ export default async function Page({ params }) {
   // so this is a no-op DB hit thanks to React.cache().
   const wordsList = await fetchWheelData(params.wheelId);
 
-  // userId = null keeps the rendered HTML user-agnostic so the CDN can cache
-  // it. The client component re-fetches a personalised meta payload after
-  // hydration if the user is signed in.
-  const [relatedWheels, initialMeta] = await Promise.all([
-    wordsList?.tags && wordsList.tags.length > 0
-      ? fetchRelatedWheels(wordsList.tags, params.wheelId)
-      : Promise.resolve([]),
-    wordsList
-      ? getWheelMeta(params.wheelId, null)
-      : Promise.resolve(null),
-  ]);
-
   return (
     <div>
       {wordsList ? (
@@ -100,15 +89,33 @@ export default async function Page({ params }) {
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={wordsList?.wheelData ?? null}
-            relatedWheels={relatedWheels}
+            relatedWheelsSlot={
+              <Suspense fallback={
+                <aside className="hidden lg:block w-full p-0">
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                    <div className="w-16 h-3 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                    <div className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800 ml-2" />
+                  </div>
+                  <div className="space-y-1.5 pr-1">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-xl">
+                        <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse flex-shrink-0" />
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </aside>
+              }>
+                <SuspendedRelatedWheels tags={wordsList.tags} wheelId={params.wheelId} />
+              </Suspense>
+            }
             wheelId={params.wheelId}
           />
 
-          <WheelInfoSection
-            wordsList={wordsList}
-            wheelId={params.wheelId}
-            initialMeta={initialMeta}
-          />
+          <Suspense fallback={<div className="h-64 mt-8 bg-gray-100 dark:bg-gray-900 rounded-xl animate-pulse" />}>
+            <SuspendedMetaSection wordsList={wordsList} wheelId={params.wheelId} />
+          </Suspense>
 
           {/* Bottom-of-page ad — shown after all content on both mobile
               and desktop. Same slot pattern as /wheels/[slug]. */}
@@ -120,5 +127,28 @@ export default async function Page({ params }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Suspense Wrapper Components ──────────────────────────────────────────
+
+async function SuspendedRelatedWheels({ tags, wheelId }) {
+  const relatedWheels =
+    tags && tags.length > 0
+      ? await fetchRelatedWheels(tags, wheelId)
+      : [];
+
+  return <RelatedWheels relatedWheels={relatedWheels} />;
+}
+
+async function SuspendedMetaSection({ wordsList, wheelId }) {
+  const initialMeta = await getWheelMeta(wheelId, null);
+  
+  return (
+    <WheelInfoSection
+      wordsList={wordsList}
+      wheelId={wheelId}
+      initialMeta={initialMeta}
+    />
   );
 }
