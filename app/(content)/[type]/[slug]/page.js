@@ -1,6 +1,6 @@
 import { AniList } from "@spkrbox/anilist";
 import { OpenAI } from "openai";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import Image from "next/image";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
@@ -576,21 +576,6 @@ export default async function TopicPageDetail({ params }) {
     media = pageDoc;
   }
 
-  // Fetch trailer/streaming extras, related pages, tagged wheels, and characters in parallel
-  // to minimise total server latency on first load.
-  const [extras, relatedPages, taggedWheels, animeCharacters] = await Promise.all([
-    type === "movie"
-      ? fetchMovieExtras(relatedId)
-      : type === "anime"
-      ? fetchAnimeExtras(relatedId)
-      : type === "game"
-      ? fetchGameExtras(relatedId)
-      : Promise.resolve({ trailerKey: null, streaming: [] }),
-    getRelatedPages(pageDoc.tags || [], pageDoc._id),
-    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type),
-    type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]),
-  ]);
-
   // Resolve the display title once — referenced in hero, meta, and actions
   const displayTitle =
     pageDoc.title?.default ||
@@ -691,40 +676,9 @@ export default async function TopicPageDetail({ params }) {
         </div>
 
         {/* Row 5: Where to Watch */}
-        {extras?.streaming?.length > 0 && (
-          <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-              {type === "game" ? "Available On" : "Where to Watch"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {extras.streaming.map((provider, i) => (
-                <a
-                  key={i}
-                  href={provider.url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
-                >
-                  {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
-                  {(provider.logo_path || provider.store?.domain) && (
-                    <img
-                      src={provider.logo_path
-                        ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
-                        : `https://www.google.com/s2/favicons?domain=${provider.store.domain}&sz=32`
-                      }
-                      alt=""
-                      className="w-4 h-4 rounded-sm flex-shrink-0"
-                    />
-                  )}
-                  {provider.provider_name ||
-                    provider.site ||
-                    provider.store?.name ||
-                    provider.url}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+        <Suspense fallback={<div className="mt-5 h-8 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-md w-1/3"></div>}>
+          <StreamingProviders type={type} relatedId={relatedId} />
+        </Suspense>
       </div>
 
       {/* ── Desktop hero (sm+): plain surface, no backdrop, no gradient ──────
@@ -811,40 +765,9 @@ export default async function TopicPageDetail({ params }) {
             />
 
             {/* Where to Watch */}
-            {extras?.streaming?.length > 0 && (
-              <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-                  {type === "game" ? "Available On" : "Where to Watch"}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {extras.streaming.map((provider, i) => (
-                    <a
-                      key={i}
-                      href={provider.url || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
-                    >
-                      {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
-                      {(provider.logo_path || provider.store?.domain) && (
-                        <img
-                          src={provider.logo_path
-                            ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
-                            : `https://www.google.com/s2/favicons?domain=${provider.store.domain}&sz=32`
-                          }
-                          alt=""
-                          className="w-4 h-4 rounded-sm flex-shrink-0"
-                        />
-                      )}
-                      {provider.provider_name ||
-                        provider.site ||
-                        provider.store?.name ||
-                        provider.url}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            <Suspense fallback={<div className="mt-5 h-8 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-md w-1/3"></div>}>
+              <StreamingProviders type={type} relatedId={relatedId} />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -864,82 +787,26 @@ export default async function TopicPageDetail({ params }) {
            Max-width container keeps content readable on wide screens.       */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
 
-        {/* ── Trailer ─────────────────────────────────────────────────────
-             TrailerPlayer is a client component that renders a thumbnail
-             with a play button. The <iframe> is only injected on click,
-             preventing the YouTube embed script from blocking page load.    */}
-        {extras?.trailerKey && (
-          <section>
-            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
-              Trailer
-            </h2>
-            <TrailerPlayer trailerKey={extras.trailerKey} title={displayTitle} />
-          </section>
-        )}
+        {/* ── Trailer ───────────────────────────────────────────────────── */}
+        <Suspense fallback={<div className="w-full aspect-video rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />}>
+          <TrailerSection type={type} relatedId={relatedId} displayTitle={displayTitle} />
+        </Suspense>
 
-        {/* ── Picker Wheels / Community Votes / Quick Takes ───────────────
-             These are SpinPapa's moat — nobody else surfaces community
-             spin wheels or decision-focused Q&A per content item.          */}
-        <TopicInteractionTabs
-          type={type}
-          pageId={pageDoc._id}
-          contentId={relatedId.toString()}
-          contentSlug={pageDoc.slug}
-          contentTags={pageDoc.tags || []}
-          taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-          animeCharacters={type === "anime" ? animeCharacters : []}
-        />
+        {/* ── Picker Wheels / Community Votes / Quick Takes ─────────────── */}
+        <Suspense fallback={<div className="h-64 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse mt-4" />}>
+          <InteractionTabsWrapper type={type} pageDoc={pageDoc} relatedId={relatedId} />
+        </Suspense>
 
-        {/* ── You Might Also Like ─────────────────────────────────────────
-             Related content by overlapping tags, horizontal scroll row.    */}
-        {relatedPages?.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
-              You Might Also Like
-            </h2>
-            <div
-              className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {relatedPages.map((related) => {
-                const relatedTitle =
-                  related.title?.default ||
-                  related.title?.english ||
-                  related.title?.romaji ||
-                  related.title?.localized ||
-                  related.title?.original ||
-                  "Untitled";
-                return (
-                  <a
-                    key={String(related._id)}
-                    href={`/${related.type}/${related.slug}`}
-                    className="group flex-shrink-0 w-28 sm:w-32 block"
-                  >
-                    <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
-                      {related.cover ? (
-                        <img
-                          src={related.cover}
-                          alt={relatedTitle}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs text-gray-400">No image</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs font-semibold truncate group-hover:text-blue-600 transition-colors">
-                      {relatedTitle}
-                    </p>
-                    <p className="text-xs text-gray-400 capitalize mt-0.5">{related.type}</p>
-                  </a>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* ── You Might Also Like ───────────────────────────────────────── */}
+        <Suspense fallback={
+          <div className="flex gap-4 overflow-hidden mt-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-28 sm:w-32 aspect-[3/4] rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            ))}
+          </div>
+        }>
+          <RelatedPagesWrapper pageDoc={pageDoc} />
+        </Suspense>
 
       </div>
 
@@ -948,5 +815,141 @@ export default async function TopicPageDetail({ params }) {
           Shown on both mobile and desktop. */}
       <AdsUnit slot="9397002286" />
     </div>
+  );
+}
+
+// ── Suspense Wrapper Components ──────────────────────────────────────────
+
+async function StreamingProviders({ type, relatedId }) {
+  const extras =
+    type === "movie" ? await fetchMovieExtras(relatedId)
+    : type === "anime" ? await fetchAnimeExtras(relatedId)
+    : type === "game" ? await fetchGameExtras(relatedId)
+    : { streaming: [] };
+
+  if (!extras?.streaming?.length) return null;
+
+  return (
+    <div className="mt-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+        {type === "game" ? "Available On" : "Where to Watch"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {extras.streaming.map((provider, i) => (
+          <a
+            key={i}
+            href={provider.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
+          >
+            {(provider.logo_path || provider.store?.domain) && (
+              <img
+                src={provider.logo_path
+                  ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
+                  : `https://www.google.com/s2/favicons?domain=${provider.store.domain}&sz=32`
+                }
+                alt=""
+                className="w-4 h-4 rounded-sm flex-shrink-0"
+              />
+            )}
+            {provider.provider_name || provider.site || provider.store?.name || provider.url}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function TrailerSection({ type, relatedId, displayTitle }) {
+  const extras =
+    type === "movie" ? await fetchMovieExtras(relatedId)
+    : type === "anime" ? await fetchAnimeExtras(relatedId)
+    : type === "game" ? await fetchGameExtras(relatedId)
+    : { trailerKey: null };
+
+  if (!extras?.trailerKey) return null;
+
+  return (
+    <section>
+      <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+        <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+        Trailer
+      </h2>
+      <TrailerPlayer trailerKey={extras.trailerKey} title={displayTitle} />
+    </section>
+  );
+}
+
+async function InteractionTabsWrapper({ type, pageDoc, relatedId }) {
+  const [taggedWheels, animeCharacters] = await Promise.all([
+    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type),
+    type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]),
+  ]);
+
+  return (
+    <TopicInteractionTabs
+      type={type}
+      pageId={pageDoc._id}
+      contentId={relatedId.toString()}
+      contentSlug={pageDoc.slug}
+      contentTags={pageDoc.tags || []}
+      taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+      animeCharacters={type === "anime" ? animeCharacters : []}
+    />
+  );
+}
+
+async function RelatedPagesWrapper({ pageDoc }) {
+  const relatedPages = await getRelatedPages(pageDoc.tags || [], pageDoc._id);
+
+  if (!relatedPages?.length) return null;
+
+  return (
+    <section>
+      <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+        <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+        You Might Also Like
+      </h2>
+      <div
+        className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {relatedPages.map((related) => {
+          const relatedTitle =
+            related.title?.default ||
+            related.title?.english ||
+            related.title?.romaji ||
+            related.title?.localized ||
+            related.title?.original ||
+            "Untitled";
+          return (
+            <a
+              key={String(related._id)}
+              href={`/${related.type}/${related.slug}`}
+              className="group flex-shrink-0 w-28 sm:w-32 block"
+            >
+              <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
+                {related.cover ? (
+                  <img
+                    src={related.cover}
+                    alt={relatedTitle}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-xs text-gray-400">No image</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs font-semibold truncate group-hover:text-blue-600 transition-colors">
+                {relatedTitle}
+              </p>
+              <p className="text-xs text-gray-400 capitalize mt-0.5">{related.type}</p>
+            </a>
+          );
+        })}
+      </div>
+    </section>
   );
 }

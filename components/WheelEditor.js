@@ -1,6 +1,5 @@
 ﻿"use client";
 import dynamic from "next/dynamic";
-import RelatedWheels from "@components/RelatedWheels";
 
 // On `/wheels/[slug]` and `/uwheels/[wheelId]` (where ~99% of search/share
 // traffic lands), this component renders only a `hidden lg:block`
@@ -21,7 +20,7 @@ const WheelEditorFull = dynamic(() => import("./WheelEditorFull"), {
 export default function WheelEditor({
   mustSpin,
   currentPath,
-  relatedWheels,
+  relatedWheelsSlot,
   isFullScreen,
 }) {
   if (isFullScreen) return null;
@@ -33,7 +32,7 @@ export default function WheelEditor({
     return (
       <aside className="hidden lg:block relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 overflow-y-auto p-3">
-          <RelatedWheels relatedWheels={relatedWheels} />
+          {relatedWheelsSlot}
         </div>
       </aside>
     );

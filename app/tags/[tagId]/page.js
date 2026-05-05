@@ -3,6 +3,7 @@ import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
 import { getWheelsByTag } from "@components/actions/actions";
 import TagWheelsGrid from "@components/TagWheelsGrid"; // We will create this
+import { Suspense } from "react";
 
 // Tag pages rarely change — cache aggressively. No session/headers calls,
 // so Next.js can statically render + CDN-cache these.
@@ -50,12 +51,6 @@ export async function generateMetadata({ params }) {
 export default async function TagDetailPage({ params }) {
   const tagId = decodeURIComponent(params.tagId);
 
-  // Direct DB read — replaces prior HTTP self-call to /api/wheels-by-tag.
-  // Saves one serverless invocation per cold hit.
-  const initialWheels = await getWheelsByTag(tagId, { limit: 20, skip: 0 });
-
-  if (!initialWheels) return notFound();
-
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 bg-white dark:bg-gray-950 min-h-screen">
       <header className="mb-8 border-b border-gray-100 dark:border-gray-900 pb-4">
@@ -64,8 +59,26 @@ export default async function TagDetailPage({ params }) {
         </h1>
       </header>
 
-      {/* Pass data to the Client Component */}
-      <TagWheelsGrid initialWheels={initialWheels} tagId={tagId} />
+      <Suspense fallback={
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse pt-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="bg-gray-200 dark:bg-gray-800 rounded-xl aspect-square" />
+          ))}
+        </div>
+      }>
+        <SuspendedWheels tagId={tagId} />
+      </Suspense>
     </div>
   );
+}
+
+async function SuspendedWheels({ tagId }) {
+  // Direct DB read — replaces prior HTTP self-call to /api/wheels-by-tag.
+  // Saves one serverless invocation per cold hit.
+  const initialWheels = await getWheelsByTag(tagId, { limit: 20, skip: 0 });
+
+  if (!initialWheels) return notFound();
+
+  // Pass data to the Client Component
+  return <TagWheelsGrid initialWheels={initialWheels} tagId={tagId} />;
 }

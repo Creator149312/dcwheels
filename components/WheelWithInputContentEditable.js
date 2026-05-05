@@ -33,7 +33,7 @@ const FireworksConfetti = dynamic(
 const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
-  relatedWheels,
+  relatedWheelsSlot,
   wheelId = null,
 }) => {
   const { wheelData, segData, setSegData, data, MAX_SPIN_TIME, wheelType } =
@@ -209,7 +209,7 @@ const WheelWithInputContentEditable = ({
         <WheelEditor
           mustSpin={mustSpin}
           currentPath={currentPath}
-          relatedWheels={relatedWheels}
+          relatedWheelsSlot={relatedWheelsSlot}
           isFullScreen={isFullScreen}
         />
       </div>

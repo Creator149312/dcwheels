@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
@@ -10,6 +10,7 @@ import {
 import WheelInfoSection from "@components/WheelMeta";
 import ViewTracker from "@components/ViewTracker";
 import AdsUnit from "@components/ads/AdsUnit";
+import RelatedWheels from "@components/RelatedWheels";
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
 
@@ -117,19 +118,6 @@ export default async function Home({ params }) {
 
   const wheelIdStr = pageData.wheel._id.toString();
 
-  // Pre-fetch related wheels + public wheel meta (analytics, reactions,
-  // comment count). `userId = null` keeps the response user-agnostic so the
-  // rendered HTML is cacheable. Per-user reaction state is resolved client-side.
-  // `getRelatedWheelsByTags` is a direct DB aggregation — replaces the prior
-  // HTTP self-call to /api/related-wheels/advanced and saves one serverless
-  // invocation per cold ISR fill.
-  const [relatedWheels, initialMeta] = await Promise.all([
-    pageData.wheel?.tags && pageData.wheel.tags.length > 0
-      ? getRelatedWheelsByTags(pageData.wheel.tags, wheelIdStr)
-      : Promise.resolve([]),
-    getWheelMeta(wheelIdStr, null),
-  ]);
-
   return (
     <div className="flex flex-col">
       {/* Client-only view counter — decoupled so this page stays static */}
@@ -140,23 +128,64 @@ export default async function Home({ params }) {
         <WheelWithInputContentEditable
           newSegments={ensureArrayOfObjects(pageData.wheel.data)}
           wheelPresetSettings={pageData.wheel.wheelData}
-          relatedWheels={relatedWheels}
+          relatedWheelsSlot={
+            <Suspense fallback={
+              <aside className="hidden lg:block w-full p-0">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                  <div className="w-16 h-3 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                  <div className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800 ml-2" />
+                </div>
+                <div className="space-y-1.5 pr-1">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 rounded-xl">
+                      <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse flex-shrink-0" />
+                      <div className="w-full h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            }>
+              <SuspendedRelatedWheels tags={pageData.wheel?.tags} wheelId={wheelIdStr} />
+            </Suspense>
+          }
           wheelId={wheelIdStr}
         />
       </div>
 
       {/* Information Section — resolves session client-side via useSession() */}
-      <WheelInfoSection
-        wordsList={pageData.wheel}
-        wheelId={pageData.wheel._id}
-        pageData={pageData}
-        initialMeta={initialMeta}
-      />
+      <Suspense fallback={<div className="h-64 mt-8 bg-gray-100 dark:bg-gray-900 rounded-xl animate-pulse" />}>
+        <SuspendedMetaSection pageData={pageData} wheelId={wheelIdStr} />
+      </Suspense>
 
       {/* Bottom-of-page ad — shown on both mobile and desktop after all
           content is consumed, where engagement is still high but UX impact
           is lowest. Slot 9397002286 is a responsive display unit. */}
       <AdsUnit slot="9397002286" />
     </div>
+  );
+}
+
+// ── Suspense Wrapper Components ──────────────────────────────────────────
+
+async function SuspendedRelatedWheels({ tags, wheelId }) {
+  const relatedWheels =
+    tags && tags.length > 0
+      ? await getRelatedWheelsByTags(tags, wheelId)
+      : [];
+
+  return <RelatedWheels relatedWheels={relatedWheels} />;
+}
+
+async function SuspendedMetaSection({ pageData, wheelId }) {
+  const initialMeta = await getWheelMeta(wheelId, null);
+  
+  return (
+    <WheelInfoSection
+      wordsList={pageData.wheel}
+      wheelId={pageData.wheel._id}
+      pageData={pageData}
+      initialMeta={initialMeta}
+    />
   );
 }
