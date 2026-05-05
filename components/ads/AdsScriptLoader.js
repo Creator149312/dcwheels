@@ -1,17 +1,25 @@
 ﻿"use client";
 import { useEffect } from "react";
 
-// Injects the AdSense script ONLY after user interaction, but protects LCP on slow 
+// Injects the AdSense script ONLY after user interaction, but protects LCP on slow
 // connections by waiting for window.load before attaching the interaction listeners.
 const AdsScriptLoader = () => {
   useEffect(() => {
     let loaded = false;
-    const activityEvents = ["scroll", "pointerdown", "keydown", "touchstart", "mousemove"];
+
+    const ADS_ID = "ca-pub-6746947892342481"; // Replace with your actual ID
+    const activityEvents = [
+      "scroll",
+      "pointerdown",
+      "keydown",
+      "touchstart",
+      "mousemove",
+    ];
     const opts = { passive: true };
 
     const removeListeners = () => {
       activityEvents.forEach((ev) =>
-        document.removeEventListener(ev, handleInteraction, opts)
+        document.removeEventListener(ev, handleInteraction, opts),
       );
     };
 
@@ -21,15 +29,14 @@ const AdsScriptLoader = () => {
       removeListeners();
 
       const script = document.createElement("script");
-      script.src =
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6746947892342481";
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS_ID}`;
       script.crossOrigin = "anonymous";
       script.async = true;
       document.body.appendChild(script);
     }
 
     function handleInteraction() {
-      // Yield to the main thread to ensure the browser responds to the user's 
+      // Yield to the main thread to ensure the browser responds to the user's
       // interaction first (Protects INP - Interaction to Next Paint)
       if (typeof window.requestIdleCallback === "function") {
         window.requestIdleCallback(loadAdsScript);
@@ -40,7 +47,7 @@ const AdsScriptLoader = () => {
 
     function attachListeners() {
       activityEvents.forEach((ev) =>
-        document.addEventListener(ev, handleInteraction, opts)
+        document.addEventListener(ev, handleInteraction, opts),
       );
     }
 
