@@ -1,7 +1,5 @@
 "use client";
 import { useContext, useState } from "react";
-import useLists from "@utils/customHooks/useLists";
-import { generateRandomizedMCQsBasic } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useSession } from "next-auth/react";
@@ -9,67 +7,26 @@ import useUnifiedLists from "@utils/customHooks/useUnifiedLists";
 
 const ListSelector = ({ html, setSegData }) => {
   const [selectedListId, setSelectedListId] = useState(null);
-  const [selectedListTitle, setSelectedListTitle] = useState("");
-  const {
-    updateSegment,
-    segData,
-    wheelType,
-    setWheelType,
-    advancedOptions,
-    setadvancedOptions,
-  } = useContext(SegmentsContext);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userChoice, setUserChoice] = useState("");
-  const [listData, setListData] = useState({});
-  const [selectedType, setSelectedType] = useState("");
-  const { status, data: session } = useSession();
+  const { setadvancedOptions } = useContext(SegmentsContext);
+  const { status } = useSession();
 
   // Using the custom hook to fetch lists lazily
-  const { lists, loading, error, fetched, fetchLists } = useUnifiedLists();
+  const { lists, loading, error, fetchLists } = useUnifiedLists();
 
-  // Handle select change
+  // Load the list directly on selection — no modal needed.
   const handleListChange = (e) => {
     const listId = e.target.value;
     setSelectedListId(listId);
-    setIsModalOpen(true); // Open the modal when a selection is made
-
-    // Find the selected list and populate words in the textarea
     const selectedList = lists.find((list) => list.id === listId);
-   
-    setListData(selectedList);
+    if (!selectedList) return;
+    prepareBasicWheel(selectedList);
   };
 
-  // Function to handle user's choice in the modal
-  const handleUserChoice = () => {
-    setSelectedType(userChoice);
-    setWheelType(userChoice);
-    loadDataForType(userChoice);
-    setIsModalOpen(false); // Close the modal
-  };
-
-  // Function to load data based on the selected type
-  const loadDataForType = (type) => {
-    switch (type) {
-      case "basic":
-        prepareBasicWheel();
-        break;
-      case "advanced":
-        prepareAdvancedWheel();
-        break;
-      case "quiz":
-        prepareQuizWheel();
-        break;
-      default:
-        setListData([]);
-        break;
-    }
-  };
-
- const prepareBasicWheel = () => {
-  if (!listData) return;
+ const prepareBasicWheel = (data) => {
+  if (!data) return;
 
   // Normalize all items into segments with id, type, payload
-  const wordsText = listData.items.map((item) => {
+  const wordsText = data.items.map((item) => {
     if (item.type === "word") {
       return createSegment(item.word);
     }
@@ -93,57 +50,12 @@ const ListSelector = ({ html, setSegData }) => {
   });
 
   setadvancedOptions(false);
-  setSelectedListTitle(listData.name);
   setSegData(wordsText);
 
   html.current = wordsText
     .map((seg) => `<div>${seg.text}</div>`)
     .join("");
 };
-
-
-  const prepareAdvancedWheel = () => {
-    if (listData) {
-      const wordsText = listData.words.map((wordData) => {
-        return { text: wordData.word };
-      });
-
-      setadvancedOptions(true);
-      setSelectedListTitle(listData.name);
-      setSegData(wordsText);
-      html.current = wordsText
-        .map((perSegData) => `<div>${perSegData.text}</div>`)
-        .join("");
-    }
-  };
-
-  const prepareQuizWheel = () => {
-    if (listData) {
-      const wordsText = listData.words.map((wordData) => {
-        return { text: wordData.word };
-      });
-
-      setadvancedOptions(false);
-      setSelectedListTitle(listData.name);
-      setSegData(wordsText);
-      html.current = wordsText
-        .map((perSegData) => `<div>${perSegData.text}</div>`)
-        .join("");
-
-      const questionsForSegments = generateRandomizedMCQsBasic(listData.words);
-
-      for (let i = 0; i < wordsText.length; i++) {
-        updateSegment(i, "question", questionsForSegments[i]);
-        // updateSegment(i, "learn", listData.words);
-        // console.log("Seg Data = ", segData);
-      }
-    }
-  };
-
-  // Function to handle the closing of the modal without making a selection
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
 
   if (error) return <div>Error: {error}</div>;
 
@@ -168,40 +80,6 @@ const ListSelector = ({ html, setSegData }) => {
               </option>
             ))}
           </select>
-        </div>
-      )}
-      {/* Modal to choose the list type */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-md shadow-lg max-w-sm w-full dark:bg-gray-800 dark:text-white">
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">
-              What type of Wheel you want to create from this list?
-            </h2>
-            <select
-              value={userChoice}
-              onChange={(e) => setUserChoice(e.target.value)}
-              className="w-full p-2 mb-4 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">-- Select a Type --</option>
-              <option value="basic">Basic</option>
-              {/* <option value="advanced">Advanced</option>*/}
-              {/* <option value="quiz">Quiz</option>  */}
-            </select>
-            <div className="flex justify-between">
-              <button
-                onClick={handleUserChoice}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={closeModal}
-                className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

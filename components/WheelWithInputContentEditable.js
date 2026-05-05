@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import WheelPlayerControls from "./WheelPlayerControls";
 import WheelEditor from "./WheelEditor";
+import WheelEditorModal from "./WheelEditorModal";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter } from "next/navigation";
+import { Edit2 } from "lucide-react";
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
@@ -33,6 +35,7 @@ const FireworksConfetti = dynamic(
 const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
+  wheelTypeProp = "basic",
   relatedWheels,
   wheelId = null,
 }) => {
@@ -58,9 +61,10 @@ const WheelWithInputContentEditable = ({
     handleSpinClick,
     handleStopSpinning,
     saveWheelData,
-  } = useWheelState({ newSegments, wheelPresetSettings, wheelId });
+  } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const wheelContainerRef = useRef(null);
 
   // Theater mode: fullscreen the wheel container only
@@ -136,12 +140,21 @@ const WheelWithInputContentEditable = ({
             <Wheel
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber >= 0 ? prizeNumber : 0}
-              data={data.slice(
-                0,
-                data.length < wheelData.maxNumberOfOptions
-                  ? data.length
-                  : wheelData.maxNumberOfOptions
-              )}
+              data={(() => {
+                const slice = data.slice(
+                  0,
+                  data.length < wheelData.maxNumberOfOptions
+                    ? data.length
+                    : wheelData.maxNumberOfOptions
+                );
+                if (wheelType !== "quiz" || quizState.answeredIndices.size === 0)
+                  return slice;
+                return slice.map((seg, i) =>
+                  quizState.answeredIndices.has(i)
+                    ? { ...seg, style: { ...seg.style, backgroundColor: "#6b7280" } }
+                    : seg
+                );
+              })()}
               textDistance={Math.min(60 + 0.5 * segData.length, 72)}
               radiusLineWidth={0}
               outerBorderWidth={0}
@@ -206,11 +219,33 @@ const WheelWithInputContentEditable = ({
           />
         </div>
 
-        <WheelEditor
+        {/* Desktop-only editor sidebar — hidden on mobile, Edit button below handles mobile */}
+        <div className="hidden lg:contents">
+          <WheelEditor
+            mustSpin={mustSpin}
+            currentPath={currentPath}
+            relatedWheels={relatedWheels}
+            isFullScreen={isFullScreen}
+          />
+        </div>
+
+        {/* Mobile-only Edit button — opens full-screen editor modal */}
+        <div className="lg:hidden flex justify-center py-4">
+          <button
+            onClick={() => setIsEditorOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            <Edit2 size={18} />
+            Edit Wheel
+          </button>
+        </div>
+
+        {/* Full-screen editor modal for mobile */}
+        <WheelEditorModal
+          isOpen={isEditorOpen}
+          onClose={() => setIsEditorOpen(false)}
           mustSpin={mustSpin}
           currentPath={currentPath}
-          relatedWheels={relatedWheels}
-          isFullScreen={isFullScreen}
         />
       </div>
       {showCelebration && <FireworksConfetti />}

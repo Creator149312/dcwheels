@@ -34,6 +34,24 @@ function normalizeWords(arr, wordCount) {
   return out;
 }
 
+// Normalize optimized items: [{ text, score }] — clamp score to 1-3
+function normalizeOptimizedWords(arr, wordCount) {
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    const cleaned = sanitizeWord(typeof item === "string" ? item : item?.text);
+    if (!cleaned) continue;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const score = Math.min(3, Math.max(1, parseInt(item?.score, 10) || 1));
+    out.push({ text: cleaned, score });
+    if (out.length >= wordCount) break;
+  }
+  return out;
+}
+
 // Best-effort parse: strict JSON first, then strip markdown fences,
 // then extract the first JSON literal we can find.
 function parseModelJson(raw) {
@@ -63,7 +81,7 @@ function parseModelJson(raw) {
   return null;
 }
 
-async function generateValidJsonResponse(userPrompt, wordCount) {
+async function generateValidJsonResponse(userPrompt, wordCount, optimize = false) {
   const maxRetries = 2;
   let lastError = null;
 
@@ -79,8 +97,9 @@ async function generateValidJsonResponse(userPrompt, wordCount) {
         messages: [
           {
             role: "system",
-            content:
-              'You are a JSON generator for a spin-wheel app. Always respond with a JSON object of the exact shape: {"words": ["item1", "item2", ...]}. Each item is a short, standalone label (1-4 words). No numbering, no leading bullets, no surrounding quotes inside the string values.',
+            content: optimize
+              ? 'You are a JSON generator for a spin-wheel app. Always respond with a JSON object of the exact shape: {"words": [{"text": "item1", "score": 3}, {"text": "item2", "score": 1}, ...]}. Each item has a short standalone label (1-4 words) and a relevance score from 1 to 3 (3=most relevant/popular/best, 2=good, 1=least). No numbering, no leading bullets, no surrounding quotes inside string values.'
+              : 'You are a JSON generator for a spin-wheel app. Always respond with a JSON object of the exact shape: {"words": ["item1", "item2", ...]}. Each item is a short, standalone label (1-4 words). No numbering, no leading bullets, no surrounding quotes inside the string values.',
           },
           { role: "user", content: userPrompt },
         ],
@@ -107,9 +126,11 @@ async function generateValidJsonResponse(userPrompt, wordCount) {
         if (firstArrayKey) candidateWords = parsed[firstArrayKey];
       }
 
-      const words = normalizeWords(candidateWords, wordCount);
+      const words = optimize
+        ? normalizeOptimizedWords(candidateWords, wordCount)
+        : normalizeWords(candidateWords, wordCount);
       if (words.length >= Math.min(3, wordCount)) {
-        return new Response(JSON.stringify({ words }), {
+        return new Response(JSON.stringify({ words, optimized: optimize }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
@@ -155,6 +176,7 @@ export async function POST(req) {
     30,
     Math.max(3, parseInt(body?.wordCount, 10) || 10)
   );
+  const optimize = !!body?.optimize;
 
   if (!promptRaw) {
     return new Response(JSON.stringify({ error: "Prompt is required." }), {
@@ -163,7 +185,9 @@ export async function POST(req) {
     });
   }
 
-  const userPrompt = `Generate exactly ${wordCount} short, distinct items for a spin wheel about: "${promptRaw}". Return JSON in the form {"words": ["item1", "item2", ...]}. Items must be plain text labels â€” no numbering, no bullets, no surrounding quotes inside the array values.`;
+  const userPrompt = optimize
+    ? `Generate exactly ${wordCount} short, distinct items for a spin wheel about: "${promptRaw}". For each item assign a relevance/quality score 1-3 (3=most relevant or best pick, 2=good, 1=least). Return JSON: {"words": [{"text": "item1", "score": 3}, ...]}.`
+    : `Generate exactly ${wordCount} short, distinct items for a spin wheel about: "${promptRaw}". Return JSON in the form {"words": ["item1", "item2", ...]}. Items must be plain text labels — no numbering, no bullets, no surrounding quotes inside the array values.`;
 
-  return generateValidJsonResponse(userPrompt, wordCount);
+  return generateValidJsonResponse(userPrompt, wordCount, optimize);
 }

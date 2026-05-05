@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useContext, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { Button } from "./ui/button";
@@ -8,6 +9,19 @@ import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import MCQQuestion from "@components/MCQQuestion";
 import ShareableResultCard from "./ShareableResultCard";
 import AddToListButton from "./AddToListButton";
+
+// Map entity type → action-specific CTA label so the button reads naturally
+// for the content category the wheel is about.
+function getPickLabel(winner) {
+  const type = winner?.entityType || winner?.payload?.entityType || "";
+  switch (type) {
+    case "movie":     return "I'm watching this! 🎬";
+    case "anime":     return "I'm watching this! 🎬";
+    case "game":      return "I'm playing this! 🎮";
+    case "character": return "I'm choosing this! ✨";
+    default:          return "I'm picking this! ⚡";
+  }
+}
 
 const WinnerPopup = ({
   winner,
@@ -19,8 +33,9 @@ const WinnerPopup = ({
   wheelId,
 }) => {
   let [open, setOpen] = useState(false);
-  const { html, wheelData } = useContext(SegmentsContext);
-  const { status } = useSession();
+  const { html, wheelData, wheelTitle } = useContext(SegmentsContext);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const openLoginPrompt = useLoginPrompt();
   const [decisionSaved, setDecisionSaved] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
@@ -89,19 +104,63 @@ const WinnerPopup = ({
     setSaving(true);
     try {
       const winnerText = winner?.text || String(winner);
+      const winnerImage = winner?.image || "";
+      // Media segments carry entity fields at the top level (set by Smart Wheel
+      // media routes). Forward them so the DecisionLog row can power the
+      // per-content-page "Recent Spins" feed query.
+      const entityType = winner?.entityType || winner?.payload?.entityType || "";
+      const entityId   = winner?.entityId   != null ? String(winner.entityId)   : (winner?.payload?.entityId != null ? String(winner.payload.entityId) : "");
+      const entitySlug = winner?.slug       || winner?.payload?.slug            || "";
       const res = await fetch("/api/decision-log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           wheelId: wheelId || "home",
-          wheelTitle: wheelData?.title || "",
+          wheelTitle: wheelTitle || "",
           result: winnerText,
+          resultImage: winnerImage,
           note: withNote ? note : "",
+          entityType,
+          entityId,
+          entitySlug,
         }),
       });
+
+      // Parse the body ONCE before any branching — cloning a Response whose
+      // body was already consumed throws silently and loses `isPublic`.
+      let responseData = {};
+      try {
+        responseData = await res.json();
+      } catch {
+        // Malformed body — non-critical, carry on.
+      }
+
       if (res.ok) {
         setDecisionSaved(true);
         setShowNoteInput(false);
+
+        // Always dispatch the event on a successful save so the feed shows
+        // the user's own card immediately (optimistic UX). If `isPublic` is
+        // false (user hasn't opted in), the card is local-only and disappears
+        // on the next 60s background refresh — correct behavior. This fixes
+        // the two previous bugs: (1) response body was already consumed
+        // before `res.clone()` was called, causing isPublic to always be
+        // false; (2) publicSpins defaults to false so new users never saw
+        // their own saves.
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("wheel:decision-saved", {
+              detail: {
+                wheelId: wheelId || "home",
+                result: winnerText,
+                resultImage: winnerImage,
+                note: withNote ? note : "",
+                userName: session?.user?.name || "You",
+                isPublic: !!responseData?.isPublic,
+              },
+            })
+          );
+        }
       } else {
         // Server-side failure (5xx, etc.). Don't fake success.
         setShowNoteInput(false);
@@ -111,6 +170,20 @@ const WinnerPopup = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAskCommunity = () => {
+    // Port the wheel's current options into the Ask create page.
+    // Use up to 4 options; always include the winner first so it's pre-selected.
+    const allOptions = segData.map((s) => s.text).filter(Boolean);
+    const winnerText = winner?.text || String(winner);
+    // Deduplicate, winner first, max 4
+    const unique = [winnerText, ...allOptions.filter((t) => t !== winnerText)];
+    const opts = unique.slice(0, 4).join("|");
+    const q = encodeURIComponent(`The wheel picked "${winnerText}" — should I go with it?`);
+    const title = encodeURIComponent(wheelTitle || "my wheel");
+    router.push(`/ask/create?q=${q}&opts=${encodeURIComponent(opts)}&from=${title}`);
+    closePopup();
   };
 
   const removeWinner = (removeAll) => {
@@ -206,21 +279,18 @@ const WinnerPopup = ({
 
               {/* Share Card — only shown when user clicks Share */}
               {showShareCard && winner?.type !== "quiz" && (
-                <ShareableResultCard winner={winner} wheelTitle={wheelData?.title} />
+                <ShareableResultCard winner={winner} wheelTitle={wheelTitle} />
               )}
 
-              {/* ── Group 1: Primary Actions ──────────────────────────── */}
+              {/* ── Primary Action ────────────────────────────────────── */}
               {winner?.type !== "quiz" && (
-                <div className="flex gap-2 mb-3">
-                  {/* "Pick this!" — saves decision + closes. Generic phrasing
-                      that reads naturally across all segment types
-                      (activities, food, anime, movies, names, etc.). */}
+                <>
                   {decisionSaved ? (
-                    <p className="flex-1 text-center text-sm text-green-600 dark:text-green-400 font-medium py-2">
+                    <p className="text-center text-sm text-green-600 dark:text-green-400 font-medium py-2.5 mb-3 rounded-lg bg-green-50 dark:bg-green-900/20">
                       ✅ Decision saved!
                     </p>
                   ) : showNoteInput ? (
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex gap-2 mb-3">
                       <input
                         type="text"
                         value={note}
@@ -241,94 +311,110 @@ const WinnerPopup = ({
                   ) : (
                     <Button
                       onClick={() => setShowNoteInput(true)}
-                      className="flex-1 font-semibold text-white"
+                      className="w-full font-semibold text-white mb-3"
                       style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}cc)` }}
                       disabled={saving}
                     >
-                      I&apos;m picking this! ⚡
+                      {getPickLabel(winner)}
                     </Button>
                   )}
 
-                  {/* Share — toggles the share card */}
-                  <Button
-                    onClick={() => setShowShareCard((prev) => !prev)}
-                    variant={showShareCard ? "default" : "outline"}
-                    className="gap-1.5"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                    </svg>
-                    Share
-                  </Button>
-                </div>
-              )}
+                  {/* Entity Actions: Add to List + Explore */}
+                  {winner?.type === "entity" &&
+                    (winner?.payload?.entityId || winner?.payload?.slug) && (
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {winner?.payload?.entityId ? (
+                        <AddToListButton
+                          type={winner.payload.entityType || winner.entityType}
+                          entityId={winner.payload.entityId || winner.entityId}
+                          name={winner.text}
+                          slug={winner.payload.slug || winner.slug}
+                          image={winner.image}
+                        />
+                      ) : <div />}
+                      {winner?.payload?.slug ? (
+                        <button
+                          onClick={() =>
+                            (window.location.href = `/${winner.payload?.entityType || winner.entityType}/${winner.payload?.slug || winner.slug}`)
+                          }
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                          Explore
+                        </button>
+                      ) : <div />}
+                    </div>
+                  )}
 
-              {/* ── Group 2: Utility Actions ──────────────────────────── */}
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                {/* Add to List (icon-only wrapper) */}
-                {winner?.type === "entity" && winner?.payload?.entityId && (
-                  <AddToListButton
-                    type={winner.payload.entityType || winner.entityType}
-                    entityId={winner.payload.entityId || winner.entityId}
-                    name={winner.text}
-                    slug={winner.payload.slug || winner.slug}
-                    image={winner.image}
-                  />
-                )}
-
-                {/* Explore — if winner has a page */}
-                {winner?.type === "entity" && winner?.payload?.slug && (
-                  <button
-                    onClick={() => window.location.href = `/${winner.payload?.entityType || winner.entityType}/${winner.payload?.slug || winner.slug}`}
-                    className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    title="Explore"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
-                  </button>
-                )}
-
-                <div className="flex-1" />
-
-                {/* Remove / Remove All dropdown */}
-                {winner?.type !== "quiz" && !wheelData.removeWinnerAfterSpin && (
-                  <div className="relative" ref={removeMenuRef}>
+                  {/* ── Secondary Actions: Ask Community + Share ──────── */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
                     <button
-                      onClick={() => setShowRemoveMenu((prev) => !prev)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      onClick={handleAskCommunity}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                       </svg>
-                      Remove
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      Ask Community
                     </button>
+                    <button
+                      onClick={() => setShowShareCard((prev) => !prev)}
+                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                        showShareCard
+                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
+                          : "text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                      </svg>
+                      Share Result
+                    </button>
+                  </div>
 
-                    {showRemoveMenu && (
-                      <div className="absolute bottom-full right-0 mb-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+                  {/* ── Remove — isolated at bottom ───────────────────── */}
+                  {!wheelData.removeWinnerAfterSpin && (
+                    <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <div className="relative" ref={removeMenuRef}>
                         <button
-                          onClick={() => { setShowRemoveMenu(false); removeWinner(false); }}
-                          className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          onClick={() => setShowRemoveMenu((prev) => !prev)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                          Remove this one
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          Remove from wheel
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
                         </button>
-                        {containsDuplicates(segData[prizeNumber]) && (
-                          <button
-                            onClick={() => { setShowRemoveMenu(false); removeWinner(true); }}
-                            className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
-                          >
-                            Remove all matching
-                          </button>
+
+                        {showRemoveMenu && (
+                          <div className="absolute bottom-full right-0 mb-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+                            <button
+                              onClick={() => { setShowRemoveMenu(false); removeWinner(false); }}
+                              className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                              Remove this one
+                            </button>
+                            {containsDuplicates(segData[prizeNumber]) && (
+                              <button
+                                onClick={() => { setShowRemoveMenu(false); removeWinner(true); }}
+                                className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
+                              >
+                                Remove all matching
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

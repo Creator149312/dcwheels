@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BiLike, BiSolidLike } from "react-icons/bi";
 
 function formatCount(n) {
@@ -22,6 +22,13 @@ export default function ReactionButton({
   const [reacted, setReacted] = useState(reactedByCurrentUser);
   const [loading, setLoading] = useState(false);
 
+  // Keep local state aligned when parent props update after hydration
+  // (e.g. session-aware refetch on cached pages).
+  useEffect(() => {
+    setCount(initialCount || 0);
+    setReacted(!!reactedByCurrentUser);
+  }, [entityType, entityId, reactionType, initialCount, reactedByCurrentUser]);
+
   const toggleReaction = async () => {
     if (!isLoggedIn) return openLoginPrompt?.();
     if (loading) return;
@@ -37,7 +44,11 @@ export default function ReactionButton({
       const res = await fetch("/api/reactiontest/toggle", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entityType, entityId, reactionType }),
+        body: JSON.stringify({
+          entityType,
+          entityId: String(entityId),
+          reactionType,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to toggle reaction");

@@ -31,7 +31,7 @@ export async function POST(request) {
     }
     const createdBy = session.user.email;
 
-    const { title, description, data, wheelData, relatedTopics, tags } =
+    const { title, description, data, wheelData, relatedTopics, tags, type } =
       await request.json();
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
@@ -48,6 +48,7 @@ export async function POST(request) {
         data: sanitizeSegments(data),
         createdBy,
         wheelData,
+        ...(type && ["basic", "quiz"].includes(type) ? { type } : {}),
         relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
         // Tags are lowercased + trimmed by the schema setter; we still
         // filter out non-strings and empties here as a defensive layer

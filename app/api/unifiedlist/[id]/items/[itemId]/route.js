@@ -68,3 +68,43 @@ export async function DELETE(req, { params }) {
     );
   }
 }
+
+// PATCH /api/unifiedlist/[id]/items/[itemId]
+// Updates the `status` field of a single entity item.
+// Body: { status: "want" | "in-progress" | "done" }
+export async function PATCH(req, { params }) {
+  await connectMongoDB();
+
+  try {
+    const { id, itemId } = params;
+
+    const userId = await sessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { status } = await req.json();
+    const VALID = ["want", "in-progress", "done"];
+    if (!VALID.includes(status)) {
+      return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+    }
+
+    const list = await UnifiedList.findOne({ _id: id, userId });
+    if (!list) {
+      return NextResponse.json({ error: "List not found or access denied" }, { status: 404 });
+    }
+
+    const item = list.items.id(itemId);
+    if (!item) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    item.status = status;
+    await list.save();
+
+    return NextResponse.json({ itemId, status }, { status: 200 });
+  } catch (err) {
+    console.error("PATCH /api/unifiedlist/:id/items/:itemId error:", err);
+    return NextResponse.json({ error: "Failed to update status", details: err.message }, { status: 500 });
+  }
+}

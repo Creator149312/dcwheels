@@ -1,8 +1,15 @@
 import { connectMongoDB } from "@/lib/mongodb";
 import User from "@models/user";
 import Wheel from "@models/wheel";
+import DecisionLog from "@models/decisionLog";
+import AskVote from "@models/askVote";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getPublicSpinStoriesForUser } from "@lib/spinStories";
+import { getAsksForUser } from "@lib/askStories";
+import ProfileActivityTimeline from "@components/ProfileActivityTimeline";
+import { TbUsers, TbFlame } from "react-icons/tb";
+import { GiCartwheel } from "react-icons/gi";
 
 // Public profile is purely informational — no per-request state (no cookies,
 // no session reads). That makes it a great candidate for ISR: regenerate at
@@ -45,17 +52,37 @@ export default async function ProfilePage({ params }) {
   // Fetch user by exact display name.
   // We select email internally (needed to query wheels) but never render it.
   const user = await User.findOne({ name: decodedName })
-    .select("name email createdAt")
+    .select("name email createdAt voteStreak")
     .lean();
 
   if (!user) notFound();
 
-  // Fetch all wheels this user has saved — sorted newest first, capped at 20
-  const wheels = await Wheel.find({ createdBy: user.email })
-    .select("title description tags createdAt _id")
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .lean();
+  // Fetch all activity types + decision stats in parallel
+  const [wheels, stories, asks, spinCount, voteCount] = await Promise.all([
+    Wheel.find({ createdBy: user.email })
+      .select("title description tags createdAt _id")
+      .sort({ createdAt: -1 })
+      .limit(30)
+      .lean(),
+    getPublicSpinStoriesForUser(user._id, 30),
+    getAsksForUser(user._id, 20),
+    DecisionLog.countDocuments({ userId: String(user._id) }),
+    AskVote.countDocuments({ userId: user._id }),
+  ]);
+
+  // Merge all types into one timeline sorted by date (Facebook-style)
+  const activities = [
+    ...stories.map((s) => ({ type: "spin", createdAt: s.createdAt, data: s })),
+    ...wheels.map((w) => ({
+      type: "wheel",
+      createdAt: w.createdAt ? new Date(w.createdAt).toISOString() : null,
+      data: { ...w, _id: String(w._id) },
+    })),
+    ...asks.map((a) => ({ type: "ask", createdAt: a.createdAt, data: a })),
+  ]
+    .filter((a) => a.createdAt)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 50);
 
   const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -74,53 +101,52 @@ export default async function ProfilePage({ params }) {
     <div className="max-w-4xl mx-auto px-4 py-8">
 
       {/* ── Profile Header ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-start gap-4 mb-8">
         {/* Initials avatar — replaced with a real image upload in a later phase */}
         <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0 select-none">
           {initials}
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold">{decodedName}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Member since {joinDate} ·{" "}
-            {wheels.length} public wheel{wheels.length !== 1 ? "s" : ""}
+            Member since {joinDate}
           </p>
+
+          {/* Decision Identity Stats */}
+          <div className="flex flex-wrap gap-3 mt-3">
+            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full text-sm font-semibold">
+              <GiCartwheel className="h-4 w-4 shrink-0" />
+              <span>
+                Spun <strong>{spinCount.toLocaleString()}</strong> {spinCount === 1 ? "time" : "times"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full text-sm font-semibold">
+              <TbUsers className="h-4 w-4 shrink-0" />
+              <span>
+                Helped <strong>{voteCount.toLocaleString()}</strong> {voteCount === 1 ? "person" : "people"} decide
+              </span>
+            </div>
+            {(user.voteStreak?.current || 0) > 0 && (
+              <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-full text-sm font-semibold">
+                <TbFlame className="h-4 w-4 shrink-0" />
+                <span>
+                  <strong>{user.voteStreak.current}</strong>-day streak
+                  {user.voteStreak.longest > user.voteStreak.current && (
+                    <span className="ml-1 text-xs opacity-70">
+                      (best: {user.voteStreak.longest})
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Wheels Grid ─────────────────────────────────────────────────── */}
-      {wheels.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">
-          No public wheels yet.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {wheels.map((wheel) => (
-            <Link
-              key={wheel._id.toString()}
-              href={`/uwheels/${wheel._id}`}
-              className="block bg-gray-50 dark:bg-gray-800 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
-            >
-              <h3 className="font-semibold truncate mb-1">{wheel.title}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
-                {wheel.description}
-              </p>
-              {wheel.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {wheel.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs bg-gray-200 dark:bg-gray-700 rounded-full px-2 py-0.5"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
-          ))}
-        </div>
-      )}
+      <ProfileActivityTimeline
+        decodedName={decodedName}
+        activities={activities}
+      />
     </div>
   );
 }

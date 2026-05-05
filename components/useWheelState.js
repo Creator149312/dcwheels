@@ -77,7 +77,7 @@ function rehydrateSegImages(segData) {
   });
 }
 
-export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
+export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp = "basic", wheelId }) {
   const {
     resultList,
     setResultList,
@@ -209,6 +209,7 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
     setMustSpin(false);
     stopTicking();
     playVictory();
+    let winnerSegment = null;
     if (advancedOptions) {
       let adjustedWinner = null;
       let j = 0;
@@ -227,22 +228,38 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
       }
       setWinner(adjustedWinner);
       setResultList([...resultList, adjustedWinner]);
+      winnerSegment = adjustedWinner;
     } else {
       setWinner(segData[prizeNumber]);
       setResultList([...resultList, segData[prizeNumber]]);
+      winnerSegment = segData[prizeNumber];
     }
 
     if (wheelId) {
+      // Pull the displayable label off the winning segment. Different parts
+      // of the app store it under different keys (`option`, `text`, `label`,
+      // `value`); fall back through them so per-segment hit counts work
+      // regardless of which editor produced the wheel data.
+      const segmentLabel =
+        winnerSegment &&
+        (winnerSegment.option ??
+          winnerSegment.text ??
+          winnerSegment.label ??
+          winnerSegment.value ??
+          null);
+
       fetch("/api/wheel-analytics/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wheelId }),
+        body: JSON.stringify({ wheelId, segmentLabel }),
         keepalive: true,
       })
         .then((res) => {
           if (res.ok && typeof window !== "undefined") {
             window.dispatchEvent(
-              new CustomEvent("wheel:spin-counted", { detail: { wheelId } })
+              new CustomEvent("wheel:spin-counted", {
+                detail: { wheelId, segmentLabel },
+              })
             );
           }
         })
@@ -298,6 +315,13 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
       if (saveTimer) clearTimeout(saveTimer);
     };
   }, [preparedData, segData, wheelData, advancedOptions, wheelType]);
+
+  // Clear any active winner/result when the wheel mode changes so
+  // WinnerPopup / QuizCard don't persist stale state across switches.
+  useEffect(() => {
+    setWinner(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wheelType]);
 
   // Initialize from localStorage or props on mount
   useEffect(() => {
@@ -357,6 +381,11 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelId }) {
       );
       html.current = segmentsToHTMLTxt(newSegments);
       if (wheelPresetSettings != null) setWheelData(wheelPresetSettings);
+      // Restore quiz mode when loading a wheel from server-side props
+      // (e.g. /uwheels/[id] — the localStorage branch handles this above
+      // but the newSegments branch previously left wheelType as "basic").
+      if (wheelPresetSettings?.type) setWheelType(wheelPresetSettings.type);
+      if (wheelTypeProp && wheelTypeProp !== "basic") setWheelType(wheelTypeProp);
     }
   }, []);
 

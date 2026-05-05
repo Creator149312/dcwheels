@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
@@ -28,7 +29,19 @@ export async function PATCH(req) {
       );
     }
 
-    const user = await User.findOne({ email: session.user.email });
+    if (!mongoose.Types.ObjectId.isValid(entityId)) {
+      return NextResponse.json({ error: "Invalid entityId" }, { status: 400 });
+    }
+
+    const entityObjectId = new mongoose.Types.ObjectId(entityId);
+
+    let user = null;
+    if (session.user?.id && mongoose.Types.ObjectId.isValid(session.user.id)) {
+      user = await User.findById(session.user.id).select("_id").lean();
+    }
+    if (!user && session.user?.email) {
+      user = await User.findOne({ email: session.user.email }).select("_id").lean();
+    }
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -36,7 +49,7 @@ export async function PATCH(req) {
     const existing = await Reaction.findOne({
       userId: user._id,
       entityType,
-      entityId,
+      entityId: entityObjectId,
     });
 
     let likeCountDelta = 0;
@@ -59,7 +72,7 @@ export async function PATCH(req) {
       await Reaction.create({
         userId: user._id,
         entityType,
-        entityId,
+        entityId: entityObjectId,
         reactionType,
       });
       if (reactionType === "like") likeCountDelta = 1;
@@ -67,21 +80,24 @@ export async function PATCH(req) {
 
     // Update denormalized likeCount on Wheel
     if (entityType === "wheel" && likeCountDelta !== 0) {
-      await Wheel.updateOne({ _id: entityId }, { $inc: { likeCount: likeCountDelta } });
+      await Wheel.updateOne(
+        { _id: entityObjectId },
+        { $inc: { likeCount: likeCountDelta } }
+      );
     }
 
     // Count only the reactions matching the toggled type, using an indexed
     // count query instead of pulling every reaction doc into memory.
     const count = await Reaction.countDocuments({
       entityType,
-      entityId,
+      entityId: entityObjectId,
       reactionType,
     });
 
     const reactedByCurrentUser = await Reaction.exists({
       userId: user._id,
       entityType,
-      entityId,
+      entityId: entityObjectId,
       reactionType,
     });
 

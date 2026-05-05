@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, PlusCircle, ChevronDown, Compass, Library } from "lucide-react";
+import { Menu, X, PlusCircle, ChevronDown, Compass, Library, MessageCircleQuestion } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserInfo from "@components/UserInfo";
 import { HiViewList } from "react-icons/hi";
@@ -89,6 +89,14 @@ const Navbar = ({ onToggleSidebar }) => {
               Explore
             </Link>
 
+            <Link
+              href="/ask"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/20 rounded-xl transition-all"
+            >
+              <MessageCircleQuestion size={18} />
+              Ask Papa
+            </Link>
+
             {/* Browse Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:text-blue-600 rounded-xl">
@@ -154,6 +162,9 @@ const Navbar = ({ onToggleSidebar }) => {
           </button>
           <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
              <Compass className="text-blue-500" size={22} /> Explore
+          </Link>
+          <Link href="/ask" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30">
+             <MessageCircleQuestion size={22} /> Ask Papa
           </Link>
           
           <div className="border-t border-gray-100 dark:border-gray-800 my-4 pt-6">

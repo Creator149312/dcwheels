@@ -15,6 +15,7 @@ import {
   validateEmail,
 } from "@utils/Validator";
 import Wheel from "@models/wheel";
+import AskDilemma from "@models/askDilemma";
 import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
@@ -27,6 +28,7 @@ import Reaction from "@models/reaction";
 import Follow from "@models/follow";
 import Comment from "@models/comment";
 import WheelAnalytics from "@models/wheelAnalytics";
+import Tag from "@models/tag";
 import apiConfig from "@utils/ApiUrlConfig";
 import { OpenAI } from "openai";
 import ApiLog from "@models/apilogs";
@@ -430,18 +432,85 @@ export async function getWheelById(wheelId) {
  *   - Caller should prefer cursor-based pagination for deep pages
  *     (see P1 audit); this keeps skip/limit for backward-compat.
  */
+/**
+ * Resolve a raw tag string to its canonical slug using the Tag collection.
+ * Falls back to the normalized raw string if the Tag collection is empty
+ * or the tag isn't yet registered (backward-compatible during migration).
+ *
+ * Returns { canonical: string, tagDoc: TagDocument|null }
+ */
+export async function resolveTagSlug(raw) {
+  if (!raw || typeof raw !== "string") return { canonical: "", tagDoc: null };
+  const normalized = raw.toLowerCase().trim();
+  try {
+    const tagDoc = await Tag.findOne({
+      $or: [{ slug: normalized }, { aliases: normalized }],
+    }).lean();
+    if (tagDoc) return { canonical: tagDoc.slug, tagDoc };
+  } catch (_) {
+    // Tag collection missing or error — degrade gracefully
+  }
+  return { canonical: normalized, tagDoc: null };
+}
+
 export async function getWheelsByTag(tag, { limit = 20, skip = 0 } = {}) {
   if (!tag || typeof tag !== "string") return [];
   await connectMongoDB();
 
-  const normalized = tag.toLowerCase().trim();
+  const { canonical } = await resolveTagSlug(tag);
 
-  return Wheel.find({ tags: normalized })
+  return Wheel.find({ tags: canonical })
     .select("title slug wheelPreview createdAt")
     .sort({ createdAt: -1 })
     .skip(Math.max(0, parseInt(skip, 10) || 0))
     .limit(Math.max(1, Math.min(100, parseInt(limit, 10) || 20)))
     .lean();
+}
+
+/**
+ * Paginated active dilemmas filtered by a single tag.
+ * Used by the "Dilemmas" tab on /tags/[tagId] (Space pages).
+ */
+export async function getAsksByTag(tag, { limit = 12, skip = 0 } = {}) {
+  if (!tag || typeof tag !== "string") return [];
+  await connectMongoDB();
+
+  const { canonical } = await resolveTagSlug(tag);
+
+  return AskDilemma.find({
+    tags: canonical,
+    status: "active",
+    expiresAt: { $gt: new Date() },
+  })
+    .select("question options userId createdAt expiresAt tags")
+    .sort({ createdAt: -1 })
+    .skip(Math.max(0, parseInt(skip, 10) || 0))
+    .limit(Math.max(1, Math.min(50, parseInt(limit, 10) || 12)))
+    .lean();
+}
+
+/**
+ * Count stats for a tag Space: { wheelCount, askCount }
+ * Called in SSR to power the hero stats bar.
+ */
+/**
+ * Stats for a tag Space hero bar.
+ * Also returns the Tag document (displayName, description, thumbnailUrl)
+ * so the page can render richer metadata without an extra query.
+ */
+export async function getTagSpaceStats(tag) {
+  if (!tag || typeof tag !== "string") return { wheelCount: 0, askCount: 0, tagDoc: null };
+  await connectMongoDB();
+  const { canonical, tagDoc } = await resolveTagSlug(tag);
+  const [wheelCount, askCount] = await Promise.all([
+    Wheel.countDocuments({ tags: canonical }),
+    AskDilemma.countDocuments({
+      tags: canonical,
+      status: "active",
+      expiresAt: { $gt: new Date() },
+    }),
+  ]);
+  return { wheelCount, askCount, tagDoc };
 }
 
 /**
@@ -711,7 +780,7 @@ export async function getWheelMeta(wheelId, userId = null) {
   // Run all 4 independent reads in parallel.
   const [analytics, commentCount, likeCount, userReact] = await Promise.all([
     WheelAnalytics.findOne({ wheel: wheelObjectId })
-      .select("view_count spin_count")
+      .select("view_count spin_count segmentHits lastSpunAt")
       .lean(),
     Comment.countDocuments({
       entityType: "wheel",
@@ -734,10 +803,19 @@ export async function getWheelMeta(wheelId, userId = null) {
       : Promise.resolve(null),
   ]);
 
+  // Lazy-import to keep this server module tree-shakable for callers that
+  // only need basic counts. `extractTopSegments` is pure / cheap so the
+  // import cost is negligible.
+  const { extractTopSegments } = await import("@lib/wheelAnalytics");
+
   return {
     analytics: {
       view_count: analytics?.view_count || 0,
       spin_count: analytics?.spin_count || 0,
+      lastSpunAt: analytics?.lastSpunAt
+        ? new Date(analytics.lastSpunAt).toISOString()
+        : null,
+      topSegments: extractTopSegments(analytics?.segmentHits, 5),
     },
     commentCount: commentCount || 0,
     reactions: { like: likeCount || 0 },

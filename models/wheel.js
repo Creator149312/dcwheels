@@ -44,7 +44,18 @@ const wheelSchema = new Schema(
       default: [],
       set: (tags) =>
         Array.isArray(tags)
-          ? tags.map((t) => (typeof t === "string" ? t.toLowerCase().trim() : t))
+          ? tags
+              .map((t) =>
+                typeof t === "string"
+                  ? t
+                      .toLowerCase()
+                      .trim()
+                      .replace(/\s+/g, "-")        // spaces → hyphens
+                      .replace(/[^a-z0-9-]/g, "")  // strip non-url chars
+                      .replace(/^-+|-+$/g, "")      // trim leading/trailing hyphens
+                  : t
+              )
+              .filter(Boolean) // drop any tags that normalised to empty string
           : tags,
     },
     //new field Added Related To
@@ -81,6 +92,11 @@ const wheelSchema = new Schema(
       },
     },
     wheelPreview: { type: String, default: null },
+    // Whether this user-created wheel is visible in the public /explore gallery.
+    // Defaults to false so existing wheels stay private until the owner opts in.
+    // Admin-seeded wheels (createdBy = "admin") are surfaced separately via
+    // the Page collection — this flag is for /uwheels user content only.
+    isPublic: { type: Boolean, default: false },
     // viewCount intentionally omitted — view tracking lives in WheelAnalytics.view_count
     // (bot-filtered, no auth required — a more accurate signal than auth-only visit logs)
     likeCount: { type: Number, default: 0 }, // denormalized from Reaction; kept here for fast index-based sorting
@@ -111,6 +127,8 @@ wheelSchema.index({ createdBy: 1, createdAt: -1 });
 // wheels lookups (e.g. Wheel.find({ relatedTopics: { $elemMatch: {type, id} } }))
 // without a collection scan once the wheels collection gets large.
 wheelSchema.index({ "relatedTopics.type": 1, "relatedTopics.id": 1 });
+// Powers the community gallery query: public user wheels sorted by likes/recency.
+wheelSchema.index({ isPublic: 1, likeCount: -1, createdAt: -1 });
 
 const Wheel = models.Wheel || mongoose.model("Wheel", wheelSchema);
 

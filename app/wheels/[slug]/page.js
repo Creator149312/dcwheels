@@ -8,10 +8,13 @@ import {
   getWheelMeta,
 } from "@components/actions/actions";
 import WheelInfoSection from "@components/WheelMeta";
+import WheelStatsBar from "@components/WheelStatsBar";
+import WheelSpinFeed from "@components/WheelSpinFeed";
 import ViewTracker from "@components/ViewTracker";
 import AdsUnit from "@components/ads/AdsUnit";
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
+import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
 
 // Admin-curated /wheels/[slug] pages change infrequently — revalidate once a
 // week. No session/headers calls here, so Next.js can fully static-render the
@@ -123,11 +126,14 @@ export default async function Home({ params }) {
   // `getRelatedWheelsByTags` is a direct DB aggregation — replaces the prior
   // HTTP self-call to /api/related-wheels/advanced and saves one serverless
   // invocation per cold ISR fill.
-  const [relatedWheels, initialMeta] = await Promise.all([
+  const [relatedWheels, initialMeta, initialStories] = await Promise.all([
     pageData.wheel?.tags && pageData.wheel.tags.length > 0
       ? getRelatedWheelsByTags(pageData.wheel.tags, wheelIdStr)
       : Promise.resolve([]),
     getWheelMeta(wheelIdStr, null),
+    // Seed the public Spin Stories feed at SSR time so the UGC is in the
+    // indexable HTML. Empty array on fresh wheels (component hides itself).
+    getPublicSpinStoriesForWheel(wheelIdStr, 10),
   ]);
 
   return (
@@ -148,10 +154,26 @@ export default async function Home({ params }) {
       {/* Information Section — resolves session client-side via useSession() */}
       <WheelInfoSection
         wordsList={pageData.wheel}
-        wheelId={pageData.wheel._id}
+        wheelId={wheelIdStr}
         pageData={pageData}
         initialMeta={initialMeta}
       />
+
+      {/* Public stats block — Information Gain surface for SEO. SSR-seeded
+          via initialMeta.analytics so segment distribution + top result are
+          in the indexable HTML, not behind a client fetch. */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
+        <WheelStatsBar
+          wheelId={wheelIdStr}
+          initialStats={initialMeta?.analytics}
+          feedIsEmpty={!initialStories?.length}
+        />
+        {/* Public Spin Stories — fresh UGC, also SSR-seeded for crawlers. */}
+        <WheelSpinFeed
+          wheelId={wheelIdStr}
+          initialStories={initialStories}
+        />
+      </div>
 
       {/* Bottom-of-page ad — shown on both mobile and desktop after all
           content is consumed, where engagement is still high but UX impact

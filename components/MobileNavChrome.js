@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Bell, Moon, Sun, Menu, X } from "lucide-react";
+import { TbActivity } from "react-icons/tb";
 import TagsCarousel from "@components/TagsCarousel";
 import MobileSearchBar from "@components/MobileSearchBar";
 
@@ -184,6 +185,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               </button>
             </div>
             <div className="flex flex-col py-1">
+              <Link
+                href="/feed"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"
+                onClick={() => setLibraryOpen(false)}
+              >
+                <TbActivity size={20} className="text-pink-500" />
+                Live Feed
+              </Link>
               <Link
                 href="/wheels"
                 className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"

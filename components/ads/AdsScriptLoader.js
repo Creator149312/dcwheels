@@ -45,18 +45,7 @@ const AdsScriptLoader = () => {
       document.addEventListener(event, handleActivity, listenerOptions);
     });
 
-    // 2. Fallback: Load anyway after 3 seconds of idle time or 4 seconds absolute
-    // This captures users who might just sit and read without moving
-    const fallbackTimer = setTimeout(() => {
-       if ("requestIdleCallback" in window) {
-          window.requestIdleCallback(() => loadAdsScript());
-       } else {
-          loadAdsScript();
-       }
-    }, 4000);
-
     return () => {
-      clearTimeout(fallbackTimer);
       cleanUpListeners();
     };
   }, []);

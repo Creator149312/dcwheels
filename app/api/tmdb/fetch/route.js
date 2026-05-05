@@ -6,6 +6,8 @@ import {
   TMDB_GENRES,
   TMDB_DECADES,
 } from "@lib/tmdbPresets";
+import { connectMongoDB } from "@lib/mongodb";
+import User from "@models/user";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const POSTER_BASE = "https://image.tmdb.org/t/p/w300";
@@ -110,6 +112,14 @@ export async function POST(req) {
       resolvedDecade = d.value;
     }
 
+    // Streaming services filter — only applicable on /discover/movie.
+    // Users set their subscriptions in Account Settings; this ensures the
+    // wheel only surfaces content they can actually watch tonight.
+    if (preset.path === "/discover/movie" && userStreamingProviders.length > 0) {
+      params.set("with_watch_providers", userStreamingProviders.join("|"));
+      params.set("watch_region", "US");
+    }
+
     const url = `${TMDB_BASE}${preset.path}?${params.toString()}`;
     // TMDB's own CDN already caches these; we add a 1h app-level cache to cut
     // repeat calls when the same preset is tweaked/re-run by the operator.
@@ -122,11 +132,12 @@ export async function POST(req) {
     }
     const data = await res.json();
 
-    // Filter out movies without posters — a wheel segment without an image
-    // looks terrible, and "missing poster" is usually a sign of low-quality
-    // metadata anyway.
     const usable = (data.results || [])
-      .filter((m) => m.poster_path && m.title)
+      .filter(
+        (m) =>
+          m.poster_path &&
+          m.title
+      )
       .slice(0, Math.max(1, Math.min(Number(limit) || 20, 40)));
 
     const segments = usable.map(toSegment);

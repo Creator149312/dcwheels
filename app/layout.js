@@ -15,7 +15,20 @@ export const metadata = {
   },
   description:
     "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun, random way.",
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/apple-touch-icon.png",
+    other: [
+      { rel: "icon", url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { rel: "icon", url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Spinpapa",
+  },
   verification: {
     google: "jOUYj2ZPgFjwawSzgYTh7nlTcJdWdDCgSczbT1Rk-hQ",
     other: { "msvalidate.01": "A8182827FD82081B73F2EB1024F9C2C9" },
@@ -25,6 +38,10 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1.0,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
 };
 
 export default function RootLayout({ children }) {
@@ -32,29 +49,28 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         {/* Preconnect and dns-prefetch for external image CDNs and analytics */}
-        <head>
-          {/* Priority 1: Your own assets */}
-          <link
-            rel="preconnect"
-            href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com"
-            crossOrigin="anonymous"
-          />
 
-          {/* Priority 2: AdSense (The "Pipes") */}
-          <link
-            rel="preconnect"
-            href="https://pagead2.googlesyndication.com"
-            crossOrigin="anonymous"
-          />
-          <link
-            rel="preconnect"
-            href="https://googleads.g.doubleclick.net"
-            crossOrigin="anonymous"
-          />
+        {/* Priority 1: Your own assets */}
+        <link
+          rel="preconnect"
+          href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com"
+          crossOrigin="anonymous"
+        />
 
-          {/* Priority 3: DNS Prefetch as a secondary fallback */}
-          <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        </head>
+        {/* Priority 2: AdSense (The "Pipes") */}
+        <link
+          rel="preconnect"
+          href="https://pagead2.googlesyndication.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://googleads.g.doubleclick.net"
+          crossOrigin="anonymous"
+        />
+
+        {/* Priority 3: DNS Prefetch as a secondary fallback */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
         <LazyToaster />

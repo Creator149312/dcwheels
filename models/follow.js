@@ -10,14 +10,16 @@ const FollowSchema = new Schema(
       index: true,
     },
     entityId: {
-      type: mongoose.Schema.Types.ObjectId,
+      // Supports ObjectId entities (user/topicpage/group) and string entities
+      // like canonical tag slugs (e.g. "movies", "sci-fi").
+      type: mongoose.Schema.Types.Mixed,
       required: true,
       index: true,
     },
     entityType: {
       type: String,
       required: true,
-      enum: ["group", "user", "topicpage"], // Expandable
+      enum: ["group", "user", "topicpage", "tag"],
       index: true,
     },
   },

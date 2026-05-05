@@ -4,8 +4,126 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, ArrowRight, Plus, Layers, BookMarked, Zap, Flame, Trophy, RotateCcw } from "lucide-react";
+import { Settings, ArrowRight, Plus, Layers, BookMarked, Zap, Flame, Trophy } from "lucide-react";
 import { isAdminSession } from "@utils/auth/isAdmin";
+import { timeAgo } from "@utils/HelperFunctions";
+
+// ── Decision status config ────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  pending: { label: "Pending",  emoji: "⏳", cls: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400" },
+  done:    { label: "Done",     emoji: "✅", cls: "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:border-green-400" },
+  dropped: { label: "Dropped",  emoji: "❌", cls: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:border-red-400" },
+};
+const STATUS_CYCLE = { pending: "done", done: "dropped", dropped: "pending" };
+
+// ── Single decision card (timeline style, with status badge) ──────────────
+function DecisionTimelineItem({ item }) {
+  const [status, setStatus] = useState(item.status || "pending");
+  const [updating, setUpdating] = useState(false);
+
+  const wheelRoute =
+    item.wheelId && item.wheelId !== "home"
+      ? item.wheelId.length === 24
+        ? `/uwheels/${item.wheelId}`
+        : `/wheels/${item.wheelId}`
+      : "/";
+
+  async function cycleStatus(e) {
+    e.preventDefault();
+    if (updating) return;
+    const next = STATUS_CYCLE[status] || "pending";
+    setStatus(next); // optimistic
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/decision-log/${item._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) setStatus(status); // rollback
+    } catch {
+      setStatus(status);
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+
+  return (
+    <div className="relative sm:pl-10">
+      {/* Timeline dot */}
+      <div className="hidden sm:flex absolute left-4 top-1.5 -ml-[5px] h-3 w-3 rounded-full border-2 border-blue-500 bg-white dark:bg-[#1f1f1f] shadow-sm shadow-blue-500/20" />
+
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f1f1f] p-4 shadow-sm hover:shadow-md transition-shadow">
+        {/* Card header */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300">
+              🎯 Spin Result
+            </span>
+            <button
+              onClick={cycleStatus}
+              disabled={updating}
+              title="Click to cycle status: Pending → Done → Dropped"
+              className={`inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 border border-transparent transition-colors disabled:opacity-50 ${cfg.cls}`}
+            >
+              {cfg.emoji} {cfg.label}
+            </button>
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{timeAgo(item.createdAt)}</span>
+        </div>
+
+        {/* Card body */}
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Spun{" "}
+          <Link href={wheelRoute} className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            {item.wheelTitle || "a wheel"}
+          </Link>{" "}
+          and got{" "}
+          <span className="font-bold text-gray-900 dark:text-white bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md">
+            {item.result}
+          </span>
+        </p>
+
+        {item.resultImage && (
+          <div className="mt-2.5 w-full h-32 relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.resultImage} alt={item.result} className="w-full h-full object-contain" />
+          </div>
+        )}
+
+        {item.note && (
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 border-l-[3px] border-blue-200 dark:border-blue-900/50 pl-3 italic">
+            &quot;{item.note}&quot;
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Decision timeline wrapper (expand/collapse) ────────────────────────────
+function DecisionTimeline({ decisions, limit = 4 }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? decisions : decisions.slice(0, limit);
+  return (
+    <div className="relative space-y-4">
+      <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-blue-400/40 via-gray-200 to-transparent dark:from-blue-500/20 dark:via-gray-800 dark:to-transparent hidden sm:block" />
+      {visible.map((item) => (
+        <DecisionTimelineItem key={item._id} item={item} />
+      ))}
+      {decisions.length > limit && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="text-xs text-blue-500 hover:underline w-full text-center pt-1"
+        >
+          {showAll ? "Show less" : `Show all ${decisions.length}`}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ── Small row card shared by all sections ─────────────────────────────────
 function RowCard({ href, title, meta, actions }) {
@@ -77,7 +195,7 @@ function ExpandableList({ items, renderItem, emptyMessage, limit = 4 }) {
 }
 
 // ── Stats summary card ─────────────────────────────────────────────────────
-function StatsCard({ stats, loading }) {
+function StatsCard({ stats, decisions = [], loading }) {
   if (loading) {
     return (
       <div className="animate-pulse h-24 rounded-2xl bg-gray-200 dark:bg-gray-800" />
@@ -88,16 +206,27 @@ function StatsCard({ stats, loading }) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 px-5 py-6 text-center">
         <p className="text-sm text-gray-400">
-          Spin a wheel and tap <span className="font-semibold">&quot;I&apos;m doing this!&quot;</span> to start tracking your decisions.
+          Spin a wheel and tap <span className="font-semibold">&quot;I&apos;m picking this!&quot;</span> to start tracking your decisions.
         </p>
       </div>
     );
   }
 
-  const { decisionsThisMonth, mostSpunWheel, streak } = stats;
+  const { decisionsThisMonth, mostSpunWheel, streak, coins } = stats;
+
+  // Tally top outcomes from the recent decisions window
+  const outcomeCounts = {};
+  for (const d of decisions) {
+    const key = d.result;
+    if (key) outcomeCounts[key] = (outcomeCounts[key] || 0) + 1;
+  }
+  const topOutcomes = Object.entries(outcomeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {/* Decisions this month */}
       <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border border-blue-200/50 dark:border-blue-800/40 px-4 py-4">
         <div className="flex items-center gap-1.5 mb-1">
@@ -139,7 +268,87 @@ function StatsCard({ stats, loading }) {
           <p className="text-sm text-gray-400">—</p>
         )}
       </div>
+
+      {/* Coin Balance */}
+      <div className="rounded-2xl bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-950/40 dark:to-amber-900/30 border border-yellow-200/50 dark:border-yellow-800/40 px-4 py-4">
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="text-sm leading-none">🪙</span>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400">Coins</p>
+        </div>
+        <p className="text-2xl font-black text-gray-900 dark:text-white">{(coins ?? 0).toLocaleString()}</p>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">total earned</p>
+      </div>
+      </div>{/* end grid */}
+
+      {/* Top Outcomes */}
+      {topOutcomes.length > 0 && (
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5">
+            🏆 Your most chosen outcomes
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {topOutcomes.map(([result, count]) => (
+              <span
+                key={result}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-200"
+              >
+                {result}
+                <span className="text-[10px] text-gray-400 font-normal">×{count}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// ── Wheel row with public toggle ───────────────────────────────────────────
+function WheelRowCard({ item }) {
+  const [isPublic, setIsPublic] = useState(item.isPublic ?? false);
+  const [toggling, setToggling] = useState(false);
+
+  async function togglePublic(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (toggling) return;
+    setToggling(true);
+    const next = !isPublic;
+    setIsPublic(next); // optimistic
+    try {
+      const res = await fetch(`/api/wheel/${item._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic: next }),
+      });
+      if (!res.ok) setIsPublic(!next); // rollback
+    } catch {
+      setIsPublic(!next);
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  return (
+    <RowCard
+      href={`/uwheels/${item._id}`}
+      title={item.title}
+      meta={`${item.segmentCount} segments`}
+      actions={
+        <button
+          onClick={togglePublic}
+          disabled={toggling}
+          title={isPublic ? "Listed in Explore — click to make private" : "Click to list in Explore"}
+          className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors disabled:opacity-50 ${
+            isPublic
+              ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700"
+              : "text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:text-purple-500"
+          }`}
+        >
+          {isPublic ? "Public" : "Private"}
+        </button>
+      }
+    />
   );
 }
 
@@ -225,7 +434,7 @@ export default function UserDashboard({ initialData = null }) {
 
       {/* Stats Card */}
       <div className="mb-8">
-        <StatsCard stats={stats} loading={loading} />
+        <StatsCard stats={stats} decisions={decisions} loading={loading} />
       </div>
 
       {/* Stacked sections */}
@@ -247,7 +456,7 @@ export default function UserDashboard({ initialData = null }) {
               items={wheels}
               emptyMessage={<>No wheels yet. <a href="/" className="text-blue-500 hover:underline">Create one!</a></>}
               renderItem={(item) => (
-                <RowCard key={item._id} href={`/uwheels/${item._id}`} title={item.title} meta={`${item.segmentCount} segments`} />
+                <WheelRowCard key={item._id} item={item} />
               )}
             />
           )}
@@ -258,7 +467,9 @@ export default function UserDashboard({ initialData = null }) {
           icon={BookMarked}
           title="My Lists"
           action={
-            <a href="/lists" className="text-xs text-blue-500 hover:underline">View all</a>
+            <a href="/dashboard?tab=my-lists&action=create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
+              <Plus size={12} /> New
+            </a>
           }
         >
           {loading ? (
@@ -266,7 +477,7 @@ export default function UserDashboard({ initialData = null }) {
           ) : (
             <ExpandableList
               items={lists}
-              emptyMessage="No lists yet. Add items from any anime, movie or game page."
+              emptyMessage={<>No lists yet. <a href="/dashboard?tab=my-lists&action=create" className="text-blue-500 hover:underline">Create one!</a></>}
               renderItem={(item) => (
                 <RowCard key={item.id} href={`/lists/${item.id}`} title={item.name} meta={`${item.itemCount} items`} />
               )}
@@ -275,41 +486,13 @@ export default function UserDashboard({ initialData = null }) {
         </Section>
 
         {/* ── My Decisions ──────────────────────────────────────────── */}
-        <Section
-          icon={Zap}
-          title="My Decisions"
-          action={null}
-        >
+        <Section icon={Zap} title="My Decisions" action={null}>
           {loading ? (
             <RowSkeleton />
+          ) : decisions.length === 0 ? (
+            <p className="text-sm text-gray-400">No decisions yet. Spin a wheel and commit to it!</p>
           ) : (
-            <ExpandableList
-              items={decisions}
-              emptyMessage="No decisions yet. Spin a wheel and commit to it!"
-              renderItem={(item) => {
-                const hasWheel = item.wheelId && item.wheelId !== "home";
-                const wheelHref = hasWheel ? `/uwheels/${item.wheelId}` : "/";
-                return (
-                  <RowCard
-                    key={item._id}
-                    href={wheelHref}
-                    title={item.result}
-                    meta={`${item.wheelTitle || "Home Wheel"}${item.note ? ` · ${item.note}` : ""} · ${new Date(item.createdAt).toLocaleDateString()}`}
-                    actions={
-                      hasWheel ? (
-                        <a
-                          href={`/uwheels/${item.wheelId}`}
-                          title="Spin again"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
-                        >
-                          <RotateCcw size={13} />
-                        </a>
-                      ) : null
-                    }
-                  />
-                );
-              }}
-            />
+            <DecisionTimeline decisions={decisions} />
           )}
         </Section>
       </div>

@@ -28,6 +28,11 @@ export function useWheelSounds(muted = false) {
    */
   const playTick = useCallback(() => {
     if (muted) return;
+    // Haptic pulse — short 8ms click synced with the audio tick.
+    // Guarded so it's a no-op on desktop where the API is absent.
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(8);
+    }
     try {
       const ctx = getCtx();
       const now = ctx.currentTime;
@@ -114,6 +119,10 @@ export function useWheelSounds(muted = false) {
   /** Play a triumphant victory fanfare */
   const playVictory = useCallback(() => {
     if (muted) return;
+    // Haptic fanfare — three ascending pulses matching the arpeggio feel.
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([60, 60, 60, 60, 120]);
+    }
     try {
       const ctx = getCtx();
 

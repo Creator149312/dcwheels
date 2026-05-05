@@ -28,6 +28,7 @@ export default function ExploreClient({
   games = [],
   anime = [],
   movies = [],
+  communityWheels = [],
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -319,6 +320,61 @@ export default function ExploreClient({
           accentColor="text-amber-500"
         />
       </div>
+
+      {/* ── Community Wheels ───────────────────────────────────────────── */}
+      {communityWheels.length > 0 && (
+        <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-900">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base md:text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Sparkles size={18} className="text-purple-500" />
+                From the Community
+              </h2>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Wheels created and shared by SpinPapa users
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Share yours →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            {communityWheels.map((item) => (
+              <Link
+                key={item._id}
+                href={`/uwheels/${item._id}`}
+                className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-purple-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/5"
+              >
+                <div className="relative aspect-square w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                  {item.wheelPreview ? (
+                    <img
+                      src={item.wheelPreview}
+                      alt={item.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
+                      {item.title?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="p-2">
+                  <h3 className="text-xs font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
+                    {item.title}
+                  </h3>
+                  {item.likeCount > 0 && (
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-semibold">♥ {item.likeCount}</p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,16 +4,18 @@ import { cache } from "react";
 import Image from "next/image";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
-import Question from "@models/question";
 import Wheel from "@/models/wheel";
 import TopicInteractionTabs from "@app/(content)/[type]/TopicInteractionTabs";
 import TrailerPlayer from "@app/(content)/[type]/TrailerPlayer";
 import WorthItVote from "@components/WorthItVote";
 import AddToListButton from "@components/AddToListButton";
+import SpinHistoryBadge from "@components/SpinHistoryBadge";
+import DoneNudge from "@components/DoneNudge";
 import apiConfig from "@utils/ApiUrlConfig";
 import { slugify } from "@utils/HelperFunctions";
 import AdaptiveLeaderBoardAds from "@components/ads/AdaptiveLeaderBoardAds";
 import AdsUnit from "@components/ads/AdsUnit";
+import { getTopicAsks } from "@lib/askStories";
 
 const BASE_URL = apiConfig.baseUrl;
 
@@ -32,6 +34,33 @@ export const revalidate = 86400; // 1 day
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
+
+/**
+ * Build affiliate "Where to Watch / Buy" links for a content item.
+ * JustWatch and Amazon work as simple search URLs — no API key required.
+ * If AMAZON_AFFILIATE_TAG is set in env, the Amazon link carries the tag.
+ */
+function buildAffiliateLinks(type, title) {
+  const q = encodeURIComponent(title);
+  const amzTag = process.env.AMAZON_AFFILIATE_TAG;
+  const amzSuffix = amzTag ? `&tag=${encodeURIComponent(amzTag)}` : "";
+  const links = [];
+
+  if (["movie", "tv", "anime"].includes(type)) {
+    links.push({ name: "JustWatch", url: `https://www.justwatch.com/us/search?q=${q}` });
+  }
+  if (["movie", "tv"].includes(type)) {
+    links.push({ name: "Prime Video", url: `https://www.amazon.com/s?k=${q}&i=instant-video${amzSuffix}` });
+  }
+  if (type === "anime") {
+    links.push({ name: "Crunchyroll", url: `https://www.crunchyroll.com/search?q=${q}` });
+  }
+  if (type === "game") {
+    links.push({ name: "Amazon", url: `https://www.amazon.com/s?k=${q}&i=videogames${amzSuffix}` });
+  }
+
+  return links;
+}
 
 // --- External API Fetchers ---
 async function fetchAnimeFromAnilist(id) {
@@ -430,34 +459,6 @@ export async function getOrCreateTopicPage(type, relatedId) {
   try {
     pageDoc = await TopicPage.create(newDoc);
 
-    // Seed starter questions for the new page so it doesn't look empty.
-    // Idempotency: questions are only inserted on the initial create path,
-    // so re-visiting an existing page never duplicates them.
-    // SYSTEM_USER_ID must be a valid ObjectId in your users collection.
-    const systemUserId = process.env.SYSTEM_USER_ID;
-    if (systemUserId) {
-      const seedQuestions = {
-        movie:     ["Worth watching?", "Better than the hype?", "Would you recommend it?"],
-        anime:     ["Worth watching?", "Better than the hype?", "Would you recommend it?"],
-        game:      ["Worth the full price?", "Better than the hype?", "Would you buy it again?"],
-        character: ["Best character in the series?", "Would you want them as an ally?", "Fan favourite?"],
-      };
-      const texts = seedQuestions[type] || [];
-      if (texts.length) {
-        await Question.insertMany(
-          texts.map((text) => ({
-            type: "yesno",
-            text,
-            contentType: type,
-            contentId: pageDoc._id,
-            options: ["Yes", "No"],
-            likes: [],
-            createdBy: systemUserId,
-          }))
-        );
-      }
-    }
-
     // Fire-and-forget description rewrite. The first visitor sees the raw
     // external description (Anilist/TMDB/RAWG); by the time a second visitor
     // arrives, the rewritten SEO-friendly version is persisted. Saves ~3-8s
@@ -576,9 +577,9 @@ export default async function TopicPageDetail({ params }) {
     media = pageDoc;
   }
 
-  // Fetch trailer/streaming extras, related pages, tagged wheels, and characters in parallel
-  // to minimise total server latency on first load.
-  const [extras, relatedPages, taggedWheels, animeCharacters] = await Promise.all([
+  // Fetch trailer/streaming extras, related pages, tagged wheels, characters, and
+  // contextual Ask Papa debates in parallel to minimise total server latency.
+  const [extras, relatedPages, taggedWheels, animeCharacters, topicAsks] = await Promise.all([
     type === "movie"
       ? fetchMovieExtras(relatedId)
       : type === "anime"
@@ -589,6 +590,7 @@ export default async function TopicPageDetail({ params }) {
     getRelatedPages(pageDoc.tags || [], pageDoc._id),
     fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type),
     type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]),
+    getTopicAsks(type, relatedId, pageDoc.tags || [], 5, pageDoc._id),
   ]);
 
   // Resolve the display title once — referenced in hero, meta, and actions
@@ -600,6 +602,9 @@ export default async function TopicPageDetail({ params }) {
     pageDoc.title?.original ||
     pageDoc.name?.full ||
     "Untitled";
+
+  // Affiliate links: JustWatch / Amazon / Crunchyroll — appended after streaming providers
+  const affiliateLinks = buildAffiliateLinks(type, displayTitle);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-black dark:text-white">
@@ -682,6 +687,7 @@ export default async function TopicPageDetail({ params }) {
 
         {/* Row 4: Worth It? vote (light bg) */}
         <div className="mt-5">
+          <DoneNudge entityId={String(pageDoc._id)} />
           <WorthItVote
             topicPageId={String(pageDoc._id)}
             type={type}
@@ -690,8 +696,8 @@ export default async function TopicPageDetail({ params }) {
           />
         </div>
 
-        {/* Row 5: Where to Watch */}
-        {extras?.streaming?.length > 0 && (
+        {/* Row 5: Where to Watch + affiliate links */}
+        {(extras?.streaming?.length > 0 || affiliateLinks.length > 0) && (
           <div className="mt-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
               {type === "game" ? "Available On" : "Where to Watch"}
@@ -705,7 +711,6 @@ export default async function TopicPageDetail({ params }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
                 >
-                  {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
                   {(provider.logo_path || provider.store?.domain) && (
                     <img
                       src={provider.logo_path
@@ -716,10 +721,18 @@ export default async function TopicPageDetail({ params }) {
                       className="w-4 h-4 rounded-sm flex-shrink-0"
                     />
                   )}
-                  {provider.provider_name ||
-                    provider.site ||
-                    provider.store?.name ||
-                    provider.url}
+                  {provider.provider_name || provider.site || provider.store?.name || provider.url}
+                </a>
+              ))}
+              {affiliateLinks.map((link) => (
+                <a
+                  key={link.name}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full px-3 py-1.5 transition-colors border border-amber-200 dark:border-amber-800/40"
+                >
+                  {link.name}
                 </a>
               ))}
             </div>
@@ -803,6 +816,7 @@ export default async function TopicPageDetail({ params }) {
             </p>
 
             {/* Worth It? vote */}
+            <DoneNudge entityId={String(pageDoc._id)} />
             <WorthItVote
               topicPageId={String(pageDoc._id)}
               type={type}
@@ -810,8 +824,8 @@ export default async function TopicPageDetail({ params }) {
               initialNo={pageDoc.worthIt?.no ?? 0}
             />
 
-            {/* Where to Watch */}
-            {extras?.streaming?.length > 0 && (
+            {/* Where to Watch + affiliate links */}
+            {(extras?.streaming?.length > 0 || affiliateLinks.length > 0) && (
               <div className="mt-5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
                   {type === "game" ? "Available On" : "Where to Watch"}
@@ -825,7 +839,6 @@ export default async function TopicPageDetail({ params }) {
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
                     >
-                      {/* TMDB providers have logo_path; RAWG stores expose store.domain */}
                       {(provider.logo_path || provider.store?.domain) && (
                         <img
                           src={provider.logo_path
@@ -840,6 +853,17 @@ export default async function TopicPageDetail({ params }) {
                         provider.site ||
                         provider.store?.name ||
                         provider.url}
+                    </a>
+                  ))}
+                  {affiliateLinks.map((link) => (
+                    <a
+                      key={link.name}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full px-3 py-1.5 transition-colors border border-amber-200 dark:border-amber-800/40"
+                    >
+                      {link.name}
                     </a>
                   ))}
                 </div>
@@ -864,6 +888,11 @@ export default async function TopicPageDetail({ params }) {
            Max-width container keeps content readable on wide screens.       */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
 
+        {/* ── Spin History Badge (Task 3.5) ────────────────────────────
+             Tells the authenticated user they previously spun to this
+             item, linking back to the originating wheel.                */}
+        <SpinHistoryBadge result={displayTitle} />
+
         {/* ── Trailer ─────────────────────────────────────────────────────
              TrailerPlayer is a client component that renders a thumbnail
              with a play button. The <iframe> is only injected on click,
@@ -886,9 +915,13 @@ export default async function TopicPageDetail({ params }) {
           pageId={pageDoc._id}
           contentId={relatedId.toString()}
           contentSlug={pageDoc.slug}
+          contentTitle={displayTitle}
+          contentCover={pageDoc.cover || null}
           contentTags={pageDoc.tags || []}
           taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
           animeCharacters={type === "anime" ? animeCharacters : []}
+          topicAsks={JSON.parse(JSON.stringify(topicAsks))}
+          entityId={String(relatedId)}
         />
 
         {/* ── You Might Also Like ─────────────────────────────────────────

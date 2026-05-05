@@ -59,16 +59,19 @@ async function mapLimit(items, limit, iter) {
 // are uploaded, everything else is preserved.
 async function materializeImages(segData, wheelData) {
   const pendingIndices = [];
+  const pendingQuestionImageIndices = [];
   for (let i = 0; i < segData.length; i++) {
     const img = segData[i]?.image;
     if (typeof img === "string" && img.startsWith("data:")) pendingIndices.push(i);
+    const qImg = segData[i]?.questionImage;
+    if (typeof qImg === "string" && qImg.startsWith("data:")) pendingQuestionImageIndices.push(i);
   }
 
   const centerPending =
     typeof wheelData?.centerImage === "string" &&
     wheelData.centerImage.startsWith("data:");
 
-  if (pendingIndices.length === 0 && !centerPending) {
+  if (pendingIndices.length === 0 && pendingQuestionImageIndices.length === 0 && !centerPending) {
     return { data: segData, wheelData };
   }
 
@@ -76,6 +79,10 @@ async function materializeImages(segData, wheelData) {
   await mapLimit(pendingIndices, 3, async (idx) => {
     const url = await uploadDataUrl(nextData[idx].image);
     nextData[idx] = { ...nextData[idx], image: url };
+  });
+  await mapLimit(pendingQuestionImageIndices, 3, async (idx) => {
+    const url = await uploadDataUrl(nextData[idx].questionImage);
+    nextData[idx] = { ...nextData[idx], questionImage: url };
   });
 
   let nextWheelData = wheelData;
@@ -87,7 +94,7 @@ async function materializeImages(segData, wheelData) {
   return { data: nextData, wheelData: nextWheelData };
 }
 
-export function useSaveWheel({ createdBy, segData, wheelData, coins, setCoins }) {
+export function useSaveWheel({ createdBy, segData, wheelData, wheelType, coins, setCoins }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -194,6 +201,29 @@ export function useSaveWheel({ createdBy, segData, wheelData, coins, setCoins })
       return false;
     }
 
+    // Quiz-specific segment validation
+    if (wheelType === "quiz" && Array.isArray(segData)) {
+      for (let i = 0; i < segData.length; i++) {
+        const seg = segData[i];
+        if (!seg.question?.trim()) {
+          setError(`Question ${i + 1}: Question text is required.`);
+          setIsSaving(false);
+          return false;
+        }
+        const filledOptions = (seg.options || []).filter((o) => o?.trim());
+        if (filledOptions.length < 2) {
+          setError(`Question ${i + 1}: At least 2 answer options are required.`);
+          setIsSaving(false);
+          return false;
+        }
+        if (seg.correctIndex == null || seg.correctIndex >= (seg.options || []).length) {
+          setError(`Question ${i + 1}: Correct answer selection is invalid.`);
+          setIsSaving(false);
+          return false;
+        }
+      }
+    }
+
     try {
       const titleToStore = sanitizeInputForDB(title);
       const descriptionToStore = sanitizeInputForDB(description);
@@ -218,6 +248,7 @@ export function useSaveWheel({ createdBy, segData, wheelData, coins, setCoins })
           description: descriptionToStore,
           data,
           wheelData: wheelDataToStore,
+          type: wheelType || "basic",
         };
 
         if (relatedTopics) body.relatedTopics = relatedTopics;
@@ -253,6 +284,7 @@ export function useSaveWheel({ createdBy, segData, wheelData, coins, setCoins })
           data,
           createdBy,
           wheelData: wheelDataToStore,
+          type: wheelType || "basic",
         };
 
         if (relatedTopics) body.relatedTopics = relatedTopics;

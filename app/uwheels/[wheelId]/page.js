@@ -3,9 +3,12 @@ import { validateObjectID } from "@utils/Validator";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import WheelInfoSection from "@components/WheelMeta";
+import WheelStatsBar from "@components/WheelStatsBar";
+import WheelSpinFeed from "@components/WheelSpinFeed";
 import ViewTracker from "@components/ViewTracker";
 import AdsUnit from "@components/ads/AdsUnit";
 import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
+import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
 
 // ISR: revalidate user-wheel pages every 30 minutes.
 // View tracking runs client-side via <ViewTracker /> so this page can be
@@ -92,6 +95,12 @@ export default async function Page({ params }) {
       : Promise.resolve(null),
   ]);
 
+  // Seed the public Spin Stories feed at SSR time. Empty array when the
+  // wheel doesn't exist or has no public saves yet (component hides itself).
+  const initialStories = wordsList
+    ? await getPublicSpinStoriesForWheel(params.wheelId, 10)
+    : [];
+
   return (
     <div>
       {wordsList ? (
@@ -100,6 +109,7 @@ export default async function Page({ params }) {
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={wordsList?.wheelData ?? null}
+            wheelTypeProp={wordsList?.type ?? "basic"}
             relatedWheels={relatedWheels}
             wheelId={params.wheelId}
           />
@@ -109,6 +119,22 @@ export default async function Page({ params }) {
             wheelId={params.wheelId}
             initialMeta={initialMeta}
           />
+
+          {/* Public stats block — Information Gain surface for SEO. SSR-seeded
+              via initialMeta.analytics so segment distribution + top result are
+              in the indexable HTML, not behind a client fetch. */}
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
+            <WheelStatsBar
+              wheelId={params.wheelId}
+              initialStats={initialMeta?.analytics}
+              feedIsEmpty={!initialStories?.length}
+            />
+            {/* Public Spin Stories — fresh UGC, also SSR-seeded for crawlers. */}
+            <WheelSpinFeed
+              wheelId={params.wheelId}
+              initialStories={initialStories}
+            />
+          </div>
 
           {/* Bottom-of-page ad — shown after all content on both mobile
               and desktop. Same slot pattern as /wheels/[slug]. */}

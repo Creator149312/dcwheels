@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
 import { FaImage, FaSpinner } from "react-icons/fa";
+import { cn } from "@/lib/utils";
 
 const themes = [
   {
@@ -341,7 +342,7 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 
-const SettingsAdv = ({ advOptions }) => {
+const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel", iconSize = 20, triggerClassName, triggerVariant = "default" }) => {
   const {
     handleWheelSettingsChange,
     wheelData,
@@ -503,8 +504,15 @@ const SettingsAdv = ({ advOptions }) => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <Tooltip text="Customize Wheel">
         <DialogTrigger asChild>
-          <Button className="my-1 px-2 py-0 h-7 text-xs">
-            <FaTools size={20} />
+          <Button
+            variant={triggerVariant}
+            className={cn(
+              showLabel ? "h-8 gap-1.5 px-3 text-xs" : "my-1 h-7 px-2 py-0 text-xs",
+              triggerClassName
+            )}
+          >
+            <FaTools size={iconSize} />
+            {showLabel ? <span>{label}</span> : null}
           </Button>
         </DialogTrigger>
       </Tooltip>

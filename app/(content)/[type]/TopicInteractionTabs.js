@@ -1,10 +1,7 @@
 "use client";
 
 import Image from "next/image";
-// TODO(create-wheel-cta): Re-enable once the CreateWheelButton flow is
-// tested on /(content)/[type]/[slug] (auth gate, prefilled relatedTo,
-// post-create redirect to the editor with the topic context attached).
-// import CreateWheelButton from "./CreateWheelButton";
+import AskCard from "@components/AskCard";
 
 // Consistent section header: blue accent bar + title + optional action.
 function SectionHeader({ title, action }) {
@@ -17,6 +14,31 @@ function SectionHeader({ title, action }) {
       {action}
     </div>
   );
+}
+
+// ── Task 5: Type-specific debate question prefills ─────────────────────────
+// Each type gets a question phrasing that matches how users naturally think
+// about that content. The URL pre-fills the /ask/create form so users land
+// with meaningful context already entered.
+function getDebateHref(topicPageId, type, title, entityId, coverUrl) {
+  const e = encodeURIComponent;
+  const questions = {
+    movie:     `${title} tonight, or something else?`,
+    game:      `Should I finally play ${title}?`,
+    anime:     `Worth starting ${title} this weekend?`,
+    character: `Is ${title} the best character?`,
+  };
+  const q = questions[type] || title;
+  return `/ask/create?topicPageId=${topicPageId}&type=${type}&q=${e(q)}&opts=${e(title)}`;
+}
+
+// Compare CTA: links to /vs with item A pre-filled from the current page (Task 4)
+function getCompareHref(type, title, coverUrl, slug) {
+  const e = encodeURIComponent;
+  const params = new URLSearchParams({ type, a: title });
+  if (coverUrl) params.set("aPoster", coverUrl);
+  if (slug)     params.set("aSlug", slug);
+  return `/vs?${params.toString()}`;
 }
 
 // Section order:
@@ -32,9 +54,16 @@ export default function TopicInteractionTabs({
   pageId,
   contentId,
   contentSlug,
+  contentTitle = "",
+  contentCover = null,
   contentTags = [],
   taggedWheels = [],
   animeCharacters = [],
+  topicAsks = [],
+  // entityId is the raw external API ID string (e.g. "550" for a TMDB movie).
+  // Passed separately from contentId because contentId is also used as a
+  // query-string param for wheel creation and may be formatted differently.
+  entityId = "",
 }) {
   return (
     <div className="space-y-12">
@@ -76,21 +105,111 @@ export default function TopicInteractionTabs({
         </section>
       )}
 
-      {/* ── 2. Picker Wheels ──────────────────────────────────────────────
-           SpinPapa's core feature. Hidden when empty to avoid showing a
-           prominent empty state — replaced by a compact inline CTA.       */}
+      {/* ── 2. What others are deciding ──────────────────────────────────
+           Community debates referencing this exact content item.
+           Task 6: renamed from "Debates" to match real user intent.
+           Task 5: CTA uses type-specific question prefill.                 */}
+      {topicAsks.length > 0 && (
+        <section>
+          <SectionHeader
+            title="💭 What others are deciding"
+            action={
+              <a
+                href={getDebateHref(pageId, type, contentTitle, entityId, contentCover)}
+                className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+              >
+                + Start one
+              </a>
+            }
+          />
+          <div className="space-y-4">
+            {topicAsks.map((ask) => (
+              <AskCard key={ask.id} ask={ask} compact />
+            ))}
+          </div>
+          {/* Task 4: Compare CTA — appears after debate cards */}
+          {contentTitle && (
+            <div className="mt-4 flex justify-center">
+              <a
+                href={getCompareHref(type, contentTitle, contentCover, contentSlug)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold
+                           bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700
+                           text-gray-700 dark:text-gray-300 transition-colors"
+              >
+                🆚 Compare with another {type}
+              </a>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Debates empty state (Task 5 prefill + Task 4 Compare) */}
+      {topicAsks.length === 0 && contentTitle && (
+        <section>
+          <SectionHeader title="💭 What others are deciding" />
+          <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/40">
+            <span className="text-2xl">💬</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                No debates yet for this {type}.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Be the first to start one!
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 flex-shrink-0">
+              <a
+                href={getDebateHref(pageId, type, contentTitle, entityId, contentCover)}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-full transition-colors text-center"
+              >
+                Start a Debate
+              </a>
+              <a
+                href={getCompareHref(type, contentTitle, contentCover, contentSlug)}
+                className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-semibold rounded-full transition-colors text-center"
+              >
+                🆚 Compare
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+
+
+
+      {/* ── 4. Picker Wheels ──────────────────────────────────────────────
+           SpinPapa's core feature. Hidden when empty → replaced by a compact
+           CTA so users can create the first wheel for this content item.    */}
       <section>
         <SectionHeader
           title={`🎡 Picker Wheels${taggedWheels.length > 0 ? ` (${taggedWheels.length})` : ""}`}
-          // action={<CreateWheelButton type={type} contentId={contentId} />}
+        
         />
 
         {taggedWheels.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            No wheels yet for this {type} — check back soon!
-            {/* be the first to{" "}
-            <CreateWheelButton type={type} contentId={contentId} variant="link" /> one! */}
-          </p>
+          /* Task 7: "Create a wheel" CTA when no wheels exist */
+          <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
+            <span className="text-2xl">🎡</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                No wheels for this {type} yet.
+              </p>
+              {contentTitle && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Be the first to create a spin wheel for {contentTitle}!
+                </p>
+              )}
+            </div>
+            {contentId && (
+              <a
+                href={`/?type=${type}&id=${contentId}`}
+                className="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700
+                           text-white text-xs font-bold rounded-full transition-colors"
+              >
+                Create Wheel
+              </a>
+            )}
+          </div>
         ) : (
           <div
             className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"

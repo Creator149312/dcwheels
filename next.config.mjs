@@ -113,6 +113,16 @@ const nextConfig = {
         destination: "/tags/food",
         permanent: false,
       },
+      {
+        source: "/ulists/:listId",
+        destination: "/lists/:listId",
+        permanent: true,
+      },
+      {
+        source: "/ulists",
+        destination: "/lists",
+        permanent: true,
+      },
     ];
   },
   async headers() {

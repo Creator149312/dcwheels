@@ -45,7 +45,7 @@ export default function SaveWheelBtn({ segmentsData }) {
   const { data: sessionData, status: sessionStatus } = useSession();
   const createdBy = sessionData?.user?.email;
   const sessionLoading = sessionStatus === "loading";
-  const { segData, wheelData, coins, setCoins } = useContext(SegmentsContext);
+  const { segData, wheelData, wheelType, coins, setCoins } = useContext(SegmentsContext);
 
   const [showDataDialog, setShowDataDialog] = useState(false);
   const [selectedWheel, setSelectedWheel] = useState(null);
@@ -59,7 +59,7 @@ export default function SaveWheelBtn({ segmentsData }) {
     isSaving,
     error,
     setError,
-  } = useSaveWheel({ createdBy, segData, wheelData, coins, setCoins });
+  } = useSaveWheel({ createdBy, segData, wheelData, wheelType, coins, setCoins });
 
   const handleTagsChange = useCallback((t) => setSelectedTags(t), []);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 
@@ -19,6 +19,28 @@ export default function FollowButton({
   const [isFollowing, setIsFollowing] = useState(initialFollow);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const params = new URLSearchParams({
+      entityType: String(entityType || ""),
+      entityId: String(entityId || ""),
+    });
+
+    fetch(`/api/follow?${params.toString()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (typeof data.isFollowing === "boolean") setIsFollowing(data.isFollowing);
+        if (typeof data.followerCount === "number") setCount(data.followerCount);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entityType, entityId, session?.user?.email]);
 
   const requireLogin = () => {
     if (!session) {

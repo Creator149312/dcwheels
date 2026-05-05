@@ -11,7 +11,7 @@ import { timeAgo } from "@utils/HelperFunctions";
 import Description from "./description/Description";
 // TODO(embed-feature): Re-enable once we test the /embed/[wheelId] flow
 // end-to-end (responsive sizing, auth-bypass, X-Frame-Options).
-// import EmbedCodePopup from "@components/EmbedCodePopup";
+import EmbedCodePopup from "@components/EmbedCodePopup";
 
 function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : "";
@@ -112,6 +112,21 @@ export default function WheelInfoSection({
         {timeAgo(wordsList.createdAt)}
       </p>
 
+      {/* Tags — link to Tag Spaces */}
+      {Array.isArray(wordsList?.tags) && wordsList.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {wordsList.tags.map((tag) => (
+            <a
+              key={tag}
+              href={`/tags/${encodeURIComponent(tag)}`}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
+            >
+              #{tag}
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Creator + Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         {/* Left: Creator Info */}
@@ -162,10 +177,6 @@ export default function WheelInfoSection({
             <span>Comments{commentCount > 0 ? ` (${commentCount})` : ""}</span>
           </button>
 
-          {/* Embed button — temporarily hidden pending end-to-end testing
-              of the /embed/[wheelId] viewer (responsive sizing, theming,
-              X-Frame-Options behaviour on partner sites). */}
-          {/*
           <button
             onClick={() => setShowEmbed(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
@@ -173,7 +184,6 @@ export default function WheelInfoSection({
             <FaCode className="text-gray-600 dark:text-gray-300" />
             <span>Embed</span>
           </button>
-          */}
         </div>
       </div>
 
@@ -190,12 +200,9 @@ export default function WheelInfoSection({
         visible={showComments}
       />
 
-      {/* Embed code popup — disabled alongside the Embed button above. */}
-      {/*
       {showEmbed && (
         <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
       )}
-      */}
     </div>
   );
 }

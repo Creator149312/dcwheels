@@ -1,10 +1,8 @@
 "use client";
 import { useContext, useState, useRef, useEffect, memo, useCallback } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
-import { FaTrashAlt, FaPlus, FaImage, FaClipboardList, FaEye, FaEyeSlash, FaCopy, FaRandom, FaSortAlphaDown } from "react-icons/fa";
+import { FaTrashAlt, FaPlus, FaImage, FaEye, FaEyeSlash, FaCopy, FaListUl } from "react-icons/fa";
 import { compressImage } from "@utils/imageCompression";
-import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
-import { createSegment } from "@utils/segmentUtils";
 import toast from "react-hot-toast";
 
 // Memoized row — only re-renders when its own `seg` object reference changes.
@@ -108,12 +106,9 @@ const SegmentRow = memo(function SegmentRow({
   );
 });
 
-export default function SegmentListEditor() {
-  const { segData, setSegData, updateSegment, deleteSegment, addSegment, html, advancedOptions, wheelData } =
+export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, applyBulkText }) {
+  const { segData, updateSegment, deleteSegment, addSegment, advancedOptions, wheelData } =
     useContext(SegmentsContext);
-
-  const [bulkMode, setBulkMode] = useState(false);
-  const [bulkText, setBulkText] = useState("");
 
   // Scroll the list to the bottom when a new segment is added
   const scrollContainerRef = useRef(null);
@@ -162,80 +157,23 @@ export default function SegmentListEditor() {
     updateSegment(index, "image", null);
   }, [updateSegment]);
 
-  const applyBulkText = () => {
-    const lines = bulkText
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (lines.length === 0) return;
-    const newSegments = lines.map((text) => createSegment(text));
-    setSegData(newSegments);
-    html.current = segmentsToHTMLTxt(newSegments);
-    setBulkMode(false);
-    setBulkText("");
-  };
-
-  const shuffleSegments = () => {
-    const shuffled = [...segData].sort(() => Math.random() - 0.5);
-    setSegData(shuffled);
-    html.current = segmentsToHTMLTxt(shuffled);
-  };
-
-  const sortSegments = () => {
-    const sorted = [...segData].sort((a, b) => {
-      const aHasImg = !!a.image;
-      const bHasImg = !!b.image;
-      if (aHasImg && !bHasImg) return -1;
-      if (!aHasImg && bHasImg) return 1;
-      return (a.text || "").localeCompare(b.text || "");
-    });
-    setSegData(sorted);
-    html.current = segmentsToHTMLTxt(sorted);
-  };
 
   return (
-    <div className="space-y-1 mt-1">
-      {/* Toolbox header */}
-      <div className="flex justify-between items-center mb-1 px-1">
-        <div className="flex gap-4">
-          <button
-            onClick={shuffleSegments}
-            className="text-gray-400 hover:text-blue-500 transition-colors"
-            title="Shuffle segments"
-          >
-            <FaRandom size={13} />
-          </button>
-          <button
-            onClick={sortSegments}
-            className="text-gray-400 hover:text-blue-500 transition-colors"
-            title="Sort alphabetically"
-          >
-            <FaSortAlphaDown size={14} />
-          </button>
-        </div>
-        <button
-          onClick={() => setBulkMode((p) => !p)}
-          className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 transition-colors"
-        >
-          <FaClipboardList size={12} />
-          {bulkMode ? "Cancel" : "Paste list"}
-        </button>
-      </div>
+    <div className="flex flex-col flex-1 min-h-0 gap-2">
 
       {bulkMode ? (
         /* ── Bulk paste mode ── */
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col flex-1 min-h-0">
           <textarea
             autoFocus
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
-            rows={7}
             placeholder={"One item per line:\nApple\nBanana\nCherry"}
-            className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="w-full flex-1 min-h-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={applyBulkText}
-            className="w-full py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors"
+            className="w-full shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
             Add to Wheel
           </button>
@@ -243,27 +181,39 @@ export default function SegmentListEditor() {
       ) : (
         /* ── Card list mode ── */
         <>
-          <div ref={scrollContainerRef} className="overflow-y-auto max-h-64 space-y-1 pr-0.5">
-            {segData.map((seg, index) => (
-              <SegmentRow
-                key={seg.id ?? index}
-                seg={seg}
-                index={index}
-                advancedOptions={advancedOptions}
-                fallbackColor={wheelData.segColors[index % wheelData.segColors.length]}
-                onUpdate={updateSegment}
-                onDelete={deleteSegment}
-                onDuplicate={addSegment}
-                onImageUpload={handleImageUpload}
-                onRemoveImage={handleRemoveImage}
-              />
-            ))}
+          <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-0.5">
+            {segData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center gap-3 py-8 text-center select-none">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <FaListUl size={20} className="text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">No segments yet</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">Hit <span className="font-semibold">+ Add Segment</span> below to get started</p>
+                </div>
+              </div>
+            ) : (
+              segData.map((seg, index) => (
+                <SegmentRow
+                  key={seg.id ?? index}
+                  seg={seg}
+                  index={index}
+                  advancedOptions={advancedOptions}
+                  fallbackColor={wheelData.segColors[index % wheelData.segColors.length]}
+                  onUpdate={updateSegment}
+                  onDelete={deleteSegment}
+                  onDuplicate={addSegment}
+                  onImageUpload={handleImageUpload}
+                  onRemoveImage={handleRemoveImage}
+                />
+              ))
+            )}
           </div>
 
           {/* Add segment */}
           <button
             onClick={() => addSegment(-1)}
-            className="w-full mt-1 py-1.5 text-sm border-2 border-dashed border-gray-300 dark:border-gray-700 rounded hover:border-blue-400 dark:hover:border-blue-500 text-gray-400 dark:text-gray-500 hover:text-blue-500 flex items-center justify-center gap-1 transition-colors"
+            className="w-full shrink-0 rounded-xl border-2 border-dashed border-border bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
           >
             <FaPlus size={11} /> Add Segment
           </button>

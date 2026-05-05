@@ -20,6 +20,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import Tag from "@models/tag";
 
 const MAX_RESULTS = 10;
 const MAX_Q_LEN = 40;
@@ -43,15 +44,31 @@ export async function GET(request) {
 
     const prefix = new RegExp("^" + escapeRegex(q));
 
-    // Pipeline:
-    //   1. $match narrows to wheels containing at least one tag starting
-    //      with the prefix. Uses the { tags: 1 } index.
-    //   2. $unwind fans out each wheel's tags.
-    //   3. $match again on the individual tag level — drops non-matching
-    //      tags that rode along on a matched wheel.
-    //   4. $group counts wheels per tag.
-    //   5. $sort by popularity.
-    //   6. $limit small.
+    // Primary: query Tag collection for canonical slugs and display names.
+    // This uses the registered aliases so "scary-m" surfaces "horror-movies".
+    const tagDocs = await Tag.find({
+      isPublic: true,
+      $or: [
+        { slug: prefix },
+        { displayName: new RegExp(escapeRegex(q), "i") },
+        { aliases: prefix },
+      ],
+    })
+      .sort({ wheelCount: -1 })
+      .limit(MAX_RESULTS)
+      .select("slug displayName wheelCount")
+      .lean();
+
+    if (tagDocs.length > 0) {
+      const results = tagDocs.map((t) => ({
+        name: t.slug,
+        displayName: t.displayName,
+        count: t.wheelCount,
+      }));
+      return NextResponse.json({ tags: results });
+    }
+
+    // Fallback: Tag collection empty (pre-seed) — aggregate raw Wheel.tags.
     const results = await Wheel.aggregate([
       { $match: { tags: prefix } },
       { $unwind: "$tags" },

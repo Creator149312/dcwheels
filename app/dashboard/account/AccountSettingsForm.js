@@ -5,11 +5,49 @@ import toast from "react-hot-toast";
 
 // Pure client form. The parent server component handles the auth redirect
 // so we can trust `email` + `isGoogleUser` to be present here.
-export default function AccountSettingsForm({ email, isGoogleUser }) {
+export default function AccountSettingsForm({
+  email,
+  isGoogleUser,
+  initialPublicSpins = false,
+}) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Privacy: opt-in toggle for public Spin Stories. Default false (matches
+  // the server-side default in models/user.js) so users are never
+  // surprised by a public profile activity feed they didn't ask for.
+  const [publicSpins, setPublicSpins] = useState(!!initialPublicSpins);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+
+  async function handleTogglePublicSpins(next) {
+    // Optimistic update — flip the UI immediately, revert on failure.
+    setPublicSpins(next);
+    setSavingPrivacy(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicSpins: next }),
+      });
+      if (!res.ok) {
+        setPublicSpins(!next);
+        toast.error("Failed to update privacy setting");
+      } else {
+        toast.success(
+          next
+            ? "Your saved decisions will now appear in public feeds."
+            : "Your saved decisions are now private."
+        );
+      }
+    } catch {
+      setPublicSpins(!next);
+      toast.error("Something went wrong");
+    } finally {
+      setSavingPrivacy(false);
+    }
+  }
 
   async function handleChangePassword(e) {
     e.preventDefault();
@@ -114,6 +152,45 @@ export default function AccountSettingsForm({ email, isGoogleUser }) {
             </button>
           </form>
         )}
+      </section>
+
+      {/* Privacy — Spin Stories opt-in. Off by default so existing users
+          never have saves surface publicly without explicit consent. */}
+      <section className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+          Privacy
+        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Show my saved decisions in public feeds
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              When on, decisions you save (with your display name) appear on
+              the wheel page they happened on, in the &ldquo;Recent
+              results&rdquo; feed. This setting applies to future saves;
+              previously-saved decisions keep their existing privacy.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={publicSpins}
+            disabled={savingPrivacy}
+            onClick={() => handleTogglePublicSpins(!publicSpins)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+              publicSpins
+                ? "bg-blue-600"
+                : "bg-gray-300 dark:bg-gray-700"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                publicSpins ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
       </section>
     </div>
   );

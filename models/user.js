@@ -9,7 +9,7 @@ const userSchema = new Schema(
     },
     name: {
       type: String,
-    }, 
+    },
     password: {
       type: String,
     },
@@ -31,6 +31,36 @@ const userSchema = new Schema(
       enum: ["user", "admin"],
       default: "user",
       index: true,
+    },
+    // Opt-in flag for the public per-wheel "Spin Stories" feed. When true,
+    // saved decisions (DecisionLog) created by this user are written with
+    // `isPublic: true` and surface (with name + avatar) on the wheel page
+    // they happened on. Default false keeps everyone private until they
+    // explicitly opt in via profile settings — GDPR-safe and avoids
+    // surprise privacy issues for existing users.
+    publicSpins: {
+      type: Boolean,
+      default: false,
+    },
+    // Virtual economy currency balance
+    coins: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    // Voter streak — consecutive days the user cast at least one Ask vote.
+    // `lastVotedDate` is stored as midnight UTC so day-diff math is stable.
+    voteStreak: {
+      current:       { type: Number, default: 0, min: 0 },
+      longest:       { type: Number, default: 0, min: 0 },
+      lastVotedDate: { type: Date },
+    },
+    // Monthly AI quiz generation quota. Resets every 30 days.
+    // `resetAt` marks when the current window expires; on the next call
+    // after expiry the count is zeroed and a new window is set.
+    aiQuizGenerations: {
+      count:   { type: Number, default: 0, min: 0 },
+      resetAt: { type: Date },
     },
   },
   { timestamps: true }

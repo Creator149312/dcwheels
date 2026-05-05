@@ -27,6 +27,17 @@ const ListItemSchema = new Schema(
     slug: { type: String },
     image: { type: String },
 
+    // Tracks the user's progress with this entity.
+    // "want"        — added to list, not yet started
+    // "in-progress" — currently watching / playing
+    // "done"        — finished
+    // Default "want" keeps all existing documents valid without a migration.
+    status: {
+      type: String,
+      enum: ["want", "in-progress", "done"],
+      default: "want",
+    },
+
     addedAt: { type: Date, default: Date.now },
   },
   { _id: false } // ✅ keep this so parent doesn't create a second _id

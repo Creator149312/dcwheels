@@ -1,9 +1,7 @@
 "use client";
 import Link from "next/link";
-import SaveWheelLocally from "./SaveWheelLocally";
 import { useSession } from "next-auth/react";
 import SaveWheelBtn from "./SaveWheelBtn";
-import ImportLocalWheel from "./ImportLocalWheel";
 
 const SaveImportComponent = ({ onImport, segments }) => {
   const { status, data: session } = useSession();
@@ -23,14 +21,12 @@ const SaveImportComponent = ({ onImport, segments }) => {
           </div>
         </>
       ) : (
-        <>
-          <p className="my-2 flex justify-center items-center">
-            <Link href="/login" className="underline mx-2">
-              Login
-            </Link>
-            to save your wheels
-          </p>
-        </>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Link href="/login" className="underline text-blue-500 hover:text-blue-600">
+            Login
+          </Link>
+          to save
+        </p>
       )}
     </div>
   );

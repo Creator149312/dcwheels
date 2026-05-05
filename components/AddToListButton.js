@@ -15,12 +15,34 @@ function getListLabel(type) {
   return "Save to List";
 }
 
+// Status progression config — labels and styles for each state.
+const STATUS_CONFIG = {
+  want: {
+    label: "Saved ✓",
+    icon: "🔖",
+    next: "in-progress",
+    className: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+  },
+  "in-progress": {
+    label: "In Progress",
+    icon: "▶",
+    next: "done",
+    className: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
+  },
+  done: {
+    label: "Done",
+    icon: "✓",
+    next: "want",
+    className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
+  },
+};
+
 /**
  * AddToListButton
  * ───────────────
  * A hero-friendly CTA that saves any content page item to the user's
- * unified lists. Shares the same /api/unifiedlist API as SaveButton but
- * uses a full-text button styled for the dark cinematic backdrop.
+ * unified lists. After saving, the button transforms into a status
+ * selector (Want → In Progress → Done) without reopening any modal.
  *
  * Props
  *   type       – content type string ("movie" | "anime" | "game" | …)
@@ -35,8 +57,26 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
   const [creating, setCreating]          = useState(false);
   const [newListName, setNewListName]    = useState("");
   const [savedPopup, setSavedPopup]      = useState({ show: false, listName: "" });
+  // Once the user saves this item we store listId + itemId so status
+  // updates can go straight to PATCH without re-fetching.
+  const [savedRef, setSavedRef]          = useState(null); // { listId, itemId, status }
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const { status } = useSession();
   const openLoginPrompt = useLoginPrompt();
+
+  // On mount, check if the authenticated user already has this entity saved.
+  // Uses the new by-entity endpoint so we don't scan all lists client-side.
+  useEffect(() => {
+    if (status !== "authenticated" || !entityId) return;
+    fetch(`/api/unifiedlist/by-entity?entityId=${entityId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.found) {
+          setSavedRef({ listId: d.listId, itemId: d.itemId, status: d.status || "want" });
+        }
+      })
+      .catch(() => {}); // silent — degrades to "Add" button
+  }, [status, entityId]);
 
   // Auto-dismiss the success toast after 3 s
   useEffect(() => {
@@ -44,10 +84,6 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     const t = setTimeout(() => setSavedPopup({ show: false, listName: "" }), 3000);
     return () => clearTimeout(t);
   }, [savedPopup.show]);
-
-  // Fetch the user's lists when the modal first opens. Guard on auth so
-  // unauthenticated users never hit /api/unifiedlist and get a 401 —
-  // the modal won't open for them in the first place (see button onClick).
   useEffect(() => {
     if (!open || status !== "authenticated") return;
     fetch("/api/unifiedlist")
@@ -67,11 +103,17 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
 
   async function saveToList(listId) {
     const list = lists.find((l) => l.id === listId);
-    await fetch(`/api/unifiedlist/${listId}/items`, {
+    const res = await fetch(`/api/unifiedlist/${listId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    const data = await res.json();
+    // The API returns the full updated items array. The new item is last
+    // because the server used Array.push before saving.
+    const items = data?.list?.items || [];
+    const newItem = items[items.length - 1];
+    setSavedRef({ listId, itemId: newItem?._id || null, status: "want" });
     setOpen(false);
     setSavedPopup({ show: true, listName: list?.name || "List" });
   }
@@ -85,16 +127,40 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     });
     const data = await res.json();
     const newList = data.list;
-    await fetch(`/api/unifiedlist/${newList.id}/items`, {
+    const itemRes = await fetch(`/api/unifiedlist/${newList.id}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    const itemData = await itemRes.json();
+    const items = itemData?.list?.items || [];
+    const newItemObj = items[items.length - 1];
+    setSavedRef({ listId: newList.id, itemId: newItemObj?._id || null, status: "want" });
     setLists((prev) => [...prev, newList]);
     setNewListName("");
     setCreating(false);
     setOpen(false);
     setSavedPopup({ show: true, listName: newList.name });
+  }
+
+  // Cycle status: want → in-progress → done → want
+  async function cycleStatus() {
+    if (!savedRef?.itemId || statusUpdating) return;
+    const current = savedRef.status || "want";
+    const next = STATUS_CONFIG[current]?.next || "want";
+    setStatusUpdating(true);
+    setSavedRef((prev) => ({ ...prev, status: next })); // optimistic
+    try {
+      await fetch(`/api/unifiedlist/${savedRef.listId}/items/${savedRef.itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+    } catch {
+      setSavedRef((prev) => ({ ...prev, status: current })); // rollback
+    } finally {
+      setStatusUpdating(false);
+    }
   }
 
   function closeModal() {
@@ -107,35 +173,52 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
 
   return (
     <>
-      {/* ── CTA trigger button ──────────────────────────────────────────
-           Frosted-glass style so it reads well on the dark hero backdrop. */}
-      <button
-        onClick={() => {
-          if (status !== "authenticated") {
-            openLoginPrompt?.();
-            return;
-          }
-          setOpen(true);
-        }}
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2
-                   px-5 py-2.5 rounded-full
-                   bg-blue-600 hover:bg-blue-700 active:scale-95
-                   text-white text-sm font-semibold
-                   shadow-sm transition-all duration-150"
-      >
-        {/* bookmark-plus icon */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className="w-4 h-4 flex-shrink-0"
-          aria-hidden="true"
+      {/* ── CTA: status cycle button (already saved) or add button ────── */}
+      {savedRef ? (
+        /* ── Status cycle button ─────────────────────────────────────── */
+        <button
+          onClick={cycleStatus}
+          disabled={statusUpdating}
+          title="Click to change your status"
+          className={`w-full sm:w-auto inline-flex items-center justify-center gap-2
+                     px-5 py-2.5 rounded-full text-sm font-semibold
+                     border shadow-sm active:scale-95 transition-all duration-150
+                     disabled:opacity-60 disabled:cursor-not-allowed
+                     ${STATUS_CONFIG[savedRef.status]?.className || STATUS_CONFIG.want.className}`}
         >
-          <path d="M4 3a2 2 0 0 0-2 2v12.382a.5.5 0 0 0 .776.416L10 13.168l7.224 4.63A.5.5 0 0 0 18 17.382V5a2 2 0 0 0-2-2H4Z" />
-          <path d="M10 7a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1H8a1 1 0 1 1 0-2h1V8a1 1 0 0 1 1-1Z" />
-        </svg>
-        {label}
-      </button>
+          <span aria-hidden="true">{STATUS_CONFIG[savedRef.status]?.icon || "✓"}</span>
+          {STATUS_CONFIG[savedRef.status]?.label || "On List"}
+        </button>
+      ) : (
+        /* ── Add-to-list button ──────────────────────────────────────── */
+        <button
+          onClick={() => {
+            if (status !== "authenticated") {
+              openLoginPrompt?.();
+              return;
+            }
+            setOpen(true);
+          }}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                     px-5 py-2.5 rounded-full
+                     bg-blue-600 hover:bg-blue-700 active:scale-95
+                     text-white text-sm font-semibold
+                     shadow-sm transition-all duration-150"
+        >
+          {/* bookmark-plus icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="w-4 h-4 flex-shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M4 3a2 2 0 0 0-2 2v12.382a.5.5 0 0 0 .776.416L10 13.168l7.224 4.63A.5.5 0 0 0 18 17.382V5a2 2 0 0 0-2-2H4Z" />
+            <path d="M10 7a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1H8a1 1 0 1 1 0-2h1V8a1 1 0 0 1 1-1Z" />
+          </svg>
+          {label}
+        </button>
+      )}
 
       {/* ── Success toast ───────────────────────────────────────────────── */}
       {savedPopup.show && (

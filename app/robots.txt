@@ -11,7 +11,6 @@ Disallow: /dashboard
 Disallow: /email
 Disallow: /verify
 Disallow: /uwheels
-Disallow: /ulists
 Disallow: /lists
 Disallow: /*sex*
 Disallow: /tags

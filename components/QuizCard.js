@@ -142,6 +142,13 @@ export default function QuizCard({
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                   Question
                 </p>
+                {segment.questionImage && (
+                  <img
+                    src={segment.questionImage}
+                    alt="Question"
+                    className="w-full rounded-lg object-contain max-h-44 mb-2 border"
+                  />
+                )}
                 <h2 className="text-lg font-bold text-foreground leading-snug">
                   {segment.question || segment.text}
                 </h2>

@@ -27,7 +27,7 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = params;
-    const { title, description, data, wheelData, relatedTopics, tags } =
+    const { title, description, data, wheelData, relatedTopics, tags, type } =
       await request.json();
 
     await connectMongoDB();
@@ -47,6 +47,7 @@ export async function PUT(request, { params }) {
       description,
       data: sanitizeSegments(data),
       wheelData,
+      ...(type && ["basic", "quiz"].includes(type) ? { type } : {}),
     };
     if (Array.isArray(relatedTopics)) {
       update.relatedTopics = relatedTopics;
@@ -68,8 +69,35 @@ export async function PUT(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { id } = params;
+    const body = await request.json();
+
+    await connectMongoDB();
+    const wheel = await Wheel.findById(id).select("createdBy isPublic").lean();
+    if (!wheel) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (wheel.createdBy !== session.user.email)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Only allow toggling isPublic via PATCH — full updates go through PUT.
+    if (typeof body.isPublic !== "boolean") {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    await Wheel.findByIdAndUpdate(id, { isPublic: body.isPublic });
+    return NextResponse.json({ ok: true, isPublic: body.isPublic });
+  } catch (e) {
+    console.error("PATCH /api/wheel/[id] failed:", e);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
+}
+
 export async function GET(request, { params }) {
-  const { id } = params;
   await connectMongoDB();
   // .lean() returns a plain JS object instead of a hydrated Mongoose document.
   // Safe here because we only serialise to JSON — no mongoose instance methods used.
