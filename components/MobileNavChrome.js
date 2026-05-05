@@ -10,6 +10,8 @@ import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Bell, Moon,
 import { TbActivity } from "react-icons/tb";
 import TagsCarousel from "@components/TagsCarousel";
 import MobileSearchBar from "@components/MobileSearchBar";
+import LanguageSwitcher from "@components/LanguageSwitcher";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 // CreateWheelModal is heavy (segment editor + image upload deps) and only
 // rendered after the user taps the + button. Lazy-loading it keeps the
@@ -44,6 +46,7 @@ function BottomNavItem({ href, icon, label, active, onClick }) {
 export default function MobileNavChrome({ onToggleSidebar }) {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
+  const { t } = useLocale();
   const [isVisible, setIsVisible] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -111,7 +114,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               <button
                 onClick={onToggleSidebar}
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Open menu"
+                aria-label={t("nav.openMenu")}
               >
                 <Menu size={20} />
               </button>
@@ -135,7 +138,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Toggle theme"
+                aria-label={t("nav.toggleTheme")}
               >
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
@@ -143,7 +146,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               <Link
                 href="/dashboard"
                 className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Dashboard"
+                aria-label={t("nav.dashboard")}
               >
                 <Bell size={20} />
               </Link>
@@ -176,7 +179,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Browse</span>
+              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{t("nav.browse")}</span>
               <button
                 onClick={() => setLibraryOpen(false)}
                 className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
@@ -191,7 +194,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setLibraryOpen(false)}
               >
                 <TbActivity size={20} className="text-pink-500" />
-                Live Feed
+                {t("nav.liveFeed")}
               </Link>
               <Link
                 href="/wheels"
@@ -199,7 +202,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setLibraryOpen(false)}
               >
                 <LayoutGrid size={20} className="text-blue-500" />
-                Browse Wheels
+                {t("nav.browseWheels")}
               </Link>
               <Link
                 href="/lists"
@@ -207,8 +210,11 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setLibraryOpen(false)}
               >
                 <List size={20} className="text-indigo-500" />
-                My Lists
+                {t("nav.myLists")}
               </Link>
+              <div className="px-5 py-3">
+                <LanguageSwitcher className="w-full justify-between" />
+              </div>
             </div>
           </div>
         </>
@@ -225,14 +231,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         <div className="h-12 px-2 grid grid-cols-5 items-center">
           <BottomNavItem
             href="/"
-            label="Home"
+            label={t("nav.home")}
             icon={<Home size={18} />}
             active={pathname === "/"}
           />
 
           <BottomNavItem
             href="/explore"
-            label="Explore"
+            label={t("nav.explore")}
             icon={<Compass size={18} />}
             active={pathname.startsWith("/explore")}
           />
@@ -240,14 +246,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
           <button
             onClick={() => setCreateModalOpen(true)}
             className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
-            aria-label="Create"
+            aria-label={t("nav.create")}
           >
             <PlusCircle size={22} />
-            <span>Create</span>
+            <span>{t("nav.create")}</span>
           </button>
 
           <BottomNavItem
-            label="Browse"
+            label={t("nav.browse")}
             icon={<Library size={18} />}
             active={isLibraryActive || libraryOpen}
             onClick={() => setLibraryOpen((v) => !v)}
@@ -255,7 +261,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
 
           <BottomNavItem
             href="/dashboard"
-            label="Profile"
+            label={t("nav.profile")}
             icon={<User size={18} />}
             active={pathname.startsWith("/dashboard") || pathname.startsWith("/profile")}
           />

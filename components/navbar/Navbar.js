@@ -11,6 +11,8 @@ import { HiViewList } from "react-icons/hi";
 import MobileSearchBar from "@components/MobileSearchBar";
 import { BiSidebar } from "react-icons/bi";
 import { GiCartwheel } from "react-icons/gi";
+import LanguageSwitcher from "@components/LanguageSwitcher";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 // Modal is only needed when the user clicks Create. Lazy-loading keeps it
 // out of the shared bundle that ships on every page.
@@ -23,6 +25,7 @@ const Navbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const { status, data: session } = useSession();
+  const { t } = useLocale();
 
   const handleCreateClick = (event) => {
     event.preventDefault();
@@ -39,6 +42,7 @@ const Navbar = ({ onToggleSidebar }) => {
           <button
             onClick={onToggleSidebar}
             className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label={t("nav.openMenu")}
           >
             <BiSidebar size={24} />
           </button>
@@ -65,6 +69,9 @@ const Navbar = ({ onToggleSidebar }) => {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 md:gap-6">
+          <div className="hidden md:block">
+            <LanguageSwitcher compact={true} />
+          </div>
           
           {/* Mobile Search Icon Trigger */}
           <div className="md:hidden">
@@ -78,7 +85,7 @@ const Navbar = ({ onToggleSidebar }) => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
             >
               <PlusCircle size={18} />
-              Create
+              {t("nav.create")}
             </button>
 
             <Link
@@ -86,7 +93,7 @@ const Navbar = ({ onToggleSidebar }) => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
             >
               <Compass size={18} />
-              Explore
+              {t("nav.explore")}
             </Link>
 
             <Link
@@ -94,23 +101,23 @@ const Navbar = ({ onToggleSidebar }) => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/20 rounded-xl transition-all"
             >
               <MessageCircleQuestion size={18} />
-              Ask Papa
+              {t("nav.askPapa")}
             </Link>
 
             {/* Browse Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:text-blue-600 rounded-xl">
                 <Library size={18} />
-                Browse
+                {t("nav.browse")}
                 <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
               </button>
 
               <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl rounded-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[70]">
                 <Link href="/wheels" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-500/10 text-gray-700 dark:text-gray-200 hover:text-blue-600 transition-colors">
-                  <GiCartwheel size={18} /> Wheels
+                  <GiCartwheel size={18} /> {t("nav.wheels")}
                 </Link>
                 <Link href="/lists" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-500/10 text-gray-700 dark:text-gray-200 hover:text-blue-600 transition-colors">
-                  <HiViewList size={18} /> Lists
+                  <HiViewList size={18} /> {t("nav.lists")}
                 </Link>
               </div>
             </div>
@@ -157,23 +164,24 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
 
         <nav className="flex flex-col gap-3">
+       <LanguageSwitcher className="justify-between rounded-2xl" />
           <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 w-full">
-             <PlusCircle size={22} /> Create New Wheel
+         <PlusCircle size={22} /> {t("nav.createNewWheel")}
           </button>
           <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-             <Compass className="text-blue-500" size={22} /> Explore
+         <Compass className="text-blue-500" size={22} /> {t("nav.explore")}
           </Link>
           <Link href="/ask" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30">
-             <MessageCircleQuestion size={22} /> Ask Papa
+         <MessageCircleQuestion size={22} /> {t("nav.askPapa")}
           </Link>
           
           <div className="border-t border-gray-100 dark:border-gray-800 my-4 pt-6">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-4 px-4 tracking-widest">Browse</p>
+        <p className="text-[10px] font-black uppercase text-gray-400 mb-4 px-4 tracking-widest">{t("nav.browse")}</p>
             <Link href="/wheels" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-               <GiCartwheel size={22} className="text-blue-500" /> Browse Wheels
+          <GiCartwheel size={22} className="text-blue-500" /> {t("nav.browseWheels")}
             </Link>
             <Link href="/lists" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-               <HiViewList size={22} className="text-indigo-500" /> Collections
+          <HiViewList size={22} className="text-indigo-500" /> {t("nav.collections")}
             </Link>
           </div>
         </nav>

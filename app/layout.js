@@ -7,6 +7,7 @@ import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
 import ConditionalFooter from "@components/ConditionalFooter";
 import AdsScriptLoader from "@components/ads/AdsScriptLoader";
+import { LocaleProvider } from "@components/providers/LocaleProvider";
 
 export const metadata = {
   title: {
@@ -73,22 +74,24 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
-        <LazyToaster />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SegmentsProvider>
-            <LoginPromptProvider>
-              <LayoutShell>{children}</LayoutShell>
-            </LoginPromptProvider>
-          </SegmentsProvider>
-        </ThemeProvider>
-        <ConditionalFooter />
-        <GAnalytics />
-        <AdsScriptLoader />
+        <LocaleProvider>
+          <LazyToaster />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <SegmentsProvider>
+              <LoginPromptProvider>
+                <LayoutShell>{children}</LayoutShell>
+              </LoginPromptProvider>
+            </SegmentsProvider>
+          </ThemeProvider>
+          <ConditionalFooter />
+          <GAnalytics />
+          <AdsScriptLoader />
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiSearch, HiArrowLeft, HiX } from 'react-icons/hi';
 import { Zap } from 'lucide-react';
+import { useLocale } from '@components/providers/LocaleProvider';
 
 export default function MobileSearchBar() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isMobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -96,7 +98,7 @@ export default function MobileSearchBar() {
             onFocus={() => setIsFocused(true)}
             onChange={handleChange}
             onKeyDown={handleKeyPress}
-            placeholder="Search wheels..."
+            placeholder={t("search.placeholder")}
             className="w-full bg-transparent pl-2 pr-3 py-2 text-sm focus:outline-none text-gray-900 dark:text-gray-100"
           />
         </div>
@@ -129,6 +131,7 @@ export default function MobileSearchBar() {
           <button
             onClick={() => setMobileSearchOpen(true)}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            aria-label={t("search.placeholder")}
           >
             <HiSearch size={24} />
           </button>
@@ -137,7 +140,7 @@ export default function MobileSearchBar() {
             className="fixed top-0 left-0 right-0 z-[120] bg-white dark:bg-gray-900 px-4 py-3 flex items-center shadow-lg animate-in slide-in-from-top duration-200"
             style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
           >
-            <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500">
+            <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500" aria-label={t("search.back")}>
               <HiArrowLeft size={22} />
             </button>
             <div className="flex-1 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
@@ -147,10 +150,10 @@ export default function MobileSearchBar() {
                 value={query}
                 onChange={handleChange}
                 onKeyDown={handleKeyPress}
-                placeholder="Search wheels..."
+                placeholder={t("search.placeholder")}
                 className="w-full bg-transparent py-1 text-base focus:outline-none text-gray-900 dark:text-white"
               />
-              {query && <HiX onClick={() => setQuery('')} className="text-gray-400 ml-2" />}
+              {query && <HiX onClick={() => setQuery('')} className="text-gray-400 ml-2" aria-label={t("search.clear")} />}
             </div>
           </div>
         )}

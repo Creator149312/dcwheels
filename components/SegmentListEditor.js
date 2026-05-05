@@ -4,6 +4,7 @@ import { SegmentsContext } from "@app/SegmentsContext";
 import { FaTrashAlt, FaPlus, FaImage, FaEye, FaEyeSlash, FaCopy, FaListUl } from "react-icons/fa";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 // Memoized row — only re-renders when its own `seg` object reference changes.
 // Since `updateSegment` mutates with .map + spread, untouched rows keep the
@@ -109,6 +110,7 @@ const SegmentRow = memo(function SegmentRow({
 export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, applyBulkText }) {
   const { segData, updateSegment, deleteSegment, addSegment, advancedOptions, wheelData } =
     useContext(SegmentsContext);
+  const { t } = useLocale();
 
   // Scroll the list to the bottom when a new segment is added
   const scrollContainerRef = useRef(null);
@@ -168,14 +170,14 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
             autoFocus
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
-            placeholder={"One item per line:\nApple\nBanana\nCherry"}
+            placeholder={t("editor.bulkPlaceholder")}
             className="w-full flex-1 min-h-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={applyBulkText}
             className="w-full shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            Add to Wheel
+            {t("editor.addToWheel")}
           </button>
         </div>
       ) : (
@@ -215,7 +217,7 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
             onClick={() => addSegment(-1)}
             className="w-full shrink-0 rounded-xl border-2 border-dashed border-border bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
           >
-            <FaPlus size={11} /> Add Segment
+            <FaPlus size={11} /> {t("editor.addSegment")}
           </button>
         </>
       )}

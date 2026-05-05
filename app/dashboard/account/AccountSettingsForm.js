@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 // Pure client form. The parent server component handles the auth redirect
 // so we can trust `email` + `isGoogleUser` to be present here.
@@ -10,6 +11,7 @@ export default function AccountSettingsForm({
   isGoogleUser,
   initialPublicSpins = false,
 }) {
+  const { t } = useLocale();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,17 +35,17 @@ export default function AccountSettingsForm({
       });
       if (!res.ok) {
         setPublicSpins(!next);
-        toast.error("Failed to update privacy setting");
+        toast.error(t("account.privacyUpdateFailed"));
       } else {
         toast.success(
           next
-            ? "Your saved decisions will now appear in public feeds."
-            : "Your saved decisions are now private."
+            ? t("account.privacyPublicSuccess")
+            : t("account.privacyPrivateSuccess")
         );
       }
     } catch {
       setPublicSpins(!next);
-      toast.error("Something went wrong");
+      toast.error(t("account.somethingWentWrong"));
     } finally {
       setSavingPrivacy(false);
     }
@@ -53,12 +55,12 @@ export default function AccountSettingsForm({
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
+      toast.error(t("account.passwordMismatch"));
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("account.passwordTooShort"));
       return;
     }
 
@@ -73,15 +75,15 @@ export default function AccountSettingsForm({
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to update password");
+        toast.error(data.error || t("account.passwordUpdateFailed"));
       } else {
-        toast.success("Password updated successfully");
+        toast.success(t("account.passwordUpdated"));
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error(t("account.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -89,25 +91,25 @@ export default function AccountSettingsForm({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Account Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t("account.title")}</h1>
 
       <div className="mt-2 mb-8 text-sm text-gray-500 dark:text-gray-400">
-        Signed in as <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
+        {t("account.signedInAs")} <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
       </div>
 
       {/* Change Password */}
       <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{t("account.changePassword")}</h2>
 
         {isGoogleUser ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            You signed in with Google. Password changes are managed through your Google account.
+            {t("account.googlePasswordManaged")}
           </p>
         ) : (
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Current Password
+                {t("account.currentPassword")}
               </label>
               <input
                 type="password"
@@ -119,7 +121,7 @@ export default function AccountSettingsForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                New Password
+                {t("account.newPassword")}
               </label>
               <input
                 type="password"
@@ -132,7 +134,7 @@ export default function AccountSettingsForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirm New Password
+                {t("account.confirmNewPassword")}
               </label>
               <input
                 type="password"
@@ -148,7 +150,7 @@ export default function AccountSettingsForm({
               disabled={loading}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
             >
-              {loading ? "Updating…" : "Update Password"}
+              {loading ? t("account.updating") : t("account.updatePassword")}
             </button>
           </form>
         )}
@@ -158,18 +160,15 @@ export default function AccountSettingsForm({
           never have saves surface publicly without explicit consent. */}
       <section className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          Privacy
+          {t("account.privacy")}
         </h2>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Show my saved decisions in public feeds
+              {t("account.showPublicSpins")}
             </p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              When on, decisions you save (with your display name) appear on
-              the wheel page they happened on, in the &ldquo;Recent
-              results&rdquo; feed. This setting applies to future saves;
-              previously-saved decisions keep their existing privacy.
+              {t("account.publicSpinsDescription")}
             </p>
           </div>
           <button

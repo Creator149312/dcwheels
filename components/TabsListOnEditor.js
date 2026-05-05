@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import SettingsAdv from "./SettingsAdv";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 const TabsListOnEditor = ({
   segData,
@@ -25,6 +26,7 @@ const TabsListOnEditor = ({
   onShuffle,
   onSort,
 }) => {
+  const { t } = useLocale();
   const showBasicControls = wheelType === "basic" && activeTab === "list" && isVisible;
 
   const utilityButtonClass =
@@ -52,14 +54,14 @@ const TabsListOnEditor = ({
             value="list"
             className="h-8 gap-2 rounded-lg px-3 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
           >
-            <span>List</span>
+            <span>{t("editor.list")}</span>
             <span className={countClass(activeTab === "list")}>{segData.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="result"
             className="h-8 gap-2 rounded-lg px-3 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
           >
-            <span>Result</span>
+            <span>{t("editor.result")}</span>
             <span className={countClass(activeTab === "result")}>{resultList.length === 0 ? 0 : resultList.length}</span>
           </TabsTrigger>
         </div>
@@ -69,17 +71,17 @@ const TabsListOnEditor = ({
             type="button"
             onClick={toggleVisibility}
             className={utilityButtonClass}
-            title={isVisible ? "Hide editor" : "Show editor"}
+            title={isVisible ? t("editor.hideEditor") : t("editor.showEditor")}
           >
             {isVisible ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
-            <span>{isVisible ? "Hide" : "Show"}</span>
+            <span>{isVisible ? t("editor.hide") : t("editor.show")}</span>
           </button>
 
           <SettingsAdv
             advOptions={advOptions}
             showLabel={true}
             iconSize={13}
-            label="Customize"
+            label={t("editor.customize")}
             triggerVariant="outline"
             triggerClassName="h-8 gap-1.5 rounded-lg border-border bg-background px-3 text-xs font-medium text-muted-foreground shadow-sm hover:border-primary/40 hover:bg-accent hover:text-foreground"
           />
@@ -94,10 +96,10 @@ const TabsListOnEditor = ({
               onClick={onToggleAdvanced}
               aria-pressed={advOptions}
               className={cn(utilityButtonClass, advOptions && activeUtilityButtonClass)}
-              title="Toggle advanced controls"
+              title={t("editor.toggleAdvanced")}
             >
               <FaPencilRuler size={12} />
-              <span>Advanced</span>
+              <span>{t("editor.advanced")}</span>
             </button>
 
             <button
@@ -105,23 +107,23 @@ const TabsListOnEditor = ({
               onClick={onToggleBulkMode}
               aria-pressed={bulkMode}
               className={cn(utilityButtonClass, bulkMode && activeUtilityButtonClass)}
-              title={bulkMode ? "Close paste mode" : "Paste a list of segments"}
+              title={bulkMode ? t("editor.closePasteTitle") : t("editor.pasteListTitle")}
             >
               <FaClipboardList size={12} />
-              <span>{bulkMode ? "Close Paste" : "Paste List"}</span>
+              <span>{bulkMode ? t("editor.closePaste") : t("editor.pasteList")}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              Organize
+              {t("editor.organize")}
             </span>
             <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
               <button
                 type="button"
                 onClick={onShuffle}
                 className={organizeButtonClass}
-                title="Shuffle segments"
+                title={t("editor.shuffleSegments")}
               >
                 <FaRandom size={12} />
               </button>
@@ -129,7 +131,7 @@ const TabsListOnEditor = ({
                 type="button"
                 onClick={onSort}
                 className={organizeButtonClass}
-                title="Sort alphabetically"
+                title={t("editor.sortAlphabetically")}
               >
                 <FaSortAlphaDown size={13} />
               </button>

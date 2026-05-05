@@ -2,9 +2,11 @@
 import { useEffect, useState } from "react";
 import UserDropDownMenu from "./dropdowns/UserDropDownMenu";
 import { Button } from "./ui/button";
+import { useLocale } from "@components/providers/LocaleProvider";
 
 export default function UserInfo({ name, status, setOpen }) {
   const [isMounted, setIsMounted] = useState(false);
+  const { t } = useLocale();
 
   useEffect(() => {
     setIsMounted(true);
@@ -28,7 +30,7 @@ export default function UserInfo({ name, status, setOpen }) {
     return (
       <a className="gap-5" href="/login">
         <Button className="cursor-pointer" size={"lg"} variant={"default"}>
-          Login
+          {t("common.login")}
         </Button>
       </a>
     );

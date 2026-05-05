@@ -2,30 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaGamepad, FaFilm, FaFan, FaUser, FaCommentDots, FaList } from "react-icons/fa";
-import { TbActivity, TbLayoutDashboard } from "react-icons/tb";
-import { GiCartwheel } from "react-icons/gi";
+import { FaHome, FaGamepad, FaFilm, FaFan, FaUser } from "react-icons/fa";
 
 const NAV_SECTIONS = [
   {
-    label: "PRIMARY",
+    label: "DISCOVER",
     items: [
       { href: "/", label: "Home", icon: FaHome },
-      { href: "/feed", label: "Feed", icon: TbActivity },
-      { href: "/ask", label: "Ask Papa", icon: FaCommentDots, highlight: true },
-      { href: "/wheels", label: "Spin", icon: GiCartwheel },
-    ],
-  },
-  {
-    label: "MY SPACE",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: TbLayoutDashboard },
-      { href: "/lists", label: "My Lists", icon: FaList },
-    ],
-  },
-  {
-    label: "INTERESTS",
-    items: [
       { href: "/movie", label: "Movies", icon: FaFilm },
       { href: "/game", label: "Games", icon: FaGamepad },
       { href: "/anime", label: "Anime", icon: FaFan },
