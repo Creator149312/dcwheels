@@ -12,42 +12,34 @@ function AdSlot({ slot, width, minHeight, className }) {
     if (!el) return;
 
     const doPush = () => {
-      if (
-        !el.isConnected ||
-        el.dataset.adsPushed ||
-        el.getAttribute("data-adsbygoogle-status")
-      )
-        return;
-
-      // Strict check to prevent TagError
+      if (!el.isConnected) return;
+      if (el.dataset.adsPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
       if (el.offsetWidth === 0) return;
-
-      // 1. Reveal class to Google
-      setAdReady(true);
-
-      // 2. Mark as pushed
       el.dataset.adsPushed = "1";
-
-      // 3. Trigger push after a tiny delay to ensure class is applied
       try {
-        setTimeout(() => {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }, 50);
-      } catch (error) {
-        console.error("[AdSlot] push failed", slot, error);
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
+      }
+    };
+
+    const schedulePush = () => {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(doPush, { timeout: 2000 });
+      } else {
+        setTimeout(doPush, 0);
       }
     };
 
     const tryPush = () => {
-      if (el.offsetWidth > 0) {
-        if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(doPush, { timeout: 1000 });
-        } else {
-          setTimeout(doPush, 100);
-        }
-        return true;
-      }
-      return false;
+      if (!el.isConnected) return false;
+      if (el.dataset.adsPushed) return true;
+      if (el.getAttribute("data-adsbygoogle-status")) return true;
+      if (el.offsetWidth === 0) return false;
+      schedulePush();
+      el.dataset.adsPushed = "1";
+      return true;
     };
 
     if (tryPush()) return;
