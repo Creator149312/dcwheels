@@ -22,19 +22,6 @@ function AdSlot({ slot, width, height, className }) {
     const el = insRef.current;
     if (!el) return;
 
-    const doPush = () => {
-      if (!el.isConnected) return;
-      if (el.dataset.adsPushed) return;
-      if (el.getAttribute("data-adsbygoogle-status")) return;
-      if (el.offsetWidth === 0) return;
-      el.dataset.adsPushed = "1";
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // Race conditions and dev-only double-invokes: safe to ignore.
-      }
-    };
-
     const schedulePush = () => {
       if (typeof requestIdleCallback !== "undefined") {
         requestIdleCallback(doPush, { timeout: 2000 });
@@ -43,20 +30,30 @@ function AdSlot({ slot, width, height, className }) {
       }
     };
 
-    const tryPush = () => {
-      if (!el.isConnected) return false;
-      if (el.dataset.adsPushed) return true;
-      if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) return false;
+    function doPush() {
+      if (!el.isConnected) return;
+      if (el.dataset.adsActualPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      el.dataset.adsActualPushed = "1";
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
+      }
+    }
+
+    // Use ResizeObserver exclusively — reads width from contentRect (no
+    // reflow) instead of el.offsetWidth (forces synchronous layout flush).
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width ?? 0;
+      if (width === 0) return;
+      if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
+        ro.disconnect();
+        return;
+      }
+      el.dataset.adsScheduled = "1";
+      ro.disconnect();
       schedulePush();
-      el.dataset.adsPushed = "1";
-      return true;
-    };
-
-    if (tryPush()) return;
-
-    const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
     });
     ro.observe(el);
 

@@ -22,23 +22,9 @@ const AdsUnitInner = ({ slot }) => {
     const el = insRef.current;
     if (!el) return;
 
-    const doPush = () => {
-      if (!el.isConnected) return;
-      if (el.dataset.adsPushed) return;
-      if (el.getAttribute("data-adsbygoogle-status")) return;
-      if (el.offsetWidth === 0) return;
-      el.dataset.adsPushed = "1";
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // Race conditions and dev-only double-invokes: safe to ignore.
-      }
-    };
-
     // Schedule push() during browser idle time so AdSense's forced reflows
     // (which are unavoidable inside show_ads_impl.js) happen AFTER LCP is
     // locked in, not during the critical rendering path.
-    // Falls back to setTimeout(0) on browsers without requestIdleCallback.
     const schedulePush = () => {
       if (typeof requestIdleCallback !== "undefined") {
         requestIdleCallback(doPush, { timeout: 2000 });
@@ -47,23 +33,33 @@ const AdsUnitInner = ({ slot }) => {
       }
     };
 
-    const tryPush = () => {
-      if (!el.isConnected) return false;
-      if (el.dataset.adsPushed) return true;
-      if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) return false;
+    function doPush() {
+      if (!el.isConnected) return;
+      if (el.dataset.adsActualPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      el.dataset.adsActualPushed = "1";
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
+      }
+    }
+
+    // Use ResizeObserver exclusively — the callback fires immediately with
+    // the current size on the first observe() call, so we never need to
+    // call el.offsetWidth (which forces a synchronous layout/reflow).
+    // The width comes from the observer entry's contentRect at zero cost.
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width ?? 0;
+      if (width === 0) return;
+      if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
+        ro.disconnect();
+        return;
+      }
+      // Mark eagerly so a re-fire can't double-schedule.
+      el.dataset.adsScheduled = "1";
+      ro.disconnect();
       schedulePush();
-      // Mark eagerly so a ResizeObserver re-fire can't double-schedule.
-      el.dataset.adsPushed = "1";
-      return true;
-    };
-
-    if (tryPush()) return;
-
-    // Wait for the slot to gain non-zero width (sidebar hidden on mobile,
-    // breakpoint cross, device rotation, parent unhide, etc.).
-    const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
     });
     ro.observe(el);
 
