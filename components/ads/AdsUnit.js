@@ -4,8 +4,6 @@ import { usePathname } from "next/navigation";
 
 const AdsUnitInner = ({ slot }) => {
   const insRef = useRef(null);
-  // adReady controls whether we apply the "adsbygoogle" class
-  const [adReady, setAdReady] = useState(false);
 
   useEffect(() => {
     const el = insRef.current;
@@ -63,9 +61,7 @@ const AdsUnitInner = ({ slot }) => {
       <div className="flex justify-center items-center overflow-hidden">
         <ins
           ref={insRef}
-          // The magic is here: Google script ignores tags without this class.
-          // We only provide it once we know the width is > 0.
-          className={adReady ? "adsbygoogle" : ""}
+          className="adsbygoogle"
           style={{
             display: "block",
             width: "100%",

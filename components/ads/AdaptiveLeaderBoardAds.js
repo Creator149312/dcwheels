@@ -4,25 +4,10 @@ import { usePathname } from "next/navigation";
 
 function AdSlot({ slot, width, minHeight, className }) {
   const insRef = useRef(null);
-  // adReady prevents Google from seeing this tag until width > 0
-  const [adReady, setAdReady] = useState(false);
 
   useEffect(() => {
     const el = insRef.current;
     if (!el) return;
-
-    const doPush = () => {
-      if (!el.isConnected) return;
-      if (el.dataset.adsPushed) return;
-      if (el.getAttribute("data-adsbygoogle-status")) return;
-      if (el.offsetWidth === 0) return;
-      el.dataset.adsPushed = "1";
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // Race conditions and dev-only double-invokes: safe to ignore.
-      }
-    };
 
     const schedulePush = () => {
       if (typeof requestIdleCallback !== "undefined") {
@@ -32,20 +17,30 @@ function AdSlot({ slot, width, minHeight, className }) {
       }
     };
 
-    const tryPush = () => {
-      if (!el.isConnected) return false;
-      if (el.dataset.adsPushed) return true;
-      if (el.getAttribute("data-adsbygoogle-status")) return true;
-      if (el.offsetWidth === 0) return false;
+    function doPush() {
+      if (!el.isConnected) return;
+      if (el.dataset.adsActualPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      el.dataset.adsActualPushed = "1";
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
+      }
+    }
+
+    // Use ResizeObserver exclusively — reads width from contentRect (no
+    // reflow) instead of el.offsetWidth (forces synchronous layout flush).
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width ?? 0;
+      if (w === 0) return;
+      if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
+        ro.disconnect();
+        return;
+      }
+      el.dataset.adsScheduled = "1";
+      ro.disconnect();
       schedulePush();
-      el.dataset.adsPushed = "1";
-      return true;
-    };
-
-    if (tryPush()) return;
-
-    const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -54,8 +49,7 @@ function AdSlot({ slot, width, minHeight, className }) {
   return (
     <ins
       ref={insRef}
-      // "adsbygoogle" class is ONLY added if adReady is true
-      className={`${adReady ? "adsbygoogle" : ""} ${className || ""}`}
+      className={`adsbygoogle ${className || ""}`}
       style={{
         display: "block",
         width: "100%",
