@@ -39,6 +39,7 @@ function AdSlot({ slot, width, minHeight, className }) {
         return;
       }
       el.dataset.adsScheduled = "1";
+      el.classList.add("adsbygoogle");
       ro.disconnect();
       schedulePush();
     });
@@ -49,7 +50,7 @@ function AdSlot({ slot, width, minHeight, className }) {
   return (
     <ins
       ref={insRef}
-      className={`adsbygoogle ${className || ""}`}
+      className={className || ""}
       style={{
         display: "block",
         width: "100%",

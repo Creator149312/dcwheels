@@ -45,6 +45,7 @@ const AdsUnitInner = ({ slot }) => {
       }
       // Mark eagerly so a re-fire can't double-schedule.
       el.dataset.adsScheduled = "1";
+      el.classList.add("adsbygoogle");
       ro.disconnect();
       schedulePush();
     });
@@ -61,7 +62,6 @@ const AdsUnitInner = ({ slot }) => {
       <div className="flex justify-center items-center overflow-hidden">
         <ins
           ref={insRef}
-          className="adsbygoogle"
           style={{
             display: "block",
             width: "100%",
