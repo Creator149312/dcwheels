@@ -4,12 +4,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import AskDilemma from "@models/askDilemma";
 import AskVote from "@models/askVote";
-import CoinTransaction from "@models/coinTransaction";
 import User from "@models/user";
 import { updateVoterStreak } from "@lib/updateVoterStreak";
 import mongoose from "mongoose";
-
-const COINS_PER_VOTE = 5;
 
 // POST /api/ask/[id]/vote
 export async function POST(req, { params }) {
@@ -57,7 +54,6 @@ export async function POST(req, { params }) {
       askDilemmaId: id,
       userId: user._id,
       optionId,
-      coinsEarned: COINS_PER_VOTE,
       rationale: rationale?.trim?.()?.slice(0, 280) || undefined,
     });
 
@@ -67,16 +63,6 @@ export async function POST(req, { params }) {
       { $inc: { "options.$.voteCount": 1 } }
     );
 
-    // Reward voter with coins + update streak (fire-and-forget — errors logged internally)
-    await User.updateOne({ _id: user._id }, { $inc: { coins: COINS_PER_VOTE } });
-    await CoinTransaction.create({
-      userId: user._id,
-      amount: COINS_PER_VOTE,
-      type: "earned_vote",
-      referenceModel: "AskDilemma",
-      referenceId: id,
-      description: `Voted on a dilemma`,
-    });
     updateVoterStreak(user._id).catch(() => {});
 
     // Return updated option vote counts
@@ -85,7 +71,7 @@ export async function POST(req, { params }) {
       updated.options.map((o) => [String(o._id), o.voteCount])
     );
 
-    return NextResponse.json({ success: true, coinsEarned: COINS_PER_VOTE, voteCounts });
+    return NextResponse.json({ success: true, voteCounts });
   } catch (err) {
     if (err.code === 11000) {
       return NextResponse.json({ error: "You already voted on this dilemma" }, { status: 409 });

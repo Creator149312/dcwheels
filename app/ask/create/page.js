@@ -288,7 +288,7 @@ function CreateAskForm() {
       <div className="mb-8">
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Ask the Community</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-          Post a decision you&apos;re stuck on. Voters earn coins for helping you out.
+          Post a decision you&apos;re stuck on and let the community help.
         </p>
         {preFrom && (
           <div className="mt-3 flex items-center gap-2 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-3 py-2 rounded-lg">

@@ -42,12 +42,6 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // Virtual economy currency balance
-    coins: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
     // Voter streak — consecutive days the user cast at least one Ask vote.
     // `lastVotedDate` is stored as midnight UTC so day-diff math is stable.
     voteStreak: {

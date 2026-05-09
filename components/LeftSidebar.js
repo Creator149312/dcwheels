@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaHome, FaGamepad, FaFilm, FaFan, FaUser } from "react-icons/fa";
@@ -21,19 +22,20 @@ export default function LeftSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const isActive = (path) => pathname === path;
 
-  const itemClass = (item) =>
-    isActive(item.href)
-      ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600"
-      : item.highlight
-      ? "text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-      : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900";
-
-  const drawerItemClass = (item) =>
-    isActive(item.href)
-      ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 font-bold"
-      : item.highlight
-      ? "text-purple-600 dark:text-purple-400 font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/20"
-      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+  const classHelpers = useMemo(() => ({
+    itemClass: (item) =>
+      isActive(item.href)
+        ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600"
+        : item.highlight
+        ? "text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+        : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900",
+    drawerItemClass: (item) =>
+      isActive(item.href)
+        ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 font-bold"
+        : item.highlight
+        ? "text-purple-600 dark:text-purple-400 font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/20"
+        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50",
+  }), [isActive]);
 
   return (
     <>
@@ -50,7 +52,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
                 <li key={item.href} className="w-full px-1.5">
                   <Link
                     href={item.href}
-                    className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${itemClass(item)}`}
+                    className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${classHelpers.itemClass(item)}`}
                   >
                     <item.icon size={18} />
                     <span className="text-[9px] mt-1 font-bold leading-tight text-center">
@@ -98,7 +100,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
                     <Link
                       href={item.href}
                       onClick={onClose}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm ${drawerItemClass(item)}`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm ${classHelpers.drawerItemClass(item)}`}
                     >
                       <item.icon size={17} />
                       <span>{item.label}</span>

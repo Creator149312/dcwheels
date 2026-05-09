@@ -58,6 +58,15 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
 
+        {/* Google user avatars — shown in Navbar, comments, and profile
+            cards. Preconnecting here eliminates the TLS handshake cost from
+            the first avatar image request. */}
+        <link
+          rel="preconnect"
+          href="https://lh3.googleusercontent.com"
+          crossOrigin="anonymous"
+        />
+
         {/* Priority 2: AdSense (The "Pipes") */}
         <link
           rel="preconnect"

@@ -36,7 +36,7 @@ const AIListGenerator = ({ setSegData }) => {
       // let message =
       //   wordCount > 10
       //     ? status === "authenticated"
-      //       ? "You will be charged 5 coins for this query"
+      //       ? "This query will be charged to your account"
       //       : "Please login to generate more than 10 words"
       //     : "";
       if (status === "authenticated") {

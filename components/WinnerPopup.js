@@ -44,6 +44,7 @@ const WinnerPopup = ({
   const [showShareCard, setShowShareCard] = useState(false);
   const [showRemoveMenu, setShowRemoveMenu] = useState(false);
   const removeMenuRef = useRef(null);
+  const [savedLogId, setSavedLogId] = useState(null);
 
   // Get the winning segment's color for visual sync
   const winnerColor =
@@ -111,6 +112,7 @@ const WinnerPopup = ({
       const entityType = winner?.entityType || winner?.payload?.entityType || "";
       const entityId   = winner?.entityId   != null ? String(winner.entityId)   : (winner?.payload?.entityId != null ? String(winner.payload.entityId) : "");
       const entitySlug = winner?.slug       || winner?.payload?.slug            || "";
+
       const res = await fetch("/api/decision-log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,6 +140,7 @@ const WinnerPopup = ({
       if (res.ok) {
         setDecisionSaved(true);
         setShowNoteInput(false);
+        setSavedLogId(responseData?.id || null);
 
         // Always dispatch the event on a successful save so the feed shows
         // the user's own card immediately (optimistic UX). If `isPublic` is
@@ -286,9 +289,11 @@ const WinnerPopup = ({
               {winner?.type !== "quiz" && (
                 <>
                   {decisionSaved ? (
-                    <p className="text-center text-sm text-green-600 dark:text-green-400 font-medium py-2.5 mb-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                      ✅ Decision saved!
-                    </p>
+                    <div className="mb-3">
+                      <p className="text-center text-sm text-green-600 dark:text-green-400 font-medium py-2.5 rounded-lg bg-green-50 dark:bg-green-900/20">
+                        ✅ Decision saved!
+                      </p>
+                    </div>
                   ) : showNoteInput ? (
                     <div className="flex gap-2 mb-3">
                       <input
@@ -419,6 +424,7 @@ const WinnerPopup = ({
           </div>
         </div>
       )}
+
     </>
   );
 };

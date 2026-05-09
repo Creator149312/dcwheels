@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback } from "react";
-import LoginModal from "@components/LoginModalTest";
+import dynamic from "next/dynamic";
+
+// LoginModal pulls LoginFormTest → next-auth/react signIn, form validators,
+// SignInBtn, and Notification. None of it is needed until the user performs
+// an action that requires authentication. Lazy-loading removes all of that
+// from the root bundle on every page in the app.
+const LoginModal = dynamic(() => import("@components/LoginModalTest"), { ssr: false });
 
 const LoginPromptContext = createContext();
 

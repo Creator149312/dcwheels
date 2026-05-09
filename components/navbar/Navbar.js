@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,11 +27,11 @@ const Navbar = ({ onToggleSidebar }) => {
   const { status, data: session } = useSession();
   const { t } = useLocale();
 
-  const handleCreateClick = (event) => {
+  const handleCreateClick = useCallback((event) => {
     event.preventDefault();
     setOpen(false);
     setCreateModalOpen(true);
-  };
+  }, []);
 
   return (
     <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-900 transition-all duration-300">

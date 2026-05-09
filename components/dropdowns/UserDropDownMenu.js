@@ -12,12 +12,9 @@ import { HiOutlineUserCircle } from "react-icons/hi";
 import { HiOutlineLogout } from "react-icons/hi";
 import { HiOutlinePresentationChartBar } from "react-icons/hi";
 import { GiCartwheel } from "react-icons/gi";
-import { useContext } from "react";
-import { SegmentsContext } from "@app/SegmentsContext";
 import { ThemeToggleSwitch } from "@components/ThemeToggleSwitch";
 
 const UserDropDownMenu = ({ name, setOpen }) => {
-  const {coins} = useContext(SegmentsContext);
   return (
      <DropdownMenu>
       <DropdownMenuTrigger asChild>

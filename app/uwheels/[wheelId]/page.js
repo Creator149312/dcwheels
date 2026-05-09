@@ -2,11 +2,16 @@ import { cache } from "react";
 import { validateObjectID } from "@utils/Validator";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
+import dynamic from "next/dynamic";
 import WheelInfoSection from "@components/WheelMeta";
-import WheelStatsBar from "@components/WheelStatsBar";
-import WheelSpinFeed from "@components/WheelSpinFeed";
 import ViewTracker from "@components/ViewTracker";
-import AdsUnit from "@components/ads/AdsUnit";
+
+// Split below-fold client components out of the bootstrap JS bundle.
+// WheelStatsBar + WheelSpinFeed still SSR so their HTML is indexable;
+// AdsUnit is ssr:false — AdSense has no crawlable content.
+const WheelStatsBar = dynamic(() => import("@components/WheelStatsBar"));
+const WheelSpinFeed = dynamic(() => import("@components/WheelSpinFeed"));
+const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
 import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
 
@@ -136,9 +141,11 @@ export default async function Page({ params }) {
             />
           </div>
 
-          {/* Bottom-of-page ad — shown after all content on both mobile
-              and desktop. Same slot pattern as /wheels/[slug]. */}
-          <AdsUnit slot="9397002286" />
+          {/* Bottom-of-page ad — min-h prevents CLS when AdSense loads
+              async. Same slot pattern as /wheels/[slug]. */}
+          <div className="min-h-[90px]">
+            <AdsUnit slot="9397002286" />
+          </div>
         </>
       ) : (
         <div>

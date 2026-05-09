@@ -7,11 +7,17 @@ import {
   getRelatedWheelsByTags,
   getWheelMeta,
 } from "@components/actions/actions";
+import dynamic from "next/dynamic";
 import WheelInfoSection from "@components/WheelMeta";
-import WheelStatsBar from "@components/WheelStatsBar";
-import WheelSpinFeed from "@components/WheelSpinFeed";
 import ViewTracker from "@components/ViewTracker";
-import AdsUnit from "@components/ads/AdsUnit";
+
+// Split below-fold client components out of the bootstrap JS bundle.
+// WheelStatsBar + WheelSpinFeed still SSR (no ssr:false) so their HTML is
+// in the indexable markup, but their JS is NOT in the critical preload list.
+// AdsUnit has no SEO value so ssr:false removes it from the HTML entirely.
+const WheelStatsBar = dynamic(() => import("@components/WheelStatsBar"));
+const WheelSpinFeed = dynamic(() => import("@components/WheelSpinFeed"));
+const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
 import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
@@ -175,10 +181,11 @@ export default async function Home({ params }) {
         />
       </div>
 
-      {/* Bottom-of-page ad — shown on both mobile and desktop after all
-          content is consumed, where engagement is still high but UX impact
-          is lowest. Slot 9397002286 is a responsive display unit. */}
-      <AdsUnit slot="9397002286" />
+      {/* Bottom-of-page ad — min-h reserves space before AdSense loads to
+          prevent CLS. Slot 9397002286 is a responsive display unit. */}
+      <div className="min-h-[90px]">
+        <AdsUnit slot="9397002286" />
+      </div>
     </div>
   );
 }

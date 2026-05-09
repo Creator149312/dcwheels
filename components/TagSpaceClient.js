@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, useCallback, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { TbBrandThreads, TbHelpCircle } from "react-icons/tb";
-import AskCard from "@components/AskCard";
-import AdsUnit from "@components/ads/AdsUnit";
 import apiConfig from "@utils/ApiUrlConfig";
+
+// Split from the initial bundle — AskCard (voting/options logic) and AdsUnit
+// (AdSense) are not needed for the above-the-fold render. Lazy-loading them
+// reduces JS parse time and improves TBT on low-end devices.
+const AskCard = dynamic(() => import("@components/AskCard"), { ssr: false });
+const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 
 const ABOVE_FOLD_COUNT = 4;
 
@@ -18,7 +23,7 @@ function WheelsTab({ initialWheels, tagId }) {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialWheels.length >= 20);
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     try {
@@ -37,7 +42,7 @@ function WheelsTab({ initialWheels, tagId }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [loading, tagId, skip]);
 
   if (wheels.length === 0) {
     return (
@@ -55,7 +60,7 @@ function WheelsTab({ initialWheels, tagId }) {
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         {wheels.map((wheel, index) => {
-          const showAd = (index + 1) % 10 === 0;
+          const showAd = (index + 1) % 6 === 0;
           const isAboveFold = index < ABOVE_FOLD_COUNT;
           return (
             <Fragment key={wheel._id || index}>
@@ -89,8 +94,9 @@ function WheelsTab({ initialWheels, tagId }) {
               </a>
 
               {showAd && (
-                <div className="col-span-full my-4 md:my-6">
-                  <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
+                // min-h prevents CLS when AdSense loads async and pushes content down
+                <div className="col-span-full my-4 md:my-6 min-h-[90px]">
+                  <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center min-h-[90px]">
                     <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
@@ -125,8 +131,28 @@ function DilemmasTab({ initialAsks, tagId }) {
   const [skip, setSkip] = useState(initialAsks.length);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialAsks.length >= 12);
+  // Ref avoids a state variable that would cause a double-render cycle
+  const didFetch = useRef(initialAsks.length > 0);
 
-  async function loadMore() {
+  // Server passes initialAsks=[] to keep HTML payload lean. Self-fetch on
+  // first render so the user only pays the network cost if they open this tab.
+  useEffect(() => {
+    if (didFetch.current) return;
+    didFetch.current = true;
+    setLoading(true);
+    fetch(`/api/ask?tag=${encodeURIComponent(tagId)}&limit=12&skip=0`)
+      .then((r) => r.json())
+      .then((data) => {
+        const next = data.asks || [];
+        setAsks(next);
+        setSkip(next.length);
+        setHasMore(next.length >= 12);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [tagId]);
+
+  const loadMore = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     try {
@@ -145,6 +171,14 @@ function DilemmasTab({ initialAsks, tagId }) {
     } finally {
       setLoading(false);
     }
+  }, [loading, tagId, skip]);
+
+  if (loading && asks.length === 0) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="animate-spin text-purple-500" size={28} />
+      </div>
+    );
   }
 
   if (asks.length === 0) {
@@ -187,12 +221,13 @@ function DilemmasTab({ initialAsks, tagId }) {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export default function TagSpaceClient({ tagId, initialWheels, initialAsks }) {
+export default function TagSpaceClient({ tagId, initialWheels, initialAsks, askCount }) {
   const [activeTab, setActiveTab] = useState("wheels");
 
   const tabs = [
     { key: "wheels", label: "Wheels", count: initialWheels.length },
-    { key: "dilemmas", label: "Dilemmas", count: initialAsks.length },
+    // askCount from server stats is always accurate even when initialAsks=[] (deferred)
+    { key: "dilemmas", label: "Dilemmas", count: askCount ?? initialAsks.length },
   ];
 
   return (

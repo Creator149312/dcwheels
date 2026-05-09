@@ -31,12 +31,12 @@ export async function POST(req) {
     }
 
     await connectMongoDB();
-    const user = await User.findOne({ email: session.user.email }).select("_id coins").lean();
+    const user = await User.findOne({ email: session.user.email }).select("_id").lean();
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { question, options, expiresInHours = 24, tags = [], rewardPool = 0, topicType, topicTags = [], derivedFromWheelId, topicPageId } = await req.json();
+    const { question, options, expiresInHours = 24, tags = [], topicType, topicTags = [], derivedFromWheelId, topicPageId } = await req.json();
 
     if (!question?.trim() || question.trim().length > 500) {
       return NextResponse.json({ error: "Question must be 1–500 characters" }, { status: 400 });
@@ -55,12 +55,6 @@ export async function POST(req) {
       };
     });
 
-    // Charge coins for reward pool
-    const poolAmount = Math.max(0, Math.min(Number(rewardPool) || 0, user.coins || 0));
-    if (poolAmount > 0) {
-      await User.updateOne({ _id: user._id }, { $inc: { coins: -poolAmount } });
-    }
-
     const hours = Math.max(1, Math.min(168, Number(expiresInHours)));
     const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
@@ -68,7 +62,6 @@ export async function POST(req) {
       userId: user._id,
       question: question.trim(),
       options: cleanOptions,
-      rewardPool: poolAmount,
       expiresAt,
       tags: (tags || []).slice(0, 5).map((t) => String(t).trim().toLowerCase()).filter(Boolean),
       topicType: topicType || "general",

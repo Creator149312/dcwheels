@@ -9,7 +9,6 @@ import {
   validateListDescription,
   validateListTitle,
 } from "@utils/Validator";
-import { handleAction } from "@utils/HelperFunctions";
 
 function getQueryParams() {
   if (typeof window === "undefined") return { type: null, id: null };
@@ -94,7 +93,7 @@ async function materializeImages(segData, wheelData) {
   return { data: nextData, wheelData: nextWheelData };
 }
 
-export function useSaveWheel({ createdBy, segData, wheelData, wheelType, coins, setCoins }) {
+export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -267,13 +266,6 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType, coins, 
           toast.error("Failed to Update Wheel");
           return false;
         } else {
-          handleAction({
-            actionType: "use",
-            amount: parseInt(10),
-            coins,
-            setCoins,
-            event: e,
-          });
           router.push("/dashboard");
           return true;
         }

@@ -212,7 +212,7 @@ function StatsCard({ stats, decisions = [], loading }) {
     );
   }
 
-  const { decisionsThisMonth, mostSpunWheel, streak, coins } = stats;
+  const { decisionsThisMonth, mostSpunWheel, streak } = stats;
 
   // Tally top outcomes from the recent decisions window
   const outcomeCounts = {};
@@ -267,16 +267,6 @@ function StatsCard({ stats, decisions = [], loading }) {
         ) : (
           <p className="text-sm text-gray-400">—</p>
         )}
-      </div>
-
-      {/* Coin Balance */}
-      <div className="rounded-2xl bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-950/40 dark:to-amber-900/30 border border-yellow-200/50 dark:border-yellow-800/40 px-4 py-4">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-sm leading-none">🪙</span>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400">Coins</p>
-        </div>
-        <p className="text-2xl font-black text-gray-900 dark:text-white">{(coins ?? 0).toLocaleString()}</p>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">total earned</p>
       </div>
       </div>{/* end grid */}
 

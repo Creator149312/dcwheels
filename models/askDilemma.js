@@ -51,11 +51,6 @@ const askDilemmaSchema = new Schema(
       validate: [v => v.length >= 2 && v.length <= 4, 'Must have between 2 and 4 options'],
       required: true,
     },
-    rewardPool: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
     expiresAt: {
       type: Date,
       required: true,

@@ -28,7 +28,6 @@ const MCQQuestion = ({ questionData }) => {
     // Return the result based on the answer
     const result = {
       correct: isCorrect,
-      coins: isCorrect ? questionData.coins : 0,
     };
 
     setAnswered(true); // Mark the question as answered
@@ -80,7 +79,6 @@ const MCQQuestion = ({ questionData }) => {
           {answerResult.correct ? (
             <div className="text-green-500">
               <p className="text-xl">🎉 Correct Answer! 🎉</p>
-              <p className="text-lg">You earned {answerResult.coins} coins.</p>
             </div>
           ) : (
             <div className="text-red-500">
@@ -88,13 +86,6 @@ const MCQQuestion = ({ questionData }) => {
               <p className="text-lg">Better luck next time!</p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Coin display */}
-      {answered && answerResult && (
-        <div className="absolute top-2 right-2 bg-yellow-500 text-white py-1 px-3 rounded-lg dark:bg-yellow-400">
-          <span className="text-lg font-bold">{answerResult.coins} coins</span>
         </div>
       )}
     </div>

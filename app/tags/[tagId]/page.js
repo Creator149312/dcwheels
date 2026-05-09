@@ -1,9 +1,15 @@
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
 import Tag from "@models/tag";
-import { getWheelsByTag, getAsksByTag, getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
+import { getWheelsByTag, getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
 import TagSpaceClient from "@components/TagSpaceClient";
+
+// React.cache() deduplicates resolveTagSlug between generateMetadata and the
+// page body — without this every cold render (ISR miss or first visit) fires
+// the same slug-lookup aggregation twice against MongoDB.
+const getCachedTagSlug = cache((tagId) => resolveTagSlug(tagId));
 import FollowButton from "@components/FollowButton";
 import Link from "next/link";
 import { Hash, Layers, MessageCircleQuestion } from "lucide-react";
@@ -54,7 +60,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const tagId = decodeURIComponent(params.tagId);
   await connectMongoDB();
-  const { canonical, tagDoc } = await resolveTagSlug(tagId);
+  const { canonical, tagDoc } = await getCachedTagSlug(tagId);
   const display = tagDoc?.displayName ||
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const description = tagDoc?.description ||
@@ -81,7 +87,7 @@ export default async function TagDetailPage({ params }) {
 
   // Resolve alias → canonical. If the URL contains an alias slug, 301
   // redirect to the canonical URL so PageRank consolidates.
-  const { canonical, tagDoc } = await resolveTagSlug(tagId);
+  const { canonical, tagDoc } = await getCachedTagSlug(tagId);
   if (tagDoc && canonical !== tagId.toLowerCase()) {
     redirect(`/tags/${canonical}`);
   }
@@ -93,10 +99,11 @@ export default async function TagDetailPage({ params }) {
   const display = tagDoc?.displayName ||
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // Fetch everything in parallel
-  const [initialWheels, initialAsks, stats] = await Promise.all([
+  // Asks are deferred — DilemmasTab self-fetches on first tab open.
+  // This removes ~12 serialized documents from the initial HTML payload,
+  // cutting TTFB and __NEXT_DATA__ size for the common case (wheels-only view).
+  const [initialWheels, stats] = await Promise.all([
     getWheelsByTag(canonical, { limit: 20, skip: 0 }),
-    getAsksByTag(canonical, { limit: 12, skip: 0 }),
     getTagSpaceStats(canonical),
   ]);
 
@@ -110,15 +117,6 @@ export default async function TagDetailPage({ params }) {
   const wheelsData = initialWheels.map((w) => ({
     ...w,
     _id: String(w._id),
-  }));
-  const asksData = initialAsks.map((a) => ({
-    ...a,
-    _id: String(a._id),
-    userId: a.userId ? String(a.userId) : undefined,
-    options: (a.options || []).map((o) => ({
-      ...o,
-      id: o._id ? String(o._id) : String(o.id),
-    })),
   }));
 
   return (
@@ -167,6 +165,13 @@ export default async function TagDetailPage({ params }) {
               className="text-xs px-3 py-2"
             />
             <Link
+              href={`/dashboard?create=1&tag=${encodeURIComponent(tagId)}`}
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm shrink-0"
+            >
+              <span className="text-base leading-none">+</span>
+              Create {display} Wheel
+            </Link>
+            <Link
               href={`/ask/create?q=&opts=&from=${encodeURIComponent(tagId)}`}
               className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm shrink-0"
             >
@@ -204,7 +209,8 @@ export default async function TagDetailPage({ params }) {
       <TagSpaceClient
         tagId={tagId}
         initialWheels={wheelsData}
-        initialAsks={asksData}
+        initialAsks={[]}
+        askCount={stats.askCount}
       />
     </div>
   );

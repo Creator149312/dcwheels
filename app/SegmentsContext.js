@@ -10,8 +10,6 @@ export const SegmentsProvider = ({ children }) => {
   const INNER_RADIUS = defaultWheelJSON.wheelData.innerRadius;
   const FONT_SIZE = defaultWheelJSON.wheelData.fontSize;
   const MAX_SPIN_TIME = defaultWheelJSON.wheelData.spinDuration;
-  // const [coins, setCoins] = useState(fetchCoinsFromStorage());
-  const [coins, setCoins] = useState(100);
   const html = useRef(`<div>TestData</div>`);
   const [resultList, setResultList] = useState([]);
 
@@ -143,8 +141,6 @@ export const SegmentsProvider = ({ children }) => {
       setSegData,
       setData,
       wheelData,
-      coins,
-      setCoins,
       setWheelData,
       MAX_OPTIONS_ON_WHEEL,
       MAX_SPIN_TIME,
@@ -170,7 +166,6 @@ export const SegmentsProvider = ({ children }) => {
       segData,
       advancedOptions,
       wheelData,
-      coins,
       MAX_OPTIONS_ON_WHEEL,
       MAX_SPIN_TIME,
       INNER_RADIUS,

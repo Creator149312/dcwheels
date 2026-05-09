@@ -3,11 +3,13 @@ import User from "@models/user";
 import Wheel from "@models/wheel";
 import DecisionLog from "@models/decisionLog";
 import AskVote from "@models/askVote";
+import UserBadge from "@models/userBadge";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPublicSpinStoriesForUser } from "@lib/spinStories";
 import { getAsksForUser } from "@lib/askStories";
 import ProfileActivityTimeline from "@components/ProfileActivityTimeline";
+import ProfileBadges from "@components/ProfileBadges";
 import { TbUsers, TbFlame } from "react-icons/tb";
 import { GiCartwheel } from "react-icons/gi";
 
@@ -58,7 +60,7 @@ export default async function ProfilePage({ params }) {
   if (!user) notFound();
 
   // Fetch all activity types + decision stats in parallel
-  const [wheels, stories, asks, spinCount, voteCount] = await Promise.all([
+  const [wheels, stories, asks, spinCount, voteCount, badges] = await Promise.all([
     Wheel.find({ createdBy: user.email })
       .select("title description tags createdAt _id")
       .sort({ createdAt: -1 })
@@ -68,6 +70,7 @@ export default async function ProfilePage({ params }) {
     getAsksForUser(user._id, 20),
     DecisionLog.countDocuments({ userId: String(user._id) }),
     AskVote.countDocuments({ userId: user._id }),
+    UserBadge.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
   ]);
 
   // Merge all types into one timeline sorted by date (Facebook-style)
@@ -142,6 +145,8 @@ export default async function ProfilePage({ params }) {
           </div>
         </div>
       </div>
+
+      <ProfileBadges badges={badges.map((b) => ({ ...b, _id: String(b._id) }))} />
 
       <ProfileActivityTimeline
         decodedName={decodedName}

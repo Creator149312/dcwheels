@@ -11,7 +11,7 @@ export async function generateMetadata({ params }) {
   if (!ask) return { title: "Dilemma not found" };
   return {
     title: `${ask.question.slice(0, 60)} – Ask Papa`,
-    description: `Help ${ask.authorName} decide. Vote and earn coins on Ask Papa.`,
+    description: `Help ${ask.authorName} decide. Vote on Ask Papa.`,
   };
 }
 

@@ -18,10 +18,6 @@ const askVoteSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
-    coinsEarned: {
-      type: Number,
-      default: 0,
-    },
     rationale: {
       // Optional short comment explaining the vote — drives social engagement
       type: String,

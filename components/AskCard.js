@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { timeAgo } from "@utils/HelperFunctions";
-import { TbCoins, TbPin, TbSend, TbCheck, TbTrophy } from "react-icons/tb";
+import { TbPin, TbSend, TbCheck, TbTrophy } from "react-icons/tb";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
@@ -111,7 +111,7 @@ export default function AskCard({ ask, compact = true }) {
       setMyRationale(rationale.trim());
       setPendingOptionId(null);
       setRationale("");
-      toast.success(`+${data.coinsEarned} coins earned!`);
+      toast.success("Thanks for voting!");
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -145,13 +145,6 @@ export default function AskCard({ ask, compact = true }) {
             {ask.isPinned && (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                 <TbPin className="h-2.5 w-2.5" /> Pinned
-              </span>
-            )}
-
-            {ask.rewardPool > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
-                <TbCoins className="h-3 w-3" />
-                {ask.rewardPool} pool
               </span>
             )}
 
@@ -331,9 +324,9 @@ export default function AskCard({ ask, compact = true }) {
             </Link>
           )}
           {voted && (
-            <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-              <TbCoins className="h-3.5 w-3.5" />
-              Coins earned!
+            <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400">
+              <TbCheck className="h-3.5 w-3.5" />
+              Voted!
             </span>
           )}
         </div>

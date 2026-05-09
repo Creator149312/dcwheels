@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { FaComment, FaCode } from "react-icons/fa";
 import { TbSwitch3 } from "react-icons/tb";
-import CommentsPanel from "./comments/CommentsPanel";
 import { timeAgo } from "@utils/HelperFunctions";
 import Description from "./description/Description";
+
+// CommentsPanel and EmbedCodePopup are only rendered after a button click.
+// Lazy-loading them removes the comment thread + reply editor from the
+// initial JS parse path, cutting TBT on both wheel page routes.
+const CommentsPanel = dynamic(() => import("./comments/CommentsPanel"), { ssr: false });
 // TODO(embed-feature): Re-enable once we test the /embed/[wheelId] flow
 // end-to-end (responsive sizing, auth-bypass, X-Frame-Options).
-import EmbedCodePopup from "@components/EmbedCodePopup";
+const EmbedCodePopup = dynamic(() => import("@components/EmbedCodePopup"), { ssr: false });
 
 function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : "";

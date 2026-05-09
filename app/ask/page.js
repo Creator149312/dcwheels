@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Ask Papa – Get Crowdsourced Decisions",
-  description: "Can't decide? Post your dilemma and let the community help you choose. Earn coins for voting.",
+  description: "Can't decide? Post your dilemma and let the community help you choose.",
 };
 
 export default async function AskPage() {
@@ -23,7 +23,7 @@ export default async function AskPage() {
               <span>Ask Papa</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Real people. Real decisions. Vote and earn coins.
+              Real people. Real decisions.
             </p>
           </div>
           <Link
