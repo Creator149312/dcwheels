@@ -4,57 +4,50 @@ import { usePathname } from "next/navigation";
 
 const AdsUnitInner = ({ slot }) => {
   const insRef = useRef(null);
-  // adReady controls whether we apply the "adsbygoogle" class
-  const [adReady, setAdReady] = useState(false);
 
   useEffect(() => {
     const el = insRef.current;
     if (!el) return;
 
-    const doPush = () => {
-      // 1. Basic guards: is it connected and not already pushed?
-      if (
-        !el.isConnected ||
-        el.dataset.adsPushed ||
-        el.getAttribute("data-adsbygoogle-status")
-      )
-        return;
+    // Schedule push() during browser idle time so AdSense's forced reflows
+    // (which are unavoidable inside show_ads_impl.js) happen AFTER LCP is
+    // locked in, not during the critical rendering path.
+    const schedulePush = () => {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(doPush, { timeout: 2000 });
+      } else {
+        setTimeout(doPush, 0);
+      }
+    };
 
-      // 2. Strict Width check: If 0, we are on mobile/hidden sidebar
-      if (el.offsetWidth === 0) return;
-
-      // 3. STEP 1: Reveal the class to Google
-      setAdReady(true);
-
-      // 4. STEP 2: Mark as pushed and trigger the actual AdSense push
-      el.dataset.adsPushed = "1";
+    function doPush() {
+      if (!el.isConnected) return;
+      if (el.dataset.adsActualPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      el.dataset.adsActualPushed = "1";
       try {
-        // We use a tiny timeout to ensure React has applied the 'adsbygoogle'
-        // class to the DOM before Google's script looks for it.
-        setTimeout(() => {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }, 50);
-      } catch (e) {
-        console.error("[AdsUnit] push error", e);
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
       }
-    };
+    }
 
-    const tryPush = () => {
-      if (el.offsetWidth > 0) {
-        if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(doPush, { timeout: 1000 });
-        } else {
-          setTimeout(doPush, 100);
-        }
-        return true;
+    // Use ResizeObserver exclusively — the callback fires immediately with
+    // the current size on the first observe() call, so we never need to
+    // call el.offsetWidth (which forces a synchronous layout/reflow).
+    // The width comes from the observer entry's contentRect at zero cost.
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width ?? 0;
+      if (width === 0) return;
+      if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
+        ro.disconnect();
+        return;
       }
-      return false;
-    };
-
-    if (tryPush()) return;
-
-    const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
+      // Mark eagerly so a re-fire can't double-schedule.
+      el.dataset.adsScheduled = "1";
+      el.classList.add("adsbygoogle");
+      ro.disconnect();
+      schedulePush();
     });
     ro.observe(el);
 
@@ -69,9 +62,6 @@ const AdsUnitInner = ({ slot }) => {
       <div className="flex justify-center items-center overflow-hidden">
         <ins
           ref={insRef}
-          // The magic is here: Google script ignores tags without this class.
-          // We only provide it once we know the width is > 0.
-          className={adReady ? "adsbygoogle" : ""}
           style={{
             display: "block",
             width: "100%",

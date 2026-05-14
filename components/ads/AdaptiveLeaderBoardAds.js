@@ -4,56 +4,44 @@ import { usePathname } from "next/navigation";
 
 function AdSlot({ slot, width, minHeight, className }) {
   const insRef = useRef(null);
-  // adReady prevents Google from seeing this tag until width > 0
-  const [adReady, setAdReady] = useState(false);
 
   useEffect(() => {
     const el = insRef.current;
     if (!el) return;
 
-    const doPush = () => {
-      if (
-        !el.isConnected ||
-        el.dataset.adsPushed ||
-        el.getAttribute("data-adsbygoogle-status")
-      )
-        return;
+    const schedulePush = () => {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(doPush, { timeout: 2000 });
+      } else {
+        setTimeout(doPush, 0);
+      }
+    };
 
-      // Strict check to prevent TagError
-      if (el.offsetWidth === 0) return;
-
-      // 1. Reveal class to Google
-      setAdReady(true);
-
-      // 2. Mark as pushed
-      el.dataset.adsPushed = "1";
-
-      // 3. Trigger push after a tiny delay to ensure class is applied
+    function doPush() {
+      if (!el.isConnected) return;
+      if (el.dataset.adsActualPushed) return;
+      if (el.getAttribute("data-adsbygoogle-status")) return;
+      el.dataset.adsActualPushed = "1";
       try {
-        setTimeout(() => {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }, 50);
-      } catch (error) {
-        console.error("[AdSlot] push failed", slot, error);
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Race conditions and dev-only double-invokes: safe to ignore.
       }
-    };
+    }
 
-    const tryPush = () => {
-      if (el.offsetWidth > 0) {
-        if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(doPush, { timeout: 1000 });
-        } else {
-          setTimeout(doPush, 100);
-        }
-        return true;
+    // Use ResizeObserver exclusively — reads width from contentRect (no
+    // reflow) instead of el.offsetWidth (forces synchronous layout flush).
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width ?? 0;
+      if (w === 0) return;
+      if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
+        ro.disconnect();
+        return;
       }
-      return false;
-    };
-
-    if (tryPush()) return;
-
-    const ro = new ResizeObserver(() => {
-      if (tryPush()) ro.disconnect();
+      el.dataset.adsScheduled = "1";
+      el.classList.add("adsbygoogle");
+      ro.disconnect();
+      schedulePush();
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -62,8 +50,7 @@ function AdSlot({ slot, width, minHeight, className }) {
   return (
     <ins
       ref={insRef}
-      // "adsbygoogle" class is ONLY added if adReady is true
-      className={`${adReady ? "adsbygoogle" : ""} ${className || ""}`}
+      className={className || ""}
       style={{
         display: "block",
         width: "100%",
