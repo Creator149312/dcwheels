@@ -3,16 +3,20 @@ import dynamic from "next/dynamic";
 import { useState, useEffect, useRef, useContext } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import WheelPlayerControls from "./WheelPlayerControls";
-import WheelEditor from "./WheelEditor";
-import WheelEditorModal from "./WheelEditorModal";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter } from "next/navigation";
 import { Edit2 } from "lucide-react";
+
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
   { ssr: false }
 );
+
+// Editor + modal — only used on the home page (/). Dynamic imports prevent
+// their chunks from being downloaded on /wheels and /uwheels routes at all.
+const WheelEditor = dynamic(() => import("./WheelEditor"), { ssr: false });
+const WheelEditorModal = dynamic(() => import("./WheelEditorModal"), { ssr: false });
 
 // These components only render AFTER the user spins (winner !== null) or
 // when wheelType === "quiz" + winner !== null. None of them affect first
@@ -36,7 +40,7 @@ const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
   wheelTypeProp = "basic",
-  relatedWheels,
+  relatedWheelsSlot,
   wheelId = null,
 }) => {
   const { wheelData, segData, setSegData, data, MAX_SPIN_TIME, wheelType } =
@@ -133,7 +137,7 @@ const WheelWithInputContentEditable = ({
           <div
             onClick={handleSpinClick}
             className={`relative flex items-center justify-center w-full ${
-              isFullScreen ? "flex-1" : "min-h-[24rem]"
+              isFullScreen ? "flex-1" : "min-h-[30rem]"
             }`}
           >
             {data.length > 0 && (
@@ -219,34 +223,48 @@ const WheelWithInputContentEditable = ({
           />
         </div>
 
-        {/* Desktop-only editor sidebar — hidden on mobile, Edit button below handles mobile */}
-        <div className="hidden lg:contents">
-          <WheelEditor
-            mustSpin={mustSpin}
-            currentPath={currentPath}
-            relatedWheels={relatedWheels}
-            isFullScreen={isFullScreen}
-          />
-        </div>
+        {/* Desktop sidebar: related wheels on content pages, full editor on home */}
+        {!isFullScreen && (
+          <div className="hidden lg:contents">
+            {currentPath === "/" ? (
+              <WheelEditor
+                mustSpin={mustSpin}
+                currentPath={currentPath}
+                relatedWheelsSlot={relatedWheelsSlot}
+                isFullScreen={isFullScreen}
+              />
+            ) : (
+              <aside className="relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden">
+                <div className="absolute inset-0 overflow-y-auto p-3">
+                  {relatedWheelsSlot}
+                </div>
+              </aside>
+            )}
+          </div>
+        )}
 
-        {/* Mobile-only Edit button — opens full-screen editor modal */}
-        <div className="lg:hidden flex justify-center py-4">
-          <button
-            onClick={() => setIsEditorOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-          >
-            <Edit2 size={18} />
-            Edit Wheel
-          </button>
-        </div>
+        {/* Mobile: Edit Wheel button + modal — home page only */}
+        {currentPath === "/" && (
+          <>
+            <div className="lg:hidden w-full pt-1 pb-4">
+              <button
+                onClick={() => setIsEditorOpen(true)}
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary text-primary-foreground font-bold rounded-2xl shadow-md hover:bg-primary/90 active:scale-[0.98] transition-all"
+              >
+                <Edit2 size={20} strokeWidth={2.5} />
+                Edit Wheel Items
+              </button>
+            </div>
 
-        {/* Full-screen editor modal for mobile */}
-        <WheelEditorModal
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          mustSpin={mustSpin}
-          currentPath={currentPath}
-        />
+            <WheelEditorModal
+              isOpen={isEditorOpen}
+              onClose={() => setIsEditorOpen(false)}
+              mustSpin={mustSpin}
+              currentPath={currentPath}
+              relatedWheelsSlot={relatedWheelsSlot}
+            />
+          </>
+        )}
       </div>
       {showCelebration && <FireworksConfetti />}
     </>

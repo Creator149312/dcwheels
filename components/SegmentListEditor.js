@@ -1,10 +1,10 @@
 "use client";
 import { useContext, useState, useRef, useEffect, memo, useCallback } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
-import { FaTrashAlt, FaPlus, FaImage, FaEye, FaEyeSlash, FaCopy, FaListUl } from "react-icons/fa";
+import { Trash2, Plus, Image, Eye, EyeOff, Copy, List } from "lucide-react";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
-import { useLocale } from "@components/providers/LocaleProvider";
+
 
 // Memoized row — only re-renders when its own `seg` object reference changes.
 // Since `updateSegment` mutates with .map + spread, untouched rows keep the
@@ -40,7 +40,7 @@ const SegmentRow = memo(function SegmentRow({
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors">
-            <FaImage size={14} />
+            <Image size={14} />
           </div>
         )}
         <input
@@ -83,14 +83,14 @@ const SegmentRow = memo(function SegmentRow({
             className={`p-1 transition-colors ${seg.visible !== false ? "text-gray-600 dark:text-gray-300 hover:text-blue-500" : "text-gray-400 dark:text-gray-600 hover:text-gray-500"}`}
             title={seg.visible !== false ? "Visible" : "Hidden"}
           >
-            {seg.visible !== false ? <FaEye size={14} /> : <FaEyeSlash size={14} />}
+            {seg.visible !== false ? <Eye size={14} /> : <EyeOff size={14} />}
           </button>
           <button
             onClick={() => onDuplicate(index)}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors flex-shrink-0"
             title="Duplicate segment"
           >
-            <FaCopy size={13} />
+            <Copy size={13} />
           </button>
         </div>
       )}
@@ -101,7 +101,7 @@ const SegmentRow = memo(function SegmentRow({
         className="text-red-400 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
         title="Remove segment"
       >
-        <FaTrashAlt size={13} />
+        <Trash2 size={13} />
       </button>
     </div>
   );
@@ -110,7 +110,7 @@ const SegmentRow = memo(function SegmentRow({
 export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, applyBulkText }) {
   const { segData, updateSegment, deleteSegment, addSegment, advancedOptions, wheelData } =
     useContext(SegmentsContext);
-  const { t } = useLocale();
+
 
   // Scroll the list to the bottom when a new segment is added
   const scrollContainerRef = useRef(null);
@@ -170,14 +170,14 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
             autoFocus
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
-            placeholder={t("editor.bulkPlaceholder")}
+            placeholder={"Bulk Placeholder"}
             className="w-full flex-1 min-h-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={applyBulkText}
             className="w-full shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            {t("editor.addToWheel")}
+            {"Add To Wheel"}
           </button>
         </div>
       ) : (
@@ -187,7 +187,7 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
             {segData.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center gap-3 py-8 text-center select-none">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <FaListUl size={20} className="text-muted-foreground/50" />
+                  <List size={20} className="text-muted-foreground/50" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">No segments yet</p>
@@ -213,12 +213,14 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
           </div>
 
           {/* Add segment */}
-          <button
-            onClick={() => addSegment(-1)}
-            className="w-full shrink-0 rounded-xl border-2 border-dashed border-border bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
-          >
-            <FaPlus size={11} /> {t("editor.addSegment")}
-          </button>
+          <div className="pt-1 mt-auto">
+            <button
+              onClick={() => addSegment(-1)}
+              className="w-full shrink-0 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/80 bg-background/50 hover:bg-muted py-2 text-xs font-semibold text-muted-foreground transition-all hover:text-foreground"
+            >
+              <Plus size={16} /> Add Segment
+            </button>
+          </div>
         </>
       )}
     </div>

@@ -27,12 +27,9 @@ export default function FeedCard({
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-sm sm:text-base">
-            <Link 
-              href={`/profile/${user.slug}`} 
-              className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-            >
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
               {user.name}
-            </Link>
+            </span>
             {" "}{actionText}{" "}
             {entity && (
               <Link 

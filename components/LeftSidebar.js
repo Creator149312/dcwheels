@@ -3,17 +3,17 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaGamepad, FaFilm, FaFan, FaUser } from "react-icons/fa";
+import { Home, Film, Gamepad2, Wind, User } from "lucide-react";
 
 const NAV_SECTIONS = [
   {
     label: "DISCOVER",
     items: [
-      { href: "/", label: "Home", icon: FaHome },
-      { href: "/movie", label: "Movies", icon: FaFilm },
-      { href: "/game", label: "Games", icon: FaGamepad },
-      { href: "/anime", label: "Anime", icon: FaFan },
-      { href: "/character", label: "Characters", icon: FaUser },
+      { href: "/", label: "Home", icon: Home },
+      { href: "/movie", label: "Movies", icon: Film },
+      { href: "/game", label: "Games", icon: Gamepad2 },
+      { href: "/anime", label: "Anime", icon: Wind },
+      { href: "/character", label: "Characters", icon: User },
     ],
   },
 ];

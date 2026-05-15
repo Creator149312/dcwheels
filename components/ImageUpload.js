@@ -2,7 +2,7 @@
 
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useContext, useState } from "react";
-import { FaImage } from "react-icons/fa";
+import { Image } from "lucide-react";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
 
@@ -87,7 +87,7 @@ const ImageUpload = ({ selectedIndex, segData }) => {
             style={{ objectFit: "cover" }}
           />
         ) : (
-          <FaImage size={25} />
+          <Image size={25} />
         )}
       </label>
     </>

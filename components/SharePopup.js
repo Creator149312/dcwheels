@@ -1,16 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  FaShareAlt,
-  FaFacebook,
-  FaTwitter,
-  FaLinkedin,
-  FaWhatsapp,
-  FaTelegram,
-  FaEnvelope,
-  FaTimes,
-  FaLink,
-} from "react-icons/fa";
+import { Share2, Mail, X, Link } from "lucide-react";
+import { FacebookIcon, TwitterIcon, LinkedInIcon, WhatsAppIcon, TelegramIcon } from "@components/BrandIcons";
 import toast from "react-hot-toast";
 
 export default function SharePopup({
@@ -43,12 +34,12 @@ export default function SharePopup({
   };
 
   const platformIcons = {
-    facebook: <FaFacebook className="text-blue-600 text-2xl" />,
-    twitter: <FaTwitter className="text-blue-400 text-2xl" />,
-    linkedin: <FaLinkedin className="text-blue-700 text-2xl" />,
-    whatsapp: <FaWhatsapp className="text-green-500 text-2xl" />,
-    telegram: <FaTelegram className="text-sky-500 text-2xl" />,
-    email: <FaEnvelope className="text-gray-500 text-2xl" />,
+    facebook: <FacebookIcon className="text-blue-600" size={24} />,
+    twitter: <TwitterIcon className="text-blue-400" size={24} />,
+    linkedin: <LinkedInIcon className="text-blue-700" size={24} />,
+    whatsapp: <WhatsAppIcon className="text-green-500" size={24} />,
+    telegram: <TelegramIcon className="text-sky-500" size={24} />,
+    email: <Mail className="text-gray-500" size={24} />,
   };
 
   // ✅ Conditional button styling
@@ -61,7 +52,7 @@ export default function SharePopup({
     <div className="relative">
       {/* Trigger Button */}
       <button onClick={togglePopup} className={buttonClass}>
-        <FaShareAlt className="text-gray-600 dark:text-gray-300" />
+        <Share2 className="text-gray-600 dark:text-gray-300" size={16} />
         Share
       </button>
 
@@ -80,7 +71,7 @@ export default function SharePopup({
               onClick={togglePopup}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
             >
-              <FaTimes />
+              <X size={14} />
             </button>
 
             {/* URL + Copy */}
@@ -95,7 +86,7 @@ export default function SharePopup({
                 onClick={copyToClipboard}
                 className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
               >
-                <FaLink />
+                <Link size={14} />
               </button>
             </div>
 

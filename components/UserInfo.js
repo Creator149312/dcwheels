@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import UserDropDownMenu from "./dropdowns/UserDropDownMenu";
 import { Button } from "./ui/button";
-import { useLocale } from "@components/providers/LocaleProvider";
 
-export default function UserInfo({ name, status, setOpen }) {
+
+export default function UserInfo({ setOpen }) {
   const [isMounted, setIsMounted] = useState(false);
-  const { t } = useLocale();
+  const { status, data: session } = useSession();
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -23,14 +25,14 @@ export default function UserInfo({ name, status, setOpen }) {
     return (
       <div className="cursor-pointer flex flex-col gap-5 align-middle items-center">
         {/* User profile section for future enhancements */}
-        <UserDropDownMenu name={name} setOpen={setOpen} />
+        <UserDropDownMenu name={session?.user?.name} setOpen={setOpen} />
       </div>
     );
   } else {
     return (
       <a className="gap-5" href="/login">
         <Button className="cursor-pointer" size={"lg"} variant={"default"}>
-          {t("common.login")}
+          {"Login"}
         </Button>
       </a>
     );

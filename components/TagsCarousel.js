@@ -136,7 +136,7 @@ export default function TagsCarousel() {
         <div
           ref={scrollRef}
           style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
-          className="flex overflow-x-auto gap-1.5 px-3 md:px-6 [&::-webkit-scrollbar]:hidden"
+          className="flex overflow-x-auto gap-1.5 mt-1 px-3 md:px-6 [&::-webkit-scrollbar]:hidden"
         >
           <Link
             href="/tags"

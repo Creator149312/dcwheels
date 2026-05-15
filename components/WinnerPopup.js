@@ -175,20 +175,6 @@ const WinnerPopup = ({
     }
   };
 
-  const handleAskCommunity = () => {
-    // Port the wheel's current options into the Ask create page.
-    // Use up to 4 options; always include the winner first so it's pre-selected.
-    const allOptions = segData.map((s) => s.text).filter(Boolean);
-    const winnerText = winner?.text || String(winner);
-    // Deduplicate, winner first, max 4
-    const unique = [winnerText, ...allOptions.filter((t) => t !== winnerText)];
-    const opts = unique.slice(0, 4).join("|");
-    const q = encodeURIComponent(`The wheel picked "${winnerText}" — should I go with it?`);
-    const title = encodeURIComponent(wheelTitle || "my wheel");
-    router.push(`/ask/create?q=${q}&opts=${encodeURIComponent(opts)}&from=${title}`);
-    closePopup();
-  };
-
   const removeWinner = (removeAll) => {
     const updatedSegData = segData.filter((element, index) =>
       removeAll
@@ -353,17 +339,8 @@ const WinnerPopup = ({
                     </div>
                   )}
 
-                  {/* ── Secondary Actions: Ask Community + Share ──────── */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <button
-                      onClick={handleAskCommunity}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      </svg>
-                      Ask Community
-                    </button>
+                  {/* ── Secondary Actions: Share ──────── */}
+                  <div className="mb-3">
                     <button
                       onClick={() => setShowShareCard((prev) => !prev)}
                       className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${

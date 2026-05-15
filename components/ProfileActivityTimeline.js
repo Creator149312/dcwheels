@@ -13,8 +13,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { TbClockPlay, TbMessageCircleQuestion, TbLayoutCards } from "react-icons/tb";
-import { GiCartwheel } from "react-icons/gi";
+import { Timer, MessageCircleQuestion, LayoutGrid } from "lucide-react";
+import { Disc3 } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
 // ── Dot colour per activity type ─────────────────────────────────────────
@@ -27,17 +27,17 @@ const DOT_COLOR = {
 // ── Type badge ────────────────────────────────────────────────────────────
 const TYPE_BADGE = {
   spin: {
-    icon: <GiCartwheel className="h-3 w-3" />,
+    icon: <Disc3 className="h-3 w-3" />,
     label: "Spin Result",
     cls: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300",
   },
   wheel: {
-    icon: <TbLayoutCards className="h-3 w-3" />,
+    icon: <LayoutGrid className="h-3 w-3" />,
     label: "Published Wheel",
     cls: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300",
   },
   ask: {
-    icon: <TbMessageCircleQuestion className="h-3 w-3" />,
+    icon: <MessageCircleQuestion className="h-3 w-3" />,
     label: "Asked Community",
     cls: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300",
   },
@@ -87,7 +87,7 @@ function SpinCard({ data }) {
         href={wheelRoute}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline mt-1"
       >
-        <GiCartwheel className="h-3.5 w-3.5" /> Spin this wheel
+        <Disc3 className="h-3.5 w-3.5" /> Spin this wheel
       </Link>
     </div>
   );
@@ -122,7 +122,7 @@ function WheelCard({ data }) {
         href={href}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 dark:text-green-400 hover:underline mt-1"
       >
-        <TbLayoutCards className="h-3.5 w-3.5" /> View wheel
+        <LayoutGrid className="h-3.5 w-3.5" /> View wheel
       </Link>
     </div>
   );
@@ -161,7 +161,7 @@ function AskCard({ data }) {
           href={href}
           className="font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
         >
-          <TbMessageCircleQuestion className="h-3.5 w-3.5" /> Vote now
+          <MessageCircleQuestion className="h-3.5 w-3.5" /> Vote now
         </Link>
       </div>
     </div>
@@ -174,7 +174,7 @@ export default function ProfileActivityTimeline({ decodedName, activities = [] }
   if (!activities || activities.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1a1a] p-12 text-center text-gray-500 dark:text-gray-400">
-        <TbClockPlay className="mx-auto h-10 w-10 text-gray-400 mb-3 opacity-50" />
+        <Timer className="mx-auto h-10 w-10 text-gray-400 mb-3 opacity-50" />
         <p className="font-medium text-gray-700 dark:text-gray-300">No activity yet</p>
         <p className="text-sm mt-1 max-w-xs mx-auto">
           When {decodedName} spins wheels, publishes them, or posts dilemmas, it will appear here.

@@ -1,4 +1,4 @@
-import { HiMoon } from "@node_modules/react-icons/hi";
+import { Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -20,7 +20,7 @@ export function ThemeToggleSwitch() {
   return (
     <label className="flex items-center justify-between w-full cursor-pointer text-sm">
       <div className="flex justify-start">
-        <HiMoon className="mr-2"  size={20} />
+        <Moon className="mr-2"  size={20} />
         <span>Dark Mode</span>
       </div>
       <input

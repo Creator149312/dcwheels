@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { FaCheckCircle, FaTimesCircle, FaTrophy, FaRedo } from "react-icons/fa";
+import { CheckCircle2, XCircle, Trophy, RotateCcw } from "lucide-react";
 
 /**
  * QuizCard
@@ -92,7 +92,7 @@ export default function QuizCard({
             <span className="text-foreground font-bold">{totalSegments}</span>
           </span>
           <span className="flex items-center gap-1 text-foreground">
-            <FaTrophy className="text-yellow-500" size={14} />
+            <Trophy className="text-yellow-500" size={14} />
             Score:{" "}
             <span className="font-bold text-primary">{score}</span> /{" "}
             {totalSegments}
@@ -110,7 +110,7 @@ export default function QuizCard({
           {/* Quiz Finished state */}
           {isFinished ? (
             <div className="text-center space-y-4 py-4">
-              <FaTrophy className="mx-auto text-yellow-500" size={48} />
+              <Trophy className="mx-auto text-yellow-500" size={48} />
               <h2 className="text-2xl font-bold text-foreground">
                 Quiz Complete!
               </h2>
@@ -169,10 +169,10 @@ export default function QuizCard({
                       </span>
                       <span>{option}</span>
                       {result && idx === segment.correctIndex && (
-                        <FaCheckCircle className="ml-auto text-green-500 flex-shrink-0" size={16} />
+                        <CheckCircle2 className="ml-auto text-green-500 flex-shrink-0" size={16} />
                       )}
                       {result && idx === selectedIndex && !result.correct && (
-                        <FaTimesCircle className="ml-auto text-red-500 flex-shrink-0" size={16} />
+                        <XCircle className="ml-auto text-red-500 flex-shrink-0" size={16} />
                       )}
                     </button>
                   ))}
@@ -189,9 +189,9 @@ export default function QuizCard({
                   }`}
                 >
                   {result.correct ? (
-                    <FaCheckCircle size={16} />
+                    <CheckCircle2 size={16} />
                   ) : (
-                    <FaTimesCircle size={16} />
+                    <XCircle size={16} />
                   )}
                   {result.correct
                     ? "Correct! Well done."
@@ -210,7 +210,7 @@ export default function QuizCard({
             onClick={handleReset}
             className="flex items-center gap-2"
           >
-            <FaRedo size={12} />
+            <RotateCcw size={12} />
             Reset Quiz
           </Button>
           <Button size="sm" onClick={handleClose}>

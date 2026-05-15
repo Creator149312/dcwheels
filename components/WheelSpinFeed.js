@@ -22,9 +22,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { TbUsers } from "react-icons/tb";
+import { Users } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
-import Link from "next/link";
 import Image from "next/image";
 
 function getInitial(name) {
@@ -133,7 +132,7 @@ export default function WheelSpinFeed({
       className="mt-4 mb-4 rounded-xl border border-amber-100 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 p-4 sm:p-5"
     >
       <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-        <TbUsers className="inline -mt-0.5 mr-1" />
+        <Users className="inline -mt-0.5 mr-1" size={16} />
         Recent results
       </h2>
 
@@ -148,13 +147,7 @@ export default function WheelSpinFeed({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-gray-800 dark:text-gray-200 leading-snug">
-                {s.userName !== "Someone" && s.userName !== "You" ? (
-                  <Link href={`/profile/${encodeURIComponent(s.userName)}`} className="font-semibold hover:underline">
-                    {s.userName}
-                  </Link>
-                ) : (
-                  <span className="font-semibold">{s.userName}</span>
-                )}{" "}
+                <span className="font-semibold">{s.userName}</span>{" "}
                 got{" "}
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {s.result}

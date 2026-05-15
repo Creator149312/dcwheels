@@ -2,7 +2,7 @@
 import { useContext, useEffect, useState } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "./ui/button";
-import { FaPlus, FaTrash, FaBrain, FaChevronDown, FaChevronUp, FaSpinner, FaImage } from "react-icons/fa";
+import { Plus, Trash2, Brain, ChevronDown, ChevronUp, Loader2, Image } from "lucide-react";
 import { compressImage } from "@utils/imageCompression";
 
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -148,11 +148,11 @@ export default function QuizSegmentEditor() {
           className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left"
         >
           <span className="flex items-center gap-2 text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wide">
-            <FaBrain size={11} /> Generate with AI
+            <Brain size={11} /> Generate with AI
           </span>
           {showAI
-            ? <FaChevronUp size={10} className="text-violet-500" />
-            : <FaChevronDown size={10} className="text-violet-500" />}
+            ? <ChevronUp size={10} className="text-violet-500" />
+            : <ChevronDown size={10} className="text-violet-500" />}
         </button>
 
         {showAI && (
@@ -238,8 +238,8 @@ export default function QuizSegmentEditor() {
               size="sm"
             >
               {generating
-                ? <><FaSpinner className="animate-spin" size={12} /> Generating…</>
-                : <><FaBrain size={12} /> {appendMode ? "Append" : "Generate"} {numQuestions} Questions</>}
+                ? <><Loader2 className="animate-spin" size={12} /> Generating…</>
+                : <><Brain size={12} /> {appendMode ? "Append" : "Generate"} {numQuestions} Questions</>}
             </Button>
 
             {!appendMode && segData.length > 0 && (
@@ -284,11 +284,11 @@ export default function QuizSegmentEditor() {
                     className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
                     aria-label="Remove question"
                   >
-                    <FaTrash size={11} />
+                    <Trash2 size={11} />
                   </span>
                   {isCollapsed
-                    ? <FaChevronDown size={10} className="text-muted-foreground" />
-                    : <FaChevronUp size={10} className="text-muted-foreground" />}
+                    ? <ChevronDown size={10} className="text-muted-foreground" />
+                    : <ChevronUp size={10} className="text-muted-foreground" />}
                 </div>
               </button>
 
@@ -340,7 +340,7 @@ export default function QuizSegmentEditor() {
                         htmlFor={`q-img-${idx}`}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed border-input cursor-pointer hover:bg-accent text-xs text-muted-foreground transition-colors"
                       >
-                        <FaImage size={11} />
+                        <Image size={11} />
                         {seg.questionImage ? "Change" : "Add image"}
                       </label>
                       {seg.questionImage && (
@@ -408,7 +408,7 @@ export default function QuizSegmentEditor() {
         onClick={addSegment}
         className="w-full flex items-center gap-2 flex-shrink-0"
       >
-        <FaPlus size={12} />
+        <Plus size={12} />
         Add Question
       </Button>
     </div>

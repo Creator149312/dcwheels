@@ -1,26 +1,27 @@
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import {
-  getPageDataBySlug,
-  getRelatedWheelsByTags,
-  getWheelMeta,
-} from "@components/actions/actions";
+import { getPageDataBySlug } from "@components/actions/actions";
 import dynamic from "next/dynamic";
-import WheelInfoSection from "@components/WheelMeta";
+import WheelInfoStatic from "@components/WheelInfoStatic";
+import Description from "@components/description/Description";
 import ViewTracker from "@components/ViewTracker";
-
-// Split below-fold client components out of the bootstrap JS bundle.
-// WheelStatsBar + WheelSpinFeed still SSR (no ssr:false) so their HTML is
-// in the indexable markup, but their JS is NOT in the critical preload list.
-// AdsUnit has no SEO value so ssr:false removes it from the HTML entirely.
-const WheelStatsBar = dynamic(() => import("@components/WheelStatsBar"));
-const WheelSpinFeed = dynamic(() => import("@components/WheelSpinFeed"));
-const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
-import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
+import {
+  SuspendedRelatedWheels,
+  SuspendedInfoActions,
+  SuspendedStatsFeed,
+  RelatedWheelsSkeleton,
+  InfoActionsSkeleton,
+  StatsFeedSkeleton,
+} from "@components/WheelPageSections";
+
+// AdsUnit has no SEO value so ssr:false removes it from the HTML entirely.
+const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), {
+  ssr: false,
+});
 
 // Admin-curated /wheels/[slug] pages change infrequently — revalidate once a
 // week. No session/headers calls here, so Next.js can fully static-render the
@@ -100,8 +101,8 @@ export async function generateMetadata({ params }) {
       images: [
         {
           url: pageData.wheel.wheelPreview,
-          width: 400,
-          height: 400,
+          width: 640,
+          height: 640,
           alt: pageData.title,
         },
       ],
@@ -126,60 +127,85 @@ export default async function Home({ params }) {
 
   const wheelIdStr = pageData.wheel._id.toString();
 
-  // Pre-fetch related wheels + public wheel meta (analytics, reactions,
-  // comment count). `userId = null` keeps the response user-agnostic so the
-  // rendered HTML is cacheable. Per-user reaction state is resolved client-side.
-  // `getRelatedWheelsByTags` is a direct DB aggregation — replaces the prior
-  // HTTP self-call to /api/related-wheels/advanced and saves one serverless
-  // invocation per cold ISR fill.
-  const [relatedWheels, initialMeta, initialStories] = await Promise.all([
-    pageData.wheel?.tags && pageData.wheel.tags.length > 0
-      ? getRelatedWheelsByTags(pageData.wheel.tags, wheelIdStr)
-      : Promise.resolve([]),
-    getWheelMeta(wheelIdStr, null),
-    // Seed the public Spin Stories feed at SSR time so the UGC is in the
-    // indexable HTML. Empty array on fresh wheels (component hides itself).
-    getPublicSpinStoriesForWheel(wheelIdStr, 10),
-  ]);
-
   return (
     <div className="flex flex-col">
       {/* Client-only view counter — decoupled so this page stays static */}
       <ViewTracker wheelId={wheelIdStr} />
+
+      {/* JSON-LD Structured Data for Google Indexing (Zero Core Web Vitals impact) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: pageData.title,
+            description: pageData.description,
+            applicationCategory: "BrowserApplication",
+            operatingSystem: "All",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "USD"
+            },
+            ...(pageData.wheel.wheelPreview && { image: pageData.wheel.wheelPreview })
+          }),
+        }}
+      />
 
       {/* Main Wheel Section */}
       <div className="relative">
         <WheelWithInputContentEditable
           newSegments={ensureArrayOfObjects(pageData.wheel.data)}
           wheelPresetSettings={pageData.wheel.wheelData}
-          relatedWheels={relatedWheels}
+          relatedWheelsSlot={
+            <Suspense fallback={<RelatedWheelsSkeleton />}>
+              <SuspendedRelatedWheels
+                tags={pageData.wheel.tags}
+                wheelId={wheelIdStr}
+              />
+            </Suspense>
+          }
           wheelId={wheelIdStr}
         />
       </div>
 
-      {/* Information Section — resolves session client-side via useSession() */}
-      <WheelInfoSection
-        wordsList={pageData.wheel}
-        wheelId={wheelIdStr}
-        pageData={pageData}
-        initialMeta={initialMeta}
-      />
+      {/* h1 title — Server Component, arrives in first HTML flush (LCP) */}
+      <WheelInfoStatic wordsList={pageData.wheel} />
 
-      {/* Public stats block — Information Gain surface for SEO. SSR-seeded
-          via initialMeta.analytics so segment distribution + top result are
-          in the indexable HTML, not behind a client fetch. */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
-        <WheelStatsBar
+      {/* Creator + stats + action buttons — own Suspense directly below title */}
+      <Suspense fallback={<InfoActionsSkeleton />}>
+        <SuspendedInfoActions
           wheelId={wheelIdStr}
-          initialStats={initialMeta?.analytics}
-          feedIsEmpty={!initialStories?.length}
+          createdAt={pageData.wheel.createdAt}
+          createdBy={pageData.wheel.createdBy}
         />
-        {/* Public Spin Stories — fresh UGC, also SSR-seeded for crawlers. */}
-        <WheelSpinFeed
-          wheelId={wheelIdStr}
-          initialStories={initialStories}
-        />
+      </Suspense>
+
+      {/* Tags — static, render instantly with no DB wait */}
+      {Array.isArray(pageData.wheel.tags) && pageData.wheel.tags.length > 0 && (
+        <div className="w-full px-4 flex flex-wrap gap-1.5 mt-2 mb-3 text-left">
+          {pageData.wheel.tags.map((tag) => (
+            <a
+              key={tag}
+              href={`/tags/${encodeURIComponent(tag)}`}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
+            >
+              #{tag}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Description — client component but SSR'd so text is indexable */}
+      <div className="w-full px-4 text-left">
+        <Description pageData={pageData} wordsList={pageData.wheel} />
       </div>
+
+      {/* Stats bar + spin feed — separate Suspense, fully independent */}
+      <Suspense fallback={<StatsFeedSkeleton />}>
+        <SuspendedStatsFeed wheelId={wheelIdStr} />
+      </Suspense>
 
       {/* Bottom-of-page ad — min-h reserves space before AdSense loads to
           prevent CLS. Slot 9397002286 is a responsive display unit. */}

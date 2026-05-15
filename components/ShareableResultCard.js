@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { FaRegCopy, FaShareAlt, FaTwitter, FaWhatsapp } from "react-icons/fa";
+import { Copy, Share2 } from "lucide-react";
+import { TwitterIcon, WhatsAppIcon } from "@components/BrandIcons";
 
 function stripHtml(value) {
   if (!value) return "";
@@ -98,7 +99,7 @@ export default function ShareableResultCard({ winner, wheelTitle }) {
           onClick={copyShareText}
           className="inline-flex items-center gap-1 rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-black dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
         >
-          <FaRegCopy /> Copy
+          <Copy size={14} /> Copy
         </button>
 
         <a
@@ -107,7 +108,7 @@ export default function ShareableResultCard({ winner, wheelTitle }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 rounded-md bg-sky-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-600"
         >
-          <FaTwitter /> Twitter
+          <TwitterIcon size={14} /> Twitter
         </a>
 
         <a
@@ -116,7 +117,7 @@ export default function ShareableResultCard({ winner, wheelTitle }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
         >
-          <FaWhatsapp /> WhatsApp
+          <WhatsAppIcon size={14} /> WhatsApp
         </a>
 
         <button
@@ -124,7 +125,7 @@ export default function ShareableResultCard({ winner, wheelTitle }) {
           onClick={nativeShare}
           className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
         >
-          <FaShareAlt /> Share
+          <Share2 size={14} /> Share
         </button>
       </div>
     </div>

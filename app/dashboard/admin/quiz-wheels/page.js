@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  FaBrain, FaPlus, FaTrash, FaExternalLinkAlt,
-  FaCheckCircle, FaTimesCircle, FaSpinner,
-} from "react-icons/fa";
+  Brain, Plus, Trash2, ExternalLink,
+  CheckCircle2, XCircle, Loader2,
+} from "lucide-react";
 
 const ADMIN_EMAIL = "gauravsingh9314@gmail.com";
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -38,7 +38,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
         className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition-colors"
         aria-label="Remove question"
       >
-        <FaTrash size={12} />
+        <Trash2 size={12} />
       </button>
 
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -105,7 +105,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
                 className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400"
               />
               {seg.correctIndex === optIdx && (
-                <FaCheckCircle size={13} className="text-green-500 flex-shrink-0" />
+                <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
               )}
             </label>
           ))}
@@ -172,7 +172,7 @@ function QuizRow({ wheel, onDeleted }) {
             className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
             title="Open page"
           >
-            <FaExternalLinkAlt size={11} />
+            <ExternalLink size={11} />
           </Link>
         )}
         <button
@@ -181,7 +181,7 @@ function QuizRow({ wheel, onDeleted }) {
           className="text-xs px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors disabled:opacity-50"
           title="Delete"
         >
-          {deleting ? <FaSpinner className="animate-spin" size={11} /> : <FaTrash size={11} />}
+          {deleting ? <Loader2 className="animate-spin" size={11} /> : <Trash2 size={11} />}
         </button>
       </div>
     </div>
@@ -288,7 +288,7 @@ export default function AdminQuizWheelsPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-400">
-        <FaSpinner className="animate-spin mr-2" /> Loading…
+        <Loader2 className="animate-spin mr-2" /> Loading…
       </div>
     );
   }
@@ -305,7 +305,7 @@ export default function AdminQuizWheelsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <FaBrain className="text-indigo-500" size={20} />
+          <Brain className="text-indigo-500" size={20} />
           <h1 className="text-xl font-black text-gray-900 dark:text-white">Quiz Wheels</h1>
           <span className="text-sm text-gray-400 dark:text-gray-500">/ Admin</span>
         </div>
@@ -313,14 +313,14 @@ export default function AdminQuizWheelsPage() {
           onClick={() => { setShowForm((v) => !v); setSavedSlug(null); setSaveError(""); }}
           className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors"
         >
-          <FaPlus size={11} /> {showForm ? "Cancel" : "New Quiz"}
+          <Plus size={11} /> {showForm ? "Cancel" : "New Quiz"}
         </button>
       </div>
 
       {/* Success banner */}
       {savedSlug && (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-          <FaCheckCircle size={14} />
+          <CheckCircle2 size={14} />
           Quiz wheel published at{" "}
           <Link href={`/wheels/${savedSlug}`} target="_blank" className="underline font-semibold">
             /wheels/{savedSlug}
@@ -401,7 +401,7 @@ export default function AdminQuizWheelsPage() {
                 onClick={addSegment}
                 className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 font-semibold transition-colors"
               >
-                <FaPlus size={9} /> Add Question
+                <Plus size={9} /> Add Question
               </button>
             </div>
             <div className="space-y-3">
@@ -420,7 +420,7 @@ export default function AdminQuizWheelsPage() {
           {/* Footer */}
           {saveError && (
             <div className="flex items-center gap-2 text-sm text-red-500">
-              <FaTimesCircle size={13} /> {saveError}
+              <XCircle size={13} /> {saveError}
             </div>
           )}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -435,7 +435,7 @@ export default function AdminQuizWheelsPage() {
               disabled={saving || !title.trim() || segments.length === 0}
               className="flex items-center gap-2 text-sm px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold transition-colors"
             >
-              {saving ? <FaSpinner className="animate-spin" size={13} /> : <FaBrain size={13} />}
+              {saving ? <Loader2 className="animate-spin" size={13} /> : <Brain size={13} />}
               {saving ? "Publishing…" : "Publish Quiz Wheel"}
             </button>
           </div>
@@ -452,7 +452,7 @@ export default function AdminQuizWheelsPage() {
         </h2>
         {loadingList ? (
           <div className="text-center py-8 text-gray-400">
-            <FaSpinner className="animate-spin inline mr-2" /> Loading…
+            <Loader2 className="animate-spin inline mr-2" /> Loading…
           </div>
         ) : wheels.length === 0 ? (
           <div className="text-center py-10 text-gray-400 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FaTimes, FaCode, FaCopy, FaCheck } from "react-icons/fa";
+import { X, Code2, Copy, Check } from "lucide-react";
 
 export default function EmbedCodePopup({ wheelId, onClose }) {
   const [copied, setCopied] = useState(false);
@@ -35,14 +35,14 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            <FaCode className="text-indigo-500" />
+            <Code2 className="text-indigo-500" size={16} />
             Embed this Wheel
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-1"
           >
-            <FaTimes size={13} />
+            <X size={13} />
           </button>
         </div>
 
@@ -77,7 +77,7 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
             className="absolute top-2 right-2 p-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition text-gray-600 dark:text-gray-200"
             title="Copy code"
           >
-            {copied ? <FaCheck size={11} className="text-green-500" /> : <FaCopy size={11} />}
+            {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
           </button>
         </div>
 
@@ -95,7 +95,7 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full text-xs font-semibold transition"
           >
-            {copied ? <FaCheck size={11} /> : <FaCopy size={11} />}
+            {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? "Copied!" : "Copy Code"}
           </button>
         </div>

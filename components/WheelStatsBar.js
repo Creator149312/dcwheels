@@ -25,7 +25,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { TbSwitch3 } from "react-icons/tb";
+import { Shuffle } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
 function formatCount(n) {
@@ -192,7 +192,7 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
       {/* Header row: total spins + last-spun freshness */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-          <TbSwitch3 className="inline -mt-0.5 mr-1" />
+          <Shuffle className="inline -mt-0.5 mr-1" size={16} />
           {formatCount(stats.spin_count)} total spins
         </h2>
         {stats.lastSpunAt && showFreshness ? (

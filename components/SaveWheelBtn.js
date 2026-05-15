@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import { CloudUpload } from "lucide-react";
 import Tooltip from "./Tooltip";
 import { useSaveWheel } from "./useSaveWheel";
 import TagInput from "./TagInput";
@@ -123,7 +123,7 @@ export default function SaveWheelBtn({ segmentsData }) {
                 "Saving..."
               ) : (
                 <>
-                  Save <FaCloudUploadAlt size={18} />
+                  Save <CloudUpload size={18} />
                 </>
               )}
             </Button>

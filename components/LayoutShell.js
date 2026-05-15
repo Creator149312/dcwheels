@@ -41,7 +41,7 @@ export default function LayoutShell({ children }) {
           </div>
         )}
 
-        <main className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 py-2">
+        <main className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 py-1">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 xl:col-span-9">
               <AdaptiveLeaderBoardAds

@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import RemoveListBtn from "./RemoveListBtn";
-import { HiPencilAlt } from "react-icons/hi";
-import { HiOutlineEye } from "react-icons/hi";
+import { Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import apiConfig from "@utils/ApiUrlConfig";
 import { Card } from "./ui/card";
@@ -65,7 +64,7 @@ export default function WordLists({ createdBy }) {
               <div className="flex items-center mt-1">
                 <div className="mx-2">{item.data.length} Options</div>
                 <Link href={`/uwheels/${item._id}`} className="mx-2">
-                  <HiOutlineEye size={24} />
+                  <Eye size={24} />
                 </Link>
                 <SharePopup
                   url={`/uwheels/${item._id}`}

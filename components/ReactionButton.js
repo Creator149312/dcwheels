@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { BiLike, BiSolidLike } from "react-icons/bi";
+import { ThumbsUp } from "lucide-react";
 
 function formatCount(n) {
   if (!n || n === 0) return "0";
@@ -66,8 +66,6 @@ export default function ReactionButton({
     }
   };
 
-  const Icon = reacted ? BiSolidLike : BiLike;
-
   return (
     <button
       onClick={toggleReaction}
@@ -80,7 +78,10 @@ export default function ReactionButton({
           : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:text-gray-100"
       } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
     >
-      <Icon className="text-base" />
+      <ThumbsUp
+        size={15}
+        className={reacted ? "fill-blue-600 dark:fill-blue-300" : ""}
+      />
       <span>{formatCount(count)}</span>
     </button>
   );

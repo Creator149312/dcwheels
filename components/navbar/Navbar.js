@@ -4,15 +4,8 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, PlusCircle, ChevronDown, Compass, Library, MessageCircleQuestion } from "lucide-react";
-import { useSession } from "next-auth/react";
-import UserInfo from "@components/UserInfo";
-import { HiViewList } from "react-icons/hi";
-import MobileSearchBar from "@components/MobileSearchBar";
-import { BiSidebar } from "react-icons/bi";
-import { GiCartwheel } from "react-icons/gi";
-import LanguageSwitcher from "@components/LanguageSwitcher";
-import { useLocale } from "@components/providers/LocaleProvider";
+import { Menu, X, PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft } from "lucide-react";
+
 
 // Modal is only needed when the user clicks Create. Lazy-loading keeps it
 // out of the shared bundle that ships on every page.
@@ -21,11 +14,23 @@ const CreateWheelModal = dynamic(
   { ssr: false }
 );
 
+// UserInfo manages its own session state now. We skip SSR to prevent hydration
+// mismatch on the authenticated vs unauthenticated UI button state.
+const UserInfo = dynamic(
+  () => import("@components/UserInfo"),
+  { ssr: false, loading: () => <div className="h-10 w-24 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" /> }
+);
+
+// MobileSearchBar brings in the API fetch logic, extra states, and lucide icons.
+// We can dynamically load it so it doesn't block the initial layout frame.
+const MobileSearchBar = dynamic(
+  () => import("@components/MobileSearchBar")
+);
+
 const Navbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const { status, data: session } = useSession();
-  const { t } = useLocale();
+
 
   const handleCreateClick = useCallback((event) => {
     event.preventDefault();
@@ -34,17 +39,17 @@ const Navbar = ({ onToggleSidebar }) => {
   }, []);
 
   return (
-    <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-900 transition-all duration-300">
-      <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-2 md:px-4">
+    <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-all duration-300">
+      <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-3 md:px-6">
         
         {/* Left: Sidebar Toggle & Logo */}
-        <div className="flex items-center gap-1 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-4 lg:pr-4">
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label={t("nav.openMenu")}
+            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={"Open menu"}
           >
-            <BiSidebar size={24} />
+            <PanelLeft size={22} />
           </button>
 
           <Link href="/" className="flex items-center group gap-2">
@@ -56,8 +61,8 @@ const Navbar = ({ onToggleSidebar }) => {
               priority
               className="h-8 w-8 md:h-9 md:w-9"
             />
-            <span className="text-lg md:text-xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">
-              Spin<span className="text-blue-600">Papa</span>
+            <span className="text-lg md:text-xl font-black tracking-tighter text-foreground uppercase">
+              Spin<span className="text-primary">Papa</span>
             </span>
           </Link>
         </div>
@@ -69,67 +74,57 @@ const Navbar = ({ onToggleSidebar }) => {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 md:gap-6">
-          <div className="hidden md:block">
-            <LanguageSwitcher compact={true} />
-          </div>
-          
           {/* Mobile Search Icon Trigger */}
           <div className="md:hidden">
             <MobileSearchBar />
           </div>
 
           {/* RESTORED: Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0.5">
             <button
               onClick={handleCreateClick}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
             >
               <PlusCircle size={18} />
-              {t("nav.create")}
+              <span>Create</span>
             </button>
 
             <Link
               href="/explore"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
             >
               <Compass size={18} />
-              {t("nav.explore")}
-            </Link>
-
-            <Link
-              href="/ask"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/20 rounded-xl transition-all"
-            >
-              <MessageCircleQuestion size={18} />
-              {t("nav.askPapa")}
+              <span>Explore</span>
             </Link>
 
             {/* Browse Dropdown */}
             <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:text-blue-600 rounded-xl">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all">
                 <Library size={18} />
-                {t("nav.browse")}
-                <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+                <span>Browse</span>
+                <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200 opacity-70" />
               </button>
 
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl rounded-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[70]">
-                <Link href="/wheels" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-500/10 text-gray-700 dark:text-gray-200 hover:text-blue-600 transition-colors">
-                  <GiCartwheel size={18} /> {t("nav.wheels")}
-                </Link>
-                <Link href="/lists" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-500/10 text-gray-700 dark:text-gray-200 hover:text-blue-600 transition-colors">
-                  <HiViewList size={18} /> {t("nav.lists")}
-                </Link>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[70]">
+                <div className="bg-popover border border-border shadow-md rounded-xl p-1.5 flex flex-col">
+                  <Link href="/wheels" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <Disc3 size={16} /> Wheels
+                  </Link>
+                  <Link href="/lists" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <List size={16} /> Collections
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="hidden md:block h-6 w-[1px] bg-gray-200 dark:bg-gray-800 mx-2" />
+          <div className="hidden md:block h-6 w-[1px] bg-border mx-1" />
 
           {/* User Section & Hamburger */}
-          <div className="flex items-center gap-3">
-             <UserInfo name={session?.user?.name} status={status} />
+          <div className="flex items-center gap-3 relative z-[80]">
+             <UserInfo />
              <button
-                className="md:hidden p-2 text-gray-600 dark:text-gray-300"
+                className="md:hidden p-2 text-muted-foreground hover:text-foreground"
                 onClick={() => setOpen(!open)}
               >
                 {open ? <X size={26} /> : <Menu size={26} />}
@@ -142,7 +137,7 @@ const Navbar = ({ onToggleSidebar }) => {
       <div 
         className={`fixed inset-0 z-[200] md:hidden transition-all duration-300 ${
           open 
-            ? "opacity-100 visible bg-gray-900/90 dark:bg-black/95 backdrop-blur-md" 
+            ? "opacity-100 visible bg-background/90 backdrop-blur-sm" 
             : "opacity-0 invisible pointer-events-none"
         }`}
         onClick={() => setOpen(false)}
@@ -152,36 +147,33 @@ const Navbar = ({ onToggleSidebar }) => {
       <div
         className={`fixed top-0 bottom-0 right-0 w-[280px] z-[210] p-6 shadow-2xl md:hidden transition-transform duration-500 ease-out flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
-        } bg-white dark:bg-gray-950 border-l border-gray-100 dark:border-gray-900`}
+        } bg-background border-l border-border`}
       >
         <div className="flex justify-between items-center mb-10">
-           <span className="text-xl font-black text-gray-900 dark:text-white uppercase">
-             Spin<span className="text-blue-600">Papa</span>
+           <span className="text-xl font-black text-foreground uppercase tracking-tighter">
+             Spin<span className="text-primary">Papa</span>
            </span>
-           <button onClick={() => setOpen(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-600 dark:text-white">
+           <button onClick={() => setOpen(false)} className="p-2 bg-muted hover:bg-accent rounded-full text-muted-foreground hover:text-foreground transition-colors">
              <X size={20} />
            </button>
         </div>
 
         <nav className="flex flex-col gap-3">
-       <LanguageSwitcher className="justify-between rounded-2xl" />
-          <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 w-full">
-         <PlusCircle size={22} /> {t("nav.createNewWheel")}
+          <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-md w-full hover:bg-primary/90 transition-colors">
+         <PlusCircle size={22} /> {"Create New Wheel"}
           </button>
-          <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-         <Compass className="text-blue-500" size={22} /> {t("nav.explore")}
+          <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
+         <Compass className="text-primary" size={22} /> {"Explore"}
           </Link>
-          <Link href="/ask" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30">
-         <MessageCircleQuestion size={22} /> {t("nav.askPapa")}
-          </Link>
+
           
-          <div className="border-t border-gray-100 dark:border-gray-800 my-4 pt-6">
-        <p className="text-[10px] font-black uppercase text-gray-400 mb-4 px-4 tracking-widest">{t("nav.browse")}</p>
-            <Link href="/wheels" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-          <GiCartwheel size={22} className="text-blue-500" /> {t("nav.browseWheels")}
+          <div className="border-t border-border my-4 pt-6">
+        <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 px-4 tracking-widest">{"Browse"}</p>
+            <Link href="/wheels" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
+          <Disc3 size={22} className="text-primary" /> {"Browse Wheels"}
             </Link>
-            <Link href="/lists" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-          <HiViewList size={22} className="text-indigo-500" /> {t("nav.collections")}
+            <Link href="/lists" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
+          <List size={22} className="text-primary" /> {"Collections"}
             </Link>
           </div>
         </nav>

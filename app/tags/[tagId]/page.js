@@ -12,7 +12,7 @@ import TagSpaceClient from "@components/TagSpaceClient";
 const getCachedTagSlug = cache((tagId) => resolveTagSlug(tagId));
 import FollowButton from "@components/FollowButton";
 import Link from "next/link";
-import { Hash, Layers, MessageCircleQuestion } from "lucide-react";
+import { Hash, Layers } from "lucide-react";
 
 // Tags with fewer wheels than this threshold are served with noindex so
 // Google skips thin pages, but the page still renders — users clicking
@@ -171,13 +171,6 @@ export default async function TagDetailPage({ params }) {
               <span className="text-base leading-none">+</span>
               Create {display} Wheel
             </Link>
-            <Link
-              href={`/ask/create?q=&opts=&from=${encodeURIComponent(tagId)}`}
-              className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm shrink-0"
-            >
-              <MessageCircleQuestion size={14} />
-              Ask a Dilemma
-            </Link>
           </div>
         </div>
 
@@ -187,12 +180,6 @@ export default async function TagDetailPage({ params }) {
             <Layers size={13} className="text-indigo-500" />
             <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
               {stats.wheelCount.toLocaleString()} {stats.wheelCount === 1 ? "Wheel" : "Wheels"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-full border border-purple-100 dark:border-purple-800/40">
-            <MessageCircleQuestion size={13} className="text-purple-500" />
-            <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
-              {stats.askCount.toLocaleString()} Active {stats.askCount === 1 ? "Dilemma" : "Dilemmas"}
             </span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-gray-900 rounded-full border border-gray-100 dark:border-gray-800">
@@ -209,8 +196,6 @@ export default async function TagDetailPage({ params }) {
       <TagSpaceClient
         tagId={tagId}
         initialWheels={wheelsData}
-        initialAsks={[]}
-        askCount={stats.askCount}
       />
     </div>
   );

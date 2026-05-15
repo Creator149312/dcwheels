@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import ContentEditable from "react-contenteditable";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
-import { FaSortAlphaDown, FaTrashAlt } from "react-icons/fa";
+import { ArrowDownAZ, Trash2 } from "lucide-react";
 
 const ContentEditableDivResult = () => {
   const result = useRef("");
@@ -44,13 +44,13 @@ const ContentEditableDivResult = () => {
     <>
       <div className="">
         <Button onClick={sortSegments} className="mx-1 py-0 my-1 h-7 text-xs">
-          <FaSortAlphaDown size={20} />
+          <ArrowDownAZ size={20} />
         </Button>
         <Button
           onClick={clearResultList}
           className="mx-1 py-0 my-1 h-7 text-xs"
         >
-         <FaTrashAlt size={20} />
+         <Trash2 size={20} />
         </Button>
       </div>
       <ContentEditable

@@ -1,6 +1,6 @@
 "use client";
 
-import { HiOutlineTrash } from "react-icons/hi";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import apiConfig from "@utils/ApiUrlConfig";
 export default function RemoveListBtn({ id, type }) {
@@ -30,7 +30,7 @@ export default function RemoveListBtn({ id, type }) {
 
   return (
     <a onClick={handleRemoveList} className="mx-2 my-2">
-      <HiOutlineTrash size={24} />
+      <Trash2 size={24} />
     </a>
   );
 }

@@ -21,11 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
-import { FaCloudUploadAlt } from "react-icons/fa";
+import { Share2 } from "lucide-react";
 import Tooltip from "./Tooltip";
-import SecondPopup from "./popup/SecondPopup";
 import SharableLinkPopup from "./SharableLinkPopup";
-import { FaShareAlt } from "react-icons/fa";
 
 export default function ShareWheelBtn({ segmentsData }) {
   const router = useRouter();
@@ -139,7 +137,7 @@ export default function ShareWheelBtn({ segmentsData }) {
                   ) : (
                     <>
                       Share
-                      <FaShareAlt size={20} className="ml-1" />
+                      <Share2 size={20} className="ml-1" />
                     </>
                   )}
                 </Button>

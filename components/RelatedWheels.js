@@ -1,7 +1,6 @@
 "use client";
 
-import { GiCartwheel } from "react-icons/gi";
-import { HiLightningBolt } from "react-icons/hi";
+import { Disc3, Zap } from "lucide-react";
 import Image from "next/image";
 
 export default function RelatedWheels({ relatedWheels }) {
@@ -9,7 +8,7 @@ export default function RelatedWheels({ relatedWheels }) {
     <aside className="hidden lg:block w-full p-0">
       {/* Sleek Minimalist Header */}
       <div className="flex items-center gap-2 mb-3 px-1">
-        <HiLightningBolt className="text-blue-500" size={14} />
+        <Zap className="text-blue-500" size={14} />
         <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
           Up Next
         </h4>
@@ -27,7 +26,7 @@ export default function RelatedWheels({ relatedWheels }) {
           >
             {/* Thumbnail */}
             <div className="relative flex-shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-              <GiCartwheel className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-white transition-colors" />
+              <Disc3 className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-white transition-colors" />
             </div>
 
             {/* Title */}

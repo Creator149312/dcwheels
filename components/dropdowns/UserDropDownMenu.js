@@ -8,10 +8,7 @@ import {
 } from "@components/ui/dropdown-menu";
 import SignOut from "@components/user/SignOut";
 import Link from "next/link";
-import { HiOutlineUserCircle } from "react-icons/hi";
-import { HiOutlineLogout } from "react-icons/hi";
-import { HiOutlinePresentationChartBar } from "react-icons/hi";
-import { GiCartwheel } from "react-icons/gi";
+import { UserCircle, LogOut, BarChart2, Disc3 } from "lucide-react";
 import { ThemeToggleSwitch } from "@components/ThemeToggleSwitch";
 
 const UserDropDownMenu = ({ name, setOpen }) => {
@@ -19,7 +16,7 @@ const UserDropDownMenu = ({ name, setOpen }) => {
      <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center justify-center focus:outline-none">
-          <HiOutlineUserCircle size={38} />
+          <UserCircle size={38} />
         </button>
       </DropdownMenuTrigger>
 
@@ -32,12 +29,12 @@ const UserDropDownMenu = ({ name, setOpen }) => {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem>
-          <HiOutlinePresentationChartBar size={20} className="mr-2" />
+          <BarChart2 size={20} className="mr-2" />
           <Link href="/dashboard">Dashboard</Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem>
-          <GiCartwheel size={20} className="mr-2" />
+          <Disc3 size={20} className="mr-2" />
           <a href="/">New Wheel +</a>
         </DropdownMenuItem>
 
@@ -46,7 +43,7 @@ const UserDropDownMenu = ({ name, setOpen }) => {
         </DropdownMenuItem>
 
         <DropdownMenuItem>
-          <HiOutlineLogout size={20} className="mr-2" />
+          <LogOut size={20} className="mr-2" />
           <SignOut />
         </DropdownMenuItem>
       </DropdownMenuContent>

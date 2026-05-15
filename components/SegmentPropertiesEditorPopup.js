@@ -1,8 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import { AiOutlineClose } from "react-icons/ai"; // Close icon for modal
-import { FaTools, FaTrashAlt } from "react-icons/fa";
+import { X, Wrench, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import Tooltip from "./Tooltip";
@@ -40,7 +39,7 @@ const SegmentPropertiesEditorPopup = ({
   return (
     <>
       <button className="py-0 h-7 text-xs" onClick={() => setIsOpen(true)}>
-        <FaTools size={18} />
+        <Wrench size={18} />
       </button>
 
       {isOpen && (
@@ -52,7 +51,7 @@ const SegmentPropertiesEditorPopup = ({
                 onClick={handleClose}
                 className="text-gray-500 dark:text-gray-400"
               >
-                <AiOutlineClose size={20} />
+                <X size={20} />
               </button>
             </div>
 
@@ -146,7 +145,7 @@ const SegmentPropertiesEditorPopup = ({
                         onClick={() => deleteSegment(index)} // Delete the segment
                         className="text-red-500 hover:text-red-700"
                       >
-                        <FaTrashAlt size={20} />
+                        <Trash2 size={20} />
                       </button>
 
                       <Button

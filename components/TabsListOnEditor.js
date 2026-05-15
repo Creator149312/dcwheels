@@ -1,16 +1,7 @@
 import React from "react";
 import { TabsTrigger } from "./ui/tabs";
-import {
-  FaEye,
-  FaEyeSlash,
-  FaPencilRuler,
-  FaClipboardList,
-  FaRandom,
-  FaSortAlphaDown,
-} from "react-icons/fa";
+import { Eye, EyeOff, ClipboardList, Shuffle, ArrowDownAZ, Brain, List } from "lucide-react";
 import SettingsAdv from "./SettingsAdv";
-import { cn } from "@/lib/utils";
-import { useLocale } from "@components/providers/LocaleProvider";
 
 const TabsListOnEditor = ({
   segData,
@@ -25,117 +16,102 @@ const TabsListOnEditor = ({
   onToggleAdvanced,
   onShuffle,
   onSort,
+  onToggleMode,
 }) => {
-  const { t } = useLocale();
-  const showBasicControls = wheelType === "basic" && activeTab === "list" && isVisible;
-
-  const utilityButtonClass =
-    "inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground";
-
-  const activeUtilityButtonClass =
-    "border-primary/30 bg-primary/10 text-foreground";
-
-  const organizeButtonClass =
-    "inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-muted-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground";
-
-  const countClass = (isActive) =>
-    cn(
-      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-      isActive
-        ? "bg-primary-foreground/15 text-primary-foreground"
-        : "bg-muted text-muted-foreground"
-    );
+  const showBasicControls =
+    wheelType === "basic" && activeTab === "list" && isVisible;
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-background/80 p-1 shadow-sm">
+    <div className="flex w-full flex-col gap-2 pb-0.5">
+      {/* Top Row: Tabs + Right Utilities */}
+      <div className="flex w-full items-center justify-between px-1">
+        <div className="flex items-center gap-1 rounded-lg bg-background p-0.5">
           <TabsTrigger
             value="list"
-            className="h-8 gap-2 rounded-lg px-3 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-foreground data-[state=active]:text-background text-muted-foreground transition-all"
           >
-            <span>{t("editor.list")}</span>
-            <span className={countClass(activeTab === "list")}>{segData.length}</span>
+            List <span className="ml-1.5 text-[#ffbe0b]">{segData.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="result"
-            className="h-8 gap-2 rounded-lg px-3 text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-foreground data-[state=active]:text-background text-muted-foreground transition-all"
           >
-            <span>{t("editor.result")}</span>
-            <span className={countClass(activeTab === "result")}>{resultList.length === 0 ? 0 : resultList.length}</span>
+            Result <span className="ml-1.5 text-muted-foreground/60">{resultList.length}</span>
           </TabsTrigger>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 bg-background rounded-lg p-0.5">
           <button
             type="button"
             onClick={toggleVisibility}
-            className={utilityButtonClass}
-            title={isVisible ? t("editor.hideEditor") : t("editor.showEditor")}
+            className="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
+            title={isVisible ? "Hide Editor" : "Show Editor"}
           >
-            {isVisible ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
-            <span>{isVisible ? t("editor.hide") : t("editor.show")}</span>
+            {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
-
           <SettingsAdv
             advOptions={advOptions}
-            showLabel={true}
-            iconSize={13}
-            label={t("editor.customize")}
-            triggerVariant="outline"
-            triggerClassName="h-8 gap-1.5 rounded-lg border-border bg-background px-3 text-xs font-medium text-muted-foreground shadow-sm hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            showLabel={false}
+            iconSize={18}
+            triggerVariant="ghost"
+            triggerClassName="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
           />
+          <button
+            type="button"
+            onClick={onToggleMode}
+            className="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
+            title={wheelType === "quiz" ? "Switch to Basic Mode" : "Switch to Quiz Mode"}
+          >
+            {wheelType === "quiz" ? <List size={18} /> : <Brain size={18} />}
+          </button>
         </div>
       </div>
 
+      {/* Bottom Row: Utilities */}
       {showBasicControls && (
-        <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-background/80 p-2 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between text-muted-foreground mt-1 px-1">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onToggleAdvanced}
-              aria-pressed={advOptions}
-              className={cn(utilityButtonClass, advOptions && activeUtilityButtonClass)}
-              title={t("editor.toggleAdvanced")}
+              onClick={onShuffle}
+              className="flex items-center justify-center h-6 w-6 rounded hover:bg-muted hover:text-foreground transition-colors"
+              title="Shuffle Segments"
             >
-              <FaPencilRuler size={12} />
-              <span>{t("editor.advanced")}</span>
+              <Shuffle size={16} />
             </button>
-
+            <button
+              type="button"
+              onClick={onSort}
+              className="flex items-center justify-center h-6 w-6 rounded hover:bg-muted hover:text-foreground transition-colors"
+              title="Sort A-Z"
+            >
+              <ArrowDownAZ size={16} />
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <label
+              className="flex cursor-pointer select-none items-center gap-1.5 hover:text-foreground transition-colors"
+              title="Toggle extra configuration fields"
+            >
+              <input
+                type="checkbox"
+                checked={!!advOptions}
+                onChange={onToggleAdvanced}
+                className="h-3 w-3 rounded-sm border-muted-foreground/40 accent-primary cursor-pointer"
+              />
+              <span className="text-[11px] font-medium tracking-wide">
+                Advanced
+              </span>
+            </label>
             <button
               type="button"
               onClick={onToggleBulkMode}
-              aria-pressed={bulkMode}
-              className={cn(utilityButtonClass, bulkMode && activeUtilityButtonClass)}
-              title={bulkMode ? t("editor.closePasteTitle") : t("editor.pasteListTitle")}
+              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
             >
-              <FaClipboardList size={12} />
-              <span>{bulkMode ? t("editor.closePaste") : t("editor.pasteList")}</span>
+              <ClipboardList size={16} />
+              {bulkMode ? "Close paste" : "Paste list"}
             </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              {t("editor.organize")}
-            </span>
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
-              <button
-                type="button"
-                onClick={onShuffle}
-                className={organizeButtonClass}
-                title={t("editor.shuffleSegments")}
-              >
-                <FaRandom size={12} />
-              </button>
-              <button
-                type="button"
-                onClick={onSort}
-                className={organizeButtonClass}
-                title={t("editor.sortAlphabetically")}
-              >
-                <FaSortAlphaDown size={13} />
-              </button>
-            </div>
           </div>
         </div>
       )}

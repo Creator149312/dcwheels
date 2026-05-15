@@ -2,7 +2,7 @@
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "@components/ui/button";
 import { useSession } from "next-auth/react";
-import { FaMagic } from "react-icons/fa";
+import { Wand2 } from "lucide-react";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { useContext, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -229,53 +229,67 @@ const GenerateWheel = () => {
     <Dialog open={isPopupVisible} onOpenChange={setIsPopupVisible}>
       <DialogTrigger asChild>
         <Button onClick={() => setIsPopupVisible(true)} className="shadow-sm">
-          <FaMagic size={15} className="mr-2" />
+          <Wand2 size={15} className="mr-2" />
           Smart Wheel
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl md:max-w-2xl bg-card border shadow-lg overflow-y-auto rounded-xl">
+      <DialogContent className="sm:max-w-2xl bg-card border shadow-lg overflow-y-auto rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-foreground">
-            Smart Wheel Builder
+          <DialogTitle className="text-2xl font-bold text-foreground">
+            What do you want to decide today?
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {step === "prompt" && (
             <>
-              <input
-                type="text"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="e.g. Best pizza toppings, 90s rock bands, Friday night dinner ideas"
-                disabled={loading}
-                maxLength={120}
-                autoFocus
-                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
+              {/* Input Container with Icon and Generate Button */}
+              <div className="flex items-start gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 px-4 py-4 focus-within:border-primary focus-within:bg-primary/10 transition-all">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="e.g. Best pizza toppings, 90s rock bands, Friday night dinner ideas"
+                  disabled={loading}
+                  maxLength={120}
+                  autoFocus
+                  rows={4}
+                  className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                />
+
+                <Button
+                  onClick={handleGenerateClick}
+                  disabled={loading}
+                  className="shrink-0 rounded-full px-6 h-10 self-end"
+                  size="sm"
+                >
+                  {loading ? "..." : "Generate"}
+                </Button>
+              </div>
+
+              {/* Options Below Input */}
               {!loading && (
-                <p className="text-xs text-muted-foreground">
-                  Tip: be specific — &quot;best taco fillings&quot; works better than &quot;food&quot;.
-                </p>
+                <div className="flex items-center gap-4 px-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={optimize}
+                      onChange={(e) => setOptimize(e.target.checked)}
+                      className="h-4 w-4 accent-primary cursor-pointer rounded"
+                    />
+                    <span className="text-sm text-muted-foreground">Optimize wheel options</span>
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Tip: &quot;best taco fillings&quot; works better than &quot;food&quot;
+                  </p>
+                </div>
               )}
-              {!loading && (
-                <label className="flex items-center gap-2 cursor-pointer w-fit">
-                  <input
-                    type="checkbox"
-                    checked={optimize}
-                    onChange={(e) => setOptimize(e.target.checked)}
-                    className="h-4 w-4 accent-primary cursor-pointer"
-                  />
-                  <span className="text-sm font-medium">Optimize Wheel Options</span>
-                  <span className="text-xs text-muted-foreground">(AI scores &amp; weights items by relevance)</span>
-                </label>
-              )}
+
               {loading && (
-                <div className="flex flex-col items-center space-y-4">
+                <div className="flex flex-col items-center space-y-4 py-4">
                   <img src="/spin-wheel-logo.png" alt="Loading" className="h-12 animate-spin" />
-                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                  <div className="w-full max-w-xs bg-secondary rounded-full h-2 overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all duration-500 ease-out"
                       style={{ width: `${progress}%` }}
@@ -340,25 +354,13 @@ const GenerateWheel = () => {
           )}
         </div>
 
-        <DialogFooter className="flex gap-2">
-          {step === "prompt" && (
-            <>
-              <Button onClick={handleGenerateClick} disabled={loading} className="w-full sm:w-auto">
-                {loading ? "Generating..." : "Generate"}
-              </Button>
-              {!loading && (
-                <Button variant="outline" onClick={handleClosePopup} className="w-full sm:w-auto">
-                  Close
-                </Button>
-              )}
-            </>
-          )}
+        <DialogFooter className="flex gap-2 justify-end">
           {step === "review" && (
             <>
-              <Button onClick={handleBuildWheel} className="w-full sm:w-auto">
+              <Button onClick={handleBuildWheel} className="flex-1">
                 Build Wheel
               </Button>
-              <Button variant="outline" onClick={() => setStep("prompt")} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => setStep("prompt")} className="flex-1">
                 Back
               </Button>
             </>

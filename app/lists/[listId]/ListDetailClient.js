@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
-import { FiZap } from "react-icons/fi";
+import { Trash2, Pencil, Plus, Zap } from "lucide-react";
 import SharePopup from "@components/SharePopup";
 import { createSegment } from "@utils/segmentUtils";
 import AddListItemModal from "@components/lists/AddListItemModal";
@@ -165,14 +164,14 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
                 }}
                 className="w-full flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <FiEdit2 /> Edit
+                <Pencil className="h-4 w-4" /> Edit
               </button>
 
               <button
                 onClick={deleteList}
                 className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <FiTrash2 /> Delete
+                <Trash2 className="h-4 w-4" /> Delete
               </button>
             </div>
           )}
@@ -182,14 +181,14 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
       {/* Content Mode Banner */}
       {isContentMode && (
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-          <FiZap size={18} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <Zap size={18} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span className="text-sm font-medium flex-1">You&apos;re in Content Wheel mode. Click <strong>Spin this List</strong> below to load it into the wheel.</span>
           <button
             onClick={spinList}
             disabled={list.items.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
           >
-            <FiZap size={14} /> Spin Now
+            <Zap size={14} /> Spin Now
           </button>
         </div>
       )}
@@ -221,7 +220,7 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
             disabled={list.items.length === 0}
             className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full shadow transition-all active:scale-95"
           >
-            <FiZap size={15} />
+            <Zap size={15} />
             Spin this List
           </button>
         </div>
@@ -291,7 +290,7 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
                   onClick={() => deleteItem(item._id)}
                   className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <FiTrash2 className="text-red-600 dark:text-red-400" />
+                  <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </button>
               )}
             </div>
@@ -305,7 +304,7 @@ export default function ListDetailClient({ initialList, listId, isOwner: isOwner
           onClick={() => setModalOpen(true)}
           className="fixed bottom-6 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700"
         >
-          <FiPlus /> Add Item
+          <Plus className="h-4 w-4" /> Add Item
         </button>
       )}
 

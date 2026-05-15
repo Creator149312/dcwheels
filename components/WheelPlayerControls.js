@@ -1,12 +1,12 @@
 import {
-  MdPlayArrow,
-  MdPause,
-  MdVolumeUp,
-  MdVolumeOff,
-  MdFullscreen,
-  MdFullscreenExit,
-  MdEdit,
-} from "react-icons/md";
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  Pencil,
+} from "lucide-react";
 
 export default function WheelPlayerControls({
   handleSpinClick,
@@ -34,7 +34,7 @@ export default function WheelPlayerControls({
           onClick={handleSpinClick}
           className="p-2 rounded hover:bg-white/20 transition"
         >
-          {mustSpin ? <MdPause size={24} /> : <MdPlayArrow size={24} />}
+          {mustSpin ? <Pause size={24} /> : <Play size={24} />}
         </button>
 
         {/* Mute/Unmute */}
@@ -43,7 +43,7 @@ export default function WheelPlayerControls({
           className="p-2 rounded hover:bg-white/20 transition"
           title={muted ? "Unmute" : "Mute"}
         >
-          {muted ? <MdVolumeOff size={24} /> : <MdVolumeUp size={24} />}
+          {muted ? <VolumeX size={24} /> : <Volume2 size={24} />}
         </button>
       </div>
 
@@ -58,7 +58,7 @@ export default function WheelPlayerControls({
               router.push("/");
             }}
           >
-            <MdEdit size={20} />
+            <Pencil size={20} />
             <span>Edit</span>
           </button>
         )} */}
@@ -72,7 +72,7 @@ export default function WheelPlayerControls({
               window.location.href = "/";
             }}
           >
-            <MdEdit size={20} />
+            <Pencil size={20} />
             <span>Edit</span>
           </button>
         )}
@@ -83,9 +83,9 @@ export default function WheelPlayerControls({
           className="p-2 rounded hover:bg-white/20 transition"
         >
           {isFullScreen ? (
-            <MdFullscreenExit size={24} />
+            <Minimize size={24} />
           ) : (
-            <MdFullscreen size={24} />
+            <Maximize size={24} />
           )}
         </button>
       </div>

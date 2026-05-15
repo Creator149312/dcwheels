@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 
 const ADMIN_EMAIL = "gauravsingh9314@gmail.com";
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 100;
 
 // ── Wheel preview canvas helpers ─────────────────────────────────────────────
 const FALLBACK_COLORS = [
@@ -35,6 +35,9 @@ function drawWheelPreview(canvas, wheel) {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas context unavailable");
 
+  // Disable smoothing — not needed for vector/canvas drawing
+  ctx.imageSmoothingEnabled = false;
+
   const size = canvas.width;
   const center = size / 2;
   const radius = size * 0.45;
@@ -44,10 +47,12 @@ function drawWheelPreview(canvas, wheel) {
   const wheelData = wheel?.wheelData || {};
   const segColors = wheelData.segColors || [];
 
+  // Clear and fill background
   ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = "#f8fafc";
   ctx.fillRect(0, 0, size, size);
 
+  // Draw wheel segments
   for (let i = 0; i < segments.length; i++) {
     const start = -Math.PI / 2 + i * arcSize;
     const end = start + arcSize;
@@ -58,9 +63,10 @@ function drawWheelPreview(canvas, wheel) {
     ctx.fillStyle = getSegmentColor(segments[i], i, segColors);
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Draw segment text
     const label = getSegmentText(segments[i]).replace(/<[^>]+>/g, "").trim() || "Option";
     const angle = start + arcSize / 2;
     const textRadius = radius * ((wheelData.textDistance || 80) / 100) * 0.85;
@@ -72,12 +78,15 @@ function drawWheelPreview(canvas, wheel) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#111827";
-    ctx.font = `600 11px sans-serif`;
+    ctx.font = `bold 24px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
     const short = label.length > 12 ? `${label.slice(0, 10)}..` : label;
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
     ctx.fillText(short, 0, 0);
     ctx.restore();
   }
 
+  // Draw inner circle or center dot
   const innerPct = wheelData.innerRadius || 0;
   if (innerPct > 0) {
     const innerPx = radius * (Math.min(innerPct, 60) / 100);
@@ -86,7 +95,7 @@ function drawWheelPreview(canvas, wheel) {
     ctx.fillStyle = "#f8fafc";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.stroke();
   } else {
     ctx.beginPath();
@@ -94,22 +103,27 @@ function drawWheelPreview(canvas, wheel) {
     ctx.fillStyle = "#ffffff";
     ctx.fill();
     ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.stroke();
   }
 
+  // Draw center text if provided
   if (wheelData.centerText) {
     ctx.fillStyle = "#0f172a";
-    ctx.font = `bold 14px sans-serif`;
+    ctx.font = `bold 32px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
     ctx.fillText(wheelData.centerText, center, center);
   }
 
+  // Draw branding at bottom
   ctx.fillStyle = "#334155";
-  ctx.font = `500 10px sans-serif`;
+  ctx.font = `600 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText("spinpapa.com", center, size - 12);
+  ctx.textBaseline = "bottom";
+  ctx.fillText("spinpapa.com", center, size - 10);
 }
 
 async function canvasToBlob(canvas) {
@@ -117,7 +131,7 @@ async function canvasToBlob(canvas) {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Blob creation failed"))),
       "image/webp",
-      1.0
+      0.92
     );
   });
 }
@@ -258,16 +272,33 @@ function WheelRow({ doc, onSaved, onGeneratePreview }) {
       <div className="flex items-start gap-3">
       {/* Thumbnail / Preview */}
         {localPreview ? (
-          <img
-            src={localPreview}
-            alt=""
-            className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
-          />
+          // Existing preview — show thumbnail with a hover re-generate overlay
+          <div className="relative w-12 h-12 flex-shrink-0 group">
+            <img
+              src={localPreview}
+              alt=""
+              className="w-12 h-12 object-cover rounded-lg"
+            />
+            <button
+              onClick={generatePreview}
+              disabled={previewStatus === "generating"}
+              title="Re-generate preview (640×640 base + 300×300 thumb)"
+              className="absolute inset-0 rounded-lg flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity text-white text-[9px] font-semibold leading-tight disabled:cursor-wait"
+            >
+              {previewStatus === "generating" ? (
+                <span>…</span>
+              ) : previewStatus === "error" ? (
+                <span className="text-red-300">✗</span>
+              ) : (
+                <><span className="text-sm">↻</span><span>Re-gen</span></>
+              )}
+            </button>
+          </div>
         ) : (
           <button
             onClick={generatePreview}
             disabled={previewStatus === "generating"}
-            title="Generate wheel preview image"
+            title="Generate wheel preview image (640×640 base + 300×300 thumb)"
             className={`w-12 h-12 rounded-lg flex-shrink-0 border-2 border-dashed flex flex-col items-center justify-center text-center transition-colors ${
               previewStatus === "generating"
                 ? "border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-400"
@@ -491,6 +522,10 @@ export default function WheelTagManagerPage() {
   // Preview generation
   const hiddenCanvasRef = useRef(null);
   const [previewBatchRunning, setPreviewBatchRunning] = useState(false);
+  const [previewBatchSize, setPreviewBatchSize] = useState(10);
+  const [previewBatchDone, setPreviewBatchDone] = useState(0);
+  const [previewBatchTotal, setPreviewBatchTotal] = useState(0);
+  const [previewBatchLog, setPreviewBatchLog] = useState([]); // { title, status: 'ok'|'error', msg? }[]
 
   // ── Fetch wheels ─────────────────────────────────────────────────────────────
   const fetchDocs = useCallback(async () => {
@@ -540,22 +575,41 @@ export default function WheelTagManagerPage() {
     return data.wheelPreview;
   }, []);
 
-  // Generate previews for all wheels on current page that are missing one
-  const generateAllPreviews = useCallback(async () => {
+  // Core helper: run image generation for a list of wheels with progress tracking
+  const runPreviewBatch = useCallback(async (queue) => {
     if (previewBatchRunning) return;
-    const missing = docs.filter((d) => !d.wheelPreview);
-    if (missing.length === 0) return;
+    const batch = queue.slice(0, previewBatchSize);
+    if (batch.length === 0) return;
     setPreviewBatchRunning(true);
-    for (const wheel of missing) {
+    setPreviewBatchDone(0);
+    setPreviewBatchTotal(batch.length);
+    setPreviewBatchLog([]);
+    for (let i = 0; i < batch.length; i++) {
+      const wheel = batch[i];
       try {
         await generatePreview(wheel);
-        await new Promise((r) => setTimeout(r, 250));
-      } catch {
-        // continue with next
+        setPreviewBatchDone(i + 1);
+        setPreviewBatchLog((prev) => [...prev, { title: wheel.title, status: "ok" }]);
+      } catch (err) {
+        setPreviewBatchDone(i + 1);
+        setPreviewBatchLog((prev) => [...prev, { title: wheel.title, status: "error", msg: err.message }]);
       }
+      if (i < batch.length - 1) await new Promise((r) => setTimeout(r, 300));
     }
     setPreviewBatchRunning(false);
-  }, [docs, generatePreview, previewBatchRunning]);
+  }, [previewBatchRunning, previewBatchSize, generatePreview]);
+
+  // Generate previews for wheels missing one (up to previewBatchSize)
+  const generateAllPreviews = useCallback(() => {
+    const missing = docs.filter((d) => !d.wheelPreview);
+    return runPreviewBatch(missing);
+  }, [docs, runPreviewBatch]);
+
+  // Re-generate ALL previews on current page (including existing ones).
+  // Use this for migrating old 320×320 images → 640×640 base + 300×300 thumb.
+  const regenAllPreviews = useCallback(() => {
+    return runPreviewBatch(docs);
+  }, [docs, runPreviewBatch]);
 
   // ── Batch runner ─────────────────────────────────────────────────────────────
   const runBatch = async (offset = 0) => {
@@ -656,7 +710,7 @@ export default function WheelTagManagerPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       {/* Hidden canvas used for off-screen wheel rendering */}
-      <canvas ref={hiddenCanvasRef} width={400} height={400} className="hidden" aria-hidden="true" />
+      <canvas ref={hiddenCanvasRef} width={640} height={640} className="hidden" aria-hidden="true" />
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
@@ -672,16 +726,44 @@ export default function WheelTagManagerPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Image batch size selector */}
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium px-1">Img:</span>
+              {[10, 15, 25, 50, 100].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setPreviewBatchSize(n)}
+                  disabled={previewBatchRunning}
+                  className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
+                    previewBatchSize === n
+                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
             {/* Generate missing previews for current page */}
             {docs.some((d) => !d.wheelPreview) && (
               <button
                 onClick={generateAllPreviews}
                 disabled={previewBatchRunning || batchRunning}
+                title={`Generate up to ${previewBatchSize} missing previews`}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 text-sm font-medium transition-colors"
               >
-                {previewBatchRunning ? "Generating previews…" : "◎ Gen Missing Previews"}
+                {previewBatchRunning ? `Generating… ${previewBatchDone}/${previewBatchTotal}` : `◎ Gen Missing (${previewBatchSize})`}
               </button>
             )}
+            {/* Re-generate ALL on current page — use this to migrate old 320px images */}
+            <button
+              onClick={regenAllPreviews}
+              disabled={previewBatchRunning || batchRunning}
+              title={`Re-generate 640×640 base + 300×300 thumb for up to ${previewBatchSize} wheels (migration)`}
+              className="px-3 py-2 rounded-xl border border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 text-sm font-medium text-orange-700 dark:text-orange-300 transition-colors"
+            >
+              {previewBatchRunning ? `Regenerating… ${previewBatchDone}/${previewBatchTotal}` : `↻ Regen (${previewBatchSize})`}
+            </button>
             {/* Batch size selector */}
             <div className="flex items-center gap-1.5">
               <span className="text-gray-500 text-xs font-medium">Batch:</span>
@@ -721,6 +803,47 @@ export default function WheelTagManagerPage() {
             onStop={stopBatch}
             onNextBatch={batchRemaining > 0 ? () => runBatch(batchOffset + batchSize) : null}
           />
+        )}
+
+        {/* ── Image generation progress ────────────────────────────────────── */}
+        {(previewBatchRunning || previewBatchLog.length > 0) && (
+          <div className="border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 bg-emerald-50/50 dark:bg-emerald-900/20 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                {previewBatchRunning
+                  ? `Generating images… ${previewBatchDone} / ${previewBatchTotal}`
+                  : `Done — ${previewBatchLog.filter((e) => e.status === "ok").length} generated, ${previewBatchLog.filter((e) => e.status === "error").length} errors`}
+              </p>
+              {!previewBatchRunning && (
+                <button
+                  onClick={() => setPreviewBatchLog([])}
+                  className="text-xs px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {previewBatchTotal > 0 && (
+              <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                  style={{ width: `${Math.round((previewBatchDone / previewBatchTotal) * 100)}%` }}
+                />
+              </div>
+            )}
+            <div className="h-28 overflow-y-auto space-y-0.5 font-mono text-[11px]">
+              {previewBatchLog.map((entry, i) => (
+                <div
+                  key={i}
+                  className={entry.status === "error" ? "text-red-500" : "text-gray-600 dark:text-gray-400"}
+                >
+                  {entry.status === "error"
+                    ? `✗ ${entry.title}: ${entry.msg}`
+                    : `✓ ${entry.title}`}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* ── Filters & search ─────────────────────────────────────────────── */}

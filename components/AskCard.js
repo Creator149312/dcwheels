@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { timeAgo } from "@utils/HelperFunctions";
-import { TbPin, TbSend, TbCheck, TbTrophy } from "react-icons/tb";
+import { Pin, Send, Check, Trophy } from "lucide-react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
@@ -125,7 +125,7 @@ export default function AskCard({ ask, compact = true }) {
       {/* ── Feature 5: Final Decision banner ────────────────────────── */}
       {finalDecisionOption && (
         <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50">
-          <TbCheck className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+          <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
           <p className="text-xs font-semibold text-green-700 dark:text-green-300">
             Decision made · Author chose{" "}
             <span className="font-extrabold">{finalDecisionOption.text}</span>
@@ -144,7 +144,7 @@ export default function AskCard({ ask, compact = true }) {
             {/* Feature 6: Pinned badge */}
             {ask.isPinned && (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
-                <TbPin className="h-2.5 w-2.5" /> Pinned
+                <Pin className="h-2.5 w-2.5" /> Pinned
               </span>
             )}
 
@@ -216,11 +216,11 @@ export default function AskCard({ ask, compact = true }) {
                 <span className="flex items-center gap-2 min-w-0">
                   {/* Feature 3: winner crown on leading option */}
                   {isLeading && showResults && (
-                    <TbTrophy className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+                    <Trophy className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
                   )}
                   {/* Feature 5: star for author's choice */}
                   {isAuthorChoice && (
-                    <TbCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
                   )}
                   {/* Catalog poster thumbnail */}
                   {option.catalogRef?.posterUrl && (
@@ -272,7 +272,7 @@ export default function AskCard({ ask, compact = true }) {
                 disabled={loading}
                 className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
               >
-                <TbSend className="h-3.5 w-3.5" />
+                <Send className="h-3.5 w-3.5" />
                 {loading ? "Voting…" : "Submit vote"}
               </button>
             </div>
@@ -290,7 +290,7 @@ export default function AskCard({ ask, compact = true }) {
       {/* ── Feature 3: "Community chose" banner (closed, no author pick) ── */}
       {isClosed && !finalDecisionOption && totalVotes > 0 && leadingOptionId && (
         <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-          <TbTrophy className="h-4 w-4 text-amber-500 shrink-0" />
+          <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
           <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
             Community chose:{" "}
             <span className="font-extrabold text-gray-900 dark:text-white">
@@ -325,7 +325,7 @@ export default function AskCard({ ask, compact = true }) {
           )}
           {voted && (
             <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400">
-              <TbCheck className="h-3.5 w-3.5" />
+              <Check className="h-3.5 w-3.5" />
               Voted!
             </span>
           )}

@@ -6,7 +6,7 @@
  * Renders the most recent public saved decisions across the entire platform.
  */
 
-import { TbActivity, TbLoader } from "react-icons/tb";
+import { Activity, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -55,7 +55,7 @@ export default function GlobalSpinFeed({ stories: initialStories = [], askTeaser
   if (!stories || stories.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1a1a] p-12 text-center text-gray-500 dark:text-gray-400 mt-6">
-        <TbActivity className="mx-auto h-10 w-10 text-gray-400 mb-3 opacity-50" />
+        <Activity className="mx-auto h-10 w-10 text-gray-400 mb-3 opacity-50" />
         <p className="text-lg font-medium text-gray-700 dark:text-gray-300">It&apos;s quiet... too quiet.</p>
         <p className="text-sm mt-2 max-w-sm mx-auto">
           No public spin stories found just yet. Spin some wheels and save the results publicly to kick off the feed!
@@ -162,7 +162,7 @@ export default function GlobalSpinFeed({ stories: initialStories = [], askTeaser
           >
             {loadingMore ? (
               <>
-                <TbLoader className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
                 Loading...
               </>
             ) : (

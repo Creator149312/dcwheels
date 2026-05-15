@@ -2,13 +2,13 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
-import { GiCartwheel } from "react-icons/gi";
+import { Disc3 } from "lucide-react";
 import { Sparkles, Film, List } from "lucide-react";
 
 const WHEELS = [
   {
     type: "basic",
-    icon: <GiCartwheel size={28} className="text-blue-500" />,
+    icon: <Disc3 size={28} className="text-blue-500" />,
     label: "Classic Wheel",
     description: "Perfect for: Lists, raffles, random selections, games, decision-making",
     fullDescription: "Add any text you want and spin! Ideal for names, choices, quizzes, or anything you need randomly picked.",
@@ -84,7 +84,7 @@ export default function CreateWheelModal({ open, onClose }) {
             What would you like to create?
           </DialogTitle>
           <DialogDescription>
-            Choose what you'd like to create. You can always change it later.
+            Choose what you&apos;d like to create. You can always change it later.
           </DialogDescription>
         </DialogHeader>
 

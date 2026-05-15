@@ -67,7 +67,7 @@ function AdSlot({ slot, width, minHeight, className }) {
 
 function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
   return (
-    <div className="w-full my-4">
+    <div className="w-full my-2">
       {/* Mobile Slot: Hidden on desktop via sm:hidden. 
           AdSlot will only 'activate' if this container is visible. */}
       <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-gray-50/50 dark:bg-gray-900/20">

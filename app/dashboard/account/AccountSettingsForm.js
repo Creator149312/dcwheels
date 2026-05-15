@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { useLocale } from "@components/providers/LocaleProvider";
+
 
 // Pure client form. The parent server component handles the auth redirect
 // so we can trust `email` + `isGoogleUser` to be present here.
@@ -11,7 +11,7 @@ export default function AccountSettingsForm({
   isGoogleUser,
   initialPublicSpins = false,
 }) {
-  const { t } = useLocale();
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,17 +35,17 @@ export default function AccountSettingsForm({
       });
       if (!res.ok) {
         setPublicSpins(!next);
-        toast.error(t("account.privacyUpdateFailed"));
+        toast.error("Privacy Update Failed");
       } else {
         toast.success(
           next
-            ? t("account.privacyPublicSuccess")
-            : t("account.privacyPrivateSuccess")
+            ? "Privacy Public Success"
+            : "Privacy Private Success"
         );
       }
     } catch {
       setPublicSpins(!next);
-      toast.error(t("account.somethingWentWrong"));
+      toast.error("Something Went Wrong");
     } finally {
       setSavingPrivacy(false);
     }
@@ -55,12 +55,12 @@ export default function AccountSettingsForm({
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast.error(t("account.passwordMismatch"));
+      toast.error("Password Mismatch");
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error(t("account.passwordTooShort"));
+      toast.error("Password Too Short");
       return;
     }
 
@@ -75,15 +75,15 @@ export default function AccountSettingsForm({
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || t("account.passwordUpdateFailed"));
+        toast.error(data.error || "Password Update Failed");
       } else {
-        toast.success(t("account.passwordUpdated"));
+        toast.success("Password Updated");
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       }
     } catch {
-      toast.error(t("account.somethingWentWrong"));
+      toast.error("Something Went Wrong");
     } finally {
       setLoading(false);
     }
@@ -91,25 +91,25 @@ export default function AccountSettingsForm({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t("account.title")}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{"Title"}</h1>
 
       <div className="mt-2 mb-8 text-sm text-gray-500 dark:text-gray-400">
-        {t("account.signedInAs")} <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
+        {"Signed In As"} <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
       </div>
 
       {/* Change Password */}
       <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{t("account.changePassword")}</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{"Change Password"}</h2>
 
         {isGoogleUser ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t("account.googlePasswordManaged")}
+            {"Google Password Managed"}
           </p>
         ) : (
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t("account.currentPassword")}
+                {"Current Password"}
               </label>
               <input
                 type="password"
@@ -121,7 +121,7 @@ export default function AccountSettingsForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t("account.newPassword")}
+                {"New Password"}
               </label>
               <input
                 type="password"
@@ -134,7 +134,7 @@ export default function AccountSettingsForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t("account.confirmNewPassword")}
+                {"Confirm New Password"}
               </label>
               <input
                 type="password"
@@ -150,7 +150,7 @@ export default function AccountSettingsForm({
               disabled={loading}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
             >
-              {loading ? t("account.updating") : t("account.updatePassword")}
+              {loading ? "Updating" : "Update Password"}
             </button>
           </form>
         )}
@@ -160,15 +160,15 @@ export default function AccountSettingsForm({
           never have saves surface publicly without explicit consent. */}
       <section className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          {t("account.privacy")}
+          {"Privacy"}
         </h2>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {t("account.showPublicSpins")}
+              {"Show Public Spins"}
             </p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("account.publicSpinsDescription")}
+              {"Public Spins Description"}
             </p>
           </div>
           <button

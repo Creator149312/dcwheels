@@ -90,18 +90,35 @@ export async function POST(req) {
       .replace(/(^-|-$)/g, "");
 
     const blobPath = `wheel-previews/${slug}-${wheelId}.webp`;
+    const thumbBlobPath = `wheel-previews/${slug}-${wheelId}-thumb.webp`;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    // Use 320x320 and quality 85 for wheel previews
-    const optimizedBuffer = await sharp(fileBuffer)
-      .resize(320, 320, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toBuffer();
 
-    const uploaded = await put(blobPath, optimizedBuffer, {
-      access: "public",
-      addRandomSuffix: false,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // Generate full 640x640 preview and 300x300 thumb in parallel
+    const [optimizedBuffer, thumbBuffer] = await Promise.all([
+      sharp(fileBuffer)
+        .resize(640, 640, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 92 })
+        .toBuffer(),
+      sharp(fileBuffer)
+        .resize(300, 300, { fit: "cover", position: "centre" })
+        .webp({ quality: 88 })
+        .toBuffer(),
+    ]);
+
+    const [uploaded] = await Promise.all([
+      put(blobPath, optimizedBuffer, {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }),
+      put(thumbBlobPath, thumbBuffer, {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }),
+    ]);
 
     await Wheel.findByIdAndUpdate(wheelId, { wheelPreview: uploaded.url });
 

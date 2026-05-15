@@ -9,7 +9,7 @@ import QuizSegmentEditor from "./QuizSegmentEditor";
 import ContentEditableDivResult from "./ContentEditableDivResult";
 import GenerateWheel from "@components/GenerateWheel";
 import SaveImportComponent from "./SaveImportComponent";
-import { FaBrain, FaListUl } from "react-icons/fa";
+import { Brain, List } from "lucide-react";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
 
@@ -89,49 +89,7 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
   };
 
   return (
-    <div className={`bg-card text-card-foreground border shadow-sm p-2 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden${inModal ? " border-none shadow-none p-0 flex-1 min-h-0" : " lg:h-[500px] lg:max-h-[500px]"}`}>
-      {/* Mode switcher */}
-      <div className="flex items-center gap-1 mb-2 p-1 bg-muted rounded-xl shrink-0">
-        <button
-          onClick={() => {
-            setBulkMode(false);
-            setWheelType("basic");
-          }}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
-            wheelType !== "quiz"
-              ? "bg-background shadow text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FaListUl size={11} /> Basic Wheel
-        </button>
-        <button
-          onClick={() => {
-            setBulkMode(false);
-            setWheelType("quiz");
-            // Ensure all segments have quiz fields so QuizSegmentEditor
-            // can render them without crashes or missing inputs.
-            setSegData((prev) =>
-              prev.map((seg) => ({
-                ...seg,
-                question: seg.question ?? "",
-                options:
-                  Array.isArray(seg.options) && seg.options.length > 0
-                    ? seg.options
-                    : ["", "", "", ""],
-                correctIndex: seg.correctIndex ?? 0,
-              }))
-            );
-          }}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
-            wheelType === "quiz"
-              ? "bg-background shadow text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FaBrain size={11} /> Quiz Mode
-        </button>
-      </div>
+    <div className={`bg-card text-card-foreground border shadow-sm px-2 pt-1.5 pb-2 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden${inModal ? " border-none shadow-none p-0 flex-1 min-h-0" : " min-h-[32rem] lg:max-h-[521px]"}`}>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -142,7 +100,7 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           transition: "opacity 0.3s ease",
         }}
       >
-        <TabsList className="w-full h-auto shrink-0 flex-wrap justify-between gap-2 rounded-2xl border border-border/60 bg-muted/40 p-2">
+        <TabsList className="w-full h-auto shrink-0 flex-wrap justify-between gap-1 rounded-xl border border-border/60 bg-muted/40 p-1">
           <TabsListOnEditor
             segData={segData}
             resultList={resultList}
@@ -156,6 +114,24 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
             onToggleAdvanced={handleAdvancedToggle}
             onShuffle={shuffleSegments}
             onSort={sortSegments}
+            onToggleMode={() => {
+              const newType = wheelType === "basic" ? "quiz" : "basic";
+              setBulkMode(false);
+              setWheelType(newType);
+              if (newType === "quiz") {
+                setSegData((prev) =>
+                  prev.map((seg) => ({
+                    ...seg,
+                    question: seg.question ?? "",
+                    options:
+                      Array.isArray(seg.options) && seg.options.length > 0
+                        ? seg.options
+                        : ["", "", "", ""],
+                    correctIndex: seg.correctIndex ?? 0,
+                  }))
+                );
+              }
+            }}
           />
         </TabsList>
         <TabsContent
@@ -168,7 +144,7 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
             overflow: "hidden",
           }}
         >
-          <div className="shrink-0">
+          <div className="shrink-0 mb-1">
             <ListSelector html={html} setSegData={setSegData} />
           </div>
           {wheelType === "quiz" ? (
@@ -193,7 +169,7 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           <ContentEditableDivResult resultList={resultList} />
         </TabsContent>
       </Tabs>
-      <div className="flex flex-wrap justify-between items-center gap-2 mt-2 shrink-0">
+      <div className="grid grid-cols-2 gap-2 mt-2 shrink-0">
         <GenerateWheel url={currentPath} />
         <SaveImportComponent segments={segData} onImport={setSegData} />
       </div>

@@ -405,12 +405,20 @@ export default function UserDashboard({ initialData = null }) {
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <Link
-              href="/dashboard/admin/preview-generator"
-              className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
-            >
-              Preview Generator
-            </Link>
+            <>
+              <Link
+                href="/dashboard/admin/wheels-to-pages"
+                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
+              >
+                AI Wheel Creator
+              </Link>
+              <Link
+                href="/dashboard/admin/preview-generator"
+                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
+              >
+                Preview Generator
+              </Link>
+            </>
           )}
           <Link
             href="/dashboard/account"

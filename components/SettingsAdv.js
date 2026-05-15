@@ -1,16 +1,16 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import { FaTools } from "react-icons/fa";
+import { Wrench } from "lucide-react";
 import { Button } from "./ui/button";
 import { SegmentsContext } from "@app/SegmentsContext";
 import Tooltip from "./Tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
-import { FaImage, FaSpinner } from "react-icons/fa";
+import { Image, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocale } from "@components/providers/LocaleProvider";
+
 
 const themes = [
   {
@@ -344,7 +344,7 @@ import {
 } from "./ui/dialog";
 
 const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel", iconSize = 20, triggerClassName, triggerVariant = "default" }) => {
-  const { t } = useLocale();
+
   const {
     handleWheelSettingsChange,
     wheelData,
@@ -504,7 +504,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip text={t("editor.customizeWheel")}>
+      <Tooltip text={"Customize Wheel"}>
         <DialogTrigger asChild>
           <Button
             variant={triggerVariant}
@@ -513,7 +513,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
               triggerClassName
             )}
           >
-            <FaTools size={iconSize} />
+            <Wrench size={iconSize} />
             {showLabel ? <span>{label}</span> : null}
           </Button>
         </DialogTrigger>
@@ -521,19 +521,19 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
 
       <DialogContent className="max-w-[90vw] md:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t("wheelSettings.title")}</DialogTitle>
+          <DialogTitle>{"Title"}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="appearance" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="appearance">{t("wheelSettings.appearance")}</TabsTrigger>
-            <TabsTrigger value="settings">{t("wheelSettings.settings")}</TabsTrigger>
+            <TabsTrigger value="appearance">{"Appearance"}</TabsTrigger>
+            <TabsTrigger value="settings">{"Settings"}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="appearance" className="space-y-4 pt-4">
             {/* Theme Selection with Drop-down */}
             <div className="space-y-2">
-              <h3 className="text-sm font-medium leading-none">{t("wheelSettings.selectTheme")}</h3>
+              <h3 className="text-sm font-medium leading-none">{"Select Theme"}</h3>
               <select
                 onChange={(e) => {
                   const theme =
@@ -572,7 +572,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
             {/* Range Input for Size Adjustment */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium leading-none">
-                {t("wheelSettings.maxOptionsDisplayed")} ({maxOptions})
+                {"Max Options Displayed"} ({maxOptions})
               </h3>
               <input
                 type="range"
@@ -592,7 +592,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
             {/* Range Input for Inner Radius Adjustment */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium leading-none">
-                {t("wheelSettings.innerRadius")} ({innerRadius})
+                {"Inner Radius"} ({innerRadius})
               </h3>
               <input
                 type="range"
@@ -611,7 +611,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
 
             {/* Center Branding Content */}
             <div className="space-y-2 border-t pt-4 mt-2">
-              <h3 className="text-sm font-medium leading-none">{t("wheelSettings.centerBranding")}</h3>
+              <h3 className="text-sm font-medium leading-none">{"Center Branding"}</h3>
               <div className="space-y-3">
                 <input
                   type="text"
@@ -621,9 +621,9 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
                     if (e.target.value) setCenterImage(""); // clear image if text is entered
                   }}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder={t("wheelSettings.centerTextPlaceholder")}
+                  placeholder={"Center Text Placeholder"}
                 />
-                <div className="text-xs text-center text-muted-foreground">{t("wheelSettings.or")}</div>
+                <div className="text-xs text-center text-muted-foreground">{"Or"}</div>
                 
                 {/* Drag and Drop Image Upload */}
                 <div
@@ -648,7 +648,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
                   />
                   {uploadingImage ? (
                     <div className="flex items-center text-muted-foreground text-sm">
-                      <FaSpinner className="animate-spin mr-2" /> {t("wheelSettings.uploading")}
+                      <Loader2 className="animate-spin mr-2" /> {"Uploading"}
                     </div>
                   ) : centerImage ? (
                     <div className="flex items-center space-x-2">
@@ -656,11 +656,11 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
                       <span className="text-xs text-blue-500 hover:text-blue-700 underline" onClick={(e) => {
                         e.stopPropagation(); // prevent opening file dialog
                         setCenterImage("");
-                      }}>{t("wheelSettings.removeImage")}</span>
+                      }}>{"Remove Image"}</span>
                     </div>
                   ) : (
                     <div className="flex items-center text-muted-foreground text-sm">
-                      <FaImage className="mr-2" size={16} /> {t("wheelSettings.clickOrDragImageHere")}
+                      <Image className="mr-2" size={16} /> {"Click Or Drag Image Here"}
                     </div>
                   )}
                 </div>
@@ -673,7 +673,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
             {/* Range Input for Size Adjustment */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium leading-none">
-                {t("wheelSettings.spinDuration")} ({spinDuration}s)
+                {"Spin Duration"} ({spinDuration}s)
               </h3>
               <input
                 type="range"
@@ -685,16 +685,16 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
                 className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{t("wheelSettings.fast")}</span>
-                <span>{t("wheelSettings.slow")}</span>
+                <span>{"Fast"}</span>
+                <span>{"Slow"}</span>
               </div>
             </div>
 
             <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-medium">{t("wheelSettings.autoRemoveWinner")}</h4>
+                <h4 className="text-sm font-medium">{"Auto Remove Winner"}</h4>
                 <div className="text-xs text-muted-foreground">
-                  {t("wheelSettings.autoRemoveWinnerDescription")}
+                  {"Auto Remove Winner Description"}
                 </div>
               </div>
               <input
@@ -707,20 +707,20 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
 
             <div className="space-y-2">
               <h4 className="text-sm font-medium leading-none">
-                {t("wheelSettings.applaudMessage")}
+                {"Applaud Message"}
               </h4>
               <input
                 type="text"
                 value={customPopupDisplayMessage}
                 onChange={onCustomPopupDisplayMessageChange}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder={t("wheelSettings.applaudMessagePlaceholder")}
+                placeholder={"Applaud Message Placeholder"}
               />
             </div>
 
             <div className="space-y-2">
               <h3 className="text-sm font-medium leading-none">
-                {t("wheelSettings.fontSize")} ({fontSize})
+                {"Font Size"} ({fontSize})
               </h3>
               <input
                 type="range"
@@ -732,17 +732,17 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
                 className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{t("wheelSettings.small")}</span>
-                <span>{t("wheelSettings.large")}</span>
+                <span>{"Small"}</span>
+                <span>{"Large"}</span>
               </div>
             </div>
 
             {/* Mystery Mode */}
             <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-medium">{t("wheelSettings.mysteryWheel")}</h4>
+                <h4 className="text-sm font-medium">{"Mystery Wheel"}</h4>
                 <div className="text-xs text-muted-foreground">
-                  {t("wheelSettings.mysteryWheelDescription")}
+                  {"Mystery Wheel Description"}
                 </div>
               </div>
               <input
@@ -758,7 +758,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
 
         <DialogFooter className="mt-6">
           <Button onClick={handleApply}>
-            {t("wheelSettings.saveChanges")}
+            {"Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

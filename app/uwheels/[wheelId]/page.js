@@ -1,19 +1,23 @@
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { validateObjectID } from "@utils/Validator";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import dynamic from "next/dynamic";
-import WheelInfoSection from "@components/WheelMeta";
+import WheelInfoStatic from "@components/WheelInfoStatic";
+import Description from "@components/description/Description";
 import ViewTracker from "@components/ViewTracker";
+import { getWheelById } from "@components/actions/actions";
+import {
+  SuspendedRelatedWheels,
+  SuspendedInfoActions,
+  SuspendedStatsFeed,
+  RelatedWheelsSkeleton,
+  InfoActionsSkeleton,
+  StatsFeedSkeleton,
+} from "@components/WheelPageSections";
 
-// Split below-fold client components out of the bootstrap JS bundle.
-// WheelStatsBar + WheelSpinFeed still SSR so their HTML is indexable;
 // AdsUnit is ssr:false — AdSense has no crawlable content.
-const WheelStatsBar = dynamic(() => import("@components/WheelStatsBar"));
-const WheelSpinFeed = dynamic(() => import("@components/WheelSpinFeed"));
 const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
-import { getWheelById, getRelatedWheelsByTags, getWheelMeta } from "@components/actions/actions";
-import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
 
 // ISR: revalidate user-wheel pages every 30 minutes.
 // View tracking runs client-side via <ViewTracker /> so this page can be
@@ -30,17 +34,13 @@ const fetchWheelData = cache(async (id) => {
   return getWheelById(id);
 });
 
-const fetchRelatedWheels = cache(async (tags, currentId) => {
-  return getRelatedWheelsByTags(tags, currentId);
-});
-
 export async function generateMetadata({ params }) {
   const listdata = await fetchWheelData(params.wheelId);
 
   if (listdata) {
     const meta = {
       title: listdata.title,
-      description: `Explore ${listdata.title} and spin to pick a random choice.`,
+      description: listdata.description || `Explore ${listdata.title} and spin to pick a random choice.`,
     };
 
     if (listdata.wheelPreview) {
@@ -51,8 +51,8 @@ export async function generateMetadata({ params }) {
         images: [
           {
             url: listdata.wheelPreview,
-            width: 400,
-            height: 400,
+            width: 640,
+            height: 640,
             alt: listdata.title,
           },
         ],
@@ -79,70 +79,93 @@ export async function generateMetadata({ params }) {
  *  Page Component
  */
 export default async function Page({ params }) {
+  const { wheelId } = params;
+
   // Early exit on invalid ObjectId — avoids a useless DB round-trip.
-  if (!validateObjectID(params.wheelId)) {
+  if (!validateObjectID(wheelId)) {
     return <div>Invalid wheel ID.</div>;
   }
 
   // Single fetch — generateMetadata above already triggered the cached call,
   // so this is a no-op DB hit thanks to React.cache().
-  const wordsList = await fetchWheelData(params.wheelId);
-
-  // userId = null keeps the rendered HTML user-agnostic so the CDN can cache
-  // it. The client component re-fetches a personalised meta payload after
-  // hydration if the user is signed in.
-  const [relatedWheels, initialMeta] = await Promise.all([
-    wordsList?.tags && wordsList.tags.length > 0
-      ? fetchRelatedWheels(wordsList.tags, params.wheelId)
-      : Promise.resolve([]),
-    wordsList
-      ? getWheelMeta(params.wheelId, null)
-      : Promise.resolve(null),
-  ]);
-
-  // Seed the public Spin Stories feed at SSR time. Empty array when the
-  // wheel doesn't exist or has no public saves yet (component hides itself).
-  const initialStories = wordsList
-    ? await getPublicSpinStoriesForWheel(params.wheelId, 10)
-    : [];
+  const wordsList = await fetchWheelData(wheelId);
 
   return (
     <div>
       {wordsList ? (
         <>
-          <ViewTracker wheelId={params.wheelId} />
+          <ViewTracker wheelId={wheelId} />
+          {/* JSON-LD Structured Data for Google Indexing (Zero Core Web Vitals impact) */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                name: wordsList.title,
+                description: wordsList.description || `Explore ${wordsList.title} and spin to pick a random choice.`,
+                applicationCategory: "BrowserApplication",
+                operatingSystem: "All",
+                offers: {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "USD"
+                },
+                ...(wordsList.wheelPreview && { image: wordsList.wheelPreview })
+              }),
+            }}
+          />
+          {/* Wheel canvas — always first */}
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
-            wheelPresetSettings={wordsList?.wheelData ?? null}
+            wheelPresetSettings={wordsList.wheelData ?? null}
             wheelTypeProp={wordsList?.type ?? "basic"}
-            relatedWheels={relatedWheels}
-            wheelId={params.wheelId}
+            relatedWheelsSlot={
+              <Suspense fallback={<RelatedWheelsSkeleton />}>
+                <SuspendedRelatedWheels tags={wordsList.tags} wheelId={wheelId} />
+              </Suspense>
+            }
+            wheelId={wheelId}
           />
 
-          <WheelInfoSection
-            wordsList={wordsList}
-            wheelId={params.wheelId}
-            initialMeta={initialMeta}
-          />
+          {/* h1 title — Server Component, arrives in first HTML flush (LCP) */}
+          <WheelInfoStatic wordsList={wordsList} />
 
-          {/* Public stats block — Information Gain surface for SEO. SSR-seeded
-              via initialMeta.analytics so segment distribution + top result are
-              in the indexable HTML, not behind a client fetch. */}
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 w-full">
-            <WheelStatsBar
-              wheelId={params.wheelId}
-              initialStats={initialMeta?.analytics}
-              feedIsEmpty={!initialStories?.length}
+          {/* Creator + stats + action buttons — own Suspense directly below title */}
+          <Suspense fallback={<InfoActionsSkeleton />}>
+            <SuspendedInfoActions
+              wheelId={wheelId}
+              createdAt={wordsList.createdAt}
+              createdBy={wordsList.createdBy}
             />
-            {/* Public Spin Stories — fresh UGC, also SSR-seeded for crawlers. */}
-            <WheelSpinFeed
-              wheelId={params.wheelId}
-              initialStories={initialStories}
-            />
+          </Suspense>
+
+          {/* Tags — static, render instantly with no DB wait */}
+          {Array.isArray(wordsList.tags) && wordsList.tags.length > 0 && (
+            <div className="w-full px-4 flex flex-wrap gap-1.5 mt-2 mb-3 text-left">
+              {wordsList.tags.map((tag) => (
+                <a
+                  key={tag}
+                  href={`/tags/${encodeURIComponent(tag)}`}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
+                >
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Description — client component but SSR'd so text is indexable */}
+          <div className="w-full px-4 text-left">
+            <Description wordsList={wordsList} />
           </div>
 
-          {/* Bottom-of-page ad — min-h prevents CLS when AdSense loads
-              async. Same slot pattern as /wheels/[slug]. */}
+          {/* Stats bar + spin feed — separate Suspense, fully independent */}
+          <Suspense fallback={<StatsFeedSkeleton />}>
+            <SuspendedStatsFeed wheelId={wheelId} />
+          </Suspense>
+
+          {/* Bottom-of-page ad — min-h prevents CLS when AdSense loads async. */}
           <div className="min-h-[90px]">
             <AdsUnit slot="9397002286" />
           </div>

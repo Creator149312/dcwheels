@@ -31,6 +31,7 @@ import WheelAnalytics from "@models/wheelAnalytics";
 import Tag from "@models/tag";
 import apiConfig from "@utils/ApiUrlConfig";
 import { OpenAI } from "openai";
+import { extractTopSegments } from "@lib/wheelAnalytics";
 import ApiLog from "@models/apilogs";
 
 const openai = new OpenAI({
@@ -401,7 +402,19 @@ export async function getPageDataBySlug(slug) {
         title: 1,
         description: 1,
         content: 1,
-        wheel: 1,
+        // Explicit wheel-field projection: excludes editorData, relatedTopics,
+        // isPublic, and likeCount which are not consumed by /wheels/[slug].
+        // likeCount is intentionally omitted — getWheelMeta fetches the live
+        // count from the Reaction collection (more accurate, real-time).
+        "wheel._id": 1,
+        "wheel.title": 1,
+        "wheel.description": 1,
+        "wheel.data": 1,
+        "wheel.wheelData": 1,
+        "wheel.tags": 1,
+        "wheel.wheelPreview": 1,
+        "wheel.createdBy": 1,
+        "wheel.createdAt": 1,
       },
     },
   ]);
@@ -802,11 +815,6 @@ export async function getWheelMeta(wheelId, userId = null) {
           .lean()
       : Promise.resolve(null),
   ]);
-
-  // Lazy-import to keep this server module tree-shakable for callers that
-  // only need basic counts. `extractTopSegments` is pure / cheap so the
-  // import cost is negligible.
-  const { extractTopSegments } = await import("@lib/wheelAnalytics");
 
   return {
     analytics: {
