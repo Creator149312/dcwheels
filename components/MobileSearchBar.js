@@ -150,7 +150,7 @@ export default function MobileSearchBar() {
                 value={query}
                 onChange={handleChange}
                 onKeyDown={handleKeyPress}
-                placeholder={"Search wheels, lists, movies, anime..."}
+                placeholder={"Search wheels, movies, anime..."}
                 className="w-full bg-transparent py-1 text-base focus:outline-none text-gray-900 dark:text-white"
               />
               {query && <X onClick={() => setQuery('')} className="text-gray-400 ml-2" aria-label={"Clear"} />}
