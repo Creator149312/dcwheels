@@ -31,16 +31,12 @@ export default function EmptyState({
 
   return (
     <div
-      className={`relative mx-auto max-w-md text-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm ${padding} ${className}`}
+      className={`relative mx-auto max-w-md text-center bg-card border border-border rounded-2xl ${padding} ${className}`}
     >
       {Icon && (
         <div className="relative mx-auto mb-5 inline-flex">
           <div
-            className={`absolute inset-0 ${iconWrap} rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 blur-xl`}
-            aria-hidden="true"
-          />
-          <div
-            className={`relative ${iconWrap} rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20 flex items-center justify-center`}
+            className={`relative ${iconWrap} rounded-2xl bg-primary flex items-center justify-center`}
           >
             <Icon className={`${iconSize} text-white`} strokeWidth={2} />
           </div>
@@ -48,13 +44,13 @@ export default function EmptyState({
       )}
 
       {title && (
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+        <h3 className="text-lg sm:text-xl font-bold text-foreground">
           {title}
         </h3>
       )}
 
       {description && (
-        <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+        <p className="mt-2 text-sm sm:text-base text-muted-foreground">
           {description}
         </p>
       )}
@@ -64,7 +60,7 @@ export default function EmptyState({
           {typeof action === "object" && action !== null && "href" in action ? (
             <Link
               href={action.href}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:shadow-xl hover:shadow-blue-500/30 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-primary hover:bg-primary/90 px-5 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-95"
             >
               {action.label}
             </Link>

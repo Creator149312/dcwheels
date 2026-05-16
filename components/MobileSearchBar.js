@@ -86,8 +86,8 @@ export default function MobileSearchBar() {
     <div className="w-full flex justify-end items-center" ref={searchRef}>
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden sm:flex relative w-full max-w-md">
-        <div className={`flex w-full items-center transition-all duration-200 rounded-xl border ${
-          isFocused ? "border-blue-500 bg-white dark:bg-gray-900 shadow-sm" : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50"
+        <div className={`flex w-full items-center transition-colors duration-200 rounded-xl border ${
+          isFocused ? "border-primary bg-background shadow-sm" : "border-border bg-muted/50"}
         }`}>
           <div className="pl-3 flex items-center justify-center">
             <Search className={isFocused ? "text-blue-500" : "text-gray-400"} size={18} />
@@ -98,24 +98,24 @@ export default function MobileSearchBar() {
             onFocus={() => setIsFocused(true)}
             onChange={handleChange}
             onKeyDown={handleKeyPress}
-            placeholder={"Search wheels..."}
-            className="w-full bg-transparent pl-2 pr-3 py-2 text-sm focus:outline-none text-gray-900 dark:text-gray-100"
+            placeholder={"Search wheels, lists, movies, anime..."}
+            className="w-full bg-transparent pl-2 pr-3 py-2 text-sm focus:outline-none text-foreground"
           />
         </div>
 
         {/* Desktop Suggestions */}
         {suggestions.length > 0 && (
-          <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
             <div className="max-h-[300px] overflow-y-auto">
               {suggestions.map((s) => (
                 <button
                   key={s._id}
                   onClick={() => handleSuggestionClick(s)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b last:border-0 border-gray-100 dark:border-gray-800"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-0 border-border"
                 >
                   <Zap size={14} className="text-blue-500 flex-shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold truncate text-gray-800 dark:text-gray-100">{s.title}</span>
+                    <span className="text-sm font-semibold truncate text-foreground">{s.title}</span>
                     {/* <span className="text-[10px] text-gray-500">Quick view</span> */}
                   </div>
                 </button>
@@ -130,27 +130,27 @@ export default function MobileSearchBar() {
         {!isMobileSearchOpen ? (
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            className="p-2 text-muted-foreground hover:bg-muted rounded-lg"
             aria-label={"Search wheels..."}
           >
             <Search size={24} />
           </button>
         ) : (
           <div
-            className="fixed top-0 left-0 right-0 z-[120] bg-white dark:bg-gray-900 px-4 py-3 flex items-center shadow-lg animate-in slide-in-from-top duration-200"
+            className="fixed top-0 left-0 right-0 z-[120] bg-card px-4 py-3 flex items-center shadow-md animate-in slide-in-from-top duration-200"
             style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
           >
             <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500" aria-label={"Back"}>
               <ArrowLeft size={22} />
             </button>
-            <div className="flex-1 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
+            <div className="flex-1 flex items-center bg-muted rounded-full px-3 py-1">
               <input
                 autoFocus
                 type="text"
                 value={query}
                 onChange={handleChange}
                 onKeyDown={handleKeyPress}
-                placeholder={"Search wheels..."}
+                placeholder={"Search wheels, lists, movies, anime..."}
                 className="w-full bg-transparent py-1 text-base focus:outline-none text-gray-900 dark:text-white"
               />
               {query && <X onClick={() => setQuery('')} className="text-gray-400 ml-2" aria-label={"Clear"} />}
@@ -161,20 +161,20 @@ export default function MobileSearchBar() {
         {/* Mobile Suggestions Dropdown */}
         {isMobileSearchOpen && suggestions.length > 0 && (
           <div
-            className="fixed left-0 right-0 mx-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl z-[120] overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+            className="fixed left-0 right-0 mx-4 bg-card border border-border rounded-2xl shadow-lg z-[120] overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
             style={{ top: "calc(4.25rem + env(safe-area-inset-top))" }}
           >
             {suggestions.map((s) => (
               <button
                 key={s._id}
                 onClick={() => handleSuggestionClick(s)}
-                className="w-full flex items-center gap-4 px-5 py-4 border-b border-gray-50 dark:border-gray-800 active:bg-blue-50 dark:active:bg-blue-900/20"
+                className="w-full flex items-center gap-4 px-5 py-4 border-b border-border active:bg-muted/70"
               >
                 <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                   <Zap size={16} className="text-blue-500" />
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{s.title}</span>
+                  <span className="text-sm font-semibold text-foreground">{s.title}</span>
                   {/* <span className="text-[11px] text-gray-500">Open wheel</span> */}
                 </div>
               </button>

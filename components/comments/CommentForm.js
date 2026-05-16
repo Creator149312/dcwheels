@@ -34,14 +34,14 @@ export default function CommentForm({
         }}
         autoFocus={autoFocus}
         disabled={!isLoggedIn || loading}
-        className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-2 py-2 text-sm 
-                   bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+        className="w-full border border-border rounded-md px-2 py-2 text-sm 
+                   bg-card text-foreground
                    focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
 
       {isLoggedIn && focused && (
         <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-muted-foreground">
             Posting as {currentUser?.name || "User"}
           </span>
           <button
@@ -49,7 +49,7 @@ export default function CommentForm({
             disabled={!text.trim() || loading}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               loading || !text.trim()
-                ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                ? "bg-gray-300 bg-muted text-muted-foreground cursor-not-allowed"
                 : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
           >

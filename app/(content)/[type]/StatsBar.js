@@ -67,8 +67,8 @@ export default function StatsBar({
   if (loading) {
     return (
       <div className="flex items-center gap-2">
-        <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-        <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+        <div className="h-9 w-20 bg-muted rounded-full animate-pulse" />
+        <div className="h-9 w-20 bg-muted rounded-full animate-pulse" />
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function StatsBar({
       {show.save && (
         <button
           onClick={onSaveClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
         >
           📌 {stats?.saveCount || 0}
         </button>

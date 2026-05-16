@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth";
@@ -21,11 +21,6 @@ export async function POST(req, { params }) {
 
     // ✅ 2. Parse body
     const body = await req.json();
-    const { type } = body;
-
-    if (!type || !["word", "entity"].includes(type)) {
-      return NextResponse.json({ error: "Invalid item type" }, { status: 400 });
-    }
 
     // ✅ 3. Fetch list (must belong to user)
     const list = await UnifiedList.findOne({ _id: id, userId });
@@ -38,6 +33,48 @@ export async function POST(req, { params }) {
     }
 
     // ✅ 4. Build item object
+    // Handle Bulk Add (array of items)
+    if (body.items && Array.isArray(body.items)) {
+      const newItems = body.items
+        .map((item) => {
+          if (item.type === "word" && item.word) {
+            return {
+              type: "word",
+              word: item.word,
+              wordData: item.wordData || "",
+              addedAt: new Date(),
+            };
+          }
+          return null;
+        })
+        .filter(Boolean); // removes nulls
+
+      if (newItems.length > 0) {
+        list.items.push(...newItems);
+        await list.save();
+      }
+
+      revalidatePath("/lists");
+      revalidatePath(`/lists/${id}`);
+      revalidateTag(`list-${id}`);
+
+      return NextResponse.json(
+        {
+          message: "Items added in bulk",
+          list: {
+            id: list._id,
+            name: list.name,
+            userId: list.userId,
+            description: list.description,
+            items: list.items,
+          },
+        },
+        { status: 201 }
+      );
+    }
+
+    // Handle Single Add
+    const { type } = body;
     let newItem = { type, addedAt: new Date() };
 
     if (type === "word") {
@@ -102,6 +139,7 @@ export async function POST(req, { params }) {
 
     revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidateTag(`list-${id}`);
 
     return NextResponse.json(
       {
@@ -109,6 +147,7 @@ export async function POST(req, { params }) {
         list: {
           id: list._id,
           name: list.name,
+          userId: list.userId,
           description: list.description,
           items: list.items,
         },

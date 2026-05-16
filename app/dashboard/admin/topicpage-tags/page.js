@@ -25,7 +25,7 @@ function TypeBadge({ type }) {
     movie: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     game: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
     character: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
-    custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+    custom: "bg-muted text-muted-foreground",
   };
   return (
     <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${colors[type] || colors.custom}`}>
@@ -37,12 +37,12 @@ function TypeBadge({ type }) {
 // ── Tag chip with optional remove button ─────────────────────────────────────
 function TagChip({ tag, onRemove }) {
   return (
-    <span className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-full px-2.5 py-0.5">
+    <span className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs rounded-full px-2.5 py-0.5">
       {tag}
       {onRemove && (
         <button
           onClick={onRemove}
-          className="text-gray-400 hover:text-red-500 transition-colors leading-none"
+          className="text-muted-foreground hover:text-red-500 transition-colors leading-none"
           aria-label={`Remove ${tag}`}
         >
           ×
@@ -131,7 +131,7 @@ function TopicRow({ doc, onSaved }) {
   const isEmpty = localTags.length === 0;
 
   return (
-    <div className={`border rounded-xl p-4 transition-colors ${isEmpty ? "border-orange-200 dark:border-orange-800/50 bg-orange-50/30 dark:bg-orange-900/10" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50"}`}>
+    <div className={`border rounded-xl p-4 transition-colors ${isEmpty ? "border-orange-200 dark:border-orange-800/50 bg-orange-50/30 dark:bg-orange-900/10" : "border-border bg-card"}`}>
       {/* Header row */}
       <div className="flex items-start gap-3">
         {doc.cover && (
@@ -143,7 +143,7 @@ function TopicRow({ doc, onSaved }) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+            <span className="font-semibold text-sm text-foreground truncate">
               {getTitle(doc)}
             </span>
             <TypeBadge type={doc.type} />
@@ -158,7 +158,7 @@ function TopicRow({ doc, onSaved }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{doc.slug}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{doc.slug}</p>
         </div>
 
         {/* Action buttons */}
@@ -172,7 +172,7 @@ function TopicRow({ doc, onSaved }) {
           </button>
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
           >
             {expanded ? "▲" : "▼"}
           </button>
@@ -190,13 +190,13 @@ function TopicRow({ doc, onSaved }) {
             />
           ))
         ) : (
-          <span className="text-xs text-gray-400 italic">No tags yet</span>
+          <span className="text-xs text-muted-foreground italic">No tags yet</span>
         )}
       </div>
 
       {/* Expanded editor */}
       {expanded && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-3">
+        <div className="mt-3 pt-3 border-t border-border space-y-3">
           {/* Add tag input */}
           <div className="flex gap-2">
             <input
@@ -204,11 +204,11 @@ function TopicRow({ doc, onSaved }) {
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addTag()}
               placeholder="Add a tag…"
-              className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               onClick={addTag}
-              className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-accent text-foreground font-medium transition-colors"
             >
               Add
             </button>
@@ -226,7 +226,7 @@ function TopicRow({ doc, onSaved }) {
             {pendingTags !== null && (
               <button
                 onClick={discard}
-                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
               >
                 Discard
               </button>
@@ -287,7 +287,7 @@ function BatchProgress({ log, isRunning, done, total, remaining, onStop, onNextB
       </div>
       <div className="w-full h-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-full overflow-hidden">
         <div
-          className="h-full bg-indigo-500 transition-all duration-300 rounded-full"
+          className="h-full bg-indigo-500 transition-[width] duration-300 rounded-full"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -295,7 +295,7 @@ function BatchProgress({ log, isRunning, done, total, remaining, onStop, onNextB
         {log.map((entry, i) => (
           <div
             key={i}
-            className={entry.type === "error" ? "text-red-500" : "text-gray-600 dark:text-gray-400"}
+            className={entry.type === "error" ? "text-red-500" : "text-muted-foreground"}
           >
             {entry.type === "error"
               ? `✗ ${entry.title}: ${entry.error}`
@@ -448,35 +448,35 @@ export default function TopicPageTagManagerPage() {
   // ── Auth guard ───────────────────────────────────────────────────────────────
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Loading…
       </div>
     );
   }
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Access denied.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold">TopicPage Tag Manager</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {total} pages total · AI-powered tag generation
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Batch size selector */}
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="text-gray-500 text-xs font-medium">Batch:</span>
+              <span className="text-muted-foreground text-xs font-medium">Batch:</span>
               {[25, 50, 100].map((n) => (
                 <button
                   key={n}
@@ -485,7 +485,7 @@ export default function TopicPageTagManagerPage() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                     batchSize === n
                       ? "bg-indigo-600 border-indigo-600 text-white"
-                      : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      : "border-border text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {n}
@@ -518,7 +518,7 @@ export default function TopicPageTagManagerPage() {
 
         {/* ── Filters & search ─────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-sm">
+          <div className="flex rounded-lg border border-border overflow-hidden text-sm">
             {["all", "empty"].map((f) => (
               <button
                 key={f}
@@ -526,7 +526,7 @@ export default function TopicPageTagManagerPage() {
                 className={`px-4 py-2 font-medium transition-colors ${
                   filter === f
                     ? "bg-indigo-600 text-white"
-                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    : "bg-background text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {f === "all" ? "All Pages" : "No Tags"}
@@ -539,11 +539,11 @@ export default function TopicPageTagManagerPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by title or slug…"
-              className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 text-sm px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              className="px-4 py-2 rounded-lg bg-muted hover:bg-accent text-sm font-medium transition-colors"
             >
               Search
             </button>
@@ -551,7 +551,7 @@ export default function TopicPageTagManagerPage() {
               <button
                 type="button"
                 onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}
-                className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 ✕
               </button>
@@ -572,12 +572,12 @@ export default function TopicPageTagManagerPage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="h-20 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse"
+                className="h-20 rounded-xl bg-muted animate-pulse"
               />
             ))}
           </div>
         ) : docs.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-muted-foreground">
             <p className="text-lg">No pages found</p>
           </div>
         ) : (
@@ -594,17 +594,17 @@ export default function TopicPageTagManagerPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 rounded-lg border border-border text-sm disabled:opacity-40 hover:bg-muted transition-colors"
             >
               ← Prev
             </button>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 rounded-lg border border-border text-sm disabled:opacity-40 hover:bg-muted transition-colors"
             >
               Next →
             </button>

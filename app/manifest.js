@@ -1,9 +1,9 @@
 export default function manifest() {
   return {
-    name: "Spinpapa – Spin Wheel & Decide",
+    name: "Spinpapa – Explore, Discover, Spin Wheel & Decide",
     short_name: "Spinpapa",
     description:
-      "Create spin wheels, discover options, and let the wheel decide. Spin, share, and explore with friends.",
+      "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun way.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
@@ -22,7 +22,13 @@ export default function manifest() {
         src: "/icons/icon-512.png",
         sizes: "512x512",
         type: "image/png",
-        purpose: "any maskable",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
     shortcuts: [

@@ -14,7 +14,7 @@ export const metadata = {
     template: "%s - Spinpapa",
   },
   description:
-    "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun, random way.",
+    "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun way.",
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/apple-touch-icon.png",
@@ -98,7 +98,7 @@ export default function RootLayout({ children }) {
           content="1e5650bff903e1c4a1134b724128da29"
         />
       </head>
-      <body className="min-h-screen dark:bg-slate-950 font-sans antialiased">
+      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <LazyToaster />
         <ThemeProvider
           attribute="class"

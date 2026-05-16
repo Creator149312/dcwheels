@@ -57,7 +57,7 @@ export default function CreateWheelModal({ open, onClose }) {
 
     if (type === "list") {
       onClose();
-      router.push("/dashboard?tab=my-lists&action=create");
+      router.push("/lists/create");
       return;
     }
 
@@ -91,13 +91,13 @@ export default function CreateWheelModal({ open, onClose }) {
         <div className="space-y-4 sm:space-y-6 pt-2">
           {/* ── Lists Section ──────────────────────────────────────────── */}
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 sm:mb-3 px-1">Collections (Organize & Track)</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 px-1">Collections (Organize &amp; Track)</h3>
             <div className="space-y-2 sm:space-y-3">
               {OTHER_ITEMS.map(({ type, icon, label, description, fullDescription, badge, badgeColor, border }) => (
                 <button
                   key={type}
                   onClick={() => handleSelect(type)}
-                  className={`flex items-start gap-3 sm:gap-4 w-full text-left px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border-2 border-border bg-card transition-all duration-150 cursor-pointer ${border}`}
+                  className={`flex items-start gap-3 sm:gap-4 w-full text-left px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border-2 border-border bg-card transition-colors duration-150 cursor-pointer ${border}`}
                 >
                   <div className="flex-shrink-0 mt-0.5 sm:mt-1">{icon}</div>
                   <div className="flex-1 min-w-0">
@@ -119,14 +119,14 @@ export default function CreateWheelModal({ open, onClose }) {
           </div>
 
           {/* ── Wheels Section ──────────────────────────────────────────── */}
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-4 sm:pt-6">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 sm:mb-3 px-1">Wheels (Spin & Play)</h3>
+          <div className="border-t border-border pt-4 sm:pt-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 px-1">Wheels (Spin &amp; Play)</h3>
             <div className="space-y-2 sm:space-y-3">
               {WHEELS.map(({ type, icon, label, description, fullDescription, badge, badgeColor, border }) => (
                 <button
                   key={type}
                   onClick={() => handleSelect(type)}
-                  className={`flex items-start gap-3 sm:gap-4 w-full text-left px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border-2 border-border bg-card transition-all duration-150 cursor-pointer ${border}`}
+                  className={`flex items-start gap-3 sm:gap-4 w-full text-left px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border-2 border-border bg-card transition-colors duration-150 cursor-pointer ${border}`}
                 >
                   <div className="flex-shrink-0 mt-0.5 sm:mt-1">{icon}</div>
                   <div className="flex-1 min-w-0">

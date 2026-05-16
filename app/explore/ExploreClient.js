@@ -60,16 +60,16 @@ export default function ExploreClient({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pt-3 pb-6 md:px-6 md:pt-4 bg-white dark:bg-gray-950 min-h-screen transition-colors">
+    <div className="max-w-7xl mx-auto px-4 pt-3 pb-6 md:px-6 md:pt-4 min-h-screen">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="mb-4 md:mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Compass size={22} className="text-blue-600" />
-          <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <Compass size={22} className="text-primary" />
+          <h1 className="text-xl md:text-3xl font-black text-foreground tracking-tight">
             Explore
           </h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           Trending wheels & moods for every occasion
         </p>
       </header>
@@ -112,21 +112,21 @@ export default function ExploreClient({
       {trending.length > 0 && (
         <section className="mb-6 md:mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="flex items-center gap-1.5 text-sm md:text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">
+            <h2 className="flex items-center gap-1.5 text-sm md:text-base font-black text-foreground uppercase tracking-wider">
               <Sparkles size={16} className="text-amber-500" />
               Trending now
             </h2>
             <div className="hidden md:flex items-center gap-1">
               <button
                 onClick={() => scrollRail(-1)}
-                className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                className="p-1.5 rounded-full bg-muted hover:bg-accent text-muted-foreground"
                 aria-label="Scroll left"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => scrollRail(1)}
-                className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                className="p-1.5 rounded-full bg-muted hover:bg-accent text-muted-foreground"
                 aria-label="Scroll right"
               >
                 <ChevronRight size={16} />
@@ -145,7 +145,7 @@ export default function ExploreClient({
                 href={`/wheels/${item.slug}`}
                 className="snap-start shrink-0 w-[150px] md:w-[180px] group"
               >
-                <div className="relative aspect-square w-full bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 group-hover:border-blue-500 transition-all">
+                <div className="relative aspect-square w-full bg-muted/40 rounded-2xl overflow-hidden border border-border group-hover:border-primary/50 transition-all">
                   {/* Rank badge */}
                   <div className="absolute top-2 left-2 z-10 bg-gradient-to-br from-amber-400 to-orange-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
                     {i + 1}
@@ -158,12 +158,12 @@ export default function ExploreClient({
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-gray-200 dark:text-gray-700">
+                    <div className="w-full h-full flex items-center justify-center text-5xl font-black text-muted-foreground/40">
                       {item.title?.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
-                <h3 className="mt-2 text-xs md:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight px-0.5">
+                <h3 className="mt-2 text-xs md:text-sm font-bold text-foreground line-clamp-2 leading-tight px-0.5">
                   {item.title}
                 </h3>
               </Link>
@@ -175,7 +175,7 @@ export default function ExploreClient({
       {/* ── Mood chips ─────────────────────────────────────────────────── */}
       {/* Non-sticky: chips scroll away with the page so the mobile top bar
           (which is itself scroll-aware) stays the only chrome on screen. */}
-      <div className="bg-white/95 dark:bg-gray-950/95 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-gray-100 dark:border-gray-900">
+      <div className="bg-background/95 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-border">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
           {moods.map((m) => {
             const active = m.slug === activeMood || (activeMood === "trending" && m.slug === "trending");
@@ -186,8 +186,8 @@ export default function ExploreClient({
                 disabled={isPending && active}
                 className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all ${
                   active
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 <span>{m.emoji}</span>
@@ -200,18 +200,18 @@ export default function ExploreClient({
 
       {/* ── Sort toggle ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm md:text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">
+        <h2 className="text-sm md:text-base font-black text-foreground uppercase tracking-wider">
           {activeMood === "trending" || activeMood === "all"
             ? "Popular wheels"
             : `${moods.find((m) => m.slug === activeMood)?.label} wheels`}
         </h2>
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full p-0.5 text-[11px] font-bold">
+        <div className="flex items-center gap-1 bg-muted rounded-full p-0.5 text-[11px] font-bold">
           <button
             onClick={() => setSort("trending")}
             className={`px-3 py-1 rounded-full transition ${
               activeSort !== "recent"
-                ? "bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm"
-                : "text-gray-500"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground"
             }`}
           >
             Top
@@ -220,8 +220,8 @@ export default function ExploreClient({
             onClick={() => setSort("recent")}
             className={`px-3 py-1 rounded-full transition ${
               activeSort === "recent"
-                ? "bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm"
-                : "text-gray-500"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground"
             }`}
           >
             New
@@ -249,9 +249,9 @@ export default function ExploreClient({
             <Link
               key={item._id}
               href={`/wheels/${item.slug}`}
-              className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-blue-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/5"
+              className="group flex flex-col bg-muted/40 rounded-xl border border-border overflow-hidden hover:border-primary/50 transition-all active:scale-[0.98] hover:shadow-md"
             >
-              <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
                 {item.wheelPreview ? (
                   <img
                     src={item.wheelPreview}
@@ -260,18 +260,18 @@ export default function ExploreClient({
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
-                  <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
+                  <span className="text-muted-foreground/40 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
                     {item.title?.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
 
               <div className="p-2 md:p-3">
-                <h3 className="text-xs md:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
+                  <h3 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 leading-tight">
                   {item.title}
                 </h3>
                 {item.likeCount > 0 && (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-semibold">
+                  <p className="text-[10px] text-muted-foreground mt-1 font-semibold">
                     ♥ {item.likeCount}
                   </p>
                 )}
@@ -283,17 +283,17 @@ export default function ExploreClient({
 
       {isPending && (
         <div className="flex justify-center mt-6">
-          <Loader2 className="animate-spin text-blue-600" size={20} />
+          <Loader2 className="animate-spin text-primary" size={20} />
         </div>
       )}
 
       {/* ── Entity rails ───────────────────────────────────────────────── */}
-      <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-900">
+      <div className="mt-10 pt-8 border-t border-border">
         <div className="mb-4">
-          <h2 className="text-base md:text-xl font-black text-gray-900 dark:text-white">
+          <h2 className="text-base md:text-xl font-black text-foreground">
             Trending in pop culture
           </h2>
-          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
             Hot games, anime and movies — perfect material for your next decision wheel
           </p>
         </div>
@@ -323,14 +323,14 @@ export default function ExploreClient({
 
       {/* ── Community Wheels ───────────────────────────────────────────── */}
       {communityWheels.length > 0 && (
-        <div className="mt-10 pt-8 border-t border-gray-100 dark:border-gray-900">
+        <div className="mt-10 pt-8 border-t border-border">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base md:text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-base md:text-xl font-black text-foreground flex items-center gap-2">
                 <Sparkles size={18} className="text-purple-500" />
                 From the Community
               </h2>
-              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
                 Wheels created and shared by SpinPapa users
               </p>
             </div>
@@ -346,9 +346,9 @@ export default function ExploreClient({
               <Link
                 key={item._id}
                 href={`/uwheels/${item._id}`}
-                className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-purple-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/5"
+                className="group flex flex-col bg-muted/40 rounded-xl border border-border overflow-hidden hover:border-purple-500/70 transition-all active:scale-[0.98] hover:shadow-md"
               >
-                <div className="relative aspect-square w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="relative aspect-square w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
                   {item.wheelPreview ? (
                     <img
                       src={item.wheelPreview}
@@ -357,17 +357,17 @@ export default function ExploreClient({
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
-                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
+                    <span className="text-muted-foreground/40 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
                       {item.title?.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="p-2">
-                  <h3 className="text-xs font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
+                  <h3 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">
                     {item.title}
                   </h3>
                   {item.likeCount > 0 && (
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-semibold">♥ {item.likeCount}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">♥ {item.likeCount}</p>
                   )}
                 </div>
               </Link>

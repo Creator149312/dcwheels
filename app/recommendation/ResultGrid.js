@@ -17,8 +17,8 @@ export default function ResultsGrid({ results, loading }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full animate-pulse">
         {[...Array(6)].map((_, i) => (
           <div key={i}>
-            <div className="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-800 rounded-2xl" />
-            <div className="mt-2 h-3 w-3/4 bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="aspect-[2/3] w-full bg-muted rounded-2xl" />
+            <div className="mt-2 h-3 w-3/4 bg-muted rounded" />
           </div>
         ))}
       </div>
@@ -28,8 +28,8 @@ export default function ResultsGrid({ results, loading }) {
   // 2. Empty State
   if (!results || results.length === 0) {
     return (
-      <div className="text-center py-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No Matches Found</p>
+      <div className="text-center py-6 bg-muted/50 rounded-2xl border border-dashed border-border">
+        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">No Matches Found</p>
       </div>
     );
   }
@@ -86,7 +86,7 @@ export default function ResultsGrid({ results, loading }) {
                   {isAnime ? "Anime" : "Movie"}
                 </span>
               </div>
-              <div className="mt-1 flex items-center gap-1 text-blue-400 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-1 flex items-center gap-1 text-primary text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                 View Details <ArrowRight size={10} />
               </div>
             </div>

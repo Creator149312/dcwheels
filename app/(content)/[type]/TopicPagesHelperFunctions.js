@@ -68,7 +68,7 @@ export function renderHeroCard(item, type) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       <div className="absolute bottom-8 left-5 md:left-12 max-w-xl">
         {genre && (
-          <span className="inline-block text-[11px] font-semibold bg-blue-600 text-white px-2.5 py-0.5 rounded-full mb-3 uppercase tracking-wide">
+          <span className="inline-block text-[11px] font-semibold bg-primary text-primary-foreground px-2.5 py-0.5 rounded-full mb-3 uppercase tracking-wide">
             {genre}
           </span>
         )}
@@ -84,7 +84,7 @@ export function renderHeroCard(item, type) {
               ★ {rating} <span className="text-gray-400 font-normal">{ratingLabel}</span>
             </span>
           )}
-          <span className="inline-block bg-white text-gray-900 font-semibold text-sm px-5 py-2 rounded-full hover:bg-gray-100 transition">
+          <span className="inline-block bg-background text-foreground font-semibold text-sm px-5 py-2 rounded-full hover:bg-muted transition">
             Explore →
           </span>
         </div>
@@ -101,7 +101,7 @@ export function renderAnimeCard(anime) {
   const genre = anime.genres?.[0];
   return (
     <a key={anime.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={anime.coverImage.large} alt={title} className="w-full aspect-[3/4] object-cover" />
         {score && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
@@ -110,13 +110,13 @@ export function renderAnimeCard(anime) {
         )}
         {genre && (
           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2">
-            <span className="text-[10px] font-medium bg-blue-600/90 text-white px-2 py-0.5 rounded-full">{genre}</span>
+            <span className="text-[10px] font-medium bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full">{genre}</span>
           </div>
         )}
       </div>
       <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{anime.startDate?.year || "—"} · {anime.format}</p>
+        <h3 className="text-sm font-semibold truncate text-foreground">{title}</h3>
+        <p className="text-xs text-muted-foreground">{anime.startDate?.year || "—"} · {anime.format}</p>
       </div>
     </a>
   );
@@ -128,7 +128,7 @@ export function renderMovieCard(movie) {
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
   return (
     <a key={movie.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={name} className="w-full aspect-[3/4] object-cover" />
         {rating && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
@@ -137,8 +137,8 @@ export function renderMovieCard(movie) {
         )}
       </div>
       <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">{name}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{movie.release_date?.slice(0, 4) || "—"}</p>
+        <h3 className="text-sm font-semibold truncate text-foreground">{name}</h3>
+        <p className="text-xs text-muted-foreground">{movie.release_date?.slice(0, 4) || "—"}</p>
       </div>
     </a>
   );
@@ -151,7 +151,7 @@ export function renderGameCard(game) {
   const genre = game.genres?.[0]?.name;
   return (
     <a key={game.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={game.background_image} alt={game.name} className="w-full aspect-[3/4] object-cover" />
         {rating && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
@@ -170,8 +170,8 @@ export function renderGameCard(game) {
         )}
       </div>
       <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">{game.name}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{game.released?.slice(0, 4) || "—"}{genre ? ` · ${genre}` : ""}</p>
+        <h3 className="text-sm font-semibold truncate text-foreground">{game.name}</h3>
+        <p className="text-xs text-muted-foreground">{game.released?.slice(0, 4) || "—"}{genre ? ` · ${genre}` : ""}</p>
       </div>
     </a>
   );
@@ -184,7 +184,7 @@ export function renderCharacterCard(character) {
   const favLabel = fav >= 1000 ? `${(fav / 1000).toFixed(0)}k` : fav ? String(fav) : null;
   return (
     <a key={character.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={character.image.large} alt={name} className="w-full aspect-[3/4] object-cover" />
         {favLabel && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-pink-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
@@ -193,8 +193,8 @@ export function renderCharacterCard(character) {
         )}
       </div>
       <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-gray-900 dark:text-white">{name}</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{character.gender || "—"}</p>
+        <h3 className="text-sm font-semibold truncate text-foreground">{name}</h3>
+        <p className="text-xs text-muted-foreground">{character.gender || "—"}</p>
       </div>
     </a>
   );

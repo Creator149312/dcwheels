@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
@@ -70,14 +70,14 @@ function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
     <div className="w-full my-2">
       {/* Mobile Slot: Hidden on desktop via sm:hidden. 
           AdSlot will only 'activate' if this container is visible. */}
-      <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-gray-50/50 dark:bg-gray-900/20">
+      <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-muted/30">
         <AdSlot slot={mobileSlot} width={320} minHeight={50} />
       </div>
 
       {/* Desktop Slot: Hidden on mobile via hidden sm:flex. 
           AdSlot will stay 'dormant' on mobile devices. */}
-      <div className="hidden sm:flex w-full bg-gray-50/50 dark:bg-gray-900/30 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl items-center justify-center overflow-hidden min-h-[120px]">
-        <div className="w-full max-w-[728px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm mx-auto overflow-hidden">
+      <div className="hidden sm:flex w-full bg-muted/30 border border-dashed border-border rounded-2xl items-center justify-center overflow-hidden min-h-[120px]">
+        <div className="w-full max-w-[728px] bg-card rounded-xl border border-gray-100 border-border flex items-center justify-center shadow-sm mx-auto overflow-hidden">
           <AdSlot slot={desktopSlot} width={728} minHeight={90} />
         </div>
       </div>

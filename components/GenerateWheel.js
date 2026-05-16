@@ -245,7 +245,7 @@ const GenerateWheel = () => {
           {step === "prompt" && (
             <>
               {/* Input Container with Icon and Generate Button */}
-              <div className="flex items-start gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 px-4 py-4 focus-within:border-primary focus-within:bg-primary/10 transition-all">
+              <div className="flex items-start gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 px-4 py-4 focus-within:border-primary focus-within:bg-primary/10 transition-colors">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -291,7 +291,7 @@ const GenerateWheel = () => {
                   <img src="/spin-wheel-logo.png" alt="Loading" className="h-12 animate-spin" />
                   <div className="w-full max-w-xs bg-secondary rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-primary transition-all duration-500 ease-out"
+                      className="h-full bg-primary transition-[width] duration-500 ease-out"
                       style={{ width: `${progress}%` }}
                     />
                   </div>

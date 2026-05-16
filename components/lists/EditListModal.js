@@ -17,26 +17,26 @@ export default function EditListModal({ isOpen, onClose, list, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999]">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+      <div className="bg-card p-6 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4 text-foreground">
           Edit List
         </h2>
 
         <div className="mb-4">
-          <label className="block text-gray-600 dark:text-gray-300">Name</label>
+          <label className="block text-muted-foreground">Name</label>
           <input
-            className="w-full p-2 mt-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+            className="w-full p-2 mt-1 rounded bg-gray-100 bg-muted "
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-600 dark:text-gray-300">
+          <label className="block text-muted-foreground">
             Description
           </label>
           <textarea
-            className="w-full p-2 mt-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+            className="w-full p-2 mt-1 rounded bg-gray-100 bg-muted "
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -46,7 +46,7 @@ export default function EditListModal({ isOpen, onClose, list, onSave }) {
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded"
+            className="px-4 py-2 bg-gray-300 bg-muted rounded"
           >
             Cancel
           </button>

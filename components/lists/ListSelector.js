@@ -67,7 +67,7 @@ const ListSelector = ({ html, setSegData }) => {
             value={selectedListId || ""}
             onChange={handleListChange}
             onFocus={fetchLists}
-            className="w-full py-1 px-3 border rounded-lg bg-gray-50 text-gray-800 dark:bg-gray-800 dark:text-white"
+            className="w-full py-1 px-3 border border-border rounded-lg bg-muted text-foreground"
           >
             <option value="" disabled>
               {loading ? "Loading lists..." : "Select a List to Load"}

@@ -31,7 +31,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 p-4 space-y-3 relative">
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3 relative">
       <button
         type="button"
         onClick={() => onRemove(idx)}
@@ -41,26 +41,26 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
         <Trash2 size={12} />
       </button>
 
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
         Question {idx + 1}
       </p>
 
       {/* Wheel label */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+        <label className="block text-xs font-semibold text-muted-foreground mb-1">
           Wheel Label (short, appears on the slice)
         </label>
         <input
           value={seg.text}
           onChange={(e) => update("text", e.target.value)}
           placeholder="e.g. Geography"
-          className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-border bg-background text-foreground px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
       {/* Question */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+        <label className="block text-xs font-semibold text-muted-foreground mb-1">
           Full Question
         </label>
         <textarea
@@ -68,13 +68,13 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
           onChange={(e) => update("question", e.target.value)}
           placeholder="Enter the question the player has to answer…"
           rows={2}
-          className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          className="w-full rounded-lg border border-border bg-background text-foreground px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary resize-none"
         />
       </div>
 
       {/* Options */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+        <label className="block text-xs font-semibold text-muted-foreground mb-2">
           Answer Options — click the correct one
         </label>
         <div className="space-y-2">
@@ -84,7 +84,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
               className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
                 seg.correctIndex === optIdx
                   ? "border-green-500 bg-green-50 dark:bg-green-950/40"
-                  : "border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                  : "border-border hover:bg-muted/50"
               }`}
             >
               <input
@@ -94,7 +94,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
                 onChange={() => update("correctIndex", optIdx)}
                 className="accent-green-500 flex-shrink-0"
               />
-              <span className="text-xs font-bold text-gray-400 w-4 flex-shrink-0">
+              <span className="text-xs font-bold text-muted-foreground w-4 flex-shrink-0">
                 {OPTION_LABELS[optIdx]}
               </span>
               <input
@@ -102,7 +102,7 @@ function QuestionCard({ seg, idx, onChange, onRemove }) {
                 value={opt}
                 onChange={(e) => updateOption(optIdx, e.target.value)}
                 placeholder={`Option ${OPTION_LABELS[optIdx]}`}
-                className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400"
+                className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
               {seg.correctIndex === optIdx && (
                 <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
@@ -133,10 +133,10 @@ function QuizRow({ wheel, onDeleted }) {
   };
 
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 p-4">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-sm text-gray-900 dark:text-white">
+          <span className="font-semibold text-sm text-foreground">
             {wheel.title}
           </span>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
@@ -148,7 +148,7 @@ function QuizRow({ wheel, onDeleted }) {
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {wheel.page?.slug ? `/wheels/${wheel.page.slug}` : "No page linked"}
         </p>
         {wheel.tags?.length > 0 && (
@@ -156,7 +156,7 @@ function QuizRow({ wheel, onDeleted }) {
             {wheel.tags.map((t) => (
               <span
                 key={t}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
               >
                 {t}
               </span>
@@ -169,7 +169,7 @@ function QuizRow({ wheel, onDeleted }) {
           <Link
             href={`/wheels/${wheel.page.slug}`}
             target="_blank"
-            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
             title="Open page"
           >
             <ExternalLink size={11} />
@@ -287,7 +287,7 @@ export default function AdminQuizWheelsPage() {
   // ── Auth guard ──────────────────────────────────────────────────────────────
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         <Loader2 className="animate-spin mr-2" /> Loading…
       </div>
     );
@@ -306,8 +306,8 @@ export default function AdminQuizWheelsPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Brain className="text-indigo-500" size={20} />
-          <h1 className="text-xl font-black text-gray-900 dark:text-white">Quiz Wheels</h1>
-          <span className="text-sm text-gray-400 dark:text-gray-500">/ Admin</span>
+          <h1 className="text-xl font-black text-foreground">Quiz Wheels</h1>
+          <span className="text-sm text-muted-foreground">/ Admin</span>
         </div>
         <button
           onClick={() => { setShowForm((v) => !v); setSavedSlug(null); setSaveError(""); }}
@@ -330,25 +330,25 @@ export default function AdminQuizWheelsPage() {
 
       {/* ── Create Form ───────────────────────────────────────────────────────── */}
       {showForm && (
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-6 space-y-5">
-          <h2 className="font-bold text-gray-800 dark:text-white">Create New Quiz Wheel</h2>
+        <div className="rounded-2xl border border-border bg-muted/40 p-6 space-y-5">
+          <h2 className="font-bold text-foreground">Create New Quiz Wheel</h2>
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
               Title *
             </label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Harry Potter Quiz Wheel"
-              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-border bg-background text-foreground px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
               Description (SEO meta)
             </label>
             <textarea
@@ -356,44 +356,44 @@ export default function AdminQuizWheelsPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="A short description shown in Google search results…"
               rows={2}
-              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full rounded-lg border border-border bg-background text-foreground px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary resize-none"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
               URL Slug{" "}
-              <span className="text-gray-400 font-normal">(auto-generated, or type to override)</span>
+              <span className="text-muted-foreground font-normal">(auto-generated, or type to override)</span>
             </label>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2">
-              <span className="text-xs text-gray-400 flex-shrink-0">/wheels/</span>
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+              <span className="text-xs text-muted-foreground flex-shrink-0">/wheels/</span>
               <input
                 value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true); }}
                 placeholder="harry-potter-quiz-wheel"
-                className="flex-1 text-sm text-gray-900 dark:text-white bg-transparent outline-none"
+                className="flex-1 text-sm text-foreground bg-transparent outline-none"
               />
             </div>
           </div>
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-              Tags <span className="font-normal text-gray-400">(comma-separated)</span>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
+              Tags <span className="font-normal text-muted-foreground">(comma-separated)</span>
             </label>
             <input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="quiz, trivia, harry-potter, movies"
-              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-border bg-background text-foreground px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {/* Questions */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Questions *
               </label>
               <button
@@ -423,10 +423,10 @@ export default function AdminQuizWheelsPage() {
               <XCircle size={13} /> {saveError}
             </div>
           )}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
             <button
               onClick={() => setShowForm(false)}
-              className="text-sm px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="text-sm px-4 py-2 rounded-xl border border-border text-muted-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>
@@ -444,14 +444,14 @@ export default function AdminQuizWheelsPage() {
 
       {/* ── Existing quiz wheels list ─────────────────────────────────────────── */}
       <div className="space-y-3">
-        <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
           Existing Quiz Wheels{" "}
           {!loadingList && (
             <span className="normal-case font-normal">({wheels.length})</span>
           )}
         </h2>
         {loadingList ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-muted-foreground">
             <Loader2 className="animate-spin inline mr-2" /> Loading…
           </div>
         ) : wheels.length === 0 ? (

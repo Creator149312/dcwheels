@@ -95,11 +95,11 @@ export default function SpinWheelModal({ results, mode, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl relative max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">
+      <div className="bg-card p-6 rounded-2xl relative max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-lg">
           ✕
         </button>
-        <h2 className="text-lg font-black mb-4 text-center text-gray-900 dark:text-white">Spin the Wheel!</h2>
+        <h2 className="text-lg font-black mb-4 text-center text-foreground">Spin the Wheel!</h2>
         <canvas
           ref={canvasRef}
           width={300}
@@ -109,25 +109,25 @@ export default function SpinWheelModal({ results, mode, onClose }) {
         <div className="text-center mt-4">
           <button
             onClick={spinWheel}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-colors"
           >
             Spin Now
           </button>
         </div>
         {winner && (
           <div className="mt-6 text-center">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">You should watch:</h3>
+            <h3 className="text-lg font-bold text-foreground">You should watch:</h3>
             <img
               src={getItemImage(winner)}
               alt={getItemTitle(winner)}
               className="w-32 h-44 mx-auto rounded-xl shadow mt-2"
             />
-            <p className="mt-2 font-semibold text-gray-900 dark:text-white">{getItemTitle(winner)}</p>
+            <p className="mt-2 font-semibold text-foreground">{getItemTitle(winner)}</p>
             <a
               href={getExternalUrl(winner)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors"
+              className="inline-block mt-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors"
             >
               View Details →
             </a>

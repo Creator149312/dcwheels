@@ -38,7 +38,7 @@ export default function ExploreEntityRail({
   return (
     <section className="mb-6 md:mb-8">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="flex items-center gap-1.5 text-sm md:text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">
+        <h2 className="flex items-center gap-1.5 text-sm md:text-base font-black text-foreground uppercase tracking-wider">
           {emoji && <span className={accentColor}>{emoji}</span>}
           {title}
         </h2>
@@ -46,7 +46,7 @@ export default function ExploreEntityRail({
           {viewAllHref && (
             <Link
               href={viewAllHref}
-              className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 dark:text-blue-400"
+              className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-primary hover:text-primary/80"
             >
               View all →
             </Link>
@@ -54,14 +54,14 @@ export default function ExploreEntityRail({
           <div className="hidden md:flex items-center gap-1">
             <button
               onClick={() => scrollRail(-1)}
-              className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+              className="p-1.5 rounded-full bg-muted hover:bg-accent text-muted-foreground"
               aria-label="Scroll left"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => scrollRail(1)}
-              className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+              className="p-1.5 rounded-full bg-muted hover:bg-accent text-muted-foreground"
               aria-label="Scroll right"
             >
               <ChevronRight size={16} />
@@ -81,7 +81,7 @@ export default function ExploreEntityRail({
             href={item.href}
             className="snap-start shrink-0 w-[120px] md:w-[150px] group"
           >
-            <div className="relative aspect-[2/3] w-full bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 group-hover:border-blue-500 transition-all">
+            <div className="relative aspect-[2/3] w-full bg-muted/40 rounded-xl overflow-hidden border border-border group-hover:border-primary/50 transition-all">
               {item.image ? (
                 <img
                   src={item.image}
@@ -90,16 +90,16 @@ export default function ExploreEntityRail({
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-gray-200 dark:text-gray-700">
+                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground/40">
                   {item.title?.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
-            <h3 className="mt-2 text-xs md:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight px-0.5">
+            <h3 className="mt-2 text-xs md:text-sm font-bold text-foreground line-clamp-2 leading-tight px-0.5">
               {item.title}
             </h3>
             {item.subtitle && (
-              <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 line-clamp-1 px-0.5 mt-0.5">
+              <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1 px-0.5 mt-0.5">
                 {item.subtitle}
               </p>
             )}

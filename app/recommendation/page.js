@@ -15,9 +15,9 @@ import { Sparkles, RefreshCw, Clapperboard, MonitorPlay, Dices } from "lucide-re
 function ResultSkeleton() {
   return (
     <div className="w-full max-w-md mx-auto animate-pulse space-y-4">
-      <div className="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-800 rounded-3xl" />
-      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-800 rounded mx-auto" />
-      <div className="h-4 w-1/2 bg-gray-100 dark:bg-gray-900 rounded mx-auto" />
+      <div className="aspect-[2/3] w-full bg-muted rounded-3xl" />
+      <div className="h-6 w-3/4 bg-muted rounded mx-auto" />
+      <div className="h-4 w-1/2 bg-muted/60 rounded mx-auto" />
     </div>
   );
 }
@@ -131,29 +131,29 @@ export default function RecommendationPage() {
    <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
       {/* Tightened Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-blue-600 rounded-lg text-white">
+        <div className="p-2 bg-primary rounded-lg text-primary-foreground">
           <Sparkles size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Can&apos;t Decide?</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">We&apos;ll pick for you</p>
+          <h1 className="text-xl font-black tracking-tight text-foreground uppercase">Can&apos;t Decide?</h1>
+          <p className="text-xs text-muted-foreground">We&apos;ll pick for you</p>
         </div>
       </div>
 
       {mode && step <= questions.length && (
-        <div className="w-full h-1 bg-gray-100 dark:bg-gray-800 rounded-full">
-          <div className="h-full bg-blue-600 transition-all" style={{ width: `${((step + 1) / 3) * 100}%` }} />
+        <div className="w-full h-1 bg-muted rounded-full">
+          <div className="h-full bg-primary transition-all" style={{ width: `${((step + 1) / 3) * 100}%` }} />
         </div>
       )}
 
       {!mode && (
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setMode("anime")} className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900 border rounded-2xl hover:border-blue-500">
+          <button onClick={() => setMode("anime")} className="flex flex-col items-center p-4 bg-muted/40 border border-border rounded-2xl hover:border-primary/50">
             <MonitorPlay className="text-orange-500 mb-2" size={32} />
             <span className="font-bold text-sm">Anime</span>
           </button>
-          <button onClick={() => setMode("movie")} className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900 border rounded-2xl hover:border-blue-500">
-            <Clapperboard className="text-blue-500 mb-2" size={32} />
+          <button onClick={() => setMode("movie")} className="flex flex-col items-center p-4 bg-muted/40 border border-border rounded-2xl hover:border-primary/50">
+            <Clapperboard className="text-primary mb-2" size={32} />
             <span className="font-bold text-sm">Movies</span>
           </button>
         </div>
@@ -171,11 +171,11 @@ export default function RecommendationPage() {
         <div className="space-y-4">
           <ResultsGrid results={results} loading={loading} />
           <div className="flex gap-2">
-            <button onClick={() => fetchRecommendations(mode, answers)} className="flex-1 py-3 bg-blue-600 text-white font-black rounded-xl text-xs uppercase tracking-widest"><RefreshCw size={14} className="inline mr-2" /> Reshuffle</button>
+            <button onClick={() => fetchRecommendations(mode, answers)} className="flex-1 py-3 bg-primary text-primary-foreground font-black rounded-xl text-xs uppercase tracking-widest"><RefreshCw size={14} className="inline mr-2" /> Reshuffle</button>
             {results.length > 1 && (
               <button onClick={() => setShowWheel(true)} className="flex-1 py-3 bg-purple-600 text-white font-black rounded-xl text-xs uppercase tracking-widest"><Dices size={14} className="inline mr-2" /> Spin!</button>
             )}
-            <button onClick={() => setMode(null) || setStep(0)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 font-black rounded-xl text-xs uppercase tracking-widest">Restart</button>
+            <button onClick={() => setMode(null) || setStep(0)} className="flex-1 py-3 bg-muted text-foreground font-black rounded-xl text-xs uppercase tracking-widest">Restart</button>
           </div>
           {showWheel && results.length > 1 && (
             <SpinWheelModal results={results} mode={mode} onClose={() => setShowWheel(false)} />

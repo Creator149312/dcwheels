@@ -26,22 +26,22 @@ export default function TagsPage() {
   const adInterval = 8;
 
   return (
-    <div className="w-full min-h-screen bg-white dark:bg-gray-950 transition-colors pb-20">
+    <div className="w-full min-h-screen pb-20">
       {/* Header Section */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+            <div className="p-2 bg-primary/10 rounded-lg">
               <LayoutGrid
                 size={20}
-                className="text-blue-600 dark:text-blue-400"
+                className="text-primary"
               />
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white uppercase">
-              Tag <span className="text-blue-600">Directory</span>
+            <h1 className="text-2xl font-black tracking-tight text-foreground uppercase">
+              Tag <span className="text-primary">Directory</span>
             </h1>
           </div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Browse our full collection of spin wheels by category.
           </p>
         </div>
@@ -53,35 +53,37 @@ export default function TagsPage() {
           ? [...Array(12)].map((_, i) => (
               <div
                 key={i}
-                className="h-24 bg-gray-50 dark:bg-gray-900 rounded-3xl animate-pulse"
+                className="h-24 bg-muted rounded-3xl animate-pulse"
               />
             ))
-          : tags.map((tag, index) => {
+          : tags.map((tagObj, index) => {
               const showInlineAd = (index + 1) % adInterval === 0;
+              const slug = typeof tagObj === 'string' ? tagObj : (tagObj.slug || tagObj.name);
+              const displayName = typeof tagObj === 'string' ? tagObj : (tagObj.name || tagObj.slug);
 
               return (
-                <Fragment key={tag}>
+                <Fragment key={slug}>
                   <Link
-                    href={`/tags/${encodeURIComponent(tag)}`}
-                    className="group relative flex items-center p-5 bg-white dark:bg-gray-950 rounded-3xl border border-gray-100 dark:border-gray-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
+                    href={`/tags/${encodeURIComponent(slug)}`}
+                    className="group relative flex items-center p-5 bg-card text-card-foreground rounded-3xl border border-border hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300 border border-gray-100 dark:border-gray-800">
-                      <span className="text-lg font-black text-gray-400 dark:text-gray-600 group-hover:text-white uppercase">
-                        {tag.charAt(0)}
+                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center group-hover:bg-primary transition-colors duration-300 border border-border">
+                      <span className="text-lg font-black text-muted-foreground group-hover:text-primary-foreground uppercase">
+                        {String(displayName).charAt(0)}
                       </span>
                     </div>
 
                     <div className="ml-4 flex-1">
-                      <h3 className="font-bold text-gray-800 dark:text-gray-200 group-hover:text-blue-600 transition-colors">
-                        {tag}
+                      <h3 className="font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                        {displayName}
                       </h3>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium mt-0.5">
-                        Explore Wheels
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mt-0.5">
+                        {typeof tagObj === 'object' && tagObj.count ? `${tagObj.count} Wheels` : 'Explore Wheels'}
                       </p>
                     </div>
                     <ChevronRight
                       size={18}
-                      className="text-gray-300 dark:text-gray-700 group-hover:text-blue-600 group-hover:translate-x-1 transition-all"
+                      className="text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0"
                     />
                   </Link>
 
@@ -104,7 +106,7 @@ export default function TagsPage() {
       {/* Bottom Ad Section */}
       {!loading && tags.length > 0 && (
         <div className="col-span-full my-4 md:my-6">
-          <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
+          <div className="w-full py-2 bg-muted/50 border border-border rounded-2xl flex flex-col items-center justify-center">
             <AdsUnit slot={"4694567949"} />
           </div>
         </div>
@@ -113,51 +115,10 @@ export default function TagsPage() {
       {/* Empty State */}
       {!loading && tags.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Hash size={48} className="text-gray-200 dark:text-gray-800 mb-4" />
-          <p className="text-gray-500 font-medium">No tags found yet.</p>
+          <Hash size={48} className="text-muted-foreground/50 mb-4" />
+          <p className="text-muted-foreground font-medium">No tags found yet.</p>
         </div>
       )}
     </div>
   );
 }
-
-// "use client";
-
-// import Link from "next/link";
-// import { useEffect, useState } from "react";
-
-// export default function TagsPage() {
-//   const [tags, setTags] = useState([]);
-
-//   // Load top tags
-//   useEffect(() => {
-//     fetch("/api/tags-data")
-//       .then((res) => res.json())
-//       .then((data) => {
-//         setTags(data.tags || []);
-//       })
-//       .catch((err) => console.error("Failed to fetch tags", err));
-//   }, []);
-
-//   return (
-//     <div className="px-4 py-4 max-w-full mx-auto dark:bg-gray-950 min-h-screen transition-colors">
-//       <h1 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-//         Browse by Tag
-//       </h1>
-
-//       <div className="-mx-4 px-4 overflow-x-scroll whitespace-nowrap mb-6 flex gap-3 no-scrollbar snap-x">
-//         {tags.map((tag) => (
-//           <Link
-//             key={tag}
-//             href={`/tags/${encodeURIComponent(tag)}`}
-//             className={`px-4 py-2 border rounded-full shrink-0 text-sm snap-start transition-colors
-//               bg-white text-black border-gray-300 hover:bg-gray-100
-//               dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700`}
-//           >
-//             {tag}
-//           </Link>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }

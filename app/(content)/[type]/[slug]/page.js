@@ -607,7 +607,7 @@ export default async function TopicPageDetail({ params }) {
   const affiliateLinks = buildAffiliateLinks(type, displayTitle);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-black dark:text-white">
+    <div className="min-h-screen bg-background text-foreground">
 
       {/* ── Mobile hero (< sm): Option B plain layout ──────────────────────
            No backdrop, no gradient.
@@ -632,7 +632,7 @@ export default async function TopicPageDetail({ params }) {
             />
           )}
           <div className="flex flex-col gap-3 min-w-0 pt-1">
-            <h1 className="text-xl font-bold leading-tight text-gray-900 dark:text-white">
+            <h1 className="text-xl font-bold leading-tight text-foreground">
               {displayTitle}
             </h1>
             <AddToListButton
@@ -651,29 +651,29 @@ export default async function TopicPageDetail({ params }) {
           style={{ scrollbarWidth: "none" }}
         >
           {pageDoc.details?.releaseYear && (
-            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+            <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
               {pageDoc.details.releaseYear}
             </span>
           )}
           {type === "anime" && pageDoc.details?.episodes && (
-            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+            <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
               {pageDoc.details.episodes} eps
             </span>
           )}
           {type === "movie" && pageDoc.details?.runtime && (
-            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+            <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
               {pageDoc.details.runtime} min
             </span>
           )}
           {type === "game" && pageDoc.details?.platform && (
-            <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1 max-w-[180px] truncate">
+            <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1 max-w-[180px] truncate">
               {pageDoc.details.platform.split(",")[0].trim()}
             </span>
           )}
           {pageDoc.tags?.slice(0, 5).map((tag) => (
             <span
               key={tag}
-              className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/75 rounded-full px-3 py-1 capitalize"
+              className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1 capitalize"
             >
               {tag}
             </span>
@@ -681,7 +681,7 @@ export default async function TopicPageDetail({ params }) {
         </div>
 
         {/* Row 3: description */}
-        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-4 line-clamp-3">
+        <p className="text-sm text-muted-foreground leading-relaxed mt-4 line-clamp-3">
           {pageDoc.description}
         </p>
 
@@ -699,7 +699,7 @@ export default async function TopicPageDetail({ params }) {
         {/* Row 5: Where to Watch + affiliate links */}
         {(extras?.streaming?.length > 0 || affiliateLinks.length > 0) && (
           <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               {type === "game" ? "Available On" : "Where to Watch"}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -709,7 +709,7 @@ export default async function TopicPageDetail({ params }) {
                   href={provider.url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
+                  className="flex items-center gap-1.5 bg-muted hover:bg-accent text-foreground text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
                 >
                   {(provider.logo_path || provider.store?.domain) && (
                     <img
@@ -763,7 +763,7 @@ export default async function TopicPageDetail({ params }) {
           {/* Info column */}
           <div className="flex-1 min-w-0">
 
-            <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white mb-4">
+            <h1 className="text-3xl font-bold leading-tight text-foreground mb-4">
               {displayTitle}
             </h1>
 
@@ -781,29 +781,29 @@ export default async function TopicPageDetail({ params }) {
               style={{ scrollbarWidth: "none" }}
             >
               {pageDoc.details?.releaseYear && (
-                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
                   {pageDoc.details.releaseYear}
                 </span>
               )}
               {type === "anime" && pageDoc.details?.episodes && (
-                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
                   {pageDoc.details.episodes} eps
                 </span>
               )}
               {type === "movie" && pageDoc.details?.runtime && (
-                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1">
+                <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
                   {pageDoc.details.runtime} min
                 </span>
               )}
               {type === "game" && pageDoc.details?.platform && (
-                <span className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-full px-3 py-1 max-w-[180px] truncate">
+                <span className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1 max-w-[180px] truncate">
                   {pageDoc.details.platform.split(",")[0].trim()}
                 </span>
               )}
               {pageDoc.tags?.slice(0, 5).map((tag) => (
                 <span
                   key={tag}
-                  className="flex-shrink-0 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/75 rounded-full px-3 py-1 capitalize"
+                  className="flex-shrink-0 text-xs font-medium bg-muted text-muted-foreground rounded-full px-3 py-1 capitalize"
                 >
                   {tag}
                 </span>
@@ -811,7 +811,7 @@ export default async function TopicPageDetail({ params }) {
             </div>
 
             {/* Description */}
-            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-4 mb-5">
+            <p className="text-sm text-muted-foreground leading-relaxed mt-4 mb-5">
               {pageDoc.description}
             </p>
 
@@ -827,7 +827,7 @@ export default async function TopicPageDetail({ params }) {
             {/* Where to Watch + affiliate links */}
             {(extras?.streaming?.length > 0 || affiliateLinks.length > 0) && (
               <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   {type === "game" ? "Available On" : "Where to Watch"}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -837,7 +837,7 @@ export default async function TopicPageDetail({ params }) {
                       href={provider.url || "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
+                      className="flex items-center gap-1.5 bg-muted hover:bg-accent text-foreground text-xs font-medium rounded-full px-3 py-1.5 transition-colors"
                     >
                       {(provider.logo_path || provider.store?.domain) && (
                         <img
@@ -900,7 +900,7 @@ export default async function TopicPageDetail({ params }) {
         {extras?.trailerKey && (
           <section>
             <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+              <span className="w-1 h-5 rounded-full bg-primary inline-block" aria-hidden="true" />
               Trailer
             </h2>
             <TrailerPlayer trailerKey={extras.trailerKey} title={displayTitle} />
@@ -929,7 +929,7 @@ export default async function TopicPageDetail({ params }) {
         {relatedPages?.length > 0 && (
           <section>
             <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+              <span className="w-1 h-5 rounded-full bg-primary inline-block" aria-hidden="true" />
               You Might Also Like
             </h2>
             <div
@@ -950,7 +950,7 @@ export default async function TopicPageDetail({ params }) {
                     href={`/${related.type}/${related.slug}`}
                     className="group flex-shrink-0 w-28 sm:w-32 block"
                   >
-                    <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
+                    <div className="rounded-xl overflow-hidden bg-muted mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
                       {related.cover ? (
                         <img
                           src={related.cover}
@@ -959,14 +959,14 @@ export default async function TopicPageDetail({ params }) {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs text-gray-400">No image</span>
+                          <span className="text-xs text-muted-foreground">No image</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs font-semibold truncate group-hover:text-blue-600 transition-colors">
+                    <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
                       {relatedTitle}
                     </p>
-                    <p className="text-xs text-gray-400 capitalize mt-0.5">{related.type}</p>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5">{related.type}</p>
                   </a>
                 );
               })}

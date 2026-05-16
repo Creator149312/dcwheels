@@ -138,9 +138,9 @@ export default function MigrateTagsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <header className="border-b border-gray-200 dark:border-gray-800 pb-4">
+      <header className="border-b border-border pb-4">
         <h1 className="text-2xl font-bold">Lowercase Tags Migration</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Run each stage in order. Stages are gated — a later stage is only
           unlocked after the previous one returns success.
         </p>
@@ -163,13 +163,13 @@ export default function MigrateTagsPage() {
               className={`rounded-lg border p-4 ${
                 stage.danger
                   ? "border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10"
-                  : "border-gray-200 dark:border-gray-800"
+                  : "border-border"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold">{stage.label}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{stage.help}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{stage.help}</p>
                   {showSkipNotice && (
                     <p className="text-sm text-green-700 dark:text-green-400 mt-2">
                       ✓ No duplicates found — this stage is skipped. Step 3 is
@@ -183,7 +183,7 @@ export default function MigrateTagsPage() {
                   className={`shrink-0 px-4 py-2 rounded-md text-sm font-medium ${
                     stage.danger
                       ? "bg-red-600 hover:bg-red-700 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                   {isRunning
@@ -198,7 +198,7 @@ export default function MigrateTagsPage() {
 
               {result && (
                 <div className="mt-4 text-xs">
-                  <div className="text-gray-500 mb-2">
+                  <div className="text-muted-foreground mb-2">
                     Started: {result.startedAt}
                     {" · "}
                     Finished: {result.finishedAt}
@@ -254,7 +254,7 @@ function StageResult({ stageKey, data }) {
 
   if (stageKey === "dedupe-topicpages") {
     return (
-      <div className="p-3 rounded bg-gray-50 dark:bg-gray-900/40">
+      <div className="p-3 rounded bg-muted/40">
         {typeof data.totalBefore === "number" && (
           <div>
             TopicPages: <strong>{data.totalBefore}</strong> before →{" "}
@@ -286,7 +286,7 @@ function StageResult({ stageKey, data }) {
       ? ((data.wheelsWithUppercase / data.totalWheels) * 100).toFixed(1)
       : "0";
     return (
-      <div className="p-3 rounded bg-gray-50 dark:bg-gray-900/40">
+      <div className="p-3 rounded bg-muted/40">
         <div>
           Total wheels: <strong>{data.totalWheels}</strong>
         </div>

@@ -12,7 +12,7 @@ import apiConfig from "@utils/ApiUrlConfig";
 // above-the-fold render. Lazy-loading reduces JS parse time and improves TBT.
 const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 
-const ABOVE_FOLD_COUNT = 4;
+const ABOVE_FOLD_COUNT = 6;
 
 // ── Wheels tab ───────────────────────────────────────────────────────────────
 function WheelsTab({ initialWheels, tagId }) {
@@ -44,10 +44,10 @@ function WheelsTab({ initialWheels, tagId }) {
 
   if (wheels.length === 0) {
     return (
-      <div className="flex flex-col items-center py-20 text-gray-400 dark:text-gray-600 text-sm gap-2">
+      <div className="flex flex-col items-center py-20 text-muted-foreground text-sm gap-2">
         <ThreadsIcon size={40} className="opacity-30" />
         <p>No wheels tagged with this topic yet.</p>
-        <Link href="/dashboard" className="text-indigo-500 hover:underline text-xs mt-1">
+        <Link href="/dashboard" className="text-primary hover:underline text-xs mt-1">
           Create the first one →
         </Link>
       </div>
@@ -58,7 +58,12 @@ function WheelsTab({ initialWheels, tagId }) {
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         {wheels.map((wheel, index) => {
-          const showAd = (index + 1) % 6 === 0;
+          // Mobile & Tablet (2 & 3 cols): Show ad every 6 items (3 or 2 rows)
+          const isMobileAd = (index + 1) % 6 === 0;
+          // Desktop (5 cols): Show ad every 10 items (2 rows) to prevent breaking the grid
+          const isDesktopAd = (index + 1) % 10 === 0;
+          const showAd = isMobileAd || isDesktopAd;
+          
           const isAboveFold = index < ABOVE_FOLD_COUNT;
           const thumbSrc = wheel.wheelPreview
             ? wheel.wheelPreview.replace('.webp', '-thumb.webp')
@@ -67,9 +72,9 @@ function WheelsTab({ initialWheels, tagId }) {
             <Fragment key={wheel._id || index}>
               <a
                 href={`/uwheels/${wheel._id}`}
-                className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-indigo-500 transition-all duration-300 active:scale-[0.98]"
+                className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/60 transition duration-300 active:scale-[0.98]"
               >
-                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
                   {thumbSrc ? (
                     <Image
                       src={thumbSrc}
@@ -82,13 +87,13 @@ function WheelsTab({ initialWheels, tagId }) {
                       loading={isAboveFold ? "eager" : "lazy"}
                     />
                   ) : (
-                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform">
+                    <span className="text-muted/60 text-5xl font-black group-hover:scale-110 transition-transform">
                       {wheel.title?.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="p-4 flex-1">
-                  <h3 className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors">
+                  <h3 className="text-sm md:text-base font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                     {wheel.title}
                   </h3>
                 </div>
@@ -96,8 +101,10 @@ function WheelsTab({ initialWheels, tagId }) {
 
               {showAd && (
                 // min-h prevents CLS when AdSense loads async and pushes content down
-                <div className="col-span-full my-4 md:my-6 min-h-[90px]">
-                  <div className="w-full py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center min-h-[90px]">
+                <div className={`col-span-full my-4 md:my-6 min-h-[90px] ${
+                  isMobileAd && isDesktopAd ? 'block' : isDesktopAd ? 'hidden lg:block' : 'block lg:hidden'
+                }`}>
+                  <div className="w-full py-2 bg-muted/50 border border-border rounded-2xl flex flex-col items-center justify-center min-h-[90px]">
                     <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
@@ -112,7 +119,7 @@ function WheelsTab({ initialWheels, tagId }) {
           <button
             onClick={loadMore}
             disabled={loading}
-            className="flex items-center gap-3 px-10 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-full shadow-lg shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-3 px-10 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-black rounded-full shadow-lg shadow-primary/20 transition active:scale-95 disabled:opacity-50"
           >
             {loading ? (
               <><Loader2 className="animate-spin" size={16} /> Loading…</>
@@ -137,30 +144,30 @@ export default function TagSpaceClient({ tagId, initialWheels }) {
   return (
     <>
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-100 dark:border-gray-800 mb-6">
+      <div className="flex gap-1 border-b border-border mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`relative px-5 py-2.5 text-sm font-semibold transition-colors ${
               activeTab === tab.key
-                ? "text-indigo-600 dark:text-indigo-400"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab.label}
             {tab.count > 0 && (
               <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium ${
                 activeTab === tab.key
-                  ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
               }`}>
                 {tab.count}
               </span>
             )}
             {/* Active underline */}
             {activeTab === tab.key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-t-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
             )}
           </button>
         ))}

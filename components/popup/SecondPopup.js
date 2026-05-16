@@ -9,10 +9,10 @@ const SecondPopup = ({ onClose, onCreateLink }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-10">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg w-full max-w-md mx-4">
-        <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Privacy Settings</h2>
+      <div className="bg-card border border-border rounded-lg p-6 shadow-md w-full max-w-md mx-4">
+        <h2 className="text-xl font-bold text-foreground mb-4">Privacy Settings</h2>
         <div className="mb-4">
-          <label className="block text-gray-700 dark:text-gray-300">Privacy</label>
+          <label className="block text-foreground">Privacy</label>
           <div className="mt-1">
             <label className="inline-flex items-center">
               <input
@@ -22,7 +22,7 @@ const SecondPopup = ({ onClose, onCreateLink }) => {
                 onChange={handlePrivacyChange}
                 className="form-radio"
               />
-              <span className="ml-2 text-gray-700 dark:text-gray-300">Private (people with link can view wheel)</span>
+              <span className="ml-2 text-foreground">Private (people with link can view wheel)</span>
             </label>
           </div>
           <div className="mt-1">
@@ -34,7 +34,7 @@ const SecondPopup = ({ onClose, onCreateLink }) => {
                 onChange={handlePrivacyChange}
                 className="form-radio"
               />
-              <span className="ml-2 text-gray-700 dark:text-gray-300">Public (people with link can view, copy wheel)</span>
+              <span className="ml-2 text-foreground">Public (people with link can view, copy wheel)</span>
             </label>
           </div>
         </div>

@@ -1,12 +1,18 @@
 // app/api/lists/[id]/route.js
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
-import { getServerSession } from "next-auth"; // if using next-auth
+import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
+import { del } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
+
+/** Returns true only for URLs hosted on Vercel Blob CDN. */
+function isBlobUrl(url) {
+  return typeof url === "string" && url.includes(".blob.vercel-storage.com");
+}
 
 export async function GET(req, { params }) {
   await connectMongoDB();
@@ -114,6 +120,7 @@ export async function PUT(req, { params }) {
     // Bust ISR cache for both the index and this detail page.
     revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidateTag(`list-${id}`);  // bust unstable_cache entry in lib/lists.js
 
     return NextResponse.json(
       {
@@ -121,6 +128,7 @@ export async function PUT(req, { params }) {
         list: {
           id: list._id,
           name: list.name,
+          userId: list.userId,
           description: list.description,
           items: list.items,
         },
@@ -148,18 +156,31 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ 2. Delete only if list belongs to user
-    const deleted = await UnifiedList.findOneAndDelete({ _id: id, userId });
+    // ✅ 2. Find list first so we can read item images before deleting
+    const list = await UnifiedList.findOne({ _id: id, userId });
 
-    if (!deleted) {
+    if (!list) {
       return NextResponse.json(
         { error: "List not found or access denied" },
         { status: 404 }
       );
     }
 
+    // ✅ 3. Collect all Vercel Blob URLs from word items before deletion
+    const blobUrls = list.items
+      .filter((i) => i.type === "word" && isBlobUrl(i.wordData))
+      .map((i) => i.wordData);
+
+    // ✅ 4. Delete the list
+    await list.deleteOne();
+
     revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+
+    // ✅ 5. Best-effort blob cleanup (never blocks the response)
+    if (blobUrls.length > 0) {
+      del(blobUrls).catch((e) => console.warn("Blob cleanup failed after list delete:", e));
+    }
 
     return NextResponse.json(
       { message: "List deleted successfully" },

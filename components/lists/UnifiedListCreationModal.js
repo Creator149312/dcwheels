@@ -49,15 +49,15 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+      <div className="bg-card p-6 rounded-lg shadow-lg w-96">
+        <h2 className="text-2xl font-semibold text-foreground mb-4">
           Create New List
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* List Name */}
           <div className="mb-4">
-            <label className="block text-gray-600 dark:text-gray-200">
+            <label className="block text-muted-foreground">
               List Name
             </label>
             <input
@@ -65,7 +65,7 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-2 mt-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full p-2 mt-2 border border-border rounded-md bg-muted "
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
@@ -74,14 +74,14 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
 
           {/* Description */}
           <div className="mb-4">
-            <label className="block text-gray-600 dark:text-gray-200">
+            <label className="block text-muted-foreground">
               Description
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="w-full p-2 mt-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:text-white"
+              className="w-full p-2 mt-2 border border-border rounded-md bg-muted "
               rows="3"
             />
             {errors.description && (
@@ -94,7 +94,7 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
             <button
               type="button"
               onClick={closeModal}
-              className="px-4 py-2 bg-gray-300 rounded-md dark:bg-gray-600 text-gray-800 dark:text-white"
+              className="px-4 py-2 bg-muted rounded-md text-foreground"
             >
               Cancel
             </button>

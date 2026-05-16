@@ -85,10 +85,12 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     return () => clearTimeout(t);
   }, [savedPopup.show]);
   useEffect(() => {
-    if (!open || status !== "authenticated") return;
-    fetch("/api/unifiedlist")
+    // Fetch only once — if lists are already loaded from a previous open, skip.
+    if (!open || status !== "authenticated" || lists.length > 0) return;
+    fetch("/api/unifiedlist?slim=1")
       .then((r) => r.json())
       .then((d) => setLists(d.lists || []));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, status]);
 
   // Payload shape expected by /api/unifiedlist/[id]/items
@@ -182,7 +184,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
           title="Click to change your status"
           className={`w-full sm:w-auto inline-flex items-center justify-center gap-2
                      px-5 py-2.5 rounded-full text-sm font-semibold
-                     border shadow-sm active:scale-95 transition-all duration-150
+                     border shadow-sm active:scale-95 transition-colors duration-150
                      disabled:opacity-60 disabled:cursor-not-allowed
                      ${STATUS_CONFIG[savedRef.status]?.className || STATUS_CONFIG.want.className}`}
         >
@@ -201,9 +203,9 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
           }}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2
                      px-5 py-2.5 rounded-full
-                     bg-blue-600 hover:bg-blue-700 active:scale-95
-                     text-white text-sm font-semibold
-                     shadow-sm transition-all duration-150"
+                     bg-primary hover:bg-primary/90 active:scale-95
+                     text-primary-foreground text-sm font-semibold
+                     transition-colors duration-150"
         >
           {/* bookmark-plus icon */}
           <svg
@@ -244,8 +246,8 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl shadow-2xl p-5">
-            <h4 className="text-base font-semibold mb-4 text-gray-900 dark:text-gray-100">
+          <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-lg p-5">
+            <h4 className="text-base font-semibold mb-4 text-foreground">
               {label}
             </h4>
 
@@ -257,8 +259,8 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
                     <button
                       onClick={() => saveToList(list.id)}
                       className="w-full text-left px-3 py-2 rounded-lg
-                                 hover:bg-gray-100 dark:hover:bg-gray-800
-                                 text-gray-900 dark:text-gray-100 text-sm
+                                 hover:bg-muted
+                                 text-foreground text-sm
                                  transition-colors"
                     >
                       {list.name}
@@ -273,9 +275,8 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
               <button
                 onClick={() => setCreating(true)}
                 className="w-full px-3 py-2.5 rounded-lg
-                           bg-gray-100 hover:bg-gray-200
-                           dark:bg-gray-800 dark:hover:bg-gray-700
-                           text-gray-900 dark:text-gray-100 text-sm
+                           bg-muted hover:bg-accent
+                           text-foreground text-sm
                            transition-colors"
               >
                 + Create new list
@@ -292,24 +293,22 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
                   onKeyDown={(e) => { if (e.key === "Enter") createListAndSave(); }}
                   placeholder="List name…"
                   autoFocus
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200
-                             dark:border-gray-700 bg-white dark:bg-gray-800
-                             text-gray-900 dark:text-gray-100 text-sm
-                             outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background
+                             text-foreground text-sm
+                             outline-none focus:border-primary transition-colors"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={createListAndSave}
-                    className="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700
-                               text-white text-sm font-medium transition-colors"
+                    className="flex-1 px-3 py-2 rounded-lg bg-primary hover:bg-primary/90
+                               text-primary-foreground text-sm font-medium transition-colors"
                   >
                     Create &amp; Save
                   </button>
                   <button
                     onClick={() => { setCreating(false); setNewListName(""); }}
-                    className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200
-                               dark:bg-gray-800 dark:hover:bg-gray-700
-                               text-gray-900 dark:text-gray-100 text-sm
+                    className="px-3 py-2 rounded-lg bg-muted hover:bg-accent
+                               text-foreground text-sm
                                transition-colors"
                   >
                     Cancel
@@ -322,7 +321,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
             <button
               onClick={closeModal}
               className="w-full mt-3 px-3 py-2 rounded-lg text-sm
-                         text-gray-500 hover:text-gray-700 dark:hover:text-gray-300
+                         text-muted-foreground hover:text-foreground
                          transition-colors"
             >
               Close

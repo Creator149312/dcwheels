@@ -271,13 +271,13 @@ export default function WheelPreviewGeneratorPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Wheel Preview Generator</h1>
-          <p className="text-sm text-gray-500">Generate and store wheel preview images for wheels where wheelPreview is null.</p>
+          <p className="text-sm text-muted-foreground">Generate and store wheel preview images for wheels where wheelPreview is null.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={fetchMissingPreviewWheels}
-            className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+            className="px-3 py-2 rounded bg-muted hover:bg-accent text-sm"
           >
             Refresh
           </button>
@@ -285,7 +285,7 @@ export default function WheelPreviewGeneratorPage() {
             type="button"
             onClick={handleGenerateAll}
             disabled={isBatchRunning || busyWheelId !== null || wheels.length === 0}
-            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50 text-sm"
+            className="px-3 py-2 rounded bg-primary text-primary-foreground disabled:opacity-50 text-sm"
           >
             {isBatchRunning ? "Generating..." : "Generate All"}
           </button>
@@ -298,9 +298,8 @@ export default function WheelPreviewGeneratorPage() {
         <p className="text-green-700">No wheels pending preview generation.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-300 bg-white">
-            <thead className="bg-gray-100">
-              <tr>
+          <table className="min-w-full border border-border bg-card">
+            <thead className="bg-muted"><tr>
                 <th className="text-left p-2 border">Title</th>
                 <th className="text-left p-2 border">Created By</th>
                 <th className="text-left p-2 border">Segments</th>
@@ -313,7 +312,7 @@ export default function WheelPreviewGeneratorPage() {
                 return (
                   <tr key={wheel._id} className="border-t">
                     <td className="p-2 border">{wheel.title}</td>
-                    <td className="p-2 border text-xs text-gray-600">{wheel.createdBy}</td>
+                    <td className="p-2 border border-border text-xs text-muted-foreground">{wheel.createdBy}</td>
                     <td className="p-2 border">{Array.isArray(wheel.data) ? wheel.data.length : 0}</td>
                     <td className="p-2 border">
                       <button
@@ -326,7 +325,7 @@ export default function WheelPreviewGeneratorPage() {
                             appendLog(`Failed: ${wheel.title} (${error.message})`);
                           }
                         }}
-                        className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50"
+                        className="px-3 py-1 rounded bg-primary text-primary-foreground disabled:opacity-50"
                       >
                         {isBusy ? "Generating..." : "Generate"}
                       </button>
@@ -340,7 +339,7 @@ export default function WheelPreviewGeneratorPage() {
       )}
 
       {log.length > 0 && (
-        <div className="bg-gray-100 rounded p-3">
+        <div className="bg-muted rounded p-3">
           <h2 className="font-semibold mb-2">Recent Activity</h2>
           <ul className="text-sm space-y-1">
             {log.map((line, i) => (

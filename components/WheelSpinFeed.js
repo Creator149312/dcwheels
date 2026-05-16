@@ -42,37 +42,6 @@ export default function WheelSpinFeed({
 
   useEffect(() => {
     if (!wheelId) return;
-    let ignore = false;
-    let intervalId = null;
-
-    async function refresh() {
-      try {
-        const res = await fetch(`/api/wheels/${wheelId}/spin-stories`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!ignore && Array.isArray(json?.stories)) {
-          setStories((prev) => {
-            // Keep any __local cards (private saves from the current user
-            // that the server won't return) so they don't flash away during
-            // background reconciliation. Merge local-only rows on top.
-            const serverIds = new Set(json.stories.map((s) => s.id));
-            const localOnly = prev.filter(
-              (s) => s.__local && !serverIds.has(s.id)
-            );
-            return [...localOnly, ...json.stories].slice(0, 10);
-          });
-        }
-      } catch {
-        // Non-critical UI — silent.
-      }
-    }
-
-    // Skip the on-mount fetch when SSR seeded us.
-    if (!Array.isArray(initialStories) || initialStories.length === 0) {
-      // Even if the SSR seed was empty (brand-new wheel), don't fetch
-      // immediately — the feed is allowed to be empty. The background
-      // interval below will pick up activity once it starts.
-    }
 
     // Optimistic prepend on save. Always show the card to the saving user
     // immediately — if their publicSpins setting is off (isPublic: false),
@@ -102,24 +71,16 @@ export default function WheelSpinFeed({
       });
     };
 
-    const tick = () => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      refresh();
-    };
-    intervalId = setInterval(tick, 60_000);
-
     if (typeof window !== "undefined") {
       window.addEventListener("wheel:decision-saved", onDecisionSaved);
     }
 
     return () => {
-      ignore = true;
-      if (intervalId) clearInterval(intervalId);
       if (typeof window !== "undefined") {
         window.removeEventListener("wheel:decision-saved", onDecisionSaved);
       }
     };
-  }, [wheelId, initialStories]);
+  }, [wheelId]);
 
   // Hide the section entirely when there is nothing to show. An empty feed
   // looks worse than no feed. The section appears as soon as any spin is

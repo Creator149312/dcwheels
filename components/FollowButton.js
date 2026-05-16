@@ -91,7 +91,7 @@ export default function FollowButton({
         px-4 py-1.5 rounded-full border text-sm font-medium transition
         ${isFollowing
           ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 dark:border-blue-500"
-          : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700"}
+          : "bg-background text-primary border-primary hover:bg-primary/10"}
         ${loading ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}

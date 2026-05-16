@@ -1,23 +1,48 @@
 "use client";
 
-import { X } from "lucide-react";
-import { useState } from "react";
+import { X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { compressImage } from "@utils/imageCompression";
 
 export default function AddListItemModal({ isOpen, onClose, onAdd }) {
   const [word, setWord] = useState("");
   const [wordData, setWordData] = useState("");
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
 
-  // If the user pasted a base64 data URL into the textarea, push the image
-  // to blob storage first and swap in the returned URL before persisting.
-  // Plain text values (and already-hosted URLs) pass through unchanged.
+  // Handle file selection: compress + resize before storing as preview
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImage(file, {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 300,
+        useWebWorker: false,
+      });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWordData(reader.result);
+      };
+      reader.readAsDataURL(compressed);
+    } catch {
+      // Fallback to raw file if compression fails
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWordData(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   async function materializeValue(value) {
     if (typeof value !== "string" || !value.startsWith("data:")) return value;
     setUploading(true);
     try {
-      const res = await fetch("/api/upload/image", {
+      const res = await fetch("/api/upload-segment-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dataUrl: value }),
@@ -34,73 +59,103 @@ export default function AddListItemModal({ isOpen, onClose, onAdd }) {
   }
 
   async function handleSubmit() {
+    if (!word.trim()) return;
+    setUploading(true);
     const resolved = await materializeValue(wordData);
-    const isWord = word.trim() !== "" && resolved.trim() !== "";
+    
+    // Use type "word" — the API supports wordData as an image URL.
+    // Entity items require entityId + slug which we don't have for custom uploads.
+    const payload = {
+      type: "word",
+      word: word.trim(),
+      wordData: resolved || "",
+    };
 
-    const payload = isWord
-      ? {
-          type: "word",
-          word,
-          wordData: resolved,
-        }
-      : {
-          type: "entity",
-          name: word,
-          image: resolved,
-          entityType: "custom",
-        };
-
-    onAdd(payload);
+    await onAdd(payload);
 
     setWord("");
     setWordData("");
+    setUploading(false);
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999]">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md animate-fadeIn relative">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[999] px-4">
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 relative">
 
-        {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground bg-muted p-1.5 rounded-full transition-colors"
         >
-          <X size={22} />
+          <X size={18} />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-          Add Item
+        <h2 className="text-xl font-bold mb-1 text-foreground">
+          Add Image Item
         </h2>
+        <p className="text-sm text-muted-foreground mb-5">Create an item with a custom uploaded image.</p>
 
-        <input
-          type="text"
-          placeholder="Word or Entity Name"
-          value={word}
-          onChange={(e) => setWord(e.target.value)}
-          className="w-full mb-3 p-2 rounded bg-gray-100 dark:bg-gray-700"
-        />
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Item Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Mario, Pizza, The Matrix..."
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+              disabled={uploading}
+            />
+          </div>
 
-        <textarea
-          placeholder="Word Data (text or base64 image). Leave empty for entity."
-          value={wordData}
-          onChange={(e) => setWordData(e.target.value)}
-          className="w-full mb-4 p-2 rounded bg-gray-100 dark:bg-gray-700"
-        />
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Image <span className="text-muted-foreground font-normal">(Optional)</span></label>
+            
+            {wordData?.startsWith("data:image") ? (
+              <div className="relative w-full h-32 rounded-xl overflow-hidden border border-border group bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={wordData} className="w-full h-full object-cover" alt="Preview" />
+                <button 
+                  onClick={() => setWordData("")}
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-medium transition-opacity"
+                >
+                  Remove Image
+                </button>
+              </div>
+            ) : (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-24 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/50 cursor-pointer flex flex-col items-center justify-center text-muted-foreground transition-colors"
+              >
+                <ImageIcon size={24} className="mb-2 opacity-50" />
+                <span className="text-sm font-medium">Click to upload image</span>
+              </div>
+            )}
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef}
+              onChange={handleImageSelect}
+            />
+          </div>
+        </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3 mt-8">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded"
+            className="px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted rounded-xl transition"
+            disabled={uploading}
           >
             Cancel
           </button>
 
           <button
             onClick={handleSubmit}
-            disabled={uploading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
+            disabled={uploading || !word.trim()}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
           >
-            {uploading ? "Uploading..." : "Add"}
+            {uploading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Add Item"}
           </button>
         </div>
       </div>

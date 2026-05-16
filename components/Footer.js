@@ -7,17 +7,17 @@ export default function Footer() {
 
 
   return (
-    <footer className="w-full pl-14 mt-auto border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 transition-colors">
+    <footer className="w-full pl-14 mt-auto border-t border-border bg-background transition-colors">
       <div className="max-w-[1600px] mx-auto px-6 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-muted-foreground">
           <div className="font-medium order-2 md:order-1">
             2026 © <span className="text-blue-600 font-bold">SpinPapa</span>. {"Rights Reserved"}
           </div>
           
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 order-1 md:order-2">
-            <Link href="/faq" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{"Faq"}</Link>
-            <Link href="/privacy-policy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{"Privacy Policy"}</Link>
-            <Link href="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{"Terms"}</Link>
+            <Link href="/faq" className="hover:text-primary transition-colors">{"Faq"}</Link>
+            <Link href="/privacy-policy" className="hover:text-primary transition-colors">{"Privacy Policy"}</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">{"Terms"}</Link>
             <Link href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{"About Us"}</Link>
           </div>
         </div>

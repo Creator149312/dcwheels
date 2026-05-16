@@ -53,34 +53,34 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
       <div className="w-full max-w-md">
         {/* Brand mark */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20 mb-3">
-            <span className="text-white font-bold text-xl">S</span>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary mb-3">
+            <span className="text-primary-foreground font-bold text-xl">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Forgot your password?
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Enter your email and we&apos;ll send you a reset link.
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl shadow-gray-900/5 p-6 sm:p-8">
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
                 Email
               </label>
               <div className="relative">
                 <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={18}
                 />
                 <input
@@ -92,10 +92,10 @@ export default function ForgotPasswordForm() {
                   required
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
                     errors.email
                       ? "border-red-300 dark:border-red-800"
-                      : "border-gray-200 dark:border-gray-700"
+                      : "border-border"
                   }`}
                 />
               </div>
@@ -139,10 +139,10 @@ export default function ForgotPasswordForm() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           <Link
             href="/login"
-            className="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
           >
             <ArrowLeft size={14} />
             Back to sign in

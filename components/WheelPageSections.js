@@ -24,8 +24,8 @@ export function RelatedWheelsSkeleton() {
       <div className="space-y-2">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-2 rounded-xl">
-            <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse flex-shrink-0" />
-            <div className="w-full h-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            <div className="w-9 h-9 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+            <div className="w-full h-4 bg-muted rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -35,13 +35,13 @@ export function RelatedWheelsSkeleton() {
 
 export function InfoActionsSkeleton() {
   return (
-    <div className="h-14 mt-1 mx-4 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse w-full text-left" />
+    <div className="h-14 mt-1 mx-4 rounded-lg bg-muted animate-pulse w-full text-left" />
   );
 }
 
 export function StatsFeedSkeleton() {
   return (
-    <div className="h-64 mt-8 w-full bg-gray-100 dark:bg-gray-900 rounded-xl animate-pulse mx-4 text-left" />
+    <div className="h-64 mt-8 w-full bg-muted rounded-xl animate-pulse mx-4 text-left" />
   );
 }
 
@@ -77,7 +77,6 @@ export async function SuspendedStatsFeed({ wheelId }) {
       <WheelStatsBar
         wheelId={wheelId}
         initialStats={initialMeta?.analytics}
-        feedIsEmpty={!initialStories?.length}
       />
       <WheelSpinFeed wheelId={wheelId} initialStories={initialStories} />
     </div>

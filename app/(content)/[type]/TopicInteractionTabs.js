@@ -7,7 +7,7 @@ function SectionHeader({ title, action }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h2 className="text-base font-semibold flex items-center gap-2">
-        <span className="w-1 h-5 rounded-full bg-blue-600 inline-block" aria-hidden="true" />
+        <span className="w-1 h-5 rounded-full bg-primary inline-block" aria-hidden="true" />
         {title}
       </h2>
       {action}
@@ -66,7 +66,7 @@ export default function TopicInteractionTabs({
                   .replace(/[^\w-]/g, "")}`}
                 className="group flex-shrink-0 flex flex-col items-center gap-2 hover:opacity-80 transition-opacity"
               >
-                <div className="relative w-24 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <div className="relative w-24 h-32 bg-muted rounded-lg overflow-hidden">
                   <Image
                     src={character.image.large}
                     alt={character.name.full}
@@ -75,7 +75,7 @@ export default function TopicInteractionTabs({
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <p className="text-xs font-medium text-center text-gray-700 dark:text-gray-300 line-clamp-2 w-24 group-hover:text-blue-600 transition-colors">
+                <p className="text-xs font-medium text-center text-muted-foreground line-clamp-2 w-24 group-hover:text-primary transition-colors">
                   {character.name.full}
                 </p>
               </a>
@@ -95,14 +95,14 @@ export default function TopicInteractionTabs({
 
         {taggedWheels.length === 0 ? (
           /* Task 7: "Create a wheel" CTA when no wheels exist */
-          <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 p-4 bg-muted/40 rounded-xl border border-border">
             <span className="text-2xl">🎡</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <p className="text-sm font-medium text-foreground">
                 No wheels for this {type} yet.
               </p>
               {contentTitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Be the first to create a spin wheel for {contentTitle}!
                 </p>
               )}
@@ -110,8 +110,8 @@ export default function TopicInteractionTabs({
             {contentId && (
               <a
                 href={`/?type=${type}&id=${contentId}`}
-                className="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700
-                           text-white text-xs font-bold rounded-full transition-colors"
+                className="flex-shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90
+                           text-primary-foreground text-xs font-bold rounded-full transition-colors"
               >
                 Create Wheel
               </a>
@@ -126,9 +126,9 @@ export default function TopicInteractionTabs({
               <a
                 key={wheel._id}
                 href={`/uwheels/${wheel._id}`}
-                className="group w-52 flex-shrink-0 block bg-gray-50 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl overflow-hidden transition-colors"
+                className="group w-44 flex-shrink-0 block bg-muted/40 hover:bg-accent border border-border hover:border-primary/50 rounded-xl overflow-hidden transition-colors"
               >
-                <div className="relative w-full aspect-square bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                <div className="relative w-full aspect-square bg-muted flex items-center justify-center overflow-hidden">
                   {wheel.wheelPreview ? (
                     <Image
                       src={wheel.wheelPreview}
@@ -140,16 +140,16 @@ export default function TopicInteractionTabs({
                   ) : (
                     <div className="flex flex-col items-center justify-center text-center">
                       <span className="text-3xl mb-1">🎡</span>
-                      <span className="text-xs text-gray-400 font-medium">No preview</span>
+                      <span className="text-xs text-muted-foreground font-medium">No preview</span>
                     </div>
                   )}
                 </div>
                 <div className="p-3">
-                  <h3 className="text-sm font-semibold truncate mb-1 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-sm font-semibold truncate mb-1 group-hover:text-primary transition-colors">
                     {wheel.title}
                   </h3>
                   {wheel.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                    <p className="text-xs text-muted-foreground line-clamp-2">
                       {wheel.description}
                     </p>
                   )}

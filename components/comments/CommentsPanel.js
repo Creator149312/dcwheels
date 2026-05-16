@@ -201,11 +201,11 @@ export default function CommentsPanel({
       />
 
       {loading && comments.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           Loading comments…
         </p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           No comments yet.
         </p>
       ) : (

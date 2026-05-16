@@ -34,7 +34,7 @@ export default function EmbedWheelViewer({
   } = useWheelState({ newSegments, wheelPresetSettings, wheelId });
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-950 select-none overflow-hidden">
+    <div className="flex flex-col h-screen bg-background select-none overflow-hidden">
       {/* Winner banner */}
       {winner && !mustSpin && (
         <div

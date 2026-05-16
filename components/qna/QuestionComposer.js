@@ -73,7 +73,7 @@ export default function QuestionComposer({
   };
 
   return (
-    <div className="border rounded-md p-4 bg-white dark:bg-gray-900">
+    <div className="border border-border rounded-md p-4 bg-card">
       <h4 className="text-sm font-semibold mb-3">Ask a Question</h4>
 
       {/* Question type selector */}
@@ -85,8 +85,8 @@ export default function QuestionComposer({
             onClick={() => setQType(t)}
             className={`px-3 py-1.5 text-xs font-bold rounded-md border ${
               qType === t
-                ? "border-blue-600 text-blue-600"
-                : "border-gray-300 dark:border-gray-700"
+                ? "border-primary text-primary"
+                : "border-border"
             }`}
           >
             {t === "yesno" && "Yes / No"}

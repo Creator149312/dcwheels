@@ -25,9 +25,6 @@
  */
 
 import { useEffect, useState } from "react";
-import { Shuffle } from "lucide-react";
-import { timeAgo } from "@utils/HelperFunctions";
-
 function formatCount(n) {
   if (!n || n === 0) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -35,17 +32,11 @@ function formatCount(n) {
   return n.toLocaleString();
 }
 
-export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpty = true }) {
-  // Show the "Last spun" freshness line only when the Spin Stories feed has
-  // no public data yet — once the feed is visible it already shows timestamps
-  // per card, making this line redundant. Flips to false on the first saved
-  // decision event (optimistic) or whenever the parent sets feedIsEmpty=false.
-  const [showFreshness, setShowFreshness] = useState(feedIsEmpty);
+export default function WheelStatsBar({ wheelId, initialStats = null }) {
 
   const [stats, setStats] = useState(() => ({
     spin_count: initialStats?.spin_count || 0,
     view_count: initialStats?.view_count || 0,
-    lastSpunAt: initialStats?.lastSpunAt || null,
     topSegments: Array.isArray(initialStats?.topSegments)
       ? initialStats.topSegments
       : [],
@@ -100,7 +91,6 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
     return {
       ...prev,
       spin_count: newSpinCount,
-      lastSpunAt: new Date().toISOString(),
       topSegments,
     };
   }
@@ -108,7 +98,6 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
   useEffect(() => {
     if (!wheelId) return;
     let ignore = false;
-    let intervalId = null;
 
     async function refresh() {
       try {
@@ -120,7 +109,6 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
         setStats({
           spin_count: a.spin_count || 0,
           view_count: a.view_count || 0,
-          lastSpunAt: a.lastSpunAt || null,
           topSegments: Array.isArray(a.topSegments) ? a.topSegments : [],
         });
       } catch {
@@ -134,12 +122,6 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
       refresh();
     }
 
-    // When the user saves a decision, the feed gets an entry — at that point
-    // the per-card timestamps make the global "Last spun" line redundant.
-    const onDecisionSaved = (event) => {
-      if (event?.detail?.wheelId === wheelId) setShowFreshness(false);
-    };
-
     // Optimistic update on every spin — no network call. Keeps DB read
     // pressure flat regardless of how many spins the user does.
     const onSpinCounted = (event) => {
@@ -149,27 +131,14 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
       setStats((prev) => applyLocalSpin(prev, segmentLabel));
     };
 
-    // Background reconciliation: refetch every 60s while the tab is
-    // visible so other users' spins eventually surface in this user's UI.
-    // Stays quiet when the tab is hidden (visibilitychange guard) so a
-    // backgrounded tab on someone's phone doesn't keep polling.
-    const tick = () => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      refresh();
-    };
-    intervalId = setInterval(tick, 60_000);
-
     if (typeof window !== "undefined") {
       window.addEventListener("wheel:spin-counted", onSpinCounted);
-      window.addEventListener("wheel:decision-saved", onDecisionSaved);
     }
 
     return () => {
       ignore = true;
-      if (intervalId) clearInterval(intervalId);
       if (typeof window !== "undefined") {
         window.removeEventListener("wheel:spin-counted", onSpinCounted);
-        window.removeEventListener("wheel:decision-saved", onDecisionSaved);
       }
     };
   }, [wheelId, initialStats]);
@@ -189,19 +158,6 @@ export default function WheelStatsBar({ wheelId, initialStats = null, feedIsEmpt
       aria-label="Wheel statistics"
       className="mt-4 mb-4 rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20 p-4 sm:p-5"
     >
-      {/* Header row: total spins + last-spun freshness */}
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-          <Shuffle className="inline -mt-0.5 mr-1" size={16} />
-          {formatCount(stats.spin_count)} total spins
-        </h2>
-        {stats.lastSpunAt && showFreshness ? (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            Last spun {timeAgo(stats.lastSpunAt)}
-          </span>
-        ) : null}
-      </div>
-
       {/* "Top result" headline — the single most-landed segment. This is the
           line that gives the page its unique-per-wheel snippet for search. */}
       {top ? (

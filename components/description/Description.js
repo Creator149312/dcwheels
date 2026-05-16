@@ -47,7 +47,7 @@ export default function Description({ pageData, wordsList }) {
   }, [pageData, wordsList]);
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-800/60 p-4 rounded-xl mb-4 border border-transparent dark:border-gray-700/50 transition-all">
+    <div className="bg-muted p-4 rounded-xl mb-4 border border-transparent border-border/50 transition-colors">
       <div
         ref={ref}
         className="overflow-hidden transition-[max-height] duration-500 ease-in-out"
@@ -59,14 +59,14 @@ export default function Description({ pageData, wordsList }) {
       >
         {/* 1. Description Section */}
         {!pageData ? (
-          <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-line mb-4">
+          <p className="text-sm sm:text-base text-foreground whitespace-pre-line mb-4">
             {wordsList?.description}
           </p>
         ) : (
           pageData.content.map((item, i) => {
             if (item.type === "paragraph")
               return (
-                <p key={i} className="mb-4 text-sm sm:text-base text-gray-800 dark:text-gray-200">
+                <p key={i} className="mb-4 text-sm sm:text-base text-foreground">
                   {item.text}
                 </p>
               );
@@ -86,7 +86,7 @@ export default function Description({ pageData, wordsList }) {
                     }}
                   />
                   {(item.caption) && (
-                    <figcaption className="mt-1 text-xs text-center text-gray-500 dark:text-gray-400">
+                    <figcaption className="mt-1 text-xs text-center text-muted-foreground">
                       {item.caption}
                     </figcaption>
                   )}
@@ -109,7 +109,7 @@ export default function Description({ pageData, wordsList }) {
               const H = `h${item.level}`;
               const sizes = ["text-2xl", "text-xl", "text-lg", "text-base"];
               return (
-                <H key={i} className={`${sizes[item.level - 1] || "text-base"} font-bold mb-3 text-gray-900 dark:text-gray-100`}>
+                <H key={i} className={`${sizes[item.level - 1] || "text-base"} font-bold mb-3 text-foreground`}>
                   {item.text}
                 </H>
               );
@@ -120,15 +120,15 @@ export default function Description({ pageData, wordsList }) {
 
         {/* 2. Words List Bullet Section */}
         {wordsList?.data && wordsList.data.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700/50">
-            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 uppercase tracking-tight">
+          <div className="mt-2 pt-2 border-t border-border/50">
+            <h4 className="text-sm font-bold text-foreground mb-2 uppercase tracking-tight">
               List Items:
             </h4>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
               {wordsList.data.map((item, index) => {
                 const { label, imgSrc } = parseSegmentItem(item);
                 return (
-                  <li key={index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                     {imgSrc && (
                       <img
                         src={imgSrc}
@@ -140,7 +140,7 @@ export default function Description({ pageData, wordsList }) {
                         onError={(e) => { e.currentTarget.style.display = "none"; }}
                       />
                     )}
-                    {!imgSrc && <span className="text-gray-400 dark:text-gray-500">•</span>}
+                    {!imgSrc && <span className="text-muted-foreground">•</span>}
                     {label && <span>{label}</span>}
                   </li>
                 );
@@ -176,7 +176,7 @@ export default function Description({ pageData, wordsList }) {
 //   }, [pageData]);
 
 //   return (
-//     <div className="text-lg bg-gray-100 dark:bg-gray-800/60 p-4 rounded-md mb-4">
+//     <div className="text-lg bg-muted p-4 rounded-md mb-4">
 //       <div
 //         ref={ref}
 //         style={{
@@ -214,7 +214,7 @@ export default function Description({ pageData, wordsList }) {
 //             if (item.type === "heading") {
 //               const H = `h${item.level}`;
 //               return (
-//                 <H key={i} className="text-gray-900 dark:text-gray-100">
+//                 <H key={i} className="text-foreground">
 //                   {item.text}
 //                 </H>
 //               );

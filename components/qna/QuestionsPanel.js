@@ -74,7 +74,7 @@ export default function QuestionsPanel({
       {loading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : questions.length === 0 ? (
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl text-sm text-gray-600 dark:text-gray-300">
+        <div className="bg-muted p-4 rounded-xl text-sm text-muted-foreground">
           No polls yet. Be the first to ask!
         </div>
       ) : (
@@ -95,12 +95,12 @@ export default function QuestionsPanel({
 
       {/* Composer — collapsed behind "+ Ask a question" button */}
       {composerOpen ? (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <div className="border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-3 pb-0">
             <span className="text-sm font-semibold">New Poll</span>
             <button
               onClick={() => setComposerOpen(false)}
-              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               ✕ Cancel
             </button>

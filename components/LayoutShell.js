@@ -29,14 +29,14 @@ export default function LayoutShell({ children }) {
   if (isEmbed) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-background">
       <Navbar onToggleSidebar={toggleSidebar} />
       <MobileNavChrome onToggleSidebar={toggleSidebar} />
       <LeftSidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
       <div className={`${contentPadding} pb-[calc(3rem+env(safe-area-inset-bottom))] md:pb-0 md:pt-12 md:ml-16`}>
         {!hideTagsCarousel && (
-          <div className="hidden md:block sticky top-12 z-30 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md">
+          <div className="hidden md:block sticky top-12 z-30 bg-background/80 backdrop-blur-md">
             <TagsCarousel />
           </div>
         )}

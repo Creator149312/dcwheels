@@ -29,24 +29,24 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg px-5 py-4 relative"
+        className="bg-card border border-border rounded-2xl shadow-lg w-full max-w-lg px-5 py-4 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
             <Code2 className="text-indigo-500" size={16} />
             Embed this Wheel
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-1"
+            className="text-muted-foreground hover:text-foreground transition p-1"
           >
             <X size={13} />
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        <p className="text-xs text-muted-foreground mb-3">
           Paste this code into any website or blog to embed an interactive spin wheel.
         </p>
 
@@ -58,8 +58,8 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
               onClick={() => setSize(key)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
                 size === key
-                  ? "bg-indigo-500 text-white border-indigo-500"
-                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50"
               }`}
             >
               {label}
@@ -68,13 +68,13 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
         </div>
 
         {/* Code block */}
-        <div className="relative bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 mb-3">
-          <pre className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-all font-mono leading-relaxed pr-8">
+        <div className="relative bg-muted border border-border rounded-lg px-3 py-2.5 mb-3">
+          <pre className="text-xs text-foreground whitespace-pre-wrap break-all font-mono leading-relaxed pr-8">
             {iframeCode}
           </pre>
           <button
             onClick={handleCopy}
-            className="absolute top-2 right-2 p-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition text-gray-600 dark:text-gray-200"
+            className="absolute top-2 right-2 p-1 rounded bg-background border border-border hover:bg-muted transition text-foreground"
             title="Copy code"
           >
             {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
@@ -87,13 +87,13 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
             href={embedUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-indigo-500 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             Preview embed ↗
           </a>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-xs font-semibold transition"
           >
             {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? "Copied!" : "Copy Code"}

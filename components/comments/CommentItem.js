@@ -29,20 +29,20 @@ export default function CommentItem({
   };
 
   return (
-    <div className="text-sm border-b border-gray-200 dark:border-gray-700 pb-3">
+    <div className="text-sm border-b border-border pb-3">
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-black dark:text-white">
+        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground">
           {initials}
         </div>
 
         {/* Content */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
+            <span className="font-semibold text-foreground">
               {username}
             </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {timeAgo(comment.createdAt)}
             </span>
           </div>
@@ -60,7 +60,7 @@ export default function CommentItem({
               }}
             />
           ) : (
-            <div className="mt-1 text-gray-800 dark:text-gray-200">
+            <div className="mt-1 text-foreground">
               {comment.text}
             </div>
           )}
@@ -77,7 +77,7 @@ export default function CommentItem({
             )}
             {isAuthor && (
               <button
-                className="text-gray-500 dark:text-gray-400 hover:underline"
+                className="text-muted-foreground hover:underline"
                 onClick={() => setIsEditing(!isEditing)}
               >
                 Edit

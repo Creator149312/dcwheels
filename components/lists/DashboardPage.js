@@ -79,7 +79,7 @@ export default function ListDashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+      <div className="p-6 text-center text-muted-foreground">
         Loading your lists…
       </div>
     );
@@ -108,9 +108,9 @@ export default function ListDashboardPage() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+        <h2 className="text-2xl font-semibold mb-4 text-foreground">
           Your Lists
         </h2>
         <Button size={"lg"} variant={"default"} onClick={handleNewListClick}>
@@ -134,10 +134,10 @@ export default function ListDashboardPage() {
             <Link
               key={list.id}
               href={`/lists/${list.id}`}
-              className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
+              className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary/50 transition-colors block"
             >
               {/* Cover */}
-              <div className="h-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <div className="h-32 bg-muted flex items-center justify-center">
                 {coverImage ? (
                   <img
                     src={coverImage}
@@ -145,7 +145,7 @@ export default function ListDashboardPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="text-gray-500 dark:text-gray-400 text-3xl font-bold">
+                  <div className="text-muted-foreground text-3xl font-bold">
                     {list.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -153,10 +153,10 @@ export default function ListDashboardPage() {
 
               {/* Info */}
               <div className="p-4">
-                <h3 className="font-semibold text-lg truncate text-gray-900 dark:text-gray-100">
+                <h3 className="font-semibold text-lg truncate text-foreground">
                   {list.name}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {list.items.length} items
                 </p>
               </div>

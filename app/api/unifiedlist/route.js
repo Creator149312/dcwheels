@@ -19,6 +19,19 @@ export async function GET(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const slim = searchParams.get("slim") === "1";
+
+    if (slim) {
+      // Lightweight fetch — only id + name, no items. Used by AddToListButton
+      // picker so it doesn't ship full item arrays across the wire.
+      const lists = await UnifiedList.find({ userId })
+        .select("_id name")
+        .lean();
+      const formatted = lists.map((l) => ({ id: l._id, name: l.name }));
+      return NextResponse.json({ lists: formatted }, { status: 200 });
+    }
+
     // ✅ 2. Fetch all lists for this user
     const lists = await UnifiedList.find({ userId }).lean();
 

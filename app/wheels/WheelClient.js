@@ -50,10 +50,10 @@ export default function WheelsClient({ initialWheels }) {
   const adInterval = isMobile === null ? null : isMobile ? 6 : 10;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6 bg-white dark:bg-gray-950 min-h-screen transition-colors">
-      <header className="mb-4 border-b border-gray-100 dark:border-gray-900 pb-3">
-        <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">
-          All <span className="text-blue-600">Wheels</span>
+    <div className="max-w-7xl mx-auto px-4 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6 min-h-screen">
+      <header className="mb-4 border-b border-border pb-3">
+        <h1 className="text-xl md:text-2xl font-black text-foreground">
+          All <span className="text-primary">Wheels</span>
         </h1>
       </header>
 
@@ -77,9 +77,9 @@ export default function WheelsClient({ initialWheels }) {
             <Fragment key={wheel._id || index}>
               <a
                 href={`/wheels/${wheel.slug}`}
-                className="group flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-blue-500 transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/5"
+                className="group flex flex-col bg-muted/40 rounded-xl border border-border overflow-hidden hover:border-primary/50 transition-all active:scale-[0.98] hover:shadow-md"
               >
-                <div className="relative aspect-[4/3] w-full bg-white dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
                   {wheel.wheelPreview ? (
                     <img 
                       src={wheel.wheelPreview} 
@@ -88,14 +88,14 @@ export default function WheelsClient({ initialWheels }) {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
-                    <span className="text-gray-200 dark:text-gray-700 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
+                    <span className="text-muted-foreground/40 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
                       {wheel.title?.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
 
                 <div className="p-2 md:p-3">
-                  <h3 className="text-xs md:text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2 leading-tight">
+                  <h3 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 leading-tight">
                     {wheel.title}
                   </h3>
                 </div>
@@ -104,7 +104,7 @@ export default function WheelsClient({ initialWheels }) {
               {/* ✅ Responsive Ad Injection using col-span-full */}
               {showAd && (
                 <div className="col-span-full my-2 md:my-3">
-                  <div className="w-full py-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center justify-center">
+                  <div className="w-full py-1 bg-muted/50 border border-border rounded-2xl flex flex-col items-center justify-center">
                     <AdsUnit slot={"4694567949"} />
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export default function WheelsClient({ initialWheels }) {
           <button
             onClick={loadMore}
             disabled={loading}
-            className="flex items-center gap-3 px-10 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black rounded-full shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-3 px-10 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-black rounded-full shadow-md transition-all active:scale-95 disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -130,7 +130,7 @@ export default function WheelsClient({ initialWheels }) {
               "LOAD MORE WHEELS"
             )}
           </button>
-          <p className="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">
+          <p className="text-[10px] text-muted-foreground mt-3 font-bold uppercase tracking-widest">
             Showing {wheels.length} wheels
           </p>
         </div>

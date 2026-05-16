@@ -125,7 +125,7 @@ export default function QuizCard({
               {/* Score bar visual */}
               <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
                 <div
-                  className="h-full bg-primary transition-all duration-700 ease-out rounded-full"
+                  className="h-full bg-primary transition-[width] duration-700 ease-out rounded-full"
                   style={{
                     width: `${Math.round((score / totalSegments) * 100)}%`,
                   }}
@@ -162,7 +162,7 @@ export default function QuizCard({
                       key={idx}
                       disabled={!!result}
                       onClick={() => handleOptionClick(idx)}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-150 cursor-pointer disabled:cursor-default ${getOptionStyle(idx)}`}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-colors duration-150 cursor-pointer disabled:cursor-default ${getOptionStyle(idx)}`}
                     >
                       <span className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-xs font-bold">
                         {String.fromCharCode(65 + idx)}

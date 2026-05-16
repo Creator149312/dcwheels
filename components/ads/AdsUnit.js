@@ -55,8 +55,8 @@ const AdsUnitInner = ({ slot }) => {
   }, [slot]);
 
   return (
-    <div className="w-full bg-slate-50 dark:bg-slate-900/40 text-center py-2 my-4 rounded-lg border border-gray-100 dark:border-gray-800">
-      <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-2">
+    <div className="w-full bg-muted/30 text-center py-2 my-4 rounded-lg border border-border">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
         Advertisement
       </div>
       <div className="flex justify-center items-center overflow-hidden">

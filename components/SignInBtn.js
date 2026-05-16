@@ -22,7 +22,7 @@ export default function SignInBtn({ callbackUrl = "/dashboard", fullWidth = fals
       size="lg"
       className={`${
         fullWidth ? "w-full" : "m-2"
-      } h-11 gap-2 font-medium border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800`}
+      } h-11 gap-2 font-medium border-border hover:bg-muted`}
     >
       <Image
         src="/google-logo.png"

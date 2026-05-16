@@ -34,7 +34,7 @@ export default async function EmbedPage({ params }) {
 
   if (!wheelData) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500 text-sm">
+      <div className="flex items-center justify-center h-screen text-muted-foreground text-sm">
         Wheel not found or has been deleted.
       </div>
     );

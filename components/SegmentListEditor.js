@@ -141,7 +141,7 @@ export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, app
       });
       // Detect orientation so the wheel can render the image correctly
       const imageLandscape = await new Promise((resolve) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
         img.onerror = () => resolve(false);
         img.src = dataUrl;

@@ -300,14 +300,26 @@ const WinnerPopup = ({
                       </Button>
                     </div>
                   ) : (
-                    <Button
-                      onClick={() => setShowNoteInput(true)}
-                      className="w-full font-semibold text-white mb-3"
-                      style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}cc)` }}
-                      disabled={saving}
-                    >
-                      {getPickLabel(winner)}
-                    </Button>
+                    <div className="flex gap-2 mb-3">
+                      <Button
+                        onClick={() => setShowNoteInput(true)}
+                        className="flex-1 font-semibold text-white"
+                        style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}cc)` }}
+                        disabled={saving}
+                      >
+                        {getPickLabel(winner)}
+                      </Button>
+                      <button
+                        onClick={() => setShowShareCard((prev) => !prev)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-gray-900 dark:bg-gray-800 text-white hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                        Share
+                      </button>
+                    </div>
                   )}
 
                   {/* Entity Actions: Add to List + Explore */}
@@ -339,24 +351,6 @@ const WinnerPopup = ({
                     </div>
                   )}
 
-                  {/* ── Secondary Actions: Share ──────── */}
-                  <div className="mb-3">
-                    <button
-                      onClick={() => setShowShareCard((prev) => !prev)}
-                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-                        showShareCard
-                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
-                          : "text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                      </svg>
-                      Share Result
-                    </button>
-                  </div>
-
                   {/* ── Remove — isolated at bottom ───────────────────── */}
                   {!wheelData.removeWinnerAfterSpin && (
                     <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -368,7 +362,7 @@ const WinnerPopup = ({
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                           </svg>
-                          Remove from wheel
+                          Remove
                           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="6 9 12 15 18 9" />
                           </svg>

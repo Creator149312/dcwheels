@@ -10,7 +10,7 @@ import { timeAgo } from "@utils/HelperFunctions";
 
 // ── Decision status config ────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  pending: { label: "Pending",  emoji: "⏳", cls: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400" },
+  pending: { label: "Pending",  emoji: "⏳", cls: "bg-muted text-muted-foreground hover:border-border" },
   done:    { label: "Done",     emoji: "✅", cls: "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:border-green-400" },
   dropped: { label: "Dropped",  emoji: "❌", cls: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:border-red-400" },
 };
@@ -53,13 +53,13 @@ function DecisionTimelineItem({ item }) {
   return (
     <div className="relative sm:pl-10">
       {/* Timeline dot */}
-      <div className="hidden sm:flex absolute left-4 top-1.5 -ml-[5px] h-3 w-3 rounded-full border-2 border-blue-500 bg-white dark:bg-[#1f1f1f] shadow-sm shadow-blue-500/20" />
+      <div className="hidden sm:flex absolute left-4 top-1.5 -ml-[5px] h-3 w-3 rounded-full border-2 border-primary bg-background shadow-sm shadow-primary/20" />
 
-      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f1f1f] p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
         {/* Card header */}
         <div className="flex items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 bg-primary/10 text-primary">
               🎯 Spin Result
             </span>
             <button
@@ -71,13 +71,13 @@ function DecisionTimelineItem({ item }) {
               {cfg.emoji} {cfg.label}
             </button>
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{timeAgo(item.createdAt)}</span>
+          <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.createdAt)}</span>
         </div>
 
         {/* Card body */}
-        <p className="text-sm text-gray-700 dark:text-gray-300">
+        <p className="text-sm text-foreground">
           Spun{" "}
-          <Link href={wheelRoute} className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href={wheelRoute} className="font-medium text-primary hover:underline">
             {item.wheelTitle || "a wheel"}
           </Link>{" "}
           and got{" "}
@@ -87,14 +87,14 @@ function DecisionTimelineItem({ item }) {
         </p>
 
         {item.resultImage && (
-          <div className="mt-2.5 w-full h-32 relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="mt-2.5 w-full h-32 relative rounded-lg overflow-hidden border border-border bg-muted">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.resultImage} alt={item.result} className="w-full h-full object-contain" />
           </div>
         )}
 
         {item.note && (
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 border-l-[3px] border-blue-200 dark:border-blue-900/50 pl-3 italic">
+          <p className="mt-2 text-sm text-muted-foreground border-l-[3px] border-primary/30 pl-3 italic">
             &quot;{item.note}&quot;
           </p>
         )}
@@ -109,14 +109,14 @@ function DecisionTimeline({ decisions, limit = 4 }) {
   const visible = showAll ? decisions : decisions.slice(0, limit);
   return (
     <div className="relative space-y-4">
-      <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-blue-400/40 via-gray-200 to-transparent dark:from-blue-500/20 dark:via-gray-800 dark:to-transparent hidden sm:block" />
+      <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-border to-transparent hidden sm:block" />
       {visible.map((item) => (
         <DecisionTimelineItem key={item._id} item={item} />
       ))}
       {decisions.length > limit && (
         <button
           onClick={() => setShowAll((v) => !v)}
-          className="text-xs text-blue-500 hover:underline w-full text-center pt-1"
+          className="text-xs text-primary hover:underline w-full text-center pt-1"
         >
           {showAll ? "Show less" : `Show all ${decisions.length}`}
         </button>
@@ -128,15 +128,15 @@ function DecisionTimeline({ decisions, limit = 4 }) {
 // ── Small row card shared by all sections ─────────────────────────────────
 function RowCard({ href, title, meta, actions }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors group">
+    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group">
       <Link href={href} className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{title}</p>
-        {meta && <p className="text-xs text-gray-400 mt-0.5">{meta}</p>}
+        <p className="text-sm font-medium text-foreground truncate">{title}</p>
+        {meta && <p className="text-xs text-muted-foreground mt-0.5">{meta}</p>}
       </Link>
       <div className="flex items-center gap-1 flex-shrink-0 ml-3">
         {actions}
         <Link href={href}>
-          <ArrowRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+          <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
         </Link>
       </div>
     </div>
@@ -148,7 +148,7 @@ function RowSkeleton({ count = 3 }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="animate-pulse h-12 rounded-xl bg-gray-200 dark:bg-gray-800" />
+        <div key={i} className="animate-pulse h-12 rounded-xl bg-muted" />
       ))}
     </div>
   );
@@ -159,8 +159,8 @@ function Section({ icon: Icon, title, action, children }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
-          <Icon size={16} className="text-blue-500" />
+        <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <Icon size={16} className="text-primary" />
           {title}
         </h2>
         {action}
@@ -176,7 +176,7 @@ function ExpandableList({ items, renderItem, emptyMessage, limit = 4 }) {
   const visible = showAll ? items : items.slice(0, limit);
 
   if (items.length === 0) {
-    return <p className="text-sm text-gray-400">{emptyMessage}</p>;
+    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
   }
 
   return (
@@ -185,7 +185,7 @@ function ExpandableList({ items, renderItem, emptyMessage, limit = 4 }) {
       {items.length > limit && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-xs text-blue-500 hover:underline w-full text-center pt-1"
+          className="text-xs text-primary hover:underline w-full text-center pt-1"
         >
           {showAll ? "Show less" : `Show all ${items.length}`}
         </button>
@@ -198,14 +198,14 @@ function ExpandableList({ items, renderItem, emptyMessage, limit = 4 }) {
 function StatsCard({ stats, decisions = [], loading }) {
   if (loading) {
     return (
-      <div className="animate-pulse h-24 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+      <div className="animate-pulse h-24 rounded-2xl bg-muted" />
     );
   }
 
   if (!stats || stats.decisionsTotal === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 px-5 py-6 text-center">
-        <p className="text-sm text-gray-400">
+      <div className="rounded-2xl border border-dashed border-border px-5 py-6 text-center">
+        <p className="text-sm text-muted-foreground">
           Spin a wheel and tap <span className="font-semibold">&quot;I&apos;m picking this!&quot;</span> to start tracking your decisions.
         </p>
       </div>
@@ -233,8 +233,8 @@ function StatsCard({ stats, decisions = [], loading }) {
           <Zap size={13} className="text-blue-500" />
           <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">This Month</p>
         </div>
-        <p className="text-2xl font-black text-gray-900 dark:text-white">{decisionsThisMonth}</p>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">decision{decisionsThisMonth !== 1 ? "s" : ""} made</p>
+        <p className="text-2xl font-black text-foreground">{decisionsThisMonth}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">decision{decisionsThisMonth !== 1 ? "s" : ""} made</p>
       </div>
 
       {/* Streak */}
@@ -243,10 +243,10 @@ function StatsCard({ stats, decisions = [], loading }) {
           <Flame size={13} className="text-orange-500" />
           <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Streak</p>
         </div>
-        <p className="text-2xl font-black text-gray-900 dark:text-white">
+        <p className="text-2xl font-black text-foreground">
           {streak}<span className="text-base ml-0.5">🔥</span>
         </p>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">day{streak !== 1 ? "s" : ""} in a row</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">day{streak !== 1 ? "s" : ""} in a row</p>
       </div>
 
       {/* Most spun wheel */}
@@ -257,33 +257,33 @@ function StatsCard({ stats, decisions = [], loading }) {
         </div>
         {mostSpunWheel ? (
           <>
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate" title={mostSpunWheel.name}>
+            <p className="text-sm font-bold text-foreground truncate" title={mostSpunWheel.name}>
               {mostSpunWheel.name}
             </p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {mostSpunWheel.count} spin{mostSpunWheel.count !== 1 ? "s" : ""}
             </p>
           </>
         ) : (
-          <p className="text-sm text-gray-400">—</p>
+          <p className="text-sm text-muted-foreground">—</p>
         )}
       </div>
       </div>{/* end grid */}
 
       {/* Top Outcomes */}
       {topOutcomes.length > 0 && (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5">
+        <div className="rounded-2xl border border-border px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
             🏆 Your most chosen outcomes
           </p>
           <div className="flex flex-wrap gap-2">
             {topOutcomes.map(([result, count]) => (
               <span
                 key={result}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-200"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-semibold text-foreground"
               >
                 {result}
-                <span className="text-[10px] text-gray-400 font-normal">×{count}</span>
+                <span className="text-[10px] text-muted-foreground font-normal">×{count}</span>
               </span>
             ))}
           </div>
@@ -332,7 +332,7 @@ function WheelRowCard({ item }) {
           className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors disabled:opacity-50 ${
             isPublic
               ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700"
-              : "text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:text-purple-500"
+              : "text-muted-foreground border-border hover:border-purple-300 hover:text-purple-500"
           }`}
         >
           {isPublic ? "Public" : "Private"}
@@ -375,8 +375,8 @@ export default function UserDashboard({ initialData = null }) {
   if (!initialData && !session?.user?.email) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-gray-500">You need to be logged in to view your dashboard.</p>
-        <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors">
+        <p className="text-muted-foreground">You need to be logged in to view your dashboard.</p>
+        <Link href="/login" className="px-6 py-2.5 bg-primary text-primary-foreground text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">
           Log in
         </Link>
       </div>
@@ -396,25 +396,25 @@ export default function UserDashboard({ initialData = null }) {
     <div className="w-full px-4 py-8">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest font-bold text-blue-500 mb-1">Dashboard</p>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">
+          <p className="text-xs uppercase tracking-widest font-bold text-primary mb-1">Dashboard</p>
+          <h1 className="text-2xl font-black text-foreground">
             Hey, {name} 👋
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {isAdmin && (
             <>
               <Link
                 href="/dashboard/admin/wheels-to-pages"
-                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors border border-primary/30 rounded-lg px-3 py-1.5"
               >
                 AI Wheel Creator
               </Link>
               <Link
                 href="/dashboard/admin/preview-generator"
-                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 transition-colors border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-1.5"
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors border border-primary/30 rounded-lg px-3 py-1.5"
               >
                 Preview Generator
               </Link>
@@ -422,7 +422,7 @@ export default function UserDashboard({ initialData = null }) {
           )}
           <Link
             href="/dashboard/account"
-            className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg px-3 py-1.5"
           >
             <Settings size={13} />
             Settings
@@ -442,7 +442,7 @@ export default function UserDashboard({ initialData = null }) {
           icon={Layers}
           title="My Wheels"
           action={
-            <a href="/" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <a href="/" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
               <Plus size={12} /> New
             </a>
           }
@@ -452,7 +452,7 @@ export default function UserDashboard({ initialData = null }) {
           ) : (
             <ExpandableList
               items={wheels}
-              emptyMessage={<>No wheels yet. <a href="/" className="text-blue-500 hover:underline">Create one!</a></>}
+              emptyMessage={<>No wheels yet. <a href="/" className="text-primary hover:underline">Create one!</a></>}
               renderItem={(item) => (
                 <WheelRowCard key={item._id} item={item} />
               )}
@@ -465,7 +465,7 @@ export default function UserDashboard({ initialData = null }) {
           icon={BookMarked}
           title="My Lists"
           action={
-            <a href="/dashboard?tab=my-lists&action=create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
+            <a href="/lists/create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
               <Plus size={12} /> New
             </a>
           }
@@ -475,7 +475,7 @@ export default function UserDashboard({ initialData = null }) {
           ) : (
             <ExpandableList
               items={lists}
-              emptyMessage={<>No lists yet. <a href="/dashboard?tab=my-lists&action=create" className="text-blue-500 hover:underline">Create one!</a></>}
+              emptyMessage={<>No lists yet. <a href="/lists/create" className="text-primary hover:underline">Create one!</a></>}
               renderItem={(item) => (
                 <RowCard key={item.id} href={`/lists/${item.id}`} title={item.name} meta={`${item.itemCount} items`} />
               )}
@@ -488,7 +488,7 @@ export default function UserDashboard({ initialData = null }) {
           {loading ? (
             <RowSkeleton />
           ) : decisions.length === 0 ? (
-            <p className="text-sm text-gray-400">No decisions yet. Spin a wheel and commit to it!</p>
+            <p className="text-sm text-muted-foreground">No decisions yet. Spin a wheel and commit to it!</p>
           ) : (
             <DecisionTimeline decisions={decisions} />
           )}

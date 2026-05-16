@@ -50,7 +50,7 @@ export default function TrailerPlayer({ trailerKey, title }) {
         aria-label={`Play trailer for ${title}`}
         className="absolute inset-0 flex items-center justify-center"
       >
-        <div className="w-16 h-16 rounded-full bg-white/90 group-hover:bg-white group-hover:scale-110 transition-all flex items-center justify-center shadow-xl">
+        <div className="w-16 h-16 rounded-full bg-white/90 group-hover:bg-white group-hover:scale-110 transition flex items-center justify-center shadow-xl">
           {/* Triangle play icon */}
           <svg
             viewBox="0 0 24 24"

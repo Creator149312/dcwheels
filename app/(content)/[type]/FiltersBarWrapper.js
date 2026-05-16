@@ -52,8 +52,8 @@ export default function FiltersBarWrapper({ genresList = [], type }) {
           onClick={() => pushParams({ sort: v })}
           className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
             currentSort === v
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-400"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-border text-foreground hover:border-primary/50"
           }`}
         >
           {lbl}
@@ -65,7 +65,7 @@ export default function FiltersBarWrapper({ genresList = [], type }) {
         <select
           value={currentGenre}
           onChange={(e) => pushParams({ genre: e.target.value })}
-          className="ml-auto shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors hover:border-blue-400 focus:outline-none focus:border-blue-500"
+          className="w-full sm:w-auto sm:ml-auto shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border border-border bg-background text-foreground cursor-pointer transition-colors hover:border-primary/50 focus:outline-none focus:border-primary"
         >
           <option value="">All Genres</option>
           {genresList.map((g) => (

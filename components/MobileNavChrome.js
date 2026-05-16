@@ -27,7 +27,7 @@ const SCROLL_THRESHOLD = 10;
 
 function BottomNavItem({ href, icon, label, active, onClick }) {
   const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
-    active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+    active ? "text-primary" : "text-muted-foreground"
   }`;
   if (onClick) {
     return (
@@ -110,13 +110,13 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         }`}
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="h-14 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-100/80 dark:border-gray-900/80">
+        <div className="h-14 bg-background/95 backdrop-blur-md border-b border-border">
           <div className="h-full px-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label={"Open Menu"}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
+                aria-label="Open Menu"
               >
                 <Menu size={20} />
               </button>
@@ -130,7 +130,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                   priority
                   className="h-8 w-8"
                 />
-                <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white uppercase">
+                  <span className="text-lg font-black tracking-tighter text-foreground uppercase">
                   Spin<span className="text-blue-600">Papa</span>
                 </span>
               </Link>
@@ -139,7 +139,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
                 aria-label={"Toggle Theme"}
               >
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
@@ -147,7 +147,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
 
               <Link
                 href="/dashboard"
-                className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
                 aria-label={"Dashboard"}
               >
                 <Bell size={20} />
@@ -161,7 +161,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         {/* /explore renders its own mood chip row; suppress the global tag
             carousel on that route to avoid two stacked chip rows. */}
         {!pathname.startsWith("/explore") && (
-          <div className="h-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-100/80 dark:border-gray-900/80">
+          <div className="h-10 bg-background/95 backdrop-blur-md border-b border-border">
             <TagsCarousel />
           </div>
         )}
@@ -177,14 +177,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
           />
           {/* Sheet */}
           <div
-            className={`fixed bottom-12 left-0 right-0 z-[68] md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-2xl transition-transform duration-300`}
+            className={`fixed bottom-12 left-0 right-0 z-[68] md:hidden bg-card border-t border-border rounded-t-2xl shadow-lg transition-transform duration-300`}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{"Browse"}</span>
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
+              <span className="text-sm font-bold text-foreground">{"Browse"}</span>
               <button
                 onClick={() => setLibraryOpen(false)}
-                className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground"
               >
                 <X size={16} />
               </button>
@@ -192,18 +192,18 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             <div className="flex flex-col py-1">
               <Link
                 href="/wheels"
-                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
                 onClick={() => setLibraryOpen(false)}
               >
-                <LayoutGrid size={20} className="text-indigo-500" />
+                <LayoutGrid size={20} className="text-primary" />
                 {"Browse Wheels"}
               </Link>
               <Link
                 href="/lists"
-                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
                 onClick={() => setLibraryOpen(false)}
               >
-                <List size={20} className="text-indigo-500" />
+                <List size={20} className="text-primary" />
                 {"My Lists"}
               </Link>
             </div>
@@ -213,7 +213,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
 
       {/* ── Bottom nav ─────────────────────────────────────────────────── */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-[70] md:hidden border-t border-gray-100/80 dark:border-gray-900/80 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-[70] md:hidden border-t border-border bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-transform duration-300 ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}

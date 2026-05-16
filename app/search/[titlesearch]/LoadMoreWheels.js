@@ -48,22 +48,22 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
             <Fragment key={item._id || `loadmore-${i}`}>
               <Link href={`/uwheels/${item._id}`} className="block group w-full">
                 {/* Enhanced Card: Added w-full and matched padding/hover effects to parent page */}
-                <Card className="relative overflow-hidden p-3.5 md:p-6 border-none bg-white dark:bg-gray-900/50 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 transition-all duration-500" />
+                <Card className="relative overflow-hidden p-3.5 md:p-6 border-none bg-card shadow-sm transition duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 transition-colors duration-500" />
 
                   <div className="relative flex items-center justify-between">
                     <div className="flex items-center space-x-3 md:space-x-5 min-w-0">
                       {/* Icon Container matched to parent sizing */}
-                      <div className="flex-shrink-0 h-11 w-11 md:h-14 md:w-14 flex items-center justify-center rounded-xl md:rounded-2xl bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12 transition-all duration-300">
+                      <div className="flex-shrink-0 h-11 w-11 md:h-14 md:w-14 flex items-center justify-center rounded-xl md:rounded-2xl bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-12 transition duration-300">
                         <Layers size={20} className="md:w-6 md:h-6" />
                       </div>
 
                       <div className="truncate">
-                        <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white truncate mb-0.5 md:mb-1">
+                        <h2 className="text-base md:text-xl font-bold text-foreground truncate mb-0.5 md:mb-1">
                           {item.title}
                         </h2>
                         <div className="flex items-center">
-                          <span className="px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-wider">
                             {item.data?.length || 0} Segments
                           </span>
                         </div>
@@ -71,10 +71,10 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
                     </div>
 
                     <div className="flex-shrink-0 ml-2">
-                      <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full border border-gray-100 dark:border-gray-800 group-hover:bg-blue-600 group-hover:border-blue-600 transition-all">
+                      <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full border border-border group-hover:bg-primary group-hover:border-primary transition-colors">
                         <ArrowRight
                           size={16}
-                          className="text-gray-400 md:w-[18px] md:h-[18px] group-hover:text-white group-hover:translate-x-0.5 transition-all"
+                          className="text-muted-foreground md:w-[18px] md:h-[18px] group-hover:text-primary-foreground group-hover:translate-x-0.5 transition"
                         />
                       </div>
                     </div>
@@ -94,7 +94,7 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
             <button
               onClick={fetchMore}
               disabled={loading}
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black rounded-full shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-black rounded-full shadow-lg shadow-primary/20 transition-transform active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <>

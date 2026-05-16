@@ -31,11 +31,11 @@ function TimeLeft({ expiresAt }) {
   }, [expiresAt]);
 
   const cls = {
-    closed:   "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+    closed:   "bg-muted text-muted-foreground",
     critical: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 animate-pulse",
     urgent:   "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
     warning:  "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
-    normal:   "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+    normal:   "bg-muted text-muted-foreground",
   }[state.urgency];
 
   return (
@@ -120,7 +120,7 @@ export default function AskCard({ ask, compact = true }) {
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f1f1f] p-4 sm:p-5 shadow-sm transition-all hover:shadow-md hover:border-purple-100 dark:hover:border-purple-900">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-colors hover:border-primary/20">
 
       {/* ── Feature 5: Final Decision banner ────────────────────────── */}
       {finalDecisionOption && (
@@ -154,17 +154,17 @@ export default function AskCard({ ask, compact = true }) {
 
           {compact ? (
             <Link href={`/ask/${ask.id}`} className="group">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
+              <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                 {ask.question}
               </h3>
             </Link>
           ) : (
-            <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
+            <h3 className="text-base sm:text-xl font-bold text-foreground">
               {ask.question}
             </h3>
           )}
 
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+          <p className="text-xs text-muted-foreground mt-1.5">
             Asked by{" "}
             <Link href={`/profile/${encodeURIComponent(ask.authorName)}`} className="text-purple-600 dark:text-purple-400 hover:underline font-medium">
               {ask.authorName}
@@ -185,7 +185,7 @@ export default function AskCard({ ask, compact = true }) {
           const isPending = option.id === pendingOptionId;
 
           // Feature 3: leading option styling
-          let borderCls = "border-gray-200 dark:border-gray-700 cursor-default";
+          let borderCls = "border-border cursor-default";
           let barCls = "bg-purple-100 dark:bg-purple-900/30";
           if (isLeading && showResults) {
             borderCls = "border-green-400 dark:border-green-600 cursor-default";
@@ -202,12 +202,12 @@ export default function AskCard({ ask, compact = true }) {
               key={option.id}
               onClick={() => handleOptionClick(option.id)}
               disabled={voted || loading || isClosed}
-              className={`relative w-full text-left rounded-lg border px-4 py-3 text-sm font-medium transition-all duration-200 overflow-hidden ${borderCls} text-gray-800 dark:text-gray-200`}
+              className={`relative w-full text-left rounded-lg border px-4 py-3 text-sm font-medium transition-colors duration-200 overflow-hidden ${borderCls} text-foreground`}
             >
               {/* Progress fill (Feature 3) */}
               {showResults && totalVotes > 0 && (
                 <span
-                  className={`absolute inset-y-0 left-0 ${barCls} transition-all duration-700 ease-out`}
+                  className={`absolute inset-y-0 left-0 ${barCls} transition-[width] duration-700 ease-out`}
                   style={{ width: `${pct}%` }}
                 />
               )}
@@ -256,7 +256,7 @@ export default function AskCard({ ask, compact = true }) {
             onChange={(e) => setRationale(e.target.value.slice(0, 280))}
             placeholder="Tell them why… (optional)"
             rows={2}
-            className="w-full text-sm rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full text-sm rounded-lg border border-border bg-background text-foreground px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
           />
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-gray-400">{rationale.length}/280</span>
@@ -282,16 +282,16 @@ export default function AskCard({ ask, compact = true }) {
 
       {/* Feature 4: My rationale (shown after voting) */}
       {voted && myRationale && (
-        <div className="mt-3 text-xs text-gray-500 dark:text-gray-400 border-l-[3px] border-purple-300 dark:border-purple-700 pl-3 py-1 italic">
+        <div className="mt-3 text-xs text-muted-foreground border-l-[3px] border-purple-300/70 pl-3 py-1 italic">
           Your reason: &quot;{myRationale}&quot;
         </div>
       )}
 
       {/* ── Feature 3: "Community chose" banner (closed, no author pick) ── */}
       {isClosed && !finalDecisionOption && totalVotes > 0 && leadingOptionId && (
-        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
           <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
-          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-semibold text-foreground">
             Community chose:{" "}
             <span className="font-extrabold text-gray-900 dark:text-white">
               {ask.options.find((o) => o.id === leadingOptionId)?.text}
@@ -301,14 +301,14 @@ export default function AskCard({ ask, compact = true }) {
       )}
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="mt-4 flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800/60">
+      <div className="mt-4 flex items-center justify-between pt-3 border-t border-border">
         {/* Feature 2: Prominent vote count */}
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-gray-600 dark:text-gray-400">
+          <span className="text-xs font-bold text-muted-foreground">
             {totalVotes.toLocaleString()} {totalVotes === 1 ? "vote" : "votes"}
           </span>
           {ask.tags?.length > 0 && (
-            <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
+            <span className="text-xs text-muted-foreground hidden sm:block">
               {ask.tags.map((t) => `#${t}`).join(" ")}
             </span>
           )}
@@ -337,8 +337,8 @@ export default function AskCard({ ask, compact = true }) {
            chips that link back to the content slug page. Useful in the
            global ask feed so users can discover content pages from debates. */}
       {ask.options.some((o) => o.catalogRef?.canonicalSlug && o.catalogRef?.type) && (
-        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
-          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-border">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
             About:
           </span>
           {ask.options

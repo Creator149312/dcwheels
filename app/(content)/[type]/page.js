@@ -117,7 +117,7 @@ export default async function TopicListPage({ params, searchParams }) {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-black dark:text-white">
+    <div className="min-h-screen bg-background text-foreground">
 
       {/* ── Hero spotlight (page 1 only) ────────────────────────────────── */}
       {heroItem && renderHeroCard(heroItem, type)}
@@ -125,7 +125,7 @@ export default async function TopicListPage({ params, searchParams }) {
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* ── Header row: title + sort tabs + genre pills + search ────── */}
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6 md:mb-8">
           <h1 className="text-2xl font-bold shrink-0">{typeLabels[type] || "Discover"}</h1>
           <div className="flex-1 min-w-0">
             <FiltersBarWrapper
@@ -144,7 +144,7 @@ export default async function TopicListPage({ params, searchParams }) {
                 {gridItems.length > 0 && (
                   <section className="mb-10">
                     <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-                      <span className="w-1 h-5 bg-blue-600 rounded-full inline-block" />
+                      <span className="w-1 h-5 bg-primary rounded-full inline-block" />
                       🖥️ Console &amp; PC
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -181,16 +181,16 @@ export default async function TopicListPage({ params, searchParams }) {
               {page > 1 && (
                 <a
                   href={buildHref(searchParams, { page: page - 1 })}
-                  className="px-5 py-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-medium transition"
+                  className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
                 >
                   ← Prev
                 </a>
               )}
-              <span className="text-sm text-gray-500 dark:text-gray-400 px-2">Page {page}</span>
+              <span className="text-sm text-muted-foreground px-2">Page {page}</span>
               {hasMore && (
                 <a
                   href={buildHref(searchParams, { page: page + 1 })}
-                  className="px-5 py-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-medium transition"
+                  className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
                 >
                   Next →
                 </a>
@@ -198,7 +198,7 @@ export default async function TopicListPage({ params, searchParams }) {
             </div>
           </>
         ) : (
-          <div className="py-16 text-center text-gray-500 dark:text-gray-400">
+          <div className="py-16 text-center text-muted-foreground">
             No {type}s found. Try adjusting your filters.
           </div>
         )}

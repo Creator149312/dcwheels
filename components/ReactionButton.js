@@ -75,7 +75,7 @@ export default function ReactionButton({
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition ${
         reacted
           ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
-          : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:text-gray-100"
+          : "border-border bg-muted text-foreground hover:bg-accent"
       } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
     >
       <ThumbsUp

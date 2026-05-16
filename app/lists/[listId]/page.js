@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { validateObjectID } from "@utils/Validator";
-import { getListById } from "@lib/lists";
+import { getListByIdCached } from "@lib/lists";
 import ListDetailClient from "./ListDetailClient";
 
-// Public list detail is CDN-cacheable for a minute. Owner-only UI bits are
-// resolved client-side via useSession() in ListDetailClient.
-export const revalidate = 60;
+// ISR: list data is cached across requests and busted by revalidateTag
+// whenever a mutation API route runs. The session/isOwner check is done
+// client-side so this page is fully cacheable for guest visitors.
+export const revalidate = 604800; // 7 days — tag-busted instantly on mutations
 
 export async function generateMetadata({ params }) {
   const { listId } = params;
@@ -18,8 +19,7 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  // React.cache() dedupes this with the page body's call below — one DB hit.
-  const list = await getListById(listId);
+  const list = await getListByIdCached(listId);
 
   if (list) {
     const title = list.name || "User List";
@@ -28,10 +28,7 @@ export async function generateMetadata({ params }) {
         ? list.description
         : `Explore the list "${list.name}"`;
 
-    return {
-      title,
-      description,
-    };
+    return { title, description };
   }
 
   return {
@@ -48,13 +45,17 @@ export default async function ListDetailPage({ params }) {
     notFound();
   }
 
-  const list = await getListById(listId);
+  const list = await getListByIdCached(listId);
 
   if (!list) {
     notFound();
   }
 
-  // Owner check moved to client (useSession in ListDetailClient) so this
-  // page remains CDN-cacheable for anonymous and authenticated users alike.
-  return <ListDetailClient initialList={list} listId={listId} />;
+  return (
+    <ListDetailClient
+      initialList={list}
+      listId={listId}
+      listOwnerId={list.userId}
+    />
+  );
 }

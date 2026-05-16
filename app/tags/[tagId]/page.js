@@ -64,14 +64,14 @@ export async function generateMetadata({ params }) {
   const display = tagDoc?.displayName ||
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const description = tagDoc?.description ||
-    `Explore spin wheels and community dilemmas about "${display}" on Spinpapa.`;
+    `Explore Decision wheels and community dilemmas about "${display}" on Spinpapa.`;
   // Count wheels to decide noindex for thin tags
   const wheelCount = tagDoc?.wheelCount ??
     await Wheel.countDocuments({ tags: canonical });
   const isThin = wheelCount < NOINDEX_BELOW;
 
   return {
-    title: `${display} Space – Spin Wheels & Dilemmas`,
+    title: `${display} Space – Decision Wheels & Dilemmas`,
     description,
     alternates: tagDoc && tagDoc.slug !== tagId.toLowerCase()
       ? { canonical: `/tags/${tagDoc.slug}` }
@@ -125,72 +125,72 @@ export default async function TagDetailPage({ params }) {
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <div className="pt-6 pb-5 mb-2">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-600 mb-4">
-          <Link href="/tags" className="hover:text-indigo-500 transition-colors">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 mb-4">
+          <Link href="/tags" className="hover:text-primary transition-colors">
             All Spaces
           </Link>
           <span>/</span>
-          <span className="text-gray-600 dark:text-gray-400">{display}</span>
+          <span className="text-muted-foreground">{display}</span>
         </div>
 
         {/* Title row */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 md:gap-5">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
-                <span className="text-white font-black text-base">
+              <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
+                <span className="text-primary-foreground font-black text-lg md:text-xl">
                   {display.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight">
-                  {display}{" "}
-                  <span className="text-indigo-500">Space</span>
-                </h1>
-              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-foreground leading-tight truncate">
+                {display}{" "}
+                <span className="text-primary">Space</span>
+              </h1>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
-              Spin wheels, community dilemmas, and everything{" "}
-              <span className="font-medium text-gray-700 dark:text-gray-300">#{tagId}</span> in one place.
+            <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-xl">
+              Decision picker wheels, community dilemmas, and everything{" "}
+              <span className="font-medium text-foreground">#{tagId}</span> in one place.
             </p>
           </div>
 
           {/* CTAs */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/*
+          <div className="flex items-center gap-2 w-full md:w-auto flex-shrink-0">
             <FollowButton
               entityType="tag"
               entityId={canonical}
               labelFollow="Follow Space"
               labelFollowing="Following"
-              className="text-xs px-3 py-2"
+              className="flex-1 md:flex-none justify-center text-sm px-4 py-2"
             />
             <Link
               href={`/dashboard?create=1&tag=${encodeURIComponent(tagId)}`}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm shrink-0"
+              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-full transition-colors shadow-sm shrink-0"
             >
-              <span className="text-base leading-none">+</span>
-              Create {display} Wheel
+              <span className="text-lg leading-none">+</span>
+              Create Wheel
             </Link>
           </div>
+          */}
         </div>
 
         {/* Stats pills */}
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-full border border-indigo-100 dark:border-indigo-800/40">
-            <Layers size={13} className="text-indigo-500" />
-            <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-muted/50 rounded-full border border-border">
+            <Layers size={13} className="text-primary" />
+            <span className="text-xs font-semibold text-foreground">
               {stats.wheelCount.toLocaleString()} {stats.wheelCount === 1 ? "Wheel" : "Wheels"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-gray-900 rounded-full border border-gray-100 dark:border-gray-800">
-            <Hash size={12} className="text-gray-400" />
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tagId}</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border">
+            <Hash size={12} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-medium">{tagId}</span>
           </div>
         </div>
       </div>
 
       {/* ── Divider ──────────────────────────────────────────────────── */}
-      <div className="border-t border-gray-100 dark:border-gray-800 mb-2" />
+      <div className="border-t border-border mb-2" />
 
       {/* ── Tabbed content ───────────────────────────────────────────── */}
       <TagSpaceClient

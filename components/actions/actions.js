@@ -431,7 +431,13 @@ export async function getPageDataBySlug(slug) {
 export async function getWheelById(wheelId) {
   if (!wheelId || !mongoose.Types.ObjectId.isValid(wheelId)) return null;
   await connectMongoDB();
-  return Wheel.findOne({ _id: wheelId }).lean();
+  // Explicit projection — excludes heavy/unused fields (editorData, relatedTopics,
+  // isPublic, likeCount) that /uwheels/[wheelId] never renders.
+  return Wheel.findOne({ _id: wheelId })
+    .select(
+      "title description data wheelData tags wheelPreview createdBy createdAt type"
+    )
+    .lean();
 }
 
 /**

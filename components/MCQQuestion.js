@@ -35,11 +35,11 @@ const MCQQuestion = ({ questionData }) => {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white dark:bg-gray-800 h-2/3">
+    <div className="max-w-lg mx-auto p-6 bg-background h-2/3">
       {/* Question Title */}
       <div className="mb-4 h-1/3">
         <p
-          className="text-lg text-gray-700 dark:text-gray-300"
+          className="text-lg text-foreground"
           dangerouslySetInnerHTML={{ __html: questionData.title }}
         ></p>
       </div>
@@ -48,7 +48,7 @@ const MCQQuestion = ({ questionData }) => {
           {questionData.options.map((option, index) => (
             <div key={index} className="flex items-center justify-center">
               <button
-                className="button w-full h-full relative overflow-hidden p-4 transform transition-all duration-200 ease-out shadow-lg rounded-lg dark:bg-gray-700 dark:text-white bg-gray-50 hover:shadow-2xl hover:translate-y-[-4px] active:shadow-sm active:translate-y-1"
+                className="button w-full h-full relative overflow-hidden p-4 transform transition-transform duration-150 ease-out rounded-lg bg-muted text-foreground hover:-translate-y-1 active:translate-y-0.5"
                 onClick={() => handleAnswer(option)}
                 disabled={answered}
               >

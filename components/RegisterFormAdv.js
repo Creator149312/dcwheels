@@ -87,29 +87,29 @@ export default function RegisterFormAdv() {
       <div className="w-full max-w-md">
         {/* Brand mark */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20 mb-3">
-            <span className="text-white font-bold text-xl">S</span>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary mb-3">
+            <span className="text-primary-foreground font-bold text-xl">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Create your account
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Save your wheels, share them, and discover more.
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl shadow-gray-900/5 p-6 sm:p-8">
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
           {/* Google */}
           <SignInBtn callbackUrl={callbackUrl} fullWidth />
 
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-800" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase tracking-wider">
-              <span className="bg-white dark:bg-gray-900 px-3 text-gray-400 dark:text-gray-500">
+              <span className="bg-card px-3 text-muted-foreground">
                 or sign up with email
               </span>
             </div>
@@ -120,13 +120,13 @@ export default function RegisterFormAdv() {
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
                 Username
               </label>
               <div className="relative">
                 <User
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={18}
                 />
                 <input
@@ -138,10 +138,10 @@ export default function RegisterFormAdv() {
                   required
                   autoComplete="username"
                   placeholder="yourname"
-                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
                     errors.username
                       ? "border-red-300 dark:border-red-800"
-                      : "border-gray-200 dark:border-gray-700"
+                      : "border-border"
                   }`}
                 />
               </div>
@@ -156,13 +156,13 @@ export default function RegisterFormAdv() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
                 Email
               </label>
               <div className="relative">
                 <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={18}
                 />
                 <input
@@ -174,10 +174,10 @@ export default function RegisterFormAdv() {
                   required
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
                     errors.email
                       ? "border-red-300 dark:border-red-800"
-                      : "border-gray-200 dark:border-gray-700"
+                      : "border-border"
                   }`}
                 />
               </div>
@@ -192,13 +192,13 @@ export default function RegisterFormAdv() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                className="block text-sm font-medium text-foreground mb-1.5"
               >
                 Password
               </label>
               <div className="relative">
                 <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={18}
                 />
                 <input
@@ -210,16 +210,16 @@ export default function RegisterFormAdv() {
                   required
                   autoComplete="new-password"
                   placeholder="At least 8 characters"
-                  className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
                     errors.password
                       ? "border-red-300 dark:border-red-800"
-                      : "border-gray-200 dark:border-gray-700"
+                      : "border-border"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
@@ -273,13 +273,13 @@ export default function RegisterFormAdv() {
               )}
             </Button>
 
-            <p className="text-[11px] leading-relaxed text-gray-400 dark:text-gray-500 text-center">
-              By creating an account you agree to our{" "}
-              <Link href="/terms" className="underline hover:text-gray-600 dark:hover:text-gray-300">
+            <p className="text-[11px] leading-relaxed text-muted-foreground text-center">
+              By creating an account you agree to our{"\ "}
+              <Link href="/terms" className="underline hover:text-foreground">
                 Terms
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="underline hover:text-gray-600 dark:hover:text-gray-300">
+              </Link>{"\ "}
+              and{"\ "}
+              <Link href="/privacy" className="underline hover:text-foreground">
                 Privacy Policy
               </Link>
               .
@@ -288,7 +288,7 @@ export default function RegisterFormAdv() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           Already have an account?{" "}
           <Link
             href={`/login${
@@ -296,7 +296,7 @@ export default function RegisterFormAdv() {
                 ? `?callbackUrl=${encodeURIComponent(callbackUrl)}`
                 : ""
             }`}
-            className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             Sign in
           </Link>

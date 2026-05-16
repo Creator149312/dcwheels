@@ -9,7 +9,7 @@ export default function RepliesList({
   onEdit,
 }) {
   return (
-    <div className="ml-10 mt-2 border-l border-gray-200 dark:border-gray-700 pl-3 space-y-3">
+    <div className="ml-10 mt-2 border-l border-border pl-3 space-y-3">
       {replies.map((reply) => (
         <CommentItem
           key={reply._id}

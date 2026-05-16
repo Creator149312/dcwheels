@@ -25,7 +25,7 @@ export default function FiltersBar({ genresList, onApply }) {
       {/* ✅ Filter Icon */}
       <button
         onClick={() => setOpen(true)}
-        className="p-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="p-2 border border-border rounded-lg hover:bg-muted"
       >
         <SlidersHorizontal size={22} />
       </button>
@@ -33,7 +33,7 @@ export default function FiltersBar({ genresList, onApply }) {
       {/* ✅ Slide‑Over Panel */}
       {open && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
-          <div className="w-72 bg-white dark:bg-gray-900 h-full shadow-xl p-6 flex flex-col">
+          <div className="w-72 bg-background h-full shadow-xl p-6 flex flex-col">
             <h2 className="text-xl font-semibold mb-4">Filters</h2>
 
             {/* Genre Dropdown */}
@@ -41,7 +41,7 @@ export default function FiltersBar({ genresList, onApply }) {
             <select
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
-              className="border px-3 py-2 rounded mb-6 dark:bg-gray-800 dark:border-gray-700"
+              className="border border-border px-3 py-2 rounded mb-6 bg-muted text-foreground focus:outline-none focus:border-primary"
             >
               <option value="">All Genres</option>
               {genresList.map((g) => (
@@ -65,14 +65,14 @@ export default function FiltersBar({ genresList, onApply }) {
             {/* Buttons */}
             <button
               onClick={applyFilters}
-              className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition mb-3"
+              className="bg-primary text-primary-foreground py-2 rounded hover:bg-primary/90 transition mb-3"
             >
               Apply Filters
             </button>
 
             <button
               onClick={resetFilters}
-              className="border py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              className="border border-border py-2 rounded hover:bg-muted transition"
             >
               Reset
             </button>
@@ -80,7 +80,7 @@ export default function FiltersBar({ genresList, onApply }) {
             {/* Close Button */}
             <button
               onClick={() => setOpen(false)}
-              className="mt-auto text-sm text-gray-500 hover:underline"
+              className="mt-auto text-sm text-muted-foreground hover:underline"
             >
               Close
             </button>
