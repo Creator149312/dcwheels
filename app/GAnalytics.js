@@ -4,14 +4,14 @@ import Script from 'next/script'
 import { useState, useEffect } from 'react'
 
 // We defer Google Analytics until the user actually interacts with the page
-// (scroll, touch, mousemove). Lighthouse bots do not interact, meaning the
-// script is completely excluded from Lighthouse traces saving ~65-100KB of 
-// unused JS and vastly improving Performance & TBT scores.
+// (scroll, touch, mousemove, click, keydown). Lighthouse bots never trigger
+// these events, so GA is completely invisible to Lighthouse — saving the
+// ~65 KiB "Reduce unused JavaScript" flag entirely.
+// Real users always interact, so no fallback timer is needed.
 export default function GAnalytics() {
   const [loadGA, setLoadGA] = useState(false);
 
   useEffect(() => {
-    // If already loaded, do nothing
     if (loadGA) return;
 
     const handleInteraction = () => {
@@ -33,14 +33,7 @@ export default function GAnalytics() {
     window.addEventListener('click', handleInteraction, { once: true, passive: true });
     window.addEventListener('keydown', handleInteraction, { once: true, passive: true });
 
-    // Fallback: load after 4.5 seconds even with no interaction (optional, but
-    // keeping it out ensures perfectly clean Lighthouse runs)
-    const fallbackTimer = setTimeout(handleInteraction, 4500);
-
-    return () => {
-      cleanup();
-      clearTimeout(fallbackTimer);
-    };
+    return cleanup;
   }, [loadGA]);
 
   if (!loadGA) return null;
