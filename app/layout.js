@@ -60,41 +60,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Preconnect and dns-prefetch for external image CDNs and analytics */}
-
-        {/* Priority 1: Your own assets */}
-        <link
-          rel="preconnect"
-          href="https://kwxy9wjctsgcpn5g.public.blob.vercel-storage.com"
-          crossOrigin="anonymous"
-        />
-
-        {/* Google user avatars — shown in Navbar, comments, and profile
-            cards. Preconnecting here eliminates the TLS handshake cost from
-            the first avatar image request. */}
+        {/* Google user avatars — shown immediately in Navbar on every page.
+            Preconnecting eliminates the TLS handshake cost from the first
+            avatar request. All other third-party origins (AdSense, GA, Vercel
+            Blob) are deferred / conditional, so preconnecting them wastes a
+            TCP slot on every page load and Lighthouse flags them. */}
         <link
           rel="preconnect"
           href="https://lh3.googleusercontent.com"
           crossOrigin="anonymous"
         />
-
-        {/* Priority 2: AdSense (The "Pipes") */}
-        <link
-          rel="preconnect"
-          href="https://pagead2.googlesyndication.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://googleads.g.doubleclick.net"
-          crossOrigin="anonymous"
-        />
-
-        {/* Priority 3: Google Analytics / Tag Manager — preconnect eliminates
-            TLS handshake latency from the gtag script load. Saves ~50ms on
-            first GA network request. */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <meta
           name="p:domain_verify"
           content="1e5650bff903e1c4a1134b724128da29"

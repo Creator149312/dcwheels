@@ -3,7 +3,10 @@ import { useContext, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useWheelState } from "./useWheelState";
-import FireworksConfetti from "@components/FireworksConfetti";
+const FireworksConfetti = dynamic(
+  () => import("@components/FireworksConfetti"),
+  { ssr: false }
+);
 
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),

@@ -77,6 +77,28 @@ const nextConfig = {
       // ^ You might have to use this property depending on your exact version.
     },
   },
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      // Keep animejs (pulled in by react-custom-roulette) out of the
+      // synchronous shared bundle. Without this, webpack hoists it into
+      // a sync shared chunk loaded on every page, causing ~1.5 s of
+      // main-thread blocking even on pages that never spin a wheel.
+      const existing = config.optimization.splitChunks?.cacheGroups ?? {};
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...existing,
+          animejs: {
+            test: /[\\/]node_modules[\\/]animejs[\\/]/,
+            chunks: "async",
+            priority: 100,
+            enforce: true,
+          },
+        },
+      };
+    }
+    return config;
+  },
   async redirects() {
     return [
       {
