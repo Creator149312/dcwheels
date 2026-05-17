@@ -29,7 +29,7 @@ const WinnerPopup = dynamic(() => import("@components/WinnerPopup"), {
 const QuizCard = dynamic(() => import("@components/QuizCard"), {
   ssr: false,
 });
-// canvas-confetti (~5KB) + the React wrapper. Only mounts when
+// Custom canvas-based fireworks overlay. Only mounts when
 // showCelebration flips true, which happens post-spin.
 const FireworksConfetti = dynamic(
   () => import("@components/FireworksConfetti"),

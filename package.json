@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.22.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
@@ -23,7 +22,6 @@
     "@vercel/blob": "^2.3.3",
     "bcryptjs": "^2.4.3",
     "browser-image-compression": "^2.0.2",
-    "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
@@ -38,7 +36,6 @@
     "react-contenteditable": "^3.3.7",
     "react-custom-roulette": "^1.4.1",
     "react-dom": "^18",
-    "react-email": "2.1.5",
     "react-hot-toast": "^2.4.1",
     "resend": "^3.4.0",
     "sharp": "^0.34.5",
@@ -48,6 +45,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.6",
+    "react-email": "2.1.5",
     "xlsx": "^0.18.5",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
