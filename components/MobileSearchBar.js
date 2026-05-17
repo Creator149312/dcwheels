@@ -98,7 +98,7 @@ export default function MobileSearchBar() {
             onFocus={() => setIsFocused(true)}
             onChange={handleChange}
             onKeyDown={handleKeyPress}
-            placeholder={"Search wheels, lists, movies, anime..."}
+            placeholder={"Search wheels, movies, anime..."}
             className="w-full bg-transparent pl-2 pr-3 py-2 text-sm focus:outline-none text-foreground"
           />
         </div>

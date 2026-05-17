@@ -97,6 +97,10 @@ const wheelSchema = new Schema(
     // Admin-seeded wheels (createdBy = "admin") are surfaced separately via
     // the Page collection — this flag is for /uwheels user content only.
     isPublic: { type: Boolean, default: false },
+    // "basic" = standard word/label wheel; "quiz" = MCQ quiz wheel where each
+    // segment carries a question, options[], and correctIndex.
+    // Stored explicitly so admin queries (Wheel.find({ type:"quiz" })) work.
+    wheelType: { type: String, enum: ["basic", "quiz"], default: "basic" },
     // viewCount intentionally omitted — view tracking lives in WheelAnalytics.view_count
     // (bot-filtered, no auth required — a more accurate signal than auth-only visit logs)
     likeCount: { type: Number, default: 0 }, // denormalized from Reaction; kept here for fast index-based sorting
@@ -110,15 +114,15 @@ wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing uni
 
 // New indexes for performance improvements 
 wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
-wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency
-wheelSchema.index({ likeCount: -1 }); // speeds up popular by likes
-// Compound index for the /api/wheels/popular ?sort=likes fast-path which
-// sorts by `{ likeCount: -1, createdAt: -1 }`. The two single-field indexes
-// above can't satisfy a multi-key sort — Mongo would still in-memory sort
-// for ties without this compound.
+wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency (?sort=recent)
+// Compound for /api/wheels/popular ?sort=likes — always sorts by both fields.
+// The old single-field { likeCount:-1 } was redundant (this compound's prefix
+// serves any sort on likeCount alone) and has been removed.
 wheelSchema.index({ likeCount: -1, createdAt: -1 });
-wheelSchema.index({ wheelPreview: 1 }); // speeds up admin filter for missing previews
-// Profile page + dashboard both run `find({ createdBy }).sort({ createdAt: -1 })`.
+// { wheelPreview:1 } removed — the admin missing-preview query uses $or over
+// null/exists/empty which btree indexes can't serve efficiently; admin-only and
+// infrequent, so the write overhead wasn't worth it.
+// Profile page + dashboard: `find({ createdBy }).sort({ createdAt: -1 })`.
 // The existing `{ title, createdBy }` index is prefixed by title and can't serve
 // these queries; a dedicated compound turns them from collection scans into
 // bounded index scans as the per-user wheel count grows.

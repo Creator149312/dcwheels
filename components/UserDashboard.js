@@ -17,7 +17,7 @@ const STATUS_CONFIG = {
 const STATUS_CYCLE = { pending: "done", done: "dropped", dropped: "pending" };
 
 // ── Single decision card (timeline style, with status badge) ──────────────
-function DecisionTimelineItem({ item }) {
+export function DecisionTimelineItem({ item }) {
   const [status, setStatus] = useState(item.status || "pending");
   const [updating, setUpdating] = useState(false);
 
@@ -104,29 +104,19 @@ function DecisionTimelineItem({ item }) {
 }
 
 // ── Decision timeline wrapper (expand/collapse) ────────────────────────────
-function DecisionTimeline({ decisions, limit = 4 }) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? decisions : decisions.slice(0, limit);
+function DecisionTimeline({ decisions }) {
   return (
     <div className="relative space-y-4">
       <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-border to-transparent hidden sm:block" />
-      {visible.map((item) => (
+      {decisions.map((item) => (
         <DecisionTimelineItem key={item._id} item={item} />
       ))}
-      {decisions.length > limit && (
-        <button
-          onClick={() => setShowAll((v) => !v)}
-          className="text-xs text-primary hover:underline w-full text-center pt-1"
-        >
-          {showAll ? "Show less" : `Show all ${decisions.length}`}
-        </button>
-      )}
     </div>
   );
 }
 
 // ── Small row card shared by all sections ─────────────────────────────────
-function RowCard({ href, title, meta, actions }) {
+export function RowCard({ href, title, meta, actions }) {
   return (
     <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group">
       <Link href={href} className="flex-1 min-w-0">
@@ -144,7 +134,7 @@ function RowCard({ href, title, meta, actions }) {
 }
 
 // ── Skeleton rows ──────────────────────────────────────────────────────────
-function RowSkeleton({ count = 3 }) {
+export function RowSkeleton({ count = 3 }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: count }).map((_, i) => (
@@ -171,25 +161,14 @@ function Section({ icon: Icon, title, action, children }) {
 }
 
 // ── Expandable list helper ─────────────────────────────────────────────────
-function ExpandableList({ items, renderItem, emptyMessage, limit = 4 }) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? items : items.slice(0, limit);
-
+function ExpandableList({ items, renderItem, emptyMessage }) {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
   }
 
   return (
     <div className="space-y-2">
-      {visible.map(renderItem)}
-      {items.length > limit && (
-        <button
-          onClick={() => setShowAll(!showAll)}
-          className="text-xs text-primary hover:underline w-full text-center pt-1"
-        >
-          {showAll ? "Show less" : `Show all ${items.length}`}
-        </button>
-      )}
+      {items.map(renderItem)}
     </div>
   );
 }
@@ -202,99 +181,57 @@ function StatsCard({ stats, decisions = [], loading }) {
     );
   }
 
-  if (!stats || stats.decisionsTotal === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border px-5 py-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Spin a wheel and tap <span className="font-semibold">&quot;I&apos;m picking this!&quot;</span> to start tracking your decisions.
-        </p>
-      </div>
-    );
-  }
+  if (!stats) return null;
 
-  const { decisionsThisMonth, mostSpunWheel, streak } = stats;
-
-  // Tally top outcomes from the recent decisions window
-  const outcomeCounts = {};
-  for (const d of decisions) {
-    const key = d.result;
-    if (key) outcomeCounts[key] = (outcomeCounts[key] || 0) + 1;
-  }
-  const topOutcomes = Object.entries(outcomeCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const { decisionsTotal, streak, wheelsTotal, listsTotal } = stats;
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {/* Decisions this month */}
-      <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border border-blue-200/50 dark:border-blue-800/40 px-4 py-4">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Zap size={13} className="text-blue-500" />
-          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">This Month</p>
-        </div>
-        <p className="text-2xl font-black text-foreground">{decisionsThisMonth}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">decision{decisionsThisMonth !== 1 ? "s" : ""} made</p>
-      </div>
-
-      {/* Streak */}
-      <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 border border-orange-200/50 dark:border-orange-800/40 px-4 py-4">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Flame size={13} className="text-orange-500" />
-          <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Streak</p>
-        </div>
-        <p className="text-2xl font-black text-foreground">
-          {streak}<span className="text-base ml-0.5">🔥</span>
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">day{streak !== 1 ? "s" : ""} in a row</p>
-      </div>
-
-      {/* Most spun wheel */}
-      <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30 border border-purple-200/50 dark:border-purple-800/40 px-4 py-4">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Trophy size={13} className="text-purple-500" />
-          <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Top Wheel</p>
-        </div>
-        {mostSpunWheel ? (
-          <>
-            <p className="text-sm font-bold text-foreground truncate" title={mostSpunWheel.name}>
-              {mostSpunWheel.name}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {mostSpunWheel.count} spin{mostSpunWheel.count !== 1 ? "s" : ""}
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">—</p>
-        )}
-      </div>
-      </div>{/* end grid */}
-
-      {/* Top Outcomes */}
-      {topOutcomes.length > 0 && (
-        <div className="rounded-2xl border border-border px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
-            🏆 Your most chosen outcomes
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {topOutcomes.map(([result, count]) => (
-              <span
-                key={result}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-semibold text-foreground"
-              >
-                {result}
-                <span className="text-[10px] text-muted-foreground font-normal">×{count}</span>
-              </span>
-            ))}
+        {/* Decisions Made */}
+        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border border-blue-200/50 dark:border-blue-800/40 px-4 py-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Zap size={13} className="text-blue-500" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Decisions Made</p>
           </div>
+          <p className="text-2xl font-black text-foreground">{decisionsTotal || 0}</p>
         </div>
-      )}
+
+        {/* Streak */}
+        <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 border border-orange-200/50 dark:border-orange-800/40 px-4 py-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Flame size={13} className="text-orange-500" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Streak</p>
+          </div>
+          <p className="text-2xl font-black text-foreground">
+            {streak || 0}<span className="text-base ml-0.5">🔥</span>
+          </p>
+        </div>
+
+        {/* Wheels Count */}
+        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30 border border-purple-200/50 dark:border-purple-800/40 px-4 py-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Layers size={13} className="text-purple-500" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Custom Wheels</p>
+          </div>
+          <p className="text-2xl font-black text-foreground">{wheelsTotal || 0}</p>
+        </div>
+
+        {/* Lists Count */}
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/40 dark:to-emerald-900/30 border border-emerald-200/50 dark:border-emerald-800/40 px-4 py-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <BookMarked size={13} className="text-emerald-500" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Saved Lists</p>
+          </div>
+          <p className="text-2xl font-black text-foreground">{listsTotal || 0}</p>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── Wheel row with public toggle ───────────────────────────────────────────
-function WheelRowCard({ item }) {
+export function WheelRowCard({ item, showToggle = true }) {
   const [isPublic, setIsPublic] = useState(item.isPublic ?? false);
   const [toggling, setToggling] = useState(false);
 
@@ -325,18 +262,20 @@ function WheelRowCard({ item }) {
       title={item.title}
       meta={`${item.segmentCount} segments`}
       actions={
-        <button
-          onClick={togglePublic}
-          disabled={toggling}
-          title={isPublic ? "Listed in Explore — click to make private" : "Click to list in Explore"}
-          className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors disabled:opacity-50 ${
-            isPublic
-              ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700"
-              : "text-muted-foreground border-border hover:border-purple-300 hover:text-purple-500"
-          }`}
-        >
-          {isPublic ? "Public" : "Private"}
-        </button>
+        showToggle ? (
+          <button
+            onClick={togglePublic}
+            disabled={toggling}
+            title={isPublic ? "Listed in Explore — click to make private" : "Click to list in Explore"}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors disabled:opacity-50 ${
+              isPublic
+                ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700"
+                : "text-muted-foreground border-border hover:border-purple-300 hover:text-purple-500"
+            }`}
+          >
+            {isPublic ? "Public" : "Private"}
+          </button>
+        ) : null
       }
     />
   );
@@ -442,9 +381,14 @@ export default function UserDashboard({ initialData = null }) {
           icon={Layers}
           title="My Wheels"
           action={
-            <a href="/" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
-              <Plus size={12} /> New
-            </a>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/wheels" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                View all →
+              </Link>
+              <a href="/" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+                <Plus size={12} /> New
+              </a>
+            </div>
           }
         >
           {loading ? (
@@ -454,7 +398,7 @@ export default function UserDashboard({ initialData = null }) {
               items={wheels}
               emptyMessage={<>No wheels yet. <a href="/" className="text-primary hover:underline">Create one!</a></>}
               renderItem={(item) => (
-                <WheelRowCard key={item._id} item={item} />
+                <WheelRowCard key={item._id} item={item} showToggle={false} />
               )}
             />
           )}
@@ -465,9 +409,14 @@ export default function UserDashboard({ initialData = null }) {
           icon={BookMarked}
           title="My Lists"
           action={
-            <a href="/lists/create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
-              <Plus size={12} /> New
-            </a>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/lists" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                View all →
+              </Link>
+              <a href="/lists/create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
+                <Plus size={12} /> New
+              </a>
+            </div>
           }
         >
           {loading ? (
@@ -484,7 +433,15 @@ export default function UserDashboard({ initialData = null }) {
         </Section>
 
         {/* ── My Decisions ──────────────────────────────────────────── */}
-        <Section icon={Zap} title="My Decisions" action={null}>
+        <Section
+          icon={Zap}
+          title="My Decisions"
+          action={
+            <Link href="/dashboard/decisions" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              View all →
+            </Link>
+          }
+        >
           {loading ? (
             <RowSkeleton />
           ) : decisions.length === 0 ? (

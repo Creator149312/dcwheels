@@ -20,21 +20,23 @@ export async function GET(req, { params }) {
   try {
     const { id } = params;
 
-    // // ✅ 1. Get logged-in user
-    // const userId = await sessionUserId();
-    // if (!userId) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-
-    // ✅ 2. Fetch the list (must belong to this user)
-    // const list = await UnifiedList.findOne({ _id: id, userId }).lean(); //slow but secure
-    const list = await UnifiedList.findOne({ _id: id }).lean(); //fast but insecure
+    // Fetch the list first, then gate access:
+    // - Owner always allowed
+    // - Non-owners allowed only if list.isPublic === true
+    const list = await UnifiedList.findOne({ _id: id }).lean();
 
     if (!list) {
       return NextResponse.json(
         { error: "List not found or access denied" },
         { status: 404 }
       );
+    }
+
+    if (!list.isPublic) {
+      const requestingUserId = await sessionUserId();
+      if (!requestingUserId || String(requestingUserId) !== String(list.userId)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     // ✅ 3. Format response
@@ -45,6 +47,7 @@ export async function GET(req, { params }) {
       description: list.description,
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
+      isPublic: list.isPublic ?? false,
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,
@@ -55,6 +58,7 @@ export async function GET(req, { params }) {
         name: item.name,
         slug: item.slug,
         image: item.image,
+        status: item.status ?? "want",
         addedAt: item.addedAt,
       })),
     };

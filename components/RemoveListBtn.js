@@ -2,7 +2,6 @@
 
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import apiConfig from "@utils/ApiUrlConfig";
 export default function RemoveListBtn({ id, type }) {
   const router = useRouter();
 
@@ -15,9 +14,7 @@ export default function RemoveListBtn({ id, type }) {
     const confirmed = confirm("Are you sure?");
 
     if (confirmed) {
-      let fetchURLPath = `${apiConfig.apiUrl}/${type}?id=${id}`;
-
-      const res = await fetch(fetchURLPath, {
+      const res = await fetch(`/api/${type}?id=${id}`, {
         method: "DELETE",
       });
 

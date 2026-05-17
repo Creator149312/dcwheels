@@ -2,9 +2,13 @@ import mongoose, { Schema, models } from "mongoose";
 
 const ListItemSchema = new Schema(
   {
+    // { _id: false } below suppresses Mongoose's automatic _id; we re-add it
+    // explicitly with `auto: true` so each item still gets a unique ObjectId
+    // (needed for PATCH /items/[itemId] and DELETE /items/[itemId] lookups)
+    // but we fully control the field definition.
     _id: {
       type: Schema.Types.ObjectId,
-      auto: true, // ✅ auto-generate unique ID for each item
+      auto: true,
     },
 
     type: {
@@ -14,8 +18,8 @@ const ListItemSchema = new Schema(
     },
 
     // WORD ITEM FIELDS
-    word: { type: String },
-    wordData: { type: String },
+    word: { type: String, trim: true },
+    wordData: { type: String }, // CDN URL only — base64 must be uploaded before save
 
     // ENTITY ITEM FIELDS
     entityType: {
@@ -23,8 +27,8 @@ const ListItemSchema = new Schema(
       enum: ["movie", "anime", "game", "character"],
     },
     entityId: { type: Schema.Types.ObjectId },
-    name: { type: String },
-    slug: { type: String },
+    name: { type: String, trim: true },
+    slug: { type: String, trim: true },
     image: { type: String },
 
     // Tracks the user's progress with this entity.
@@ -40,7 +44,7 @@ const ListItemSchema = new Schema(
 
     addedAt: { type: Date, default: Date.now },
   },
-  { _id: false } // ✅ keep this so parent doesn't create a second _id
+  { _id: false } // suppresses auto _id — we define it explicitly above
 );
 
 
@@ -61,20 +65,37 @@ ListItemSchema.pre("validate", function (next) {
 
 const ListSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
     // Final canonical name
-    name: { type: String, required: true }, // e.g. Favorites, Watch Later, Vocabulary
+    name: { type: String, required: true, trim: true, maxlength: 100 },
 
-    description: { type: String, default: "" },
+    description: { type: String, default: "", trim: true, maxlength: 300 },
 
-    items: { type: [ListItemSchema], default: [] },
+    items: {
+      type: [ListItemSchema],
+      default: [],
+      validate: {
+        validator: (arr) => arr.length <= 100,
+        message: "A list cannot exceed 100 items. Upgrade to Pro for higher limits.",
+      },
+    },
+
+    // When true, unauthenticated users can read this list via GET /api/unifiedlist/[id].
+    // Defaults false so existing lists stay private until the owner opts in.
+    isPublic: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 // Unique list name per user
 ListSchema.index({ userId: 1, name: 1 }, { unique: true });
+
+// Powers GET /api/unifiedlist/by-entity — checks whether a user already has
+// a given entity saved in any of their lists. Without this, Mongo scans every
+// list document for the user to find a matching items.entityId.
+// Multikey index: Mongo expands the items array automatically.
+ListSchema.index({ userId: 1, "items.entityId": 1 });
 
 const UnifiedList = models.UnifiedList || mongoose.model("UnifiedList", ListSchema);
 export default UnifiedList;

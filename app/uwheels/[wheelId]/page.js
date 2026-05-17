@@ -119,7 +119,7 @@ export default async function Page({ params }) {
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(wordsList.data)}
             wheelPresetSettings={wordsList.wheelData ?? null}
-            wheelTypeProp={wordsList?.type ?? "basic"}
+            wheelTypeProp={wordsList?.wheelType ?? "basic"}
             relatedWheelsSlot={
               <Suspense fallback={<RelatedWheelsSkeleton />}>
                 <SuspendedRelatedWheels tags={wordsList.tags} wheelId={wheelId} />

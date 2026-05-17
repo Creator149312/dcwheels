@@ -61,7 +61,7 @@ export async function generateStaticParams() {
       // `ifNull` keeps wheels with no likes from being sorted as `null` first.
       { $addFields: { _likeCount: { $ifNull: ["$wheel.likeCount", 0] } } },
       { $sort: { _likeCount: -1, createdAt: -1 } },
-      { $limit: 100 },
+      { $limit: 300 },
       { $project: { slug: 1 } },
     ]);
     return rows.filter((p) => p.slug).map((p) => ({ slug: p.slug }));
