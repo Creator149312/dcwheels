@@ -1,12 +1,14 @@
 import "./globals.css";
 import { ThemeProvider } from "./ThemeProvider";
 import { SegmentsProvider } from "./SegmentsContext";
+import dynamic from "next/dynamic";
 import LazyToaster from "@components/LazyToaster";
-import GAnalytics from "./GAnalytics";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
 import ConditionalFooter from "@components/ConditionalFooter";
-import AdsScriptLoader from "@components/ads/AdsScriptLoader";
+
+const GAnalytics = dynamic(() => import("./GAnalytics"), { ssr: false });
+const AdsScriptLoader = dynamic(() => import("@components/ads/AdsScriptLoader"), { ssr: false });
 
 export const metadata = {
   title: {

@@ -49,6 +49,15 @@ DecisionLogSchema.index({ isPublic: 1, createdAt: -1 });
 //   DecisionLog.find({ entityType, entityId, isPublic: true }).sort({ createdAt: -1 })
 DecisionLogSchema.index({ entityType: 1, entityId: 1, isPublic: 1, createdAt: -1 });
 
+// Powers user-scoped content queries (all three prefixes are index-covered):
+//   1. Has user watched a specific entity?
+//        .findOne({ userId, entityType: "movie", entityId: "550", status: "done" })
+//   2. How many of user's decisions are movies?
+//        .countDocuments({ userId, entityType: "movie" })
+//   3. How many movies has user finished/dropped/pending?
+//        .countDocuments({ userId, entityType: "movie", status: "done" })
+DecisionLogSchema.index({ userId: 1, entityType: 1, entityId: 1, status: 1 });
+
 const DecisionLog =
   models.DecisionLog || mongoose.model("DecisionLog", DecisionLogSchema);
 export default DecisionLog;

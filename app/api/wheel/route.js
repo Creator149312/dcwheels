@@ -48,7 +48,7 @@ export async function POST(request) {
         data: sanitizeSegments(data),
         createdBy,
         wheelData,
-        ...(type && ["basic", "quiz"].includes(type) ? { type } : {}),
+        ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
         relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
         // Tags are lowercased + trimmed by the schema setter; we still
         // filter out non-strings and empties here as a defensive layer

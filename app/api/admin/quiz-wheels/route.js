@@ -48,7 +48,7 @@ export async function GET() {
 
   await connectMongoDB();
 
-  const wheels = await Wheel.find({ type: "quiz" })
+  const wheels = await Wheel.find({ wheelType: "quiz" })
     .sort({ createdAt: -1 })
     .select("_id title description tags data createdAt")
     .lean();
@@ -94,7 +94,7 @@ export async function POST(req) {
     title: title.trim(),
     description: description?.trim() ?? "",
     data: segments,
-    type: "quiz",
+    wheelType: "quiz",
     tags: Array.isArray(tags) ? tags : [],
     createdBy: "admin",
     wheelData: DEFAULT_WHEEL_DATA,

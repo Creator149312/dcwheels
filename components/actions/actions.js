@@ -435,7 +435,7 @@ export async function getWheelById(wheelId) {
   // isPublic, likeCount) that /uwheels/[wheelId] never renders.
   return Wheel.findOne({ _id: wheelId })
     .select(
-      "title description data wheelData tags wheelPreview createdBy createdAt type"
+      "title description data wheelData tags wheelPreview createdBy createdAt wheelType"
     )
     .lean();
 }

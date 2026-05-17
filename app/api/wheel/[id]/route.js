@@ -47,7 +47,7 @@ export async function PUT(request, { params }) {
       description,
       data: sanitizeSegments(data),
       wheelData,
-      ...(type && ["basic", "quiz"].includes(type) ? { type } : {}),
+      ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
     };
     if (Array.isArray(relatedTopics)) {
       update.relatedTopics = relatedTopics;
