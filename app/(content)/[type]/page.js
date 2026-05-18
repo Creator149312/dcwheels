@@ -12,6 +12,8 @@ import {
   GENRE_PILLS,
 } from "./TopicPagesHelperFunctions";
 import FiltersBarWrapper from "./FiltersBarWrapper";
+import { connectMongoDB } from "@/lib/mongodb";
+import TopicPage from "@/models/topicpage";
 
 // Build a ?query=string that preserves all active filters while overriding
 // specific keys (e.g. to change the page number).
@@ -99,6 +101,63 @@ export default async function TopicListPage({ params, searchParams }) {
 
   if (type === "character") {
     items = await fetchCharacters({ page, sort: charSortMap[sort] || "FAVOURITES_DESC" });
+  }
+
+  // null means the upstream API is down (not simply empty results)
+  let apiUnavailable = items === null;
+  if (apiUnavailable) {
+    await connectMongoDB();
+    // Fall back to database to keep feeds working during API outages
+    const skip = (page - 1) * 20;
+    const dbItems = await TopicPage.find({ type })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(20)
+      .lean();
+
+    items = dbItems.map((db) => {
+      if (type === "anime") {
+        return {
+          id: db.relatedId,
+          title: { english: db.title?.english || db.title?.default || db.title?.romaji || "Unknown" },
+          coverImage: { large: db.cover },
+          genres: db.tags,
+          startDate: { year: db.details?.releaseYear },
+        };
+      }
+      if (type === "movie") {
+        return {
+          id: db.relatedId,
+          title: db.title?.localized || db.title?.default || "Unknown",
+          // The DB has the absolute TMDB image URL, but renderMovieCard expects a poster_path.
+          // Since renderMovieCard blindly prefixes 'https://image.tmdb.org/t/p/w500', 
+          // we can just strip it, or renderMovieCard should handle absolute URLs.
+          // Actually, passing the absolute URL and modifying renderMovieCard is safer,
+          // but for now we can just strip the prefix to fit exactly.
+          poster_path: db.cover ? db.cover.replace("https://image.tmdb.org/t/p/w500", "") : "",
+          release_date: db.details?.releaseYear ? `${db.details.releaseYear}-01-01` : null,
+        };
+      }
+      if (type === "game") {
+        return {
+          id: db.relatedId,
+          slug: db.slug.replace(`${db.relatedId}-`, ""),
+          name: db.title?.default || "Unknown",
+          background_image: db.cover,
+          released: db.details?.releaseYear ? `${db.details.releaseYear}-01-01` : null,
+          genres: db.tags?.map(t => ({ name: t })) || [],
+        };
+      }
+      if (type === "character") {
+        return {
+          id: db.relatedId,
+          name: { full: db.title?.english || db.title?.default || "Unknown" },
+          image: { large: db.cover },
+          media: { nodes: [] }
+        };
+      }
+      return null;
+    });
   }
 
   // Hero: first item on page 1 (skip for characters — portrait art looks awkward in wide hero).
@@ -199,7 +258,14 @@ export default async function TopicListPage({ params, searchParams }) {
           </>
         ) : (
           <div className="py-16 text-center text-muted-foreground">
-            No {type}s found. Try adjusting your filters.
+            {apiUnavailable ? (
+              <>
+                <p className="text-lg font-medium mb-2">Service temporarily unavailable</p>
+                <p className="text-sm">The data provider is currently experiencing issues. Please check back shortly.</p>
+              </>
+            ) : (
+              `No ${type}s found. Try adjusting your filters.`
+            )}
           </div>
         )}
       </div>

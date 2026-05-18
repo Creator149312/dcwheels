@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Bell, Moon, Sun, Menu, X } from "lucide-react";
+import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Moon, Sun, Menu, X } from "lucide-react";
 
 // TagsCarousel has seasonal logic, scroll refs and useMemo — lazy-load so it
 // doesn't block the initial mobile nav chunk.
@@ -145,14 +145,6 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
 
-              <Link
-                href="/dashboard"
-                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
-                aria-label={"Dashboard"}
-              >
-                <Bell size={20} />
-              </Link>
-
               <MobileSearchBar />
             </div>
           </div>
@@ -161,7 +153,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         {/* /explore renders its own mood chip row; suppress the global tag
             carousel on that route to avoid two stacked chip rows. */}
         {!pathname.startsWith("/explore") && (
-          <div className="h-10 bg-background/95 backdrop-blur-md border-b border-border">
+          <div className="h-11 bg-background/95 backdrop-blur-md border-b border-border">
             <TagsCarousel />
           </div>
         )}

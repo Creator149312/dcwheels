@@ -14,6 +14,7 @@ export default function QuickSaveButton({
   variant = "icon",
   className = "",
   showText = false,
+  lazyCheck = false, // If true, skips on-mount fetch and checks state on click
 }) {
   const { data: session, status: sessionStatus } = useSession();
   const openLoginPrompt = useLoginPrompt();
@@ -24,6 +25,9 @@ export default function QuickSaveButton({
 
   // Check initial saved state once the session is resolved
   useEffect(() => {
+    // If lazyCheck is true (e.g. lists pages), skip the on-mount fetch
+    if (lazyCheck) return;
+    
     if (sessionStatus !== "authenticated" || !entityId) return;
     let ignore = false;
     fetch(`/api/unifiedlist/by-entity?entityId=${encodeURIComponent(entityId)}`)
@@ -47,11 +51,24 @@ export default function QuickSaveButton({
     setLoading(true);
 
     try {
-      if (prevRef) {
+      // If we are in lazy mode and the heart is empty, we must check the DB first
+      // to ensure we aren't saving a duplicate before proceeding.
+      let currentRef = prevRef;
+      if (lazyCheck && !prevRef) {
+        const checkRes = await fetch(`/api/unifiedlist/by-entity?entityId=${encodeURIComponent(entityId)}`);
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData.found) {
+            currentRef = { listId: checkData.listId, itemId: checkData.itemId };
+          }
+        }
+      }
+
+      if (currentRef) {
         // ── UNSAVE ─────────────────────────────────────────────────────
         setSavedRef(null); // optimistic
         const res = await fetch(
-          `/api/unifiedlist/${prevRef.listId}/items/${prevRef.itemId}`,
+          `/api/unifiedlist/${currentRef.listId}/items/${currentRef.itemId}`,
           { method: "DELETE" }
         );
         if (!res.ok) throw new Error();

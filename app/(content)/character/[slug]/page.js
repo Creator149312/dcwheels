@@ -32,8 +32,13 @@ export const revalidate = 604800;
 // ---------------------------------------------------------------------------
 
 async function fetchCharacterFromAnilist(id) {
-  const client = new AniList();
-  return client.character.getById(id);
+  try {
+    const client = new AniList();
+    return await client.character.getById(id);
+  } catch (err) {
+    console.error("fetchCharacterFromAnilist error:", err.message);
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

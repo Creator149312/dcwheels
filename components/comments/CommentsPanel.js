@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CommentForm from "./CommentForm";
 import CommentItem from "./CommentItem";
 
@@ -14,26 +14,45 @@ export default function CommentsPanel({
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
+  const mutationVersionRef = useRef(0);
 
   useEffect(() => {
     if (visible) fetchTopLevelComments();
   }, [visible]);
 
   const fetchTopLevelComments = async () => {
+    const fetchVersion = mutationVersionRef.current;
     setLoading(true);
     try {
       const res = await fetch(
         `/api/comments?entityType=${entityType}&entityId=${entityId}&parentCommentId=null`
       );
       const data = await res.json();
-      setComments(
-        data.map((c) => ({
+      const mappedComments = data.map((c) => ({
           ...c,
           replies: [],
           repliesLoaded: false,
           replyCount: c.replyCount ?? 0,
-        }))
-      );
+        }));
+
+      setComments((prev) => {
+        if (mutationVersionRef.current !== fetchVersion) {
+          const merged = [...prev];
+          const seenIds = new Set(merged.map((comment) => String(comment._id)));
+
+          for (const comment of mappedComments) {
+            const commentId = String(comment._id);
+            if (!seenIds.has(commentId)) {
+              merged.push(comment);
+              seenIds.add(commentId);
+            }
+          }
+
+          return merged;
+        }
+
+        return mappedComments;
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -76,6 +95,7 @@ export default function CommentsPanel({
       repliesLoaded: false,
       replyCount: 0,
     };
+    mutationVersionRef.current += 1;
     setComments((prev) => [optimisticComment, ...prev]);
     reset();
 
@@ -198,6 +218,7 @@ export default function CommentsPanel({
         isLoggedIn={isLoggedIn}
         currentUser={currentUser}
         loading={posting}
+        autoFocus={true}
       />
 
       {loading && comments.length === 0 ? (

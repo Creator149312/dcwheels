@@ -24,7 +24,7 @@ export default function LayoutShell({ children }) {
 
   const contentPadding = hideTagsCarousel
     ? "pt-[calc(3.5rem+env(safe-area-inset-top))]"
-    : "pt-[calc(5.5rem+env(safe-area-inset-top))]";
+    : "pt-[calc(6.25rem+env(safe-area-inset-top))]";
 
   if (isEmbed) return <>{children}</>;
 

@@ -31,8 +31,13 @@ export const revalidate = 604800;
 // ---------------------------------------------------------------------------
 
 async function fetchAnimeFromAnilist(id) {
-  const client = new AniList();
-  return client.media.getById(id);
+  try {
+    const client = new AniList();
+    return await client.media.getById(id);
+  } catch (err) {
+    console.error("fetchAnimeFromAnilist error:", err.message);
+    return null;
+  }
 }
 
 async function fetchAnimeExtras(animeId) {

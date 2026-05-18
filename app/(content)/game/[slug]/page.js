@@ -31,11 +31,16 @@ const RAWG_BASE_URL = "https://api.rawg.io/api";
 // ---------------------------------------------------------------------------
 
 async function fetchGameById(gameId) {
-  const res = await fetch(
-    `${RAWG_BASE_URL}/games/${gameId}?key=${RAWG_API_KEY}`
-  );
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(
+      `${RAWG_BASE_URL}/games/${gameId}?key=${RAWG_API_KEY}`
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("fetchGameById error:", err.message);
+    return null;
+  }
 }
 
 async function fetchGameExtras(gameId) {
