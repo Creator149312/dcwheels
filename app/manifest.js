@@ -1,6 +1,6 @@
 export default function manifest() {
   return {
-    name: "Spinpapa – Explore, Discover, Spin Wheel & Decide",
+    name: "Spinpapa – Explore, Spin & Decide",
     short_name: "Spinpapa",
     description:
       "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun way.",
