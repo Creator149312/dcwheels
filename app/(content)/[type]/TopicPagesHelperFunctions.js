@@ -1,8 +1,6 @@
 import { slugify } from "@utils/HelperFunctions";
 import { AniList, MediaType } from "@spkrbox/anilist";
 import { unstable_cache } from "next/cache";
-import QuickSaveButton from "@components/QuickSaveButton";
-
 // ─── Genre quick-filter pill lists (per content type) ────────────────────────
 export const GENRE_PILLS = {
   anime:     ["Action", "Romance", "Fantasy", "Comedy", "Drama", "Sci-Fi", "Horror", "Sports"],
@@ -115,13 +113,6 @@ export function renderAnimeCard(anime) {
           </div>
         )}
       </a>
-      <QuickSaveButton
-        entityType="anime"
-        entityId={anime.id.toString()}
-        itemTitle={title}
-        itemSlug={`${anime.id}-${slugify(title)}`}
-        itemImage={anime.coverImage.large}
-      />
       <a href={url} className="block mt-1.5 px-0.5">
         <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{title}</h3>
         <p className="text-xs text-muted-foreground">{anime.startDate?.year || "—"} · {anime.format}</p>
@@ -145,13 +136,6 @@ export function renderMovieCard(movie) {
           </div>
         )}
       </a>
-      <QuickSaveButton
-        entityType="movie"
-        entityId={movie.id.toString()}
-        itemTitle={name}
-        itemSlug={`${movie.id}-${slugify(name)}`}
-        itemImage={image}
-      />
       <a href={url} className="block mt-1.5 px-0.5">
         <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{name}</h3>
         <p className="text-xs text-muted-foreground">{movie.release_date?.slice(0, 4) || "—"}</p>
@@ -185,13 +169,6 @@ export function renderGameCard(game) {
           </div>
         )}
       </a>
-      <QuickSaveButton
-        entityType="game"
-        entityId={game.id.toString()}
-        itemTitle={game.name}
-        itemSlug={`${game.id}-${game.slug}`}
-        itemImage={game.background_image}
-      />
       <a href={url} className="block mt-1.5 px-0.5">
         <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{game.name}</h3>
         <p className="text-xs text-muted-foreground">{game.released?.slice(0, 4) || "—"}{genre ? ` · ${genre}` : ""}</p>
@@ -215,13 +192,6 @@ export function renderCharacterCard(character) {
           </div>
         )}
       </a>
-      <QuickSaveButton
-        entityType="character"
-        entityId={character.id.toString()}
-        itemTitle={name}
-        itemSlug={`${character.id}-${slugify(name)}`}
-        itemImage={character.image.large}
-      />
       <a href={url} className="block mt-1.5 px-0.5">
         <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{name}</h3>
         <p className="text-xs text-muted-foreground">{character.gender || "—"}</p>
@@ -237,18 +207,23 @@ const EXTERNAL_API_REVALIDATE = 3600; // 1 hour
 
 // ---------- Anime ----------
 const _fetchAnimeUncached = async ({ search, genre, year, page, perPage, sort }) => {
-  const client = new AniList();
-  const response = await client.media.search({
-    type: MediaType.ANIME,
-    search: search || undefined,
-    sort: [sort],
-    page,
-    perPage,
-  });
-  let media = response.media || [];
-  if (genre) media = media.filter((a) => a.genres?.includes(genre));
-  if (year)  media = media.filter((a) => a.startDate?.year === parseInt(year));
-  return media.filter((a) => a.coverImage?.large);
+  try {
+    const client = new AniList();
+    const response = await client.media.search({
+      type: MediaType.ANIME,
+      search: search || undefined,
+      sort: [sort],
+      page,
+      perPage,
+    });
+    let media = response.media || [];
+    if (genre) media = media.filter((a) => a.genres?.includes(genre));
+    if (year)  media = media.filter((a) => a.startDate?.year === parseInt(year));
+    return media.filter((a) => a.coverImage?.large);
+  } catch (err) {
+    console.error("AniList media search failed:", err.message);
+    return null;
+  }
 };
 
 const _cachedFetchAnime = unstable_cache(_fetchAnimeUncached, ["fetch-anime"], {
@@ -344,14 +319,19 @@ export async function fetchMobileGames({ page = 1, page_size = 8 } = {}) {
 
 // ---------- Characters ----------
 const _fetchCharactersUncached = async ({ search, page, perPage, sort }) => {
-  const client = new AniList();
-  const response = await client.character.search({
-    search: search || undefined,
-    sort: [sort],
-    page,
-    perPage,
-  });
-  return (response.characters || []).filter((c) => c.image?.large);
+  try {
+    const client = new AniList();
+    const response = await client.character.search({
+      search: search || undefined,
+      sort: [sort],
+      page,
+      perPage,
+    });
+    return (response.characters || []).filter((c) => c.image?.large);
+  } catch (err) {
+    console.error("AniList character search failed:", err.message);
+    return null;
+  }
 };
 
 const _cachedFetchCharacters = unstable_cache(

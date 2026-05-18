@@ -32,9 +32,14 @@ export const revalidate = 86400; // 1 day
 async function fetchMovieFromTMDb(id) {
   const apiKey = process.env.TMDB_API_KEY;
   const url = `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=en-US`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("fetchMovieFromTMDb error:", err.message);
+    return null;
+  }
 }
 
 async function fetchMovieExtras(movieId) {

@@ -98,7 +98,8 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
   }, [wheelId, initialMeta]);
 
   return (
-    <div className="w-full px-4 text-left text-gray-900 dark:text-gray-100 mb-3 block md:flex md:items-center md:justify-between md:gap-4">
+    <div className="w-full px-4 text-left text-gray-900 dark:text-gray-100 mb-3">
+    <div className="block md:flex md:items-center md:justify-between md:gap-4">
       {/* Creator avatar + stats line in one row */}
       <div className="flex items-center justify-start gap-3 mb-3 md:mb-0">
         <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0">
@@ -141,15 +142,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
         />
 
         <button
-          onClick={() => {
-            setShowComments((prev) => !prev);
-            if (!showComments) {
-              setTimeout(() => {
-                const el = document.getElementById("comments");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }, 100);
-            }
-          }}
+          onClick={() => setShowComments((prev) => !prev)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
         >
           <MessageSquare size={15} />
@@ -158,14 +151,20 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
 
         <button
           onClick={() => setShowEmbed(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
         >
-          <Code2 className="text-gray-600 dark:text-gray-300" size={16} />
+          <Code2 size={15} />
           <span>Embed</span>
         </button>
       </div>
 
+      {showEmbed && (
+        <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
+      )}
+    </div>
+
       {/* Comments panel — lazy, only mounts after user clicks */}
+      <div className="pt-4">
       <CommentsPanel
         entityType="wheel"
         entityId={wheelId}
@@ -174,10 +173,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
         currentUser={session?.user}
         visible={showComments}
       />
-
-      {showEmbed && (
-        <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
-      )}
+      </div>
     </div>
   );
 }
