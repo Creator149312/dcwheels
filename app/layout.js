@@ -9,6 +9,7 @@ import ConditionalFooter from "@components/ConditionalFooter";
 
 const GAnalytics = dynamic(() => import("./GAnalytics"), { ssr: false });
 const AdsScriptLoader = dynamic(() => import("@components/ads/AdsScriptLoader"), { ssr: false });
+const PWAInstallTracker = dynamic(() => import("@components/PWAInstallTracker"), { ssr: false });
 
 export const metadata = {
   title: {
@@ -92,6 +93,7 @@ export default function RootLayout({ children }) {
         <ConditionalFooter />
         <GAnalytics />
         <AdsScriptLoader />
+        <PWAInstallTracker />
       </body>
     </html>
   );

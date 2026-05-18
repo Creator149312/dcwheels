@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowLeft, X } from 'lucide-react';
 import { Zap } from 'lucide-react';
@@ -17,9 +18,14 @@ export default function MobileSearchBar() {
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setSuggestions([]);
+      // Ignore if clicking inside the main search wrapper OR the mobile portal
+      if (
+        (searchRef.current && searchRef.current.contains(e.target)) ||
+        (e.target.closest && e.target.closest('#mobile-search-portal'))
+      ) {
+        return;
       }
+      setSuggestions([]);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -135,52 +141,57 @@ export default function MobileSearchBar() {
           >
             <Search size={24} />
           </button>
-        ) : (
-          <div
-            className="fixed top-0 left-0 right-0 z-[120] bg-card px-4 py-3 flex items-center shadow-md animate-in slide-in-from-top duration-200"
-            style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
-          >
-            <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500" aria-label={"Back"}>
-              <ArrowLeft size={22} />
-            </button>
-            <div className="flex-1 flex items-center bg-muted rounded-full px-3 py-1">
-              <input
-                autoFocus
-                type="text"
-                value={query}
-                onChange={handleChange}
-                onKeyDown={handleKeyPress}
-                placeholder={"Search wheels, movies, anime..."}
-                className="w-full bg-transparent py-1 text-base focus:outline-none text-gray-900 dark:text-white"
-              />
-              {query && <X onClick={() => setQuery('')} className="text-gray-400 ml-2" aria-label={"Clear"} />}
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Suggestions Dropdown */}
-        {isMobileSearchOpen && suggestions.length > 0 && (
-          <div
-            className="fixed left-0 right-0 mx-4 bg-card border border-border rounded-2xl shadow-lg z-[120] overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
-            style={{ top: "calc(4.25rem + env(safe-area-inset-top))" }}
-          >
-            {suggestions.map((s) => (
-              <button
-                key={s._id}
-                onClick={() => handleSuggestionClick(s)}
-                className="w-full flex items-center gap-4 px-5 py-4 border-b border-border active:bg-muted/70"
+        ) : typeof document !== 'undefined' ? (
+          createPortal(
+            <div id="mobile-search-portal" className="fixed inset-0 z-[9999] pointer-events-none">
+              {/* Overlay Input Bar */}
+              <div
+                className="fixed top-0 left-0 right-0 bg-card px-4 py-3 flex items-center shadow-md animate-in slide-in-from-top duration-200 pointer-events-auto"
+                style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                  <Zap size={16} className="text-blue-500" />
+                <button onClick={() => setMobileSearchOpen(false)} className="mr-2 text-gray-500" aria-label={"Back"}>
+                  <ArrowLeft size={22} />
+                </button>
+                <div className="flex-1 flex items-center bg-muted rounded-full px-3 py-1">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={query}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyPress}
+                    placeholder={"Search wheels, movies, anime..."}
+                    className="w-full bg-transparent py-1 text-base focus:outline-none text-gray-900 dark:text-white"
+                  />
+                  {query && <X onClick={() => setQuery('')} className="text-gray-400 ml-2" aria-label={"Clear"} />}
                 </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-semibold text-foreground">{s.title}</span>
-                  {/* <span className="text-[11px] text-gray-500">Open wheel</span> */}
+              </div>
+
+              {/* Mobile Suggestions Dropdown */}
+              {suggestions.length > 0 && (
+                <div
+                  className="fixed left-0 right-0 mx-4 bg-card border border-border rounded-2xl shadow-lg overflow-hidden max-h-[60vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
+                  style={{ top: "calc(4.25rem + env(safe-area-inset-top))" }}
+                >
+                  {suggestions.map((s) => (
+                    <button
+                      key={s._id}
+                      onClick={() => handleSuggestionClick(s)}
+                      className="w-full flex items-center gap-4 px-5 py-4 border-b border-border active:bg-muted/70"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                        <Zap size={16} className="text-blue-500" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className="text-sm font-semibold text-foreground">{s.title}</span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </button>
-            ))}
-          </div>
-        )}
+              )}
+            </div>,
+            document.body
+          )
+        ) : null}
       </div>
     </div>
   );

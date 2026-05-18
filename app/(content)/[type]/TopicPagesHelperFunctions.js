@@ -1,6 +1,7 @@
 import { slugify } from "@utils/HelperFunctions";
 import { AniList, MediaType } from "@spkrbox/anilist";
 import { unstable_cache } from "next/cache";
+import QuickSaveButton from "@components/QuickSaveButton";
 
 // ─── Genre quick-filter pill lists (per content type) ────────────────────────
 export const GENRE_PILLS = {
@@ -100,11 +101,11 @@ export function renderAnimeCard(anime) {
   const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : null;
   const genre = anime.genres?.[0];
   return (
-    <a key={anime.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
+    <div key={anime.id} className="group relative block">
+      <a href={url} className="block relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={anime.coverImage.large} alt={title} className="w-full aspect-[3/4] object-cover" />
         {score && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
             ★ {score}
           </div>
         )}
@@ -113,12 +114,19 @@ export function renderAnimeCard(anime) {
             <span className="text-[10px] font-medium bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full">{genre}</span>
           </div>
         )}
-      </div>
-      <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-foreground">{title}</h3>
+      </a>
+      <QuickSaveButton
+        entityType="anime"
+        entityId={anime.id.toString()}
+        itemTitle={title}
+        itemSlug={`${anime.id}-${slugify(title)}`}
+        itemImage={anime.coverImage.large}
+      />
+      <a href={url} className="block mt-1.5 px-0.5">
+        <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{title}</h3>
         <p className="text-xs text-muted-foreground">{anime.startDate?.year || "—"} · {anime.format}</p>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
 
@@ -126,21 +134,29 @@ export function renderMovieCard(movie) {
   const name = movie.title;
   const url = `/movie/${movie.id}-${slugify(name)}`;
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+  const image = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
   return (
-    <a key={movie.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
-        <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={name} className="w-full aspect-[3/4] object-cover" />
+    <div key={movie.id} className="group relative block">
+      <a href={url} className="block relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
+        <img src={image} alt={name} className="w-full aspect-[3/4] object-cover" />
         {rating && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
             ★ {rating}
           </div>
         )}
-      </div>
-      <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-foreground">{name}</h3>
+      </a>
+      <QuickSaveButton
+        entityType="movie"
+        entityId={movie.id.toString()}
+        itemTitle={name}
+        itemSlug={`${movie.id}-${slugify(name)}`}
+        itemImage={image}
+      />
+      <a href={url} className="block mt-1.5 px-0.5">
+        <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{name}</h3>
         <p className="text-xs text-muted-foreground">{movie.release_date?.slice(0, 4) || "—"}</p>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
 
@@ -150,16 +166,16 @@ export function renderGameCard(game) {
   const isMobile = game.platforms?.some((p) => [21, 3].includes(p.platform?.id));
   const genre = game.genres?.[0]?.name;
   return (
-    <a key={game.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
+    <div key={game.id} className="group relative block">
+      <a href={url} className="block relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={game.background_image} alt={game.name} className="w-full aspect-[3/4] object-cover" />
         {rating && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
             ★ {rating}
           </div>
         )}
         {isMobile && (
-          <div className="absolute top-2 left-2 bg-green-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 left-10 bg-green-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
             📱 Mobile
           </div>
         )}
@@ -168,12 +184,19 @@ export function renderGameCard(game) {
             <span className="text-[10px] font-medium text-white/90 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">{genre}</span>
           </div>
         )}
-      </div>
-      <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-foreground">{game.name}</h3>
+      </a>
+      <QuickSaveButton
+        entityType="game"
+        entityId={game.id.toString()}
+        itemTitle={game.name}
+        itemSlug={`${game.id}-${game.slug}`}
+        itemImage={game.background_image}
+      />
+      <a href={url} className="block mt-1.5 px-0.5">
+        <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{game.name}</h3>
         <p className="text-xs text-muted-foreground">{game.released?.slice(0, 4) || "—"}{genre ? ` · ${genre}` : ""}</p>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
 
@@ -183,20 +206,27 @@ export function renderCharacterCard(character) {
   const fav = character.favourites;
   const favLabel = fav >= 1000 ? `${(fav / 1000).toFixed(0)}k` : fav ? String(fav) : null;
   return (
-    <a key={character.id} href={url} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
+    <div key={character.id} className="group relative block">
+      <a href={url} className="block relative rounded-xl overflow-hidden bg-muted shadow-sm hover:-translate-y-0.5 hover:shadow-md transition duration-200">
         <img src={character.image.large} alt={name} className="w-full aspect-[3/4] object-cover" />
         {favLabel && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-pink-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-pink-400 text-xs font-bold px-1.5 py-0.5 rounded-md">
             ♥ {favLabel}
           </div>
         )}
-      </div>
-      <div className="mt-1.5 px-0.5">
-        <h3 className="text-sm font-semibold truncate text-foreground">{name}</h3>
+      </a>
+      <QuickSaveButton
+        entityType="character"
+        entityId={character.id.toString()}
+        itemTitle={name}
+        itemSlug={`${character.id}-${slugify(name)}`}
+        itemImage={character.image.large}
+      />
+      <a href={url} className="block mt-1.5 px-0.5">
+        <h3 className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{name}</h3>
         <p className="text-xs text-muted-foreground">{character.gender || "—"}</p>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
 

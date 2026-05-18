@@ -22,17 +22,20 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const entityId = searchParams.get("entityId");
 
-    if (!entityId || !mongoose.Types.ObjectId.isValid(entityId)) {
+    if (!entityId) {
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
-    const entityObjectId = new mongoose.Types.ObjectId(entityId);
+    // Support both ObjectId-stored items (AddToListButton) and
+    // string-stored items (QuickSaveButton for external IDs like anime/game).
+    const queryIds = [entityId]; // always try string match
+    if (mongoose.Types.ObjectId.isValid(entityId)) {
+      queryIds.push(new mongoose.Types.ObjectId(entityId));
+    }
 
-    // Find any list belonging to this user that contains this entity item.
-    // Project only what the UI needs — avoids sending every item in every list.
     const list = await UnifiedList.findOne(
-      { userId, "items.entityId": entityObjectId },
-      { name: 1, "items.$": 1 } // positional $ returns only the matched element
+      { userId, "items.entityId": { $in: queryIds } },
+      { name: 1, "items.$": 1 }
     ).lean();
 
     if (!list || !list.items?.length) {

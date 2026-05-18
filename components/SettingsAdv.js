@@ -519,7 +519,7 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
         </DialogTrigger>
       </Tooltip>
 
-      <DialogContent className="max-w-[90vw] md:max-w-[500px]">
+      <DialogContent className="max-w-[90vw] md:max-w-[500px] z-[10000]" overlayClassName="z-[10000]">
         <DialogHeader>
           <DialogTitle>{"Title"}</DialogTitle>
         </DialogHeader>

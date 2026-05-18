@@ -110,7 +110,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         }`}
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="h-14 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="h-14 bg-background/95 backdrop-blur-md border-b border-border relative z-50">
           <div className="h-full px-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button

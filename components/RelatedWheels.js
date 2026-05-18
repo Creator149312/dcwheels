@@ -23,12 +23,9 @@ export default function RelatedWheels({ relatedWheels }) {
             href={`/uwheels/${wheel._id}`}
             className="group flex items-center gap-3 p-2 rounded-xl bg-transparent hover:bg-muted/60 border border-transparent hover:border-border transition-colors duration-150 active:scale-[0.98]"
           >
-            {/* Thumbnail */}
             <div className="relative flex-shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-muted flex items-center justify-center group-hover:bg-primary transition-colors">
               <Disc3 className="w-5 h-5 text-muted-foreground group-hover:text-primary-foreground transition-colors" />
             </div>
-
-            {/* Title */}
             <div className="flex flex-col min-w-0 leading-tight">
               <span className="font-bold text-xs line-clamp-2 text-foreground group-hover:text-primary">
                 {wheel.title}

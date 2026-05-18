@@ -103,7 +103,15 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // ✅ 4. Prevent duplicate list names
+    // ✅ 4. Protect the Favorites list — name cannot be changed
+    if (list.name === "Favorites" && name && name !== "Favorites") {
+      return NextResponse.json(
+        { error: "The Favorites list cannot be renamed" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ 5. Prevent duplicate list names
     if (name && name !== list.name) {
       const exists = await UnifiedList.findOne({ userId, name }).lean();
       if (exists) {
@@ -170,7 +178,15 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // ✅ 3. Collect all Vercel Blob URLs from word items before deletion
+    // ✅ 3. Protect the Favorites list — it cannot be deleted
+    if (list.name === "Favorites") {
+      return NextResponse.json(
+        { error: "The Favorites list cannot be deleted" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ 4. Collect all Vercel Blob URLs from word items before deletion
     const blobUrls = list.items
       .filter((i) => i.type === "word" && isBlobUrl(i.wordData))
       .map((i) => i.wordData);

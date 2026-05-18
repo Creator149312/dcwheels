@@ -12,6 +12,12 @@ import AddToListButton from "./AddToListButton";
 
 // Map entity type → action-specific CTA label so the button reads naturally
 // for the content category the wheel is about.
+function getEntityUrl(entityType, slug) {
+  if (entityType === "wheel") return `/wheels/${slug}`;
+  if (entityType === "uwheel") return `/uwheels/${slug}`;
+  return `/${entityType}/${slug}`;
+}
+
 function getPickLabel(winner) {
   const type = winner?.entityType || winner?.payload?.entityType || "";
   switch (type) {
@@ -337,9 +343,11 @@ const WinnerPopup = ({
                       ) : <div />}
                       {winner?.payload?.slug ? (
                         <button
-                          onClick={() =>
-                            (window.location.href = `/${winner.payload?.entityType || winner.entityType}/${winner.payload?.slug || winner.slug}`)
-                          }
+                          onClick={() => {
+                            const et = winner.payload?.entityType || winner.entityType || "";
+                            const sl = winner.payload?.slug || winner.slug || "";
+                            window.location.href = getEntityUrl(et, sl);
+                          }}
                           className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

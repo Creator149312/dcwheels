@@ -3,15 +3,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 
-// Maps the content type to a contextual CTA label so users see wording
-// that matches their mental model: you "watch" movies/anime, "play" games.
-const WATCHLIST_TYPES = new Set(["movie", "anime", "character", "series", "show", "tv"]);
-const PLAYLIST_TYPES  = new Set(["game", "song", "music", "track", "album"]);
-
-function getListLabel(type) {
-  const t = (type || "").toLowerCase();
-  if (WATCHLIST_TYPES.has(t)) return "Add to Watchlist";
-  if (PLAYLIST_TYPES.has(t))  return "Add to Playlist";
+function getListLabel() {
   return "Save to List";
 }
 
@@ -171,7 +163,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     setNewListName("");
   }
 
-  const label = getListLabel(type);
+  const label = getListLabel();
 
   return (
     <>

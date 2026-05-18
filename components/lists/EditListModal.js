@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-export default function EditListModal({ isOpen, onClose, list, onSave }) {
+export default function EditListModal({ isOpen, onClose, list, isFavorites = false, onSave }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -25,10 +25,16 @@ export default function EditListModal({ isOpen, onClose, list, onSave }) {
         <div className="mb-4">
           <label className="block text-muted-foreground">Name</label>
           <input
-            className="w-full p-2 mt-1 rounded bg-gray-100 bg-muted "
+            className={`w-full p-2 mt-1 rounded bg-gray-100 bg-muted ${
+              isFavorites ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { if (!isFavorites) setName(e.target.value); }}
+            readOnly={isFavorites}
           />
+          {isFavorites && (
+            <p className="text-xs text-muted-foreground mt-1">The Favorites list cannot be renamed.</p>
+          )}
         </div>
 
         <div className="mb-4">

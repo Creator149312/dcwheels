@@ -21,6 +21,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const { data: session, status } = useSession();
 
   const [list, setList] = useState(initialList);
+  const isFavorites = initialList?.name === "Favorites";
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -323,12 +324,14 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               <div className="absolute right-0 mt-2 bg-popover shadow-lg border border-border rounded-lg w-40 z-50 overflow-hidden">
                 <SharePopup url={`/lists/${listId}`} variant="simple" />
 
-                <button
-                  onClick={deleteList}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 text-sm transition-colors border-t border-border"
-                >
-                  <Trash2 className="h-4 w-4" /> Delete List
-                </button>
+                {!isFavorites && (
+                  <button
+                    onClick={deleteList}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm transition-colors border-t border-border"
+                  >
+                    <Trash2 className="h-4 w-4" /> Delete List
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -647,8 +650,12 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                   <div className="min-w-0 flex-1 pr-2">
                     {isEntity ? (
                       <>
-                        <a
-                          href={`/${item.entityType}/${item.slug}`}
+                      <a
+                          href={
+                            item.entityType === "wheel" ? `/wheels/${item.slug}` :
+                            item.entityType === "uwheel" ? `/uwheels/${item.slug}` :
+                            `/${item.entityType}/${item.slug}`
+                          }
                           className="font-bold text-sm md:text-base hover:underline text-foreground truncate block"
                         >
                           {item.name}
@@ -697,6 +704,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         list={list}
+        isFavorites={isFavorites}
         onSave={saveListEdits}
       />
     </div>

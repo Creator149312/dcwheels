@@ -135,6 +135,9 @@ export default async function Page({ params }) {
           <Suspense fallback={<InfoActionsSkeleton />}>
             <SuspendedInfoActions
               wheelId={wheelId}
+              wheelTitle={wordsList.title}
+              wheelEntityType="uwheel"
+              wheelSlug={wheelId}
               createdAt={wordsList.createdAt}
               createdBy={wordsList.createdBy}
             />

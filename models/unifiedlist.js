@@ -24,9 +24,9 @@ const ListItemSchema = new Schema(
     // ENTITY ITEM FIELDS
     entityType: {
       type: String,
-      enum: ["movie", "anime", "game", "character"],
+      enum: ["movie", "anime", "game", "character", "wheel", "uwheel"],
     },
-    entityId: { type: Schema.Types.ObjectId },
+    entityId: { type: Schema.Types.Mixed },
     name: { type: String, trim: true },
     slug: { type: String, trim: true },
     image: { type: String },

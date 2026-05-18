@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
+import QuickSaveButton from "@components/QuickSaveButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { MessageSquare, Code2, ArrowLeftRight } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
@@ -38,7 +39,7 @@ function formatCount(n) {
  *   createdAt  — ISO date string from the wheel document (for "X days ago")
  *   initialMeta — server-fetched meta: analytics, reactions, commentCount
  */
-export default function WheelInfoActions({ wheelId, createdAt, createdBy, initialMeta = null }) {
+export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, createdBy, initialMeta = null }) {
   const openLoginPrompt = useLoginPrompt();
   const { data: session } = useSession();
 
@@ -53,30 +54,26 @@ export default function WheelInfoActions({ wheelId, createdAt, createdBy, initia
   useEffect(() => {
     let ignore = false;
 
-    async function loadAnalytics() {
+    async function setMissingMeta() {
       try {
-        const res = await fetch(`/api/wheel-analytics/${wheelId}`);
+        const res = await fetch(`/api/wheel/${wheelId}/meta`);
         if (!res.ok) return;
         const json = await res.json();
-        if (!ignore) {
+        if (!ignore && json.meta) {
           setEngagement({
-            view_count: json?.analytics?.view_count || 0,
-            spin_count: json?.analytics?.spin_count || 0,
+            view_count: json.meta.analytics?.view_count || 0,
+            spin_count: json.meta.analytics?.spin_count || 0,
           });
+          setCommentCount(json.meta.commentCount || 0);
         }
-      } catch {
-        // Silent analytics failure by design.
+      } catch (e) {
+        // Silent failure by design
       }
     }
 
     // Only fetch if SSR didn't seed us (e.g. cold render without initialMeta).
     if (!initialMeta) {
-      loadAnalytics();
-
-      fetch(`/api/comments/count?entityType=wheel&entityId=${wheelId}`)
-        .then((r) => (r.ok ? r.json() : { count: 0 }))
-        .then((d) => { if (!ignore) setCommentCount(d.count || 0); })
-        .catch(() => {});
+      setMissingMeta();
     }
 
     // Optimistic spin counter — no fetch, just increment locally.
@@ -134,6 +131,15 @@ export default function WheelInfoActions({ wheelId, createdAt, createdBy, initia
           show={{ like: true, share: true, save: false, follow: false }}
         />
 
+        <QuickSaveButton
+          entityType={wheelEntityType}
+          entityId={wheelId}
+          itemTitle={wheelTitle}
+          itemSlug={wheelSlug || wheelId}
+          variant="button"
+          showText={true}
+        />
+
         <button
           onClick={() => {
             setShowComments((prev) => !prev);
@@ -144,10 +150,10 @@ export default function WheelInfoActions({ wheelId, createdAt, createdBy, initia
               }, 100);
             }
           }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#272727] dark:hover:bg-[#3a3a3a] text-gray-800 dark:text-gray-100 text-sm font-medium transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
         >
-          <MessageSquare className="text-gray-600 dark:text-gray-300" size={16} />
-          <span>Comments{commentCount > 0 ? ` (${commentCount})` : ""}</span>
+          <MessageSquare size={15} />
+          <span>{commentCount > 0 ? formatCount(commentCount) : "0"}</span>
         </button>
 
         <button

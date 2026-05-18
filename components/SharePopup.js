@@ -45,14 +45,14 @@ export default function SharePopup({
   // ✅ Conditional button styling
   const buttonClass =
     variant === "buttoned"
-      ? "flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium dark:bg-[#272727] dark:hover:bg-[#3a3a3a] dark:border-gray-700 dark:text-gray-100 transition"
+      ? "flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
       : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700";
 
   return (
     <div className="relative">
       {/* Trigger Button */}
       <button onClick={togglePopup} className={buttonClass}>
-        <Share2 className="text-gray-600 dark:text-gray-300" size={16} />
+        <Share2 size={15} />
         Share
       </button>
 

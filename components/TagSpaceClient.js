@@ -70,34 +70,36 @@ function WheelsTab({ initialWheels, tagId }) {
             : null;
           return (
             <Fragment key={wheel._id || index}>
-              <a
-                href={`/uwheels/${wheel._id}`}
-                className="group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/60 transition duration-300 active:scale-[0.98]"
-              >
-                <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
-                  {thumbSrc ? (
-                    <Image
-                      src={thumbSrc}
-                      alt={wheel.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
-                      priority={isAboveFold}
-                      fetchPriority={isAboveFold ? "high" : "auto"}
-                      loading={isAboveFold ? "eager" : "lazy"}
-                    />
-                  ) : (
-                    <span className="text-muted/60 text-5xl font-black group-hover:scale-110 transition-transform">
-                      {wheel.title?.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="p-4 flex-1">
-                  <h3 className="text-sm md:text-base font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                    {wheel.title}
-                  </h3>
-                </div>
-              </a>
+              <div className="relative group flex flex-col bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/60 transition duration-300 active:scale-[0.98]">
+                <a
+                  href={`/uwheels/${wheel._id}`}
+                  className="flex flex-col flex-1"
+                >
+                  <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
+                    {thumbSrc ? (
+                      <Image
+                        src={thumbSrc}
+                        alt={wheel.title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        priority={isAboveFold}
+                        fetchPriority={isAboveFold ? "high" : "auto"}
+                        loading={isAboveFold ? "eager" : "lazy"}
+                      />
+                    ) : (
+                      <span className="text-muted/60 text-5xl font-black group-hover:scale-110 transition-transform">
+                        {wheel.title?.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4 flex-1">
+                    <h3 className="text-sm md:text-base font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                      {wheel.title}
+                    </h3>
+                  </div>
+                </a>
+              </div>
 
               {showAd && (
                 // min-h prevents CLS when AdSense loads async and pushes content down
