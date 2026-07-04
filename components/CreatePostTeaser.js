@@ -47,7 +47,7 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
           className="flex-1 overflow-hidden"
         >
           <div className="bg-muted/50 hover:bg-muted text-muted-foreground rounded-full px-4 py-2 sm:py-2.5 text-xs sm:text-sm transition-colors font-medium border border-border/50 truncate">
-            What's on your mind{session?.user?.name ? `, ${session.user.name}` : ""}?
+            What&apos;s on your mind{session?.user?.name ? `, ${session.user.name}` : ""}?
           </div>
         </Link>
 

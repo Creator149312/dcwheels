@@ -253,16 +253,16 @@ export default function PostGeneratorPage() {
             </div>
           ) : topics.length === 0 ? (
             <div className="text-muted-foreground text-sm py-8 text-center">
-              {search
-                ? `No topics found matching "${search}".`
-                : "All TopicPages in this category already have posts."}
-            </div>
+                {search
+                  ? `No topics found matching &quot;${search}&quot;.`
+                  : "All TopicPages in this category already have posts."}
+              </div>
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
                 Showing <span className="font-bold text-foreground">{topics.length}</span> of{" "}
                 <span className="font-bold text-foreground">{total}</span> topics with no posts yet
-                {search && <> matching <span className="font-semibold">"{search}"</span></>}.
+                {search && <> matching <span className="font-semibold">&quot;{search}&quot;</span></>}.
               </p>
               {topics.map((topic) => (
                 <TopicRow

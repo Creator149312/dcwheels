@@ -34,7 +34,7 @@ export default async function CreateWheel() {
         </h1>
         <p className="mb-3">
           Spin Wheel is an online spinner tool designed to help people make
-          choices in a lighthearted and engaging way. It's a virtual wheel you
+          choices in a lighthearted and engaging way. It&apos;s a virtual wheel you
           can spin to land on a random option. The wheel is divided into
           sections, each with a different choice, and the result is simply
           whichever section the wheel stops on.
@@ -42,7 +42,7 @@ export default async function CreateWheel() {
         <p className="mb-4">
           You can use this decision wheel for anything — from picking what to
           eat for dinner, choosing a vacation spot, or deciding which movie to
-          watch, to making group activities more fun. It's also great for
+          watch, to making group activities more fun. It&apos;s also great for
           friendly contests, classroom activities, or community events where you
           want to pick someone or something at random in a fair and transparent
           way.
@@ -71,9 +71,9 @@ export default async function CreateWheel() {
           way to decide.
         </p>
         <p className="mb-3">
-          It's also a great way to add energy to any setting. The act of
+          It&apos;s also a great way to add energy to any setting. The act of
           spinning the wheel builds anticipation, and the reveal is always a
-          surprise. Whether you're picking a dinner spot, choosing a team
+          surprise. Whether you&apos;re picking a dinner spot, choosing a team
           activity, or deciding the next speaker in a meeting, the picker wheel
           turns everyday decisions into a fun, shared experience.
         </p>
@@ -98,13 +98,13 @@ export default async function CreateWheel() {
         </p>
 
         <p className="mb-3">
-          3. <strong>Spin the Wheel:</strong> Once you've entered your options,
-          click the "Spin" button to give the wheel a spin. The result will be
+          3. <strong>Spin the Wheel:</strong> Once you&apos;ve entered your options,
+          click the &quot;Spin&quot; button to give the wheel a spin. The result will be
           displayed when the wheel stops spinning.
         </p>
 
         <p className="mb-4">
-          4. <strong>Share Your Wheel:</strong> Once you've created a wheel you
+          4. <strong>Share Your Wheel:</strong> Once you&apos;ve created a wheel you
           like, save it to your account and share the link with friends or
           colleagues.
         </p>

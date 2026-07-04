@@ -10,6 +10,7 @@ import {
   Sun, 
   Lock, 
   ShieldCheck, 
+  Globe,
   X, 
   KeyRound, 
   User as UserIcon,
