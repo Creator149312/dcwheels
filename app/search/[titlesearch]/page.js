@@ -31,7 +31,9 @@ async function fetchInitialWheels(searchtitle) {
 }
 
 export default async function Page({ params, searchParams }) {
-  const searchtitle = decodeURIComponent(params.titlesearch);
+  // Decode and sanitize the search title to prevent any double-encoding display issues
+  const rawTitle = params.titlesearch;
+  const searchtitle = decodeURIComponent(rawTitle);
   const activeType = searchParams?.type || "wheels";
 
   // Always fetch the wheel search result — cheap and cached (s-maxage=300),
@@ -62,7 +64,7 @@ export default async function Page({ params, searchParams }) {
         <h1 className="text-2xl md:text-4xl font-black tracking-tight text-foreground leading-tight">
           Results for{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">
-            {searchtitle}
+            &quot;{searchtitle}&quot;
           </span>
         </h1>
       </header>
@@ -72,10 +74,11 @@ export default async function Page({ params, searchParams }) {
            style={{ scrollbarWidth: "none" }}>
         {TABS.map((tab) => {
           const isActive = activeType === tab.key;
+          // rawTitle is already URL-encoded from params — do NOT re-encode
           const href =
             tab.key === "wheels"
-              ? `/search/${encodeURIComponent(params.titlesearch)}`
-              : `/search/${encodeURIComponent(params.titlesearch)}?type=${tab.key}`;
+              ? `/search/${rawTitle}`
+              : `/search/${rawTitle}?type=${tab.key}`;
           // Surface wheel count inline — "🎡 Wheels (8)" — so visitors on
           // other tabs can see there are wheel results without switching.
           const label =

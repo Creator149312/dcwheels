@@ -55,7 +55,7 @@ export async function SuspendedRelatedWheels({ tags, wheelId }) {
   return <RelatedWheels relatedWheels={relatedWheels} />;
 }
 
-export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, createdAt, createdBy }) {
+export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, createdAt, createdBy, authorHandle }) {
   const initialMeta = await getCachedWheelMeta(wheelId);
   return (
     <WheelInfoActions
@@ -65,6 +65,7 @@ export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityTyp
       wheelSlug={wheelSlug}
       createdAt={createdAt}
       createdBy={createdBy}
+      authorHandle={authorHandle}
       initialMeta={initialMeta}
     />
   );

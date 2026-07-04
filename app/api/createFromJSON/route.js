@@ -1,7 +1,9 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import User from "@models/user";
 import Page from "@models/page";
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import {
   ensureArrayOfObjects,
   replaceUnderscoreWithDash,
@@ -96,6 +98,16 @@ export async function POST(req) {
     const colorCodes = pickPalette(jsonData.title);
     const dataObjectForSegments = ensureArrayOfObjects(jsonData.segments);
 
+    // Get userId from session
+    let userId = null;
+    if (session.user.id) {
+      try {
+        userId = new mongoose.Types.ObjectId(session.user.id);
+      } catch (e) {
+        // Invalid ObjectId, will use fallback
+      }
+    }
+    
     const wheel = new Wheel({
       title: jsonData.title,
       description: jsonData.description,
@@ -110,6 +122,7 @@ export async function POST(req) {
       },
       relatedTo: null,
       createdBy: session.user.email,
+      ...(userId ? { userId } : {}),
       tags: jsonData.tags || [],
     });
 

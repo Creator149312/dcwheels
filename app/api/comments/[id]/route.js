@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
 import Comment from "@models/comment";
 import User from "@models/user";
+import Post from "@models/post";
+import Wheel from "@models/wheel";
 
 // ✅ Edit a comment
 export async function PATCH(req, { params }) {
@@ -75,9 +77,28 @@ export async function DELETE(req, { params }) {
     }
 
     // Optional: delete all replies to this comment
+    const repliesCount = await Comment.countDocuments({ parentCommentId: comment._id });
     await Comment.deleteMany({ parentCommentId: comment._id });
 
     await comment.deleteOne();
+
+    // Decrement denormalized count on Post/Wheel
+    try {
+      const totalToRemove = 1 + repliesCount;
+      if (comment.entityType === "post") {
+        await Post.updateOne(
+          { _id: comment.entityId },
+          { $inc: { commentCount: -totalToRemove } }
+        );
+      } else if (comment.entityType === "wheel") {
+        await Wheel.updateOne(
+          { _id: comment.entityId },
+          { $inc: { commentCount: -totalToRemove } }
+        );
+      }
+    } catch (countErr) {
+      console.error("Error decrementing comment count:", countErr);
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {

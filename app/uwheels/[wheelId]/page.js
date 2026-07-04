@@ -88,7 +88,8 @@ export default async function Page({ params }) {
 
   // Single fetch — generateMetadata above already triggered the cached call,
   // so this is a no-op DB hit thanks to React.cache().
-  const wordsList = await fetchWheelData(wheelId);
+  const rawWordsList = await fetchWheelData(wheelId);
+  const wordsList = rawWordsList ? JSON.parse(JSON.stringify(rawWordsList)) : null;
 
   return (
     <div>
@@ -140,6 +141,7 @@ export default async function Page({ params }) {
               wheelSlug={wheelId}
               createdAt={wordsList.createdAt}
               createdBy={wordsList.createdBy}
+              authorHandle={wordsList.authorHandle}
             />
           </Suspense>
 

@@ -103,7 +103,7 @@ export async function POST(req, { params }) {
     }
 
     if (type === "entity") {
-      const { entityType, entityId, name, slug, image } = body;
+      const { entityType, entityId, name, slug, image, status } = body;
 
       if (!entityType || !entityId || !name || !slug) {
         return NextResponse.json(
@@ -131,6 +131,7 @@ export async function POST(req, { params }) {
       newItem.name = name;
       newItem.slug = slug;
       newItem.image = image || null;
+      if (status) newItem.status = status;
     }
 
     // ✅ 5. Push item and save

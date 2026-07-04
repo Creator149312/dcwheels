@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Moon, Sun, Menu, X } from "lucide-react";
+import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Moon, Sun, Menu, X, MessageCircle, Disc3 } from "lucide-react";
 
 // TagsCarousel has seasonal logic, scroll refs and useMemo — lazy-load so it
 // doesn't block the initial mobile nav chunk.
@@ -14,14 +15,6 @@ const TagsCarousel = dynamic(() => import("@components/TagsCarousel"));
 
 // MobileSearchBar brings debounce + API fetch logic — only needed on interaction.
 const MobileSearchBar = dynamic(() => import("@components/MobileSearchBar"));
-
-// CreateWheelModal is heavy (segment editor + image upload deps) and only
-// rendered after the user taps the + button. Lazy-loading it keeps the
-// mobile nav chunk — which ships on every page — lean.
-const CreateWheelModal = dynamic(
-  () => import("@components/CreateWheelModal"),
-  { ssr: false }
-);
 
 const SCROLL_THRESHOLD = 10;
 
@@ -47,14 +40,19 @@ function BottomNavItem({ href, icon, label, active, onClick }) {
 
 export default function MobileNavChrome({ onToggleSidebar }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
 
   const [isVisible, setIsVisible] = useState(true);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
+  
+  const profileUrl = session?.user?.username || session?.user?.name
+    ? `/u/${encodeURIComponent((session.user.username || session.user.name).toLowerCase())}`
+    : null;
 
   const isDark = resolvedTheme === "dark";
 
@@ -94,7 +92,10 @@ export default function MobileNavChrome({ onToggleSidebar }) {
   useEffect(() => { setMounted(true); }, []);
 
   // Close library sheet when navigating
-  useEffect(() => { setLibraryOpen(false); }, [pathname]);
+  useEffect(() => { 
+    setLibraryOpen(false); 
+    setCreateSheetOpen(false);
+  }, [pathname]);
 
   const isLibraryActive =
     pathname.startsWith("/wheels") ||
@@ -203,6 +204,60 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         </>
       )}
 
+      {/* ── Create sub-sheet ──────────────────────────────────────────── */}
+      {createSheetOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[65] bg-black/30 backdrop-blur-sm md:hidden"
+            onClick={() => setCreateSheetOpen(false)}
+          />
+          {/* Sheet */}
+          <div
+            className={`fixed bottom-12 left-0 right-0 z-[68] md:hidden bg-card border-t border-border rounded-t-2xl shadow-lg transition-transform duration-300`}
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
+              <span className="text-sm font-bold text-foreground">{"Create"}</span>
+              <button
+                onClick={() => setCreateSheetOpen(false)}
+                className="p-1 rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex flex-col py-1">
+              <Link
+                href="/post/create"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
+                onClick={() => setCreateSheetOpen(false)}
+              >
+                <MessageCircle size={20} className="text-blue-500" />
+                {"Post"}
+              </Link>
+              <Link
+                href="/wheels/create"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
+                onClick={() => setCreateSheetOpen(false)}
+              >
+                <Disc3 size={20} className="text-primary" />
+                {"Wheel"}
+              </Link>
+              <Link
+                href="/lists/create"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
+                onClick={() => setCreateSheetOpen(false)}
+              >
+                <List size={20} className="text-violet-500" />
+                {"List"}
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
+
+
+
       {/* ── Bottom nav ─────────────────────────────────────────────────── */}
       <nav
         className={`fixed bottom-0 left-0 right-0 z-[70] md:hidden border-t border-border bg-background/95 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-transform duration-300 ${
@@ -217,6 +272,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             label={"Home"}
             icon={<Home size={18} />}
             active={pathname === "/"}
+            onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
 
           <BottomNavItem
@@ -224,11 +280,17 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             label={"Explore"}
             icon={<Compass size={18} />}
             active={pathname.startsWith("/explore")}
+            onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
 
           <button
-            onClick={() => setCreateModalOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
+            onClick={() => {
+              setLibraryOpen(false);
+              setCreateSheetOpen((v) => !v);
+            }}
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
+              createSheetOpen ? "text-primary" : "text-blue-600 dark:text-blue-400"
+            }`}
             aria-label={"Create"}
           >
             <PlusCircle size={22} />
@@ -239,22 +301,21 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             label={"Browse"}
             icon={<Library size={18} />}
             active={isLibraryActive || libraryOpen}
-            onClick={() => setLibraryOpen((v) => !v)}
+            onClick={() => {
+              setCreateSheetOpen(false);
+              setLibraryOpen((v) => !v);
+            }}
           />
 
           <BottomNavItem
-            href="/dashboard"
+            href={profileUrl || "/"}
             label={"Profile"}
             icon={<User size={18} />}
-            active={pathname.startsWith("/dashboard")}
+            active={pathname.startsWith("/u/") || pathname.startsWith("/profile") || pathname.startsWith("/dashboard")}
+            onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
         </div>
       </nav>
-
-      <CreateWheelModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-      />
     </>
   );
 }

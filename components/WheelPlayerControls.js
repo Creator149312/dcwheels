@@ -68,8 +68,7 @@ export default function WheelPlayerControls({
             className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
             onClick={(e) => {
               saveWheelData(segData, wheelData);
-              // ✅ Force full page reload so ads/scripts reinitialize
-              window.location.href = "/";
+              window.location.href = "/wheels/create";
             }}
           >
             <Pencil size={20} />

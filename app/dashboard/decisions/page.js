@@ -1,24 +1,20 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import { resolveUserIdFromSession, getDashboardDecisions } from "@lib/dashboard";
-import { DecisionTimelineItem } from "@components/UserDashboard";
-import { ArrowLeft, Zap } from "lucide-react";
 
-export const metadata = {
-  title: "My Decisions | Dashboard",
-  description: "View all your past decisions and spin outcomes.",
-};
-
+/**
+ * /dashboard/decisions → /u/[username] Redirect
+ * Legacy route deprecated in favor of new profile page
+ */
 export default async function DashboardDecisionsPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  if (!session?.user?.name) {
     redirect("/login?callbackUrl=/dashboard/decisions");
   }
 
-  const userId = await resolveUserIdFromSession(session);
-  const decisions = await getDashboardDecisions(userId);
+  const targetUsername = session?.user?.username || session.user.name;
+  redirect(`/u/${encodeURIComponent(targetUsername.toLowerCase())}`);
+}
 
   const doneCount = decisions.filter(d => d.status === "done").length;
   const pendingCount = decisions.filter(d => d.status === "pending" || !d.status).length;

@@ -8,11 +8,11 @@ import dynamic from "next/dynamic";
 // initial bundle for users who could not even see it.
 //
 // Solution: keep the lightweight RelatedWheels path inline, code-split the
-// full editor into its own webpack chunk via next/dynamic. On `/` the chunk
-// downloads in parallel with hydration; on other routes it never downloads
-// at all. `ssr: false` is safe - the editor is purely interactive UI with
-// no SEO value, and skipping SSR also avoids paying server render cost for
-// a large component tree.
+// full editor into its own webpack chunk via next/dynamic. On `/` and 
+// `/wheels/create` the chunk downloads in parallel with hydration; on other 
+// routes it never downloads at all. `ssr: false` is safe - the editor is 
+// purely interactive UI with no SEO value, and skipping SSR also avoids 
+// paying server render cost for a large component tree.
 const WheelEditorFull = dynamic(() => import("./WheelEditorFull"), {
   ssr: false,
 });
@@ -25,10 +25,10 @@ export default function WheelEditor({
 }) {
   if (isFullScreen) return null;
 
-  // Non-home routes: render only the lightweight related-wheels sidebar.
+  // Non-home/create routes: render only the lightweight related-wheels sidebar.
   // Hidden below `lg` (RelatedWheels is desktop-only), so on mobile this is
   // effectively `display:none` - zero painted pixels and zero CLS.
-  if (currentPath !== "/") {
+  if (currentPath !== "/" && currentPath !== "/wheels/create") {
     return (
       <aside className="hidden lg:block relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 overflow-y-auto p-3">
@@ -38,6 +38,6 @@ export default function WheelEditor({
     );
   }
 
-  // Home page: lazy-load the full tabbed editor.
+  // Home page or wheel creation page: lazy-load the full tabbed editor.
   return <WheelEditorFull mustSpin={mustSpin} currentPath={currentPath} />;
 }

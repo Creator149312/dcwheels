@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import TopicPage from "@models/topicpage";
+import TopicPageVote from "@models/topicPageVote";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@app/api/auth/[...nextauth]/route";
 
 // ---------------------------------------------------------------------------
 // "Worth It?" vote endpoint
@@ -9,15 +12,9 @@ import TopicPage from "@models/topicpage";
 //   Body: { topicPageId: string, vote: "yes" | "no" }
 //   Returns: { yes: number, no: number }
 //
-//   Double-vote prevention: the client sets a localStorage key per page ID
-//   before calling this endpoint. The API trusts that signal — no login
-//   required, intentionally low-friction. If you later want server-side
-//   deduplication, add a VoteLog collection keyed by (pageId + hashedIP).
-//
-// GET /api/worthit/vote?id=<topicPageId>
-//   Returns: { yes: number, no: number }
-//   Used by the component on mount to hydrate counts without waiting for
-//   the full page server render to re-run.
+//   User persistence:
+//   If logged in, we store the vote in `TopicPageVote` to prevent duplicates
+//   and allow cross-device sync. If anonymous, we fallback to simple $inc.
 // ---------------------------------------------------------------------------
 
 export async function GET(req) {
@@ -31,20 +28,36 @@ export async function GET(req) {
   await connectMongoDB();
 
   const page = await TopicPage.findById(id)
-    .select("worthIt")
+    .select("worthIt rating")
     .lean();
 
   if (!page) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // If user is logged in, also check if they have voted
+  const session = await getServerSession(authOptions);
+  let userVote = null;
+  let userRating = null;
+  if (session?.user?.mongoId) {
+    const existing = await TopicPageVote.findOne({
+      topicPageId: id,
+      userId: session.user.mongoId,
+    }).lean();
+    userVote = existing?.vote || null;
+    userRating = existing?.rating || null;
+  }
+
   return NextResponse.json({
-    yes: page.worthIt?.yes ?? 0,
-    no:  page.worthIt?.no  ?? 0,
+    worthIt: page.worthIt || { yes: 0, no: 0, meh: 0 },
+    rating: page.rating || { totalScore: 0, count: 0 },
+    userVote,
+    userRating,
   });
 }
 
 export async function POST(req) {
+  const session = await getServerSession(authOptions);
   let body;
   try {
     body = await req.json();
@@ -52,31 +65,113 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { topicPageId, vote } = body;
+  let { topicPageId, vote, rating } = body;
 
-  // Validate inputs — only "yes" and "no" are accepted
-  if (!topicPageId || !["yes", "no"].includes(vote)) {
+  // Derive vote from rating if provided
+  if (rating && !vote) {
+    if (rating >= 4) vote = "yes";
+    else if (rating === 3) vote = "meh";
+    else vote = "no";
+  }
+
+  if (!topicPageId || (!vote && !rating)) {
     return NextResponse.json(
-      { error: "topicPageId and vote ('yes' | 'no') are required" },
+      { error: "topicPageId and (vote or rating) are required" },
       { status: 400 }
     );
   }
 
   await connectMongoDB();
 
-  // $inc is atomic — safe against concurrent votes without transactions
-  const updated = await TopicPage.findByIdAndUpdate(
-    topicPageId,
-    { $inc: { [`worthIt.${vote}`]: 1 } },
-    { new: true, select: "worthIt" }
-  );
+  // 1) Logic for Authenticated Users
+  if (session?.user?.mongoId) {
+    const userId = session.user.mongoId;
+    const existingVote = await TopicPageVote.findOne({ topicPageId, userId });
+
+    if (existingVote) {
+      // Logic for updating existing vote
+      const oldVote = existingVote.vote;
+      const oldRating = existingVote.rating;
+
+      if (oldVote === vote && oldRating === rating) {
+        const page = await TopicPage.findById(topicPageId).select("worthIt rating").lean();
+        return NextResponse.json({
+          worthIt: page.worthIt,
+          rating: page.rating,
+          userVote: vote,
+          userRating: rating,
+        });
+      }
+
+      existingVote.vote = vote;
+      existingVote.rating = rating;
+      await existingVote.save();
+
+      const updateQuery = { $inc: {} };
+      if (oldVote !== vote) {
+        updateQuery.$inc[`worthIt.${vote}`] = 1;
+        updateQuery.$inc[`worthIt.${oldVote}`] = -1;
+      }
+      if (rating && rating !== oldRating) {
+        updateQuery.$inc["rating.totalScore"] = rating - (oldRating || 0);
+        if (!oldRating) updateQuery.$inc["rating.count"] = 1;
+      }
+
+      const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
+        new: true,
+        select: "worthIt rating",
+      });
+
+      return NextResponse.json({
+        worthIt: updated.worthIt,
+        rating: updated.rating,
+        userVote: vote,
+        userRating: rating,
+      });
+    } else {
+      // First time voting
+      await TopicPageVote.create({ topicPageId, userId, vote, rating });
+      
+      const updateQuery = { $inc: { [`worthIt.${vote}`]: 1 } };
+      if (rating) {
+        updateQuery.$inc["rating.totalScore"] = rating;
+        updateQuery.$inc["rating.count"] = 1;
+      }
+
+      const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
+        new: true,
+        select: "worthIt rating",
+      });
+
+      return NextResponse.json({
+        worthIt: updated.worthIt,
+        rating: updated.rating,
+        userVote: vote,
+        userRating: rating,
+      });
+    }
+  }
+
+  // 2) Logic for Guests (Simple increment)
+  const updateQuery = { $inc: { [`worthIt.${vote}`]: 1 } };
+  if (rating) {
+    updateQuery.$inc["rating.totalScore"] = rating;
+    updateQuery.$inc["rating.count"] = 1;
+  }
+
+  const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
+    new: true,
+    select: "worthIt rating",
+  });
 
   if (!updated) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
   return NextResponse.json({
-    yes: updated.worthIt?.yes ?? 0,
-    no:  updated.worthIt?.no  ?? 0,
+    worthIt: updated.worthIt,
+    rating: updated.rating,
   });
 }
+
+

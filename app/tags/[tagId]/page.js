@@ -3,14 +3,13 @@ import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
 import Tag from "@models/tag";
-import { getWheelsByTag, getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
+import { getUnifiedTagFeed, getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
 import TagSpaceClient from "@components/TagSpaceClient";
 
 // React.cache() deduplicates resolveTagSlug between generateMetadata and the
 // page body — without this every cold render (ISR miss or first visit) fires
 // the same slug-lookup aggregation twice against MongoDB.
 const getCachedTagSlug = cache((tagId) => resolveTagSlug(tagId));
-import FollowButton from "@components/FollowButton";
 import Link from "next/link";
 import { Hash, Layers } from "lucide-react";
 
@@ -99,31 +98,28 @@ export default async function TagDetailPage({ params }) {
   const display = tagDoc?.displayName ||
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // Asks are deferred — DilemmasTab self-fetches on first tab open.
-  // This removes ~12 serialized documents from the initial HTML payload,
-  // cutting TTFB and __NEXT_DATA__ size for the common case (wheels-only view).
-  const [initialWheels, stats] = await Promise.all([
-    getWheelsByTag(canonical, { limit: 20, skip: 0 }),
+  // Unified feed logic
+  const [initialData, stats] = await Promise.all([
+    getUnifiedTagFeed(canonical, { limit: 21 }), // Fetch 21 to get cursor for 20
     getTagSpaceStats(canonical),
   ]);
 
-  // Truly empty tags (no wheels at all) → 404. This only happens if someone
-  // manually navigates to a tag URL that exists in zero wheels.
-  if (!initialWheels || initialWheels.length === 0) {
+  const initialItems = initialData.slice(0, 20);
+  const initialNextCursor = initialData.length > 20 ? initialData[19].createdAt : null;
+
+  // Truly empty tags (zero content in DB) → 404. Admin-blocked tags → 404.
+  // We only hard-404 when there's absolutely nothing to show AND the tag isn't
+  // a registered public tag (a registered public tag may exist but have no content yet).
+  if ((!initialItems || initialItems.length === 0) && !tagDoc) {
     return notFound();
   }
 
-  // Serialize _id to string so client components can use it as key
-  const wheelsData = initialWheels.map((w) => ({
-    ...w,
-    _id: String(w._id),
-  }));
-
+  // Wider feed column to better match modern social layouts on desktop.
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 pb-20 min-h-screen">
+    <div className="max-w-3xl mx-auto px-4 md:px-0 py-6 pb-20 min-h-screen">
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <div className="pt-6 pb-5 mb-2">
+      <div className="pb-5 mb-2">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 mb-4">
           <Link href="/tags" className="hover:text-primary transition-colors">
@@ -148,30 +144,15 @@ export default async function TagDetailPage({ params }) {
               </h1>
             </div>
             <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-xl">
-              Decision picker wheels, community dilemmas, and everything{" "}
-              <span className="font-medium text-foreground">#{tagId}</span> in one place.
+              {tagDoc?.description
+                ? tagDoc.description
+                : <>Decision picker wheels, community discussions, and everything{" "}
+                    <span className="font-medium text-foreground">#{tagId}</span> in one place.
+                  </>}
             </p>
           </div>
 
-          {/* CTAs */}
-          {/*
-          <div className="flex items-center gap-2 w-full md:w-auto flex-shrink-0">
-            <FollowButton
-              entityType="tag"
-              entityId={canonical}
-              labelFollow="Follow Space"
-              labelFollowing="Following"
-              className="flex-1 md:flex-none justify-center text-sm px-4 py-2"
-            />
-            <Link
-              href={`/dashboard?create=1&tag=${encodeURIComponent(tagId)}`}
-              className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-full transition-colors shadow-sm shrink-0"
-            >
-              <span className="text-lg leading-none">+</span>
-              Create Wheel
-            </Link>
-          </div>
-          */}
+
         </div>
 
         {/* Stats pills */}
@@ -182,6 +163,7 @@ export default async function TagDetailPage({ params }) {
               {stats.wheelCount.toLocaleString()} {stats.wheelCount === 1 ? "Wheel" : "Wheels"}
             </span>
           </div>
+
           <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border">
             <Hash size={12} className="text-muted-foreground" />
             <span className="text-xs text-muted-foreground font-medium">{tagId}</span>
@@ -189,14 +171,14 @@ export default async function TagDetailPage({ params }) {
         </div>
       </div>
 
-      {/* ── Divider ──────────────────────────────────────────────────── */}
-      <div className="border-t border-border mb-2" />
-
-      {/* ── Tabbed content ───────────────────────────────────────────── */}
-      <TagSpaceClient
-        tagId={tagId}
-        initialWheels={wheelsData}
-      />
+      {/* ── Community Feed ───────────────────────────────────────────── */}
+      <section>
+        <TagSpaceClient
+          tagId={canonical}
+          initialItems={initialItems}
+          initialNextCursor={initialNextCursor}
+        />
+      </section>
     </div>
   );
 }

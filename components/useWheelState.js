@@ -303,7 +303,7 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
 
     // Debounce the heavy localStorage write separately.
     let saveTimer;
-    if (currentPath === "/") {
+    if (currentPath === "/" || currentPath === "/wheels/create") {
       saveTimer = setTimeout(() => {
         renderCountRef.current++;
         if (renderCountRef.current > 2) saveWheelData(segData, wheelData);
@@ -325,7 +325,7 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
 
   // Initialize from localStorage or props on mount
   useEffect(() => {
-    if (currentPath === "/") {
+    if (currentPath === "/" || currentPath === "/wheels/create") {
       const wheelFromBrowserStorage = getWheelData();
       initializedRef.current = true;
 

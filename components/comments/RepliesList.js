@@ -7,6 +7,7 @@ export default function RepliesList({
   isLoggedIn,
   onReply,
   onEdit,
+  onDelete,
 }) {
   return (
     <div className="ml-10 mt-2 border-l border-border pl-3 space-y-3">
@@ -18,6 +19,7 @@ export default function RepliesList({
           isLoggedIn={isLoggedIn}
           onReply={onReply}
           onEdit={onEdit}
+          onDelete={onDelete}
           fetchReplies={() => {}} // replies won't have replies
         />
       ))}

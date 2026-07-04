@@ -1,24 +1,20 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import { resolveUserIdFromSession, getDashboardLists } from "@lib/dashboard";
-import { RowCard } from "@components/UserDashboard";
-import { ArrowLeft, BookMarked, Plus } from "lucide-react";
 
-export const metadata = {
-  title: "My Lists | Dashboard",
-  description: "View and manage all your created lists.",
-};
-
+/**
+ * /dashboard/lists → /u/[username] Redirect
+ * Legacy route deprecated in favor of new profile page
+ */
 export default async function DashboardListsPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  if (!session?.user?.name) {
     redirect("/login?callbackUrl=/dashboard/lists");
   }
 
-  const userId = await resolveUserIdFromSession(session);
-  const lists = await getDashboardLists(userId);
+  const targetUsername = session?.user?.username || session.user.name;
+  redirect(`/u/${encodeURIComponent(targetUsername.toLowerCase())}`);
+}
 
   const totalItems = lists.reduce((acc, curr) => acc + (curr.itemCount || 0), 0);
 

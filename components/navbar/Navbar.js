@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft } from "lucide-react";
+import { Menu, X, PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle } from "lucide-react";
 
-
-// Modal is only needed when the user clicks Create. Lazy-loading keeps it
-// out of the shared bundle that ships on every page.
-const CreateWheelModal = dynamic(
-  () => import("@components/CreateWheelModal"),
+const NotificationBell = dynamic(
+  () => import("@components/notifications/NotificationBell"),
   { ssr: false }
 );
 
@@ -29,14 +26,6 @@ const MobileSearchBar = dynamic(
 
 const Navbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-
-
-  const handleCreateClick = useCallback((event) => {
-    event.preventDefault();
-    setOpen(false);
-    setCreateModalOpen(true);
-  }, []);
 
   return (
     <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
@@ -81,13 +70,28 @@ const Navbar = ({ onToggleSidebar }) => {
 
           {/* RESTORED: Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-0.5">
-            <button
-              onClick={handleCreateClick}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-            >
-              <PlusCircle size={18} />
-              <span>Create</span>
-            </button>
+            {/* Create Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                <PlusCircle size={18} />
+                <span>Create</span>
+                <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200 opacity-70" />
+              </button>
+
+              <div className="absolute top-full left-0 pt-1 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-[opacity,visibility] duration-200 z-[70]">
+                <div className="bg-popover border border-border shadow-md rounded-xl p-1.5 flex flex-col">
+                  <Link href="/post/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
+                    <MessageCircle size={16} /> Post
+                  </Link>
+                  <Link href="/wheels/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
+                    <Disc3 size={16} /> Wheel
+                  </Link>
+                  <Link href="/lists/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
+                    <List size={16} /> List
+                  </Link>
+                </div>
+              </div>
+            </div>
 
             <Link
               href="/explore"
@@ -122,6 +126,7 @@ const Navbar = ({ onToggleSidebar }) => {
 
           {/* User Section & Hamburger */}
           <div className="flex items-center gap-3 relative z-[80]">
+             <NotificationBell />
              <UserInfo />
              <button
                 className="md:hidden p-2 text-muted-foreground hover:text-foreground"
@@ -159,9 +164,9 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
 
         <nav className="flex flex-col gap-3">
-          <button onClick={handleCreateClick} className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-md w-full hover:bg-primary/90 transition-colors">
+          <Link href="/wheels/create" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-md w-full hover:bg-primary/90 transition-colors">
          <PlusCircle size={22} /> {"Create New Wheel"}
-          </button>
+          </Link>
           <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
          <Compass className="text-primary" size={22} /> {"Explore"}
           </Link>
@@ -178,10 +183,7 @@ const Navbar = ({ onToggleSidebar }) => {
           </div>
         </nav>
       </div>
-      <CreateWheelModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-      />
+
     </nav>
   );
 };

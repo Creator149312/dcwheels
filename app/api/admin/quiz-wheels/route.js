@@ -16,7 +16,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import User from "@models/user";
 import Page from "@models/page";
+import mongoose from "mongoose";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "gauravsingh9314@gmail.com";
 
@@ -90,6 +92,13 @@ export async function POST(req) {
   if (existingPage)
     return NextResponse.json({ error: `Slug "${slug}" is already taken` }, { status: 409 });
 
+  // For admin-created wheels, find the admin user or use system user
+  let adminUserId = null;
+  const adminUser = await User.findOne({ email: "admin" }).select("_id").lean();
+  if (adminUser) {
+    adminUserId = adminUser._id;
+  }
+  
   const wheel = await Wheel.create({
     title: title.trim(),
     description: description?.trim() ?? "",
@@ -97,6 +106,7 @@ export async function POST(req) {
     wheelType: "quiz",
     tags: Array.isArray(tags) ? tags : [],
     createdBy: "admin",
+    ...(adminUserId ? { userId: adminUserId } : {}),
     wheelData: DEFAULT_WHEEL_DATA,
   });
 

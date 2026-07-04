@@ -1,9 +1,11 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import User from "@models/user";
 import { validateListDescription, validateListTitle } from "@utils/Validator";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import mongoose from "mongoose";
 
 // Strip base64 images from segment data before persisting to DB.
 // Blob URLs (https://...) are kept; data:image/... strings are removed.
@@ -30,6 +32,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const createdBy = session.user.email;
+    const authorName = session.user.name;
+    const authorHandle = session.user.username;
 
     const { title, description, data, wheelData, relatedTopics, tags, type } =
       await request.json();
@@ -42,11 +46,25 @@ export async function POST(request) {
     if (error.length === 0) {
       // console.log("Inside Processing and Trying to Create Wheel");
       await connectMongoDB();
+      
+      // Get userId from session (mongoId is set during auth callback)
+      let userId = null;
+      if (session.user.id && mongoose.Types.ObjectId.isValid(session.user.id)) {
+        userId = new mongoose.Types.ObjectId(session.user.id);
+      } else if (createdBy) {
+        // Fallback: lookup user by email
+        const user = await User.findOne({ email: createdBy }).select("_id").lean();
+        if (user) userId = user._id;
+      }
+      
       const creationData = await Wheel.create({
         title,
         description,
         data: sanitizeSegments(data),
         createdBy,
+        ...(userId ? { userId } : {}),
+        authorName,
+        authorHandle,
         wheelData,
         ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
         relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],

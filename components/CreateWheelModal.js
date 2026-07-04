@@ -68,11 +68,8 @@ export default function CreateWheelModal({ open, onClose }) {
 
     onClose();
 
-    if (currentPath === "/") {
-      window.location.reload();
-    } else {
-      router.push("/");
-    }
+    // Route to the wheel creation page
+    router.push("/wheels/create");
   };
 
   return (

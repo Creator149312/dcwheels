@@ -98,6 +98,7 @@ export async function PATCH(request, { params }) {
 }
 
 export async function GET(request, { params }) {
+  const { id } = params;
   await connectMongoDB();
   // .lean() returns a plain JS object instead of a hydrated Mongoose document.
   // Safe here because we only serialise to JSON — no mongoose instance methods used.

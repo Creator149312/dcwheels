@@ -42,6 +42,11 @@ export async function GET(req) {
       description: list.description,
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
+      isSystem: list.isSystem ?? false,
+      settings: {
+        sortBy: list.settings?.sortBy || "recently-saved",
+        visibility: list.settings?.visibility || "private",
+      },
       items: list.items.map((item) => ({
         type: item.type,
         word: item.word,
@@ -83,6 +88,15 @@ export async function POST(req) {
       return NextResponse.json(
         { error: "List name is required" },
         { status: 400 }
+      );
+    }
+
+    // Reserved system list names cannot be used for custom lists
+    const RESERVED_NAMES = ["Saved", "Favorites", "My Collection"];
+    if (RESERVED_NAMES.map(n => n.toLowerCase()).includes(name.trim().toLowerCase())) {
+      return NextResponse.json(
+        { error: `"${name.trim()}" is a reserved list name. Please choose a different name.` },
+        { status: 409 }
       );
     }
 

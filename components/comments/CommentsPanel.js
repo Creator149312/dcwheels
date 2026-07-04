@@ -10,6 +10,7 @@ export default function CommentsPanel({
   openLoginPrompt,
   currentUser,
   visible = false,
+  onCountChange,
 }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -97,6 +98,7 @@ export default function CommentsPanel({
     };
     mutationVersionRef.current += 1;
     setComments((prev) => [optimisticComment, ...prev]);
+    onCountChange?.((prev) => prev + 1);
     reset();
 
     try {
@@ -209,10 +211,45 @@ export default function CommentsPanel({
     }
   };
 
+  const handleDelete = async (commentId) => {
+    // Determine if it's a top-level comment or a reply
+    const isTopLevel = comments.some((c) => String(c._id) === String(commentId));
+    let repliesCount = 0;
+
+    if (isTopLevel) {
+      const target = comments.find((c) => String(c._id) === String(commentId));
+      repliesCount = target.replyCount || 0;
+      setComments((prev) => prev.filter((c) => String(c._id) !== String(commentId)));
+    } else {
+      setComments((prev) =>
+        prev.map((c) => ({
+          ...c,
+          replies: (c.replies || []).filter((r) => String(r._id) !== String(commentId)),
+          replyCount: c.replies?.some((r) => String(r._id) === String(commentId))
+            ? Math.max((c.replyCount || 1) - 1, 0)
+            : c.replyCount,
+        }))
+      );
+    }
+
+    // Update global count
+    onCountChange?.((prev) => Math.max(prev - 1 - repliesCount, 0));
+
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete comment");
+    } catch (err) {
+      console.error(err);
+      // Optional: re-fetch if failed, though UI already updated
+    }
+  };
+
   if (!visible) return null;
 
   return (
-    <div className="space-y-4" id="comments">
+    <div className="mt-2 rounded-xl border border-border/80 bg-card/60 p-3 sm:p-4 space-y-4" id="comments">
       <CommentForm
         onSubmit={handleAddComment}
         isLoggedIn={isLoggedIn}
@@ -222,11 +259,11 @@ export default function CommentsPanel({
       />
 
       {loading && comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground/90">
           Loading comments…
         </p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground/90">
           No comments yet.
         </p>
       ) : (
@@ -239,6 +276,7 @@ export default function CommentsPanel({
               isLoggedIn={isLoggedIn}
               onReply={handleReply}
               onEdit={handleEdit}
+              onDelete={handleDelete}
               fetchReplies={fetchReplies}
             />
           ))}

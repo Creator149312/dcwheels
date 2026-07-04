@@ -11,11 +11,12 @@ import {
 } from "@utils/Validator";
 
 function getQueryParams() {
-  if (typeof window === "undefined") return { type: null, id: null };
+  if (typeof window === "undefined") return { type: null, id: null, tag: null };
   const params = new URLSearchParams(window.location.search);
   return {
-    type: params.get("type"),
-    id: params.get("id"),
+    type: params.get("type") || params.get("cr_type"),
+    id: params.get("id") || params.get("cr_id"),
+    tag: params.get("tag"),
   };
 }
 
@@ -144,12 +145,12 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
 
-    const { id, type } = getQueryParams();
+    const { id, type, tag } = getQueryParams();
 
     // Merge topic sources:
     //   1. The save-modal's multi-select (`selectedTopics`) — user-picked
     //      from segment auto-detection.
-    //   2. The `?type=&id=` query string — preserves the "clicked Create
+    //   2. The `?type=&id=` or `?cr_type=&cr_id=` query string — preserves the "clicked Create
     //      Wheel from a TopicPage" flow.
     // Deduplicate by `${type}:${id}` so the same topic isn't stored twice.
     const topicKey = (t) => `${t.type}:${t.id}`;
@@ -174,6 +175,9 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
       ["anime", "movie", "game", "character", "custom"].includes(type)
     ) {
       const entry = { type, id: String(id) };
+      topicMap.set(topicKey(entry), entry);
+    } else if (tag) {
+      const entry = { type: "custom", id: String(tag) };
       topicMap.set(topicKey(entry), entry);
     }
 

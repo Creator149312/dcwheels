@@ -4,7 +4,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
 import Comment from "@models/comment";
 import User from "@models/user";
+import Post from "@models/post";
+import Wheel from "@models/wheel";
 import mongoose from "mongoose";
+import { createNotification } from "@/lib/notificationService";
+import { shadowBanUser } from "@lib/shadowBan";
+
+const URL_PATTERN = /https?:\/\/[^\s]+|www\.[^\s]+/i;
 
 // ✅ Create a new comment or reply
 export async function POST(req) {
@@ -28,6 +34,12 @@ export async function POST(req) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Link-drop guard: silently shadow-ban and still "succeed" so spambots
+    // don't know they've been caught
+    if (URL_PATTERN.test(text)) {
+      await shadowBanUser(user._id);
+    }
+
     const comment = await Comment.create({
       userId: user._id,
       entityType,
@@ -35,6 +47,71 @@ export async function POST(req) {
       text,
       parentCommentId: parentCommentId || null,
     });
+
+    // Update denormalized commentCount on Post or Wheel
+    try {
+      if (entityType === "post") {
+        await Post.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+      } else if (entityType === "wheel") {
+        await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+      }
+    } catch (countErr) {
+      console.error("Error updating comment count:", countErr);
+    }
+
+    try {
+      let recipientId = null;
+      let link = "";
+      let modelStr = "";
+
+      if (parentCommentId) {
+        // It's a REPLY to a comment
+        const parentComment = await Comment.findById(parentCommentId).select("userId").lean();
+        if (parentComment?.userId) {
+          recipientId = parentComment.userId;
+          link = entityType === "wheel" 
+            ? `/uwheels/${entityId}` // fallback, could fetch wheel for exact link
+            : `/post/${entityId}`;
+          modelStr = "Comment";
+        }
+      } else {
+        // It's a COMMENT on a Post or Wheel
+        if (entityType === "post") {
+          const post = await Post.findById(entityId).select("userId").lean();
+          if (post?.userId) {
+            recipientId = post.userId;
+            link = `/post/${entityId}`;
+            modelStr = "Post";
+          }
+        } else if (entityType === "wheel") {
+          const wheel = await Wheel.findById(entityId).select("createdBy urlEndpoint").lean();
+          if (wheel?.createdBy) {
+            // createdBy usually holds the email -> find the User ObjectId
+            const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
+            if (wheelCreator?._id) {
+              recipientId = wheelCreator._id;
+              // Link fallback
+              link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/uwheels/${entityId}`;
+              modelStr = "Wheel";
+            }
+          }
+        }
+      }
+
+      if (recipientId && String(recipientId) !== String(user._id)) {
+        await createNotification({
+          recipientId,
+          senderId: user._id,
+          type: parentCommentId ? "REPLY" : "COMMENT",
+          entityId: comment._id,
+          entityModel: modelStr,
+          message: `${session.user.name || "Someone"} ${parentCommentId ? "replied to your comment" : `commented on your ${modelStr.toLowerCase()}`}`,
+          link
+        });
+      }
+    } catch (notifErr) {
+      console.error("Error creating comment notification:", notifErr);
+    }
 
     const populated = await comment.populate("userId", "name avatar");
 

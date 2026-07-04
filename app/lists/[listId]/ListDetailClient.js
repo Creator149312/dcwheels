@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trash2, Pencil, Plus, Zap, X, Image as ImageIcon, Check } from "lucide-react";
+import { Trash2, Pencil, Plus, Zap, X, Image as ImageIcon, Check, Eye, EyeOff, ArrowUpDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createSegment } from "@utils/segmentUtils";
+import { sortListItems, getSortLabel, getVisibilityLabel } from "@lib/listSorting";
 
 // Lazy-loaded — EditListModal is only needed when owner clicks the pencil icon.
 const EditListModal = dynamic(() => import("@components/lists/EditListModal"), { ssr: false });
@@ -21,9 +22,16 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const { data: session, status } = useSession();
 
   const [list, setList] = useState(initialList);
-  const isFavorites = initialList?.name === "Favorites";
+  // System list if either isSystem flag is true OR systemKey exists (for legacy backward compat)
+  const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey;
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  // Settings state (sort and visibility)
+  const [sortBy, setSortBy] = useState(initialList?.settings?.sortBy || "recently-saved");
+  const [visibility, setVisibility] = useState(initialList?.settings?.visibility || "private");
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [shareLink, setShareLink] = useState("");
 
   // isOwner starts false (safe default for guests/cached pages).
   // Resolves client-side after session is known — keeps page ISR-cacheable.
@@ -101,6 +109,62 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     setEditModalOpen(false);
   }
 
+  // ✅ Update sort setting
+  async function updateSort(newSortBy) {
+    setSortBy(newSortBy);
+    setSettingsSaving(true);
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sortBy: newSortBy }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update local list settings
+        setList(prev => ({
+          ...prev,
+          settings: { ...prev.settings, sortBy: newSortBy }
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to update sort:", err);
+      setSortBy(sortBy); // revert
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  // ✅ Update visibility setting
+  async function updateVisibility(newVis) {
+    setVisibility(newVis);
+    setSettingsSaving(true);
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility: newVis }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update local list settings
+        setList(prev => ({
+          ...prev,
+          settings: { ...prev.settings, visibility: newVis }
+        }));
+        // Generate share link if going public
+        if (newVis === "public") {
+          setShareLink(`${window.location.origin}/lists/${listId}`);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update visibility:", err);
+      setVisibility(visibility); // revert
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
   // ✅ Spin this list on the home wheel
   function spinList() {
     const segments = list.items
@@ -146,7 +210,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     };
 
     localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
-    window.location.href = "/";
+    router.push("/wheels/create");
   }
 
   // ✅ Add new item(s)
@@ -304,18 +368,26 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       {/* ✅ Actions Menu (Owner Only) */}
       {isOwner && (
         <div className="absolute top-6 right-6 flex items-center gap-1" ref={listMenuRef}>
+          {/* Edit button - disabled for system lists */}
           <button
             onClick={() => setEditModalOpen(true)}
-            className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title="Edit List Details"
+            disabled={isSystemList}
+            title={isSystemList ? "This is a system list and cannot be edited" : "Edit List Details"}
+            className={`p-2 rounded-full transition-colors ${
+              isSystemList
+                ? "text-muted-foreground/40 cursor-not-allowed"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+            }`}
           >
             <Pencil size={18} />
           </button>
           
+          {/* Menu dropdown */}
           <div className="relative">
             <button
               onClick={() => setListMenuOpen((prev) => !prev)}
               className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors font-bold"
+              title="More options"
             >
               ⋮
             </button>
@@ -324,10 +396,11 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               <div className="absolute right-0 mt-2 bg-popover shadow-lg border border-border rounded-lg w-40 z-50 overflow-hidden">
                 <SharePopup url={`/lists/${listId}`} variant="simple" />
 
-                {!isFavorites && (
+                {!isSystemList && (
                   <button
                     onClick={deleteList}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm transition-colors border-t border-border"
+                    title="Delete this list"
                   >
                     <Trash2 className="h-4 w-4" /> Delete List
                   </button>
@@ -354,38 +427,126 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       )}
 
       {/* ✅ Header */}
-      <div className="flex items-center mb-6">
-        <div className="w-20 h-20 md:w-24 md:h-24 bg-muted flex items-center justify-center mr-4 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
-          {coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverImage} alt={`${list.name} cover`} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-muted-foreground text-3xl md:text-4xl font-black">
-              {list.name.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
+      <div className="mb-8">
+        <div className="flex items-start gap-4 md:gap-6">
+          {/* Cover Image */}
+          <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center rounded-2xl overflow-hidden border border-border shadow-md shrink-0">
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverImage} alt={`${list.name} cover`} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-5xl md:text-6xl font-black text-primary/40">
+                {list.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
 
-        <div className="flex-1 min-w-0 pr-4">
-          <h2 className="text-xl md:text-2xl font-black text-foreground truncate">
-            {list.name}
-          </h2>
-          <p className="text-xs font-semibold text-muted-foreground mt-0.5">
-            {list.items.length} item{list.items.length !== 1 ? 's' : ''}
-          </p>
-          {list.description && (
-            <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-              {list.description}
-            </p>
+          {/* Title + Meta */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h1 className="text-2xl md:text-3xl font-black text-foreground">
+                {list.name}
+              </h1>
+              {isSystemList && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+                  🔒 Locked
+                </span>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-semibold text-muted-foreground">
+                {list.items.length} {list.items.length === 1 ? "item" : "items"}
+              </p>
+              {list.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
+                  {list.description}
+                </p>
+              )}
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={spinList}
+              disabled={list.items.length === 0}
+              className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-sm font-bold rounded-xl shadow-md transition-all active:scale-95"
+            >
+              <Zap size={16} className="fill-current" />
+              Spin this List
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ✅ Controls Bar */}
+      <div className="mb-6 pb-4 border-b border-border">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          {/* Sort Control */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown size={16} className="text-muted-foreground" />
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort</label>
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => updateSort(e.target.value)}
+              disabled={settingsSaving || isSystemList}
+              title={isSystemList ? "System lists use default sorting" : "Choose how to sort items"}
+              className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                isSystemList
+                  ? "bg-muted/50 border-border text-muted-foreground cursor-not-allowed"
+                  : "bg-card border-border text-foreground hover:border-primary/50 cursor-pointer"
+              }`}
+            >
+              <option value="recently-saved">Recently Saved</option>
+              <option value="alphabetical">Alphabetical (A→Z)</option>
+              <option value="status">Status (Want → Done)</option>
+              <option value="entity-type">By Type</option>
+            </select>
+          </div>
+
+          {/* Visibility + Share Controls (Owner Only) */}
+          {isOwner && (
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
+              <button
+                onClick={() => !isSystemList && updateVisibility(visibility === "private" ? "public" : "private")}
+                disabled={settingsSaving || isSystemList}
+                title={isSystemList ? "System lists are always private" : `Click to make ${visibility === "public" ? "private" : "public"}`}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
+                  isSystemList
+                    ? "bg-muted/50 border-border text-muted-foreground cursor-not-allowed"
+                    : visibility === "public"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                }`}
+              >
+                {visibility === "public" ? (
+                  <>
+                    <Eye size={16} /> Public
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={16} /> Private
+                  </>
+                )}
+              </button>
+
+              {/* Share Link / Copied Feedback */}
+              {visibility === "public" && !isSystemList && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/lists/${listId}`);
+                    // Simple feedback - could be enhanced with toast
+                    alert("Share link copied!");
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"
+                  title="Copy share link"
+                >
+                  🔗 Copy Link
+                </button>
+              )}
+            </div>
           )}
-          <button
-            onClick={spinList}
-            disabled={list.items.length === 0}
-            className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-xs font-bold rounded-full shadow-sm transition-all active:scale-95"
-          >
-            <Zap size={14} className="fill-current" />
-            Spin this List
-          </button>
         </div>
       </div>
 
@@ -544,7 +705,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
             {list.items.length} item{list.items.length !== 1 ? "s" : ""}
           </p>
           <div className="space-y-2 pb-10">
-            {list.items.map((item, index) => {
+            {sortListItems(list.items, sortBy).map((item, index) => {
               const isEntity = item.type === "entity";
               const isWord = item.type === "word";
               const safeId = item._id || `missing-id-${index}`;
@@ -704,7 +865,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         list={list}
-        isFavorites={isFavorites}
+        isSystem={isSystemList}
         onSave={saveListEdits}
       />
     </div>

@@ -14,7 +14,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import User from "@models/user";
 import Page from "@models/page";
+import mongoose from "mongoose";
 
 async function requireAuth() {
   const session = await getServerSession(authOptions);
@@ -51,13 +53,30 @@ export async function GET(request) {
   await connectMongoDB();
 
   try {
+    // Get userId from session or lookup by email
+    let userId = null;
+    if (session.user.id && mongoose.Types.ObjectId.isValid(session.user.id)) {
+      userId = new mongoose.Types.ObjectId(session.user.id);
+    } else if (session.user.email) {
+      const user = await User.findOne({ email: session.user.email }).select("_id").lean();
+      if (user) userId = user._id;
+    }
+    
     // Find wheels created by user
-    const searchFilter = searchQuery
-      ? {
+    const searchFilter = userId
+      ? searchQuery
+        ? {
+            userId,
+            title: { $regex: searchQuery, $options: "i" },
+          }
+        : { userId }
+      : {
           createdBy: session.user.email,
-          title: { $regex: searchQuery, $options: "i" },
-        }
-      : { createdBy: session.user.email };
+          title: searchQuery ? { $regex: searchQuery, $options: "i" } : undefined,
+        };
+
+    // Remove undefined from filter
+    Object.keys(searchFilter).forEach(key => searchFilter[key] === undefined && delete searchFilter[key]);
 
     // Get total count
     const totalWheels = await Wheel.countDocuments(searchFilter);

@@ -18,6 +18,7 @@ export default function StatsBar({
     follow: true,
   },
   onSaveClick,
+  shareUrl,
   initialStats = null,
 }) {
   const openLoginPrompt = useLoginPrompt();
@@ -31,18 +32,6 @@ export default function StatsBar({
   useEffect(() => {
     if (!entityId) return;
     let ignore = false;
-
-    // Case 1: full SSR stats provided (dynamic page, logged-in or out) — skip fetch.
-    // Case 2: public SSR stats provided but user is logged in — refresh to get
-    //          reactedByUser state (resolves the cached-HTML flicker).
-    // Case 3: no SSR stats — fetch from scratch.
-    const needsUserRefresh =
-      initialStats &&
-      session?.user &&
-      !initialStats.reactedByUser?.like &&
-      show?.like;
-
-    if (initialStats && !needsUserRefresh) return;
 
     const userId = session?.user?.id;
     const userEmail = session?.user?.email;
@@ -59,7 +48,7 @@ export default function StatsBar({
       .finally(() => { if (!ignore) setLoading(false); });
 
     return () => { ignore = true; };
-  }, [entityType, entityId, session?.user, initialStats, show]);
+  }, [entityType, entityId, session?.user, show]);
 
   if (!entityId) return null;
 
@@ -89,7 +78,7 @@ export default function StatsBar({
       )}
 
       {/* Share pill */}
-      {show.share && <SharePopup variant="buttoned" />}
+      {show.share && <SharePopup variant="buttoned" url={shareUrl} />}
 
       {/* Save pill */}
       {show.save && (

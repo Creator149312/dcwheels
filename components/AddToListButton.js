@@ -7,34 +7,43 @@ function getListLabel() {
   return "Save to List";
 }
 
-// Status progression config — labels and styles for each state.
-const STATUS_CONFIG = {
-  want: {
-    label: "Saved ✓",
-    icon: "🔖",
-    next: "in-progress",
-    className: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
-  },
-  "in-progress": {
-    label: "In Progress",
-    icon: "▶",
-    next: "done",
-    className: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
-  },
-  done: {
-    label: "Done",
-    icon: "✓",
-    next: "want",
-    className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
-  },
+// Binary status config: want → done → want
+// Matches major platform patterns (Facebook, Instagram, Spotify)
+const getStatusConfig = (itemType) => {
+  let doneLabel = "Done";
+  if (itemType === "game") doneLabel = "Played";
+  if (itemType === "movie" || itemType === "tv" || itemType === "anime") doneLabel = "Watched";
+  if (itemType === "character") doneLabel = "Favourite";
+
+  return {
+    want: {
+      label: "Saved",
+      icon: "🔖",
+      next: "done",
+      className: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+    },
+    done: {
+      label: doneLabel,
+      icon: "✓",
+      next: "want",
+      className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
+    },
+    // BACKWARD COMPAT: Accept legacy "in-progress", map to "done"
+    "in-progress": {
+      label: doneLabel,
+      icon: "✓",
+      next: "want",
+      className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
+    },
+  };
 };
 
 /**
  * AddToListButton
  * ───────────────
  * A hero-friendly CTA that saves any content page item to the user's
- * unified lists. After saving, the button transforms into a status
- * selector (Want → In Progress → Done) without reopening any modal.
+ * unified "Saved" collection. After saving, the button transforms into a status
+ * selector (Want ↔ Done) without reopening any modal.
  *
  * Props
  *   type       – content type string ("movie" | "anime" | "game" | …)
@@ -43,7 +52,8 @@ const STATUS_CONFIG = {
  *   slug       – page slug (used to build the link inside the list)
  *   image      – cover URL for the list item thumbnail
  */
-export default function AddToListButton({ type, entityId, name, slug, image }) {
+export default function AddToListButton({ type, entityId, name, slug, image, initialSavedRef = null }) {
+  const STATUS_CONFIG = getStatusConfig(type);
   const [lists, setLists]                = useState([]);
   const [open, setOpen]                  = useState(false);
   const [creating, setCreating]          = useState(false);
@@ -51,7 +61,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
   const [savedPopup, setSavedPopup]      = useState({ show: false, listName: "" });
   // Once the user saves this item we store listId + itemId so status
   // updates can go straight to PATCH without re-fetching.
-  const [savedRef, setSavedRef]          = useState(null); // { listId, itemId, status }
+  const [savedRef, setSavedRef]          = useState(initialSavedRef); // { listId, itemId, status }
   const [statusUpdating, setStatusUpdating] = useState(false);
   const { status } = useSession();
   const openLoginPrompt = useLoginPrompt();
@@ -59,6 +69,10 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
   // On mount, check if the authenticated user already has this entity saved.
   // Uses the new by-entity endpoint so we don't scan all lists client-side.
   useEffect(() => {
+    if (initialSavedRef) {
+      setSavedRef(initialSavedRef);
+      return;
+    }
     if (status !== "authenticated" || !entityId) return;
     fetch(`/api/unifiedlist/by-entity?entityId=${entityId}`)
       .then((r) => r.json())
@@ -68,7 +82,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
         }
       })
       .catch(() => {}); // silent — degrades to "Add" button
-  }, [status, entityId]);
+  }, [status, entityId, initialSavedRef]);
 
   // Auto-dismiss the success toast after 3 s
   useEffect(() => {
@@ -137,7 +151,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     setSavedPopup({ show: true, listName: newList.name });
   }
 
-  // Cycle status: want → in-progress → done → want
+  // Cycle status: want ↔ done (binary system)
   async function cycleStatus() {
     if (!savedRef?.itemId || statusUpdating) return;
     const current = savedRef.status || "want";

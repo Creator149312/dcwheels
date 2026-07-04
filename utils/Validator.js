@@ -37,15 +37,18 @@ export const validatePasswordLength = (password) => {
 
 export const validateUsername = (username) => {
   let err = "";
-  // Check username length and allowed characters
-  if (!/^[a-zA-Z0-9_-]{3,16}$/.test(username)) {
-    err =
-      "Username can only contain characters (a-z, A-Z, 0-9), underscores (_), and hyphens (-)";
-  }
-
+  // Username handle pattern: 3-40 chars, alphanumeric + dots/underscores/hyphens
+  // BUT cannot start/end with special chars (., _, -)
   if (!username.trim()) {
     err = "Username is required";
+  } else if (username.length < 3) {
+    err = "Username must be at least 3 characters";
+  } else if (username.length > 40) {
+    err = "Username must be at most 40 characters";
+  } else if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$/.test(username)) {
+    err = "Username must start and end with a letter or number, and can contain dots, underscores, or hyphens in the middle.";
   }
+
   return err.length === 0 ? "" : err;
 };
 

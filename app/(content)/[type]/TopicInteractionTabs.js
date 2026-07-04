@@ -1,6 +1,9 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import TagSpaceClient from "@components/TagSpaceClient";
+import CreatePostTeaser from "@components/CreatePostTeaser";
 
 // Consistent section header: blue accent bar + title + optional action.
 function SectionHeader({ title, action }) {
@@ -15,8 +18,6 @@ function SectionHeader({ title, action }) {
   );
 }
 
-
-// Compare CTA: links to /vs with item A pre-filled from the current page (Task 4)
 function getCompareHref(type, title, coverUrl, slug) {
   const e = encodeURIComponent;
   const params = new URLSearchParams({ type, a: title });
@@ -25,14 +26,6 @@ function getCompareHref(type, title, coverUrl, slug) {
   return `/vs?${params.toString()}`;
 }
 
-// Section order:
-//   1. Anime Characters   — visual hook first (anime only)
-//   2. Picker Wheels      — SpinPapa's core feature; hidden when empty
-//
-// Community Votes (QuestionsPanel) and Quick Takes (ReviewsPanel) are
-// intentionally not rendered yet — the panels exist but the surrounding
-// UX is still being designed. When ready, re-add the imports + sections;
-// don't ship dead JSX in the meantime.
 export default function TopicInteractionTabs({
   type,
   pageId,
@@ -43,13 +36,13 @@ export default function TopicInteractionTabs({
   contentTags = [],
   taggedWheels = [],
   animeCharacters = [],
+  initialFeedItems = [],
+  initialFeedCursor = null,
 }) {
   return (
     <div className="space-y-12">
 
-      {/* ── 1. Anime Characters ──────────────────────────────────────────
-           Visual hook — portraits draw users in before they hit text-heavy
-           sections. Only rendered for anime with character data.           */}
+      {/* ── 1. Anime Characters ────────────────────────────────────────── */}
       {type === "anime" && animeCharacters.length > 0 && (
         <section>
           <SectionHeader title="👥 Characters" />
@@ -60,10 +53,7 @@ export default function TopicInteractionTabs({
             {animeCharacters.map((character) => (
               <a
                 key={character.id}
-                href={`/character/${character.id}-${character.name.full
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")
-                  .replace(/[^\w-]/g, "")}`}
+                href={`/character/${character.id}`}
                 className="group flex-shrink-0 flex flex-col items-center gap-2 hover:opacity-80 transition-opacity"
               >
                 <div className="relative w-24 h-32 bg-muted rounded-lg overflow-hidden">
@@ -84,80 +74,19 @@ export default function TopicInteractionTabs({
         </section>
       )}
 
-      {/* ── 2. Picker Wheels ──────────────────────────────────────────────
-           SpinPapa's core feature. Hidden when empty → replaced by a compact
-           CTA so users can create the first wheel for this content item.    */}
+      {/* ── 2. Unified Community Feed ────────────────────────────────────────────── */}
       <section>
-        <SectionHeader
-          title={`🎡 Picker Wheels${taggedWheels.length > 0 ? ` (${taggedWheels.length})` : ""}`}
+        <SectionHeader title="Community Feed" />
         
-        />
+        {/* Context-Aware Composer */}
+        <CreatePostTeaser defaultTag={contentSlug} className="mb-6" />
 
-        {taggedWheels.length === 0 ? (
-          /* Task 7: "Create a wheel" CTA when no wheels exist */
-          <div className="flex items-center gap-3 p-4 bg-muted/40 rounded-xl border border-border">
-            <span className="text-2xl">🎡</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">
-                No wheels for this {type} yet.
-              </p>
-              {contentTitle && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Be the first to create a spin wheel for {contentTitle}!
-                </p>
-              )}
-            </div>
-            {contentId && (
-              <a
-                href={`/?type=${type}&id=${contentId}`}
-                className="flex-shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90
-                           text-primary-foreground text-xs font-bold rounded-full transition-colors"
-              >
-                Create Wheel
-              </a>
-            )}
-          </div>
-        ) : (
-          <div
-            className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {taggedWheels.map((wheel) => (
-              <a
-                key={wheel._id}
-                href={`/uwheels/${wheel._id}`}
-                className="group w-44 flex-shrink-0 block bg-muted/40 hover:bg-accent border border-border hover:border-primary/50 rounded-xl overflow-hidden transition-colors"
-              >
-                <div className="relative w-full aspect-square bg-muted flex items-center justify-center overflow-hidden">
-                  {wheel.wheelPreview ? (
-                    <Image
-                      src={wheel.wheelPreview}
-                      alt={wheel.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 208px"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl mb-1">🎡</span>
-                      <span className="text-xs text-muted-foreground font-medium">No preview</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h3 className="text-sm font-semibold truncate mb-1 group-hover:text-primary transition-colors">
-                    {wheel.title}
-                  </h3>
-                  {wheel.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {wheel.description}
-                    </p>
-                  )}
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+        {/* TagSpaceClient wraps Wheels and Posts with filtering for this exact Slug! */}
+        <TagSpaceClient 
+          tagId={contentSlug} 
+          initialItems={initialFeedItems} 
+          initialNextCursor={initialFeedCursor} 
+        />
       </section>
 
     </div>

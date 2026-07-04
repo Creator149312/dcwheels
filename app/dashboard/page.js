@@ -14,28 +14,13 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  // Server-side guard: guests get bounced to /login with a callback so they
-  // land back on the dashboard after authenticating. Avoids the client-only
-  // "Log in" CTA flash and the wasted JS load for unauthenticated users.
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  
+  if (!session?.user?.name) {
     redirect("/login?callbackUrl=/dashboard");
   }
 
-  // SSR-prefetch the dashboard payload so the client doesn't need a
-  // JS -> useSession -> fetch waterfall before showing real data.
-  let initialData = null;
-  try {
-    const userId = await resolveUserIdFromSession(session);
-    if (userId) {
-      initialData = await buildDashboardData({
-        userId,
-        email: session.user.email,
-      });
-    }
-  } catch (err) {
-    console.error("Dashboard SSR prefetch failed:", err);
-  }
-
-  return <UserDashboard initialData={initialData} />;
+  // Retire Dashboard: Permanent redirect to the profile page
+  const targetUsername = session?.user?.username || session?.user?.name;
+  redirect(`/u/${encodeURIComponent(targetUsername.toLowerCase())}`);
 }

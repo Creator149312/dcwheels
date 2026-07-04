@@ -31,14 +31,14 @@ const ListItemSchema = new Schema(
     slug: { type: String, trim: true },
     image: { type: String },
 
-    // Tracks the user's progress with this entity.
-    // "want"        — added to list, not yet started
-    // "in-progress" — currently watching / playing
-    // "done"        — finished
+    // Tracks the user's progress with this entity (binary system).
+    // "want"  — saved, not yet consumed
+    // "done"  — consumed / completed
+    // Wheels don't use status (null is valid).
     // Default "want" keeps all existing documents valid without a migration.
     status: {
       type: String,
-      enum: ["want", "in-progress", "done"],
+      enum: ["want", "in-progress", "done"],  // ← Still accept legacy values for backward compat
       default: "want",
     },
 
@@ -76,20 +76,56 @@ const ListSchema = new Schema(
       type: [ListItemSchema],
       default: [],
       validate: {
-        validator: (arr) => arr.length <= 100,
-        message: "A list cannot exceed 100 items. Upgrade to Pro for higher limits.",
+        validator: function(arr) {
+          // System lists (e.g. My Library) have a much higher limit to act as a primary backlog.
+          // Custom user lists remain capped at 100 to encourage curation.
+          const limit = this.isSystem ? 2000 : 100;
+          return arr.length <= limit;
+        },
+        message: (props) => `List limit reached. System lists support up to 2000 items, custom lists 100.`,
       },
     },
 
     // When true, unauthenticated users can read this list via GET /api/unifiedlist/[id].
     // Defaults false so existing lists stay private until the owner opts in.
+    // DEPRECATED: Kept for backward compat. Use settings.visibility instead.
     isPublic: { type: Boolean, default: false },
+
+    // SYSTEM FLAGS (Optimization for TopicPages)
+    // Helps identify default lists regardless of their display name.
+    isSystem: { type: Boolean, default: false },
+    systemKey: { type: String, trim: true },
+
+    // List-level settings: sort order, visibility, etc.
+    // Applied to all lists (both system and custom)
+    settings: {
+      // Sort order for display
+      // "recently-saved" — newest items first
+      // "alphabetical"   — A→Z by name
+      // "status"         — want first, then done
+      // "entity-type"    — group by type
+      sortBy: {
+        type: String,
+        enum: ["recently-saved", "alphabetical", "status", "entity-type"],
+        default: "recently-saved",
+      },
+
+      // Visibility: who can see this list
+      // "private"  — only owner
+      // "public"   — anyone with link (public profile)
+      visibility: {
+        type: String,
+        enum: ["private", "public"],
+        default: "private",
+      },
+    },
   },
   { timestamps: true }
 );
 
-// Unique list name per user
+// Indexes
 ListSchema.index({ userId: 1, name: 1 }, { unique: true });
+ListSchema.index({ userId: 1, systemKey: 1 }); // Quick lookup for default lists
 
 // Powers GET /api/unifiedlist/by-entity — checks whether a user already has
 // a given entity saved in any of their lists. Without this, Mongo scans every

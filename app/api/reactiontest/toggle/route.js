@@ -6,6 +6,9 @@ import { connectMongoDB } from "@/lib/mongodb";
 import Reaction from "@models/reaction";
 import Wheel from "@models/wheel";
 import User from "@models/user";
+import Post from "@models/post";
+import Comment from "@models/comment";
+import { createNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 export async function PATCH(req) {
@@ -76,11 +79,59 @@ export async function PATCH(req) {
         reactionType,
       });
       if (reactionType === "like") likeCountDelta = 1;
+
+      // --- NOTIFICATION TRIGGER ---
+      if (reactionType === "like") {
+        try {
+          let recipientId = null;
+          let link = "";
+          let modelStr = "";
+
+          if (entityType === "post") {
+            const post = await Post.findById(entityObjectId).select("userId").lean();
+            if (post?.userId) {
+              recipientId = post.userId;
+              link = `/post/${entityId}`;
+              modelStr = "Post";
+            }
+          } else if (entityType === "wheel") {
+            const wheel = await Wheel.findById(entityObjectId).select("createdBy urlEndpoint").lean();
+            if (wheel?.createdBy) {
+              const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
+              if (wheelCreator?._id) {
+                recipientId = wheelCreator._id;
+                link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/uwheels/${entityId}`;
+                modelStr = "Wheel";
+              }
+            }
+          }
+
+          if (recipientId && String(recipientId) !== String(user._id)) {
+            await createNotification({
+              recipientId,
+              senderId: user._id,
+              type: "LIKE",
+              entityId: entityObjectId,
+              entityModel: modelStr,
+              message: `${session.user.name || "Someone"} liked your ${modelStr.toLowerCase()}`,
+              link
+            });
+          }
+        } catch (notifErr) {
+          console.error("Error creating like notification:", notifErr);
+        }
+      }
+      // -----------------------------
     }
 
-    // Update denormalized likeCount on Wheel
+    // Update denormalized likeCount on Wheel or Post
     if (entityType === "wheel" && likeCountDelta !== 0) {
       await Wheel.updateOne(
+        { _id: entityObjectId },
+        { $inc: { likeCount: likeCountDelta } }
+      );
+    } else if (entityType === "post" && likeCountDelta !== 0) {
+      await Post.updateOne(
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
@@ -106,7 +157,8 @@ export async function PATCH(req) {
       reactedByCurrentUser: !!reactedByCurrentUser,
     });
   } catch (err) {
-    console.error("Error toggling reaction:", err);
-    return NextResponse.json({ error: "Failed to toggle reaction" }, { status: 500 });
+    console.error("Error toggling reaction:", err.message);
+    console.error("Stack:", err.stack);
+    return NextResponse.json({ error: "Failed to toggle reaction", details: err.message }, { status: 500 });
   }
 }

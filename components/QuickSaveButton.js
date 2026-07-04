@@ -75,39 +75,25 @@ export default function QuickSaveButton({
         toast.success("Removed from Favorites");
       } else {
         // ── SAVE ───────────────────────────────────────────────────────
-        // 1. Find or create "Favorites" list
-        const listsRes = await fetch("/api/unifiedlist?slim=1");
-        const { lists = [] } = await listsRes.json();
-        let fav = lists.find((l) => l.name === "Favorites");
-
-        if (!fav) {
-          const createRes = await fetch("/api/unifiedlist", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: "Favorites", description: "My quick saves" }),
-          });
-          const { list } = await createRes.json();
-          fav = { id: list.id };
-        }
-
-        // 2. Add item to Favorites
-        const addRes = await fetch(`/api/unifiedlist/${fav.id}/items`, {
+        // Use the optimized quick-track endpoint:
+        // One request handles list lookup/creation and item insertion.
+        const res = await fetch("/api/unifiedlist/quick-track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            type: "entity",
             entityType,
             entityId: String(entityId),
             name: itemTitle || "Untitled",
             slug: itemSlug || String(entityId),
             image: itemImage || "",
+            status: "want", // Wheels default to 'want' status
           }),
         });
-        if (!addRes.ok) throw new Error();
-        const { list: updatedList } = await addRes.json();
-        const items = updatedList?.items || [];
-        const newItem = items[items.length - 1];
-        setSavedRef({ listId: fav.id, itemId: newItem?._id }); // optimistic confirm
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+        setSavedRef({ listId: data.listId, itemId: data.itemId }); 
         toast.success("Saved to Favorites!");
       }
     } catch {

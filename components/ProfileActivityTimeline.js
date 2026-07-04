@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Timer, MessageCircleQuestion, LayoutGrid } from "lucide-react";
+import { Timer, MessageCircleQuestion, LayoutGrid, MessageSquare } from "lucide-react";
 import { Disc3 } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
@@ -22,6 +22,7 @@ const DOT_COLOR = {
   spin:  "border-blue-500   bg-card  shadow-blue-500/20",
   wheel: "border-green-500  bg-card  shadow-green-500/20",
   ask:   "border-purple-500 bg-card  shadow-purple-500/20",
+  post:  "border-amber-500  bg-card  shadow-amber-500/20",
 };
 
 // ── Type badge ────────────────────────────────────────────────────────────
@@ -40,6 +41,11 @@ const TYPE_BADGE = {
     icon: <MessageCircleQuestion className="h-3 w-3" />,
     label: "Asked Community",
     cls: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300",
+  },
+  post: {
+    icon: <MessageSquare className="h-3 w-3" />,
+    label: "Posted",
+    cls: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
   },
 };
 
@@ -168,6 +174,62 @@ function AskCard({ data }) {
   );
 }
 
+function PostCard({ data }) {
+  const href = `/post/${data.id || data._id}`;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-foreground line-clamp-2">
+        {data.title}
+      </p>
+
+      {data.content && (
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {data.content}
+        </p>
+      )}
+
+      {/* Poll preview */}
+      {data.hasPoll && data.pollOptions?.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {data.pollOptions.slice(0, 2).map((opt) => (
+            <span
+              key={opt.id}
+              className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 rounded-full px-3 py-1"
+            >
+              {opt.text}
+            </span>
+          ))}
+          {data.pollOptions.length > 2 && (
+            <span className="text-xs text-gray-400">+{data.pollOptions.length - 2} more</span>
+          )}
+        </div>
+      )}
+
+      {/* Tags */}
+      {data.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {data.tags.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+      >
+        <MessageSquare className="h-3.5 w-3.5" /> View post
+      </Link>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ProfileActivityTimeline({ decodedName, activities = [] }) {
@@ -215,6 +277,7 @@ export default function ProfileActivityTimeline({ decodedName, activities = [] }
               {activity.type === "spin"  && <SpinCard  data={activity.data} />}
               {activity.type === "wheel" && <WheelCard data={activity.data} />}
               {activity.type === "ask"   && <AskCard   data={activity.data} />}
+              {activity.type === "post"  && <PostCard  data={activity.data} />}
             </div>
           </div>
         );
