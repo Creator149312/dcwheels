@@ -155,19 +155,25 @@ export default async function Home({ params }) {
 
       {/* Main Wheel Section */}
       <div className="relative">
-        <WheelWithInputContentEditable
-          newSegments={ensureArrayOfObjects(pageData.wheel.data)}
-          wheelPresetSettings={pageData.wheel.wheelData}
-          relatedWheelsSlot={
-            <Suspense fallback={<RelatedWheelsSkeleton />}>
-              <SuspendedRelatedWheels
-                tags={pageData.wheel.tags}
-                wheelId={wheelIdStr}
-              />
-            </Suspense>
+        <Suspense
+          fallback={
+            <div className="rounded-2xl bg-muted/50 border border-border w-full min-h-[30rem] animate-pulse" />
           }
-          wheelId={wheelIdStr}
-        />
+        >
+          <WheelWithInputContentEditable
+            newSegments={ensureArrayOfObjects(pageData.wheel.data)}
+            wheelPresetSettings={pageData.wheel.wheelData}
+            relatedWheelsSlot={
+              <Suspense fallback={<RelatedWheelsSkeleton />}>
+                <SuspendedRelatedWheels
+                  tags={pageData.wheel.tags}
+                  wheelId={wheelIdStr}
+                />
+              </Suspense>
+            }
+            wheelId={wheelIdStr}
+          />
+        </Suspense>
       </div>
 
       {/* h1 title — Server Component, arrives in first HTML flush (LCP) */}
