@@ -11,6 +11,7 @@ import { AniList } from "@spkrbox/anilist";
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
+import { getFeedItems } from "@/lib/feedService";
 import { slugify } from "@utils/HelperFunctions";
 import {
   extractId,
@@ -21,6 +22,7 @@ import {
   fetchTaggedWheels,
   rewriteAndPersist,
 } from "@lib/topicPage";
+import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
 // Anime metadata is very stable — bump to 7 days.
@@ -146,7 +148,7 @@ async function getOrCreateAnimePage(relatedId) {
     }
   }
 
-  return pageDoc?.toObject?.() || pageDoc || null;
+  return pageDoc ? JSON.parse(JSON.stringify(pageDoc)) : null;
 }
 
 const getCachedAnimePage = cache(async (relatedId) => {
@@ -179,25 +181,34 @@ export default async function AnimePage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  const [extras, relatedPages, taggedWheels, animeCharacters] =
+  const [extras, relatedPages, taggedWheels, animeCharacters, feedData] =
     await Promise.all([
       fetchAnimeExtras(relatedId),
       getRelatedPages(pageDoc.tags || [], pageDoc._id),
       fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "anime"),
       fetchAnimeCharacters(relatedId),
+      getFeedItems({ 
+        type: "anime", 
+        externalId: String(relatedId),
+        limit: 9  // Request limit+1 to know if there are more items
+      }),
     ]);
 
   return (
-    <TopicPageLayout
-      type="anime"
-      pageDoc={pageDoc}
-      extras={extras}
-      relatedPages={relatedPages}
-      taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-      animeCharacters={animeCharacters}
-      displayTitle={displayTitle}
-      affiliateLinks={buildAffiliateLinks("anime", displayTitle)}
-      relatedId={relatedId}
-    />
+    <TopicPageContentWrapper>
+      <TopicPageLayout
+        type="anime"
+        pageDoc={pageDoc}
+        extras={extras}
+        relatedPages={JSON.parse(JSON.stringify(relatedPages))}
+        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+        animeCharacters={animeCharacters}
+        displayTitle={displayTitle}
+        affiliateLinks={buildAffiliateLinks("anime", displayTitle)}
+        relatedId={relatedId}
+        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
+        initialCursor={feedData.length > 8 ? JSON.parse(JSON.stringify(feedData[7].createdAt)) : null}
+      />
+    </TopicPageContentWrapper>
   );
 }

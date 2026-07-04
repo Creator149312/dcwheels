@@ -59,7 +59,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Google user avatars — shown immediately in Navbar on every page.
             Preconnecting eliminates the TLS handshake cost from the first

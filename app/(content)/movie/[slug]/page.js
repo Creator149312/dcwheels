@@ -10,8 +10,8 @@
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
-import { getTopicAsks } from "@lib/askStories";
 import { slugify } from "@utils/HelperFunctions";
+import { getFeedItems } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
@@ -21,6 +21,7 @@ import {
   fetchTaggedWheels,
   rewriteAndPersist,
 } from "@lib/topicPage";
+import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
 export const revalidate = 86400; // 1 day
@@ -77,6 +78,23 @@ async function fetchMovieExtras(movieId) {
   }
 }
 
+async function fetchMovieCharacters(movieId) {
+  const apiKey = process.env.TMDB_API_KEY;
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${apiKey}`,
+      { next: { revalidate: 86400 } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.cast || [])
+      .slice(0, 12)
+      .filter((c) => c.profile_path && c.name);
+  } catch {
+    return [];
+  }
+}
+
 // ---------------------------------------------------------------------------
 // DB upsert (movie-only branch, no type switching)
 // ---------------------------------------------------------------------------
@@ -124,7 +142,7 @@ async function getOrCreateMoviePage(relatedId) {
     }
   }
 
-  return pageDoc?.toObject?.() || pageDoc || null;
+  return pageDoc ? JSON.parse(JSON.stringify(pageDoc)) : null;
 }
 
 // React.cache() deduplicates between generateMetadata and the page body.
@@ -158,25 +176,33 @@ export default async function MoviePage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  const [extras, relatedPages, taggedWheels, topicAsks] = await Promise.all([
+  const [extras, relatedPages, taggedWheels, movieCharacters, feedData] = await Promise.all([
     fetchMovieExtras(relatedId),
     getRelatedPages(pageDoc.tags || [], pageDoc._id),
     fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "movie"),
-    getTopicAsks("movie", relatedId, pageDoc.tags || [], 5, pageDoc._id),
+    fetchMovieCharacters(relatedId),
+    getFeedItems({ 
+      type: "movie", 
+      externalId: String(relatedId),
+      limit: 9 
+    }),
   ]);
 
   return (
-    <TopicPageLayout
-      type="movie"
-      pageDoc={pageDoc}
-      extras={extras}
-      relatedPages={relatedPages}
-      taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-      animeCharacters={[]}
-      topicAsks={JSON.parse(JSON.stringify(topicAsks))}
-      displayTitle={displayTitle}
-      affiliateLinks={buildAffiliateLinks("movie", displayTitle)}
-      relatedId={relatedId}
-    />
+    <TopicPageContentWrapper>
+      <TopicPageLayout
+        type="movie"
+        pageDoc={pageDoc}
+        extras={extras}
+        relatedPages={JSON.parse(JSON.stringify(relatedPages))}
+        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+        animeCharacters={[]} // Cast carousel disabled for movies for now
+        displayTitle={displayTitle}
+        affiliateLinks={buildAffiliateLinks("movie", displayTitle)}
+        relatedId={relatedId}
+        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
+        initialCursor={feedData.length > 8 ? JSON.parse(JSON.stringify(feedData[7].createdAt)) : null}
+      />
+    </TopicPageContentWrapper>
   );
 }

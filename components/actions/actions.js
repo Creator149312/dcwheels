@@ -2,7 +2,7 @@
 import { getServerSession } from "next-auth";
 import { connectMongoDB } from "@lib/mongodb";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import User from "@models/user";
+import User, { RESERVED_USERNAMES } from "@models/user";
 import EmailVerificationToken from "@models/emailverificationtoken";
 import PasswordReset from "@models/passwordreset";
 import bcrypt from "bcryptjs";
@@ -15,7 +15,6 @@ import {
   validateEmail,
 } from "@utils/Validator";
 import Wheel from "@models/wheel";
-import AskDilemma from "@models/askDilemma";
 import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
@@ -29,6 +28,7 @@ import Follow from "@models/follow";
 import Comment from "@models/comment";
 import WheelAnalytics from "@models/wheelAnalytics";
 import Tag from "@models/tag";
+import Post from "@models/post";
 import apiConfig from "@utils/ApiUrlConfig";
 import { OpenAI } from "openai";
 import { extractTopSegments } from "@lib/wheelAnalytics";
@@ -47,9 +47,9 @@ export const updateNewPassword = async (formData) => {
   // previous implementation overwrote `errorData.error` on each line, so a
   // bad currentPassword or newPassword was silently discarded if the
   // retypeNewPassword check happened to pass, and vice versa.
-  const current = formData.get("currentPassword");
-  const next = formData.get("newPassword");
-  const retype = formData.get("retypeNewPassword");
+  const current = formData instanceof FormData ? formData.get("currentPassword") : formData.currentPassword;
+  const next = formData instanceof FormData ? formData.get("newPassword") : formData.newPassword;
+  const retype = formData instanceof FormData ? formData.get("retypeNewPassword") : formData.retypeNewPassword;
 
   errorData.error =
     validatePassword(current) ||
@@ -215,9 +215,13 @@ const sendPasswordResetLinkEmail = async (email, token) => {
 export const registerUser = async (formData) => {
   let errorData = { error: "" };
 
-  let vu = validateUsername(formData.get("username"));
-  let ve = validateEmail(formData.get("email"));
-  let vp = validatePassword(formData.get("password"));
+  const usernameVal = formData instanceof FormData ? formData.get("username") : formData.username;
+  const emailVal = formData instanceof FormData ? formData.get("email") : formData.email;
+  const passwordVal = formData instanceof FormData ? formData.get("password") : formData.password;
+
+  let vu = validateUsername(usernameVal);
+  let ve = validateEmail(emailVal);
+  let vp = validatePassword(passwordVal);
 
   if (vu.length !== 0) errorData.error = vu;
   if (ve.length !== 0) errorData.error = ve;
@@ -225,52 +229,75 @@ export const registerUser = async (formData) => {
 
   try {
     if (errorData.error.length !== 0) {
-      return { error: errorData };
+      return { error: errorData.error };
     }
 
     await connectMongoDB();
 
-    let email = formData.get("email");
-    let name = formData.get("username");
-    let password = formData.get("password");
+    const email = emailVal;
+    const rawUsername = usernameVal;
+    const password = passwordVal;
 
+    // Standardize handle from username (lowercase, trim, alphanumeric)
+    const handle = rawUsername.toLowerCase().trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_.-]/g, "");
+
+    // 1. Check against reserved handles
+    if (RESERVED_USERNAMES.has(handle)) {
+      return {
+        error: "This username is reserved. Please choose another.",
+      };
+    }
+
+    // 2. Check for existing email
     const user = await User.findOne({ email }).select("_id");
-    const userName = await User.findOne({ name }).select("_id");
-
     if (user) {
       return {
-        error: "User already exists!",
+        error: "User with this email already exists!",
       };
-    } else if (userName) {
+    }
+
+    // 3. Check for existing handle or name
+    // We check both the username field and the display name field for collisions.
+    const userNameTaken = await User.findOne({ 
+      $or: [
+        { username: handle },
+        { name: new RegExp(`^${handle}$`, "i") }
+      ]
+    }).select("_id");
+
+    if (userNameTaken) {
       return {
         error: "Username is already taken!",
       };
-    } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      let res = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        authMethod: "emailPassword",
-      });
-
-      let timeNow = new Date();
-      // let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000);
-      let expiringTime = new Date(timeNow.getTime() + 2 * 24 * 60 * 60 * 1000); //2 days after registration email is sent
-
-      //TODO: send Email for verification
-      let token = uuid4(); // we want a unique token of 16 characters
-
-      await EmailVerificationToken.create({
-        email,
-        token,
-        expires: expiringTime,
-      });
-
-      await sendAccountVerificationEmail(email, token);
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({
+      name: rawUsername, // use raw as display name
+      username: handle,  // use normalized as handle
+      email,
+      password: hashedPassword,
+      authMethod: "emailPassword",
+    });
+
+    let timeNow = new Date();
+    let expiringTime = new Date(timeNow.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days
+
+    let token = uuid4(); 
+
+    await EmailVerificationToken.create({
+      email,
+      token,
+      expires: expiringTime,
+    });
+
+    await sendAccountVerificationEmail(email, token);
+    return { success: true };
   } catch (error) {
-    return { error: "Error Registering a User" };
+    console.error("Registration Error:", error);
+    return { error: "Error Registering User" };
   }
 };
 
@@ -414,7 +441,9 @@ export async function getPageDataBySlug(slug) {
         "wheel.tags": 1,
         "wheel.wheelPreview": 1,
         "wheel.createdBy": 1,
+        "wheel.authorHandle": 1,
         "wheel.createdAt": 1,
+        "wheel.isPublic": 1,
       },
     },
   ]);
@@ -435,7 +464,7 @@ export async function getWheelById(wheelId) {
   // isPublic, likeCount) that /uwheels/[wheelId] never renders.
   return Wheel.findOne({ _id: wheelId })
     .select(
-      "title description data wheelData tags wheelPreview createdBy createdAt wheelType"
+      "title description data wheelData tags wheelPreview createdBy authorHandle createdAt wheelType isPublic"
     )
     .lean();
 }
@@ -472,6 +501,119 @@ export async function resolveTagSlug(raw) {
   return { canonical: normalized, tagDoc: null };
 }
 
+export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {}) {
+  if (!tag || typeof tag !== "string") return [];
+  try {
+    await connectMongoDB();
+
+    // tag is already the canonical slug (resolved by the page before calling here)
+    const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+
+    const postMatch = {
+      tags: tag,
+      isPublic: true,
+      shadowBanned: { $ne: true },
+      isDeleted: { $ne: true },
+    };
+    const wheelMatch = { tags: tag };
+
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      postMatch.createdAt = { $lt: cursorDate };
+      wheelMatch.createdAt = { $lt: cursorDate };
+    }
+
+    const items = await Post.aggregate([
+      // ── 1. Posts that match the tag ──────────────────────────────────────
+      { $match: postMatch },
+      {
+        $project: {
+          _docType: { $literal: "post" },
+          userId: 1,
+          title: 1, content: 1, authorName: 1, authorImage: 1,
+          createdAt: 1, image: 1, hasPoll: 1, pollOptions: 1,
+          tags: 1, likeCount: 1, commentCount: 1, contentRef: 1,
+        },
+      },
+      // ── 2. Wheels that match the tag ─────────────────────────────────────
+      {
+        $unionWith: {
+          coll: "wheels",
+          pipeline: [
+            { $match: wheelMatch },
+            {
+              $project: {
+                _docType: { $literal: "wheel" },
+                title: 1, description: 1, authorName: 1,
+                authorProfileImage: 1, createdAt: 1,
+                wheelPreview: 1, tags: 1,
+              },
+            },
+          ],
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $limit: safeLimit + 1 },
+    ]);
+
+    const postUserIds = [...new Set(
+      items
+        .filter((doc) => doc._docType === "post" && doc.userId)
+        .map((doc) => String(doc.userId))
+    )];
+    const users = postUserIds.length
+      ? await User.find({ _id: { $in: postUserIds } }).select("name").lean()
+      : [];
+    const nameById = new Map(users.map((u) => [String(u._id), u.name || "Community"]));
+
+    return items.map((doc) => {
+      const docType = doc._docType; // reliably "post" or "wheel"
+      const base = {
+        id: String(doc._id),
+        _id: String(doc._id),
+        docType,
+        title: doc.title || "",
+        authorName: doc.authorName || "Community",
+        createdAt: doc.createdAt instanceof Date
+          ? doc.createdAt.toISOString()
+          : String(doc.createdAt || ""),
+        tags: doc.tags || [],
+      };
+
+      if (docType === "post") {
+        return {
+          ...base,
+          userId: doc.userId ? String(doc.userId) : null,
+          content: doc.content || "",
+          authorName: doc.authorName || nameById.get(String(doc.userId)) || "Community",
+          authorImage: doc.authorImage || null,
+          hasPoll: doc.hasPoll || false,
+          pollOptions: (doc.pollOptions || []).map((o) => ({
+            _id: String(o._id),
+            text: o.text || "",
+            voteCount: o.voteCount || 0,
+          })),
+          likeCount: doc.likeCount || 0,
+          commentCount: doc.commentCount || 0,
+          image: doc.image || null,
+          contentRef: doc.contentRef || null,
+        };
+      }
+
+      // wheel
+      return {
+        ...base,
+        description: doc.description || "",
+        authorProfileImage: doc.authorProfileImage || null,
+        wheelPreview: doc.wheelPreview || "",
+      };
+    });
+  } catch (err) {
+    console.error("[getUnifiedTagFeed] error:", err);
+    return [];
+  }
+}
+
 export async function getWheelsByTag(tag, { limit = 20, skip = 0 } = {}) {
   if (!tag || typeof tag !== "string") return [];
   await connectMongoDB();
@@ -496,12 +638,13 @@ export async function getAsksByTag(tag, { limit = 12, skip = 0 } = {}) {
 
   const { canonical } = await resolveTagSlug(tag);
 
-  return AskDilemma.find({
+  return Post.find({
     tags: canonical,
-    status: "active",
-    expiresAt: { $gt: new Date() },
+    hasPoll: true,
+    isPublic: true,
+    isDeleted: { $ne: true },
   })
-    .select("question options userId createdAt expiresAt tags")
+    .select("content pollOptions userId createdAt tags")
     .sort({ createdAt: -1 })
     .skip(Math.max(0, parseInt(skip, 10) || 0))
     .limit(Math.max(1, Math.min(50, parseInt(limit, 10) || 12)))
@@ -523,10 +666,11 @@ export async function getTagSpaceStats(tag) {
   const { canonical, tagDoc } = await resolveTagSlug(tag);
   const [wheelCount, askCount] = await Promise.all([
     Wheel.countDocuments({ tags: canonical }),
-    AskDilemma.countDocuments({
+    Post.countDocuments({
       tags: canonical,
-      status: "active",
-      expiresAt: { $gt: new Date() },
+      isPublic: true,
+      shadowBanned: { $ne: true },
+      isDeleted: { $ne: true },
     }),
   ]);
   return { wheelCount, askCount, tagDoc };
@@ -681,7 +825,7 @@ export async function storeWheelDataToDatabase(initialJSONData) {
  * @param {string} params.entityId   - ObjectId string
  */
 
-export async function getContentStats({ entityType, entityId, show, userEmail, userId: passedUserId }) {
+export async function getContentStats({ entityType, entityId, show, userEmail, userId: passedUserId, knownCounts }) {
   await connectMongoDB();
 
   const id = mongoose.Types.ObjectId.isValid(entityId)
@@ -718,11 +862,15 @@ export async function getContentStats({ entityType, entityId, show, userEmail, u
   const queryKeys = [];
 
   if (show?.like) {
-    // Use countDocuments instead of aggregate — much cheaper with compound index
-    queries.push(
-      Reaction.countDocuments({ entityType, entityId: id, reactionType: "like" })
-    );
-    queryKeys.push("likeCount");
+    // Skip countDocuments when the caller already has the denormalized count
+    // (e.g. PostCard passes likeCount straight from the post document).
+    // This eliminates one DB round-trip per feed card on the global feed.
+    if (knownCounts?.like == null) {
+      queries.push(
+        Reaction.countDocuments({ entityType, entityId: id, reactionType: "like" })
+      );
+      queryKeys.push("likeCount");
+    }
 
     if (userId) {
       queries.push(
@@ -757,7 +905,8 @@ export async function getContentStats({ entityType, entityId, show, userEmail, u
   const result = {};
 
   if (show?.like) {
-    result.reactions = { like: resultMap.likeCount || 0 };
+    // Use the known count if supplied, otherwise use the freshly queried count.
+    result.reactions = { like: knownCounts?.like ?? resultMap.likeCount ?? 0 };
     result.reactedByUser = {
       like: !!resultMap.userReact,
     };

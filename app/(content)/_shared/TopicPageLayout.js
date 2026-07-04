@@ -11,12 +11,15 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import TopicInteractionTabs from "@app/(content)/[type]/TopicInteractionTabs";
 import TrailerPlayer from "@app/(content)/[type]/TrailerPlayer";
 import WorthItVote from "@components/WorthItVote";
-import AddToListButton from "@components/AddToListButton";
-import SpinHistoryBadge from "@components/SpinHistoryBadge";
+import EntityTrackingBar from "@components/EntityTrackingBar";
 import DoneNudge from "@components/DoneNudge";
+import InfiniteFeedStream from "@components/feed/InfiniteFeedStream";
+import CreatePostTeaser from "@components/CreatePostTeaser";
+import CharacterCarousel from "@components/CharacterCarousel";
+import ExpandableDescription from "@components/ExpandableDescription";
+import TopicCreateFAB from "@components/TopicCreateFAB";
 
 const AdaptiveLeaderBoardAds = dynamic(
   () => import("@components/ads/AdaptiveLeaderBoardAds"),
@@ -116,7 +119,7 @@ function MetaPills({ type, pageDoc }) {
   );
 }
 
-export default function TopicPageLayout({
+export default async function TopicPageLayout({
   type,
   pageDoc,
   extras,
@@ -126,14 +129,26 @@ export default function TopicPageLayout({
   displayTitle,
   affiliateLinks,
   relatedId,
+  initialFeed = [],
+  initialCursor = null,
+  tag = null,
 }) {
   const streaming = extras?.streaming ?? [];
+
+  const totalVotes =
+    (pageDoc.worthIt?.yes ?? 0) +
+    (pageDoc.worthIt?.no ?? 0) +
+    (pageDoc.worthIt?.meh ?? 0);
+  // Consensus percent ignores 'meh' for the recommendation signal
+  const consensusVotes = (pageDoc.worthIt?.yes ?? 0) + (pageDoc.worthIt?.no ?? 0);
+  const worthItPercent =
+    consensusVotes > 0 ? Math.round((pageDoc.worthIt.yes / consensusVotes) * 100) : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
 
       {/* ── Mobile hero (< sm) ────────────────────────────────────────────── */}
-      <div className="sm:hidden px-4 pt-6 pb-6">
+      <div className="sm:hidden px-2 pt-6 pb-6">
 
         {/* Row 1: poster + title / CTA */}
         <div className="flex gap-4 items-start">
@@ -149,10 +164,12 @@ export default function TopicPageLayout({
             />
           )}
           <div className="flex flex-col gap-3 min-w-0 pt-1">
-            <h1 className="text-xl font-bold leading-tight text-foreground">
-              {displayTitle}
-            </h1>
-            <AddToListButton
+            <div className="flex flex-col gap-1.5">
+              <h1 className="text-xl font-bold leading-tight text-foreground">
+                {displayTitle}
+              </h1>
+            </div>
+            <EntityTrackingBar
               type={type}
               entityId={String(pageDoc._id)}
               name={displayTitle}
@@ -166,9 +183,17 @@ export default function TopicPageLayout({
         <MetaPills type={type} pageDoc={pageDoc} />
 
         {/* Row 3: description */}
-        <p className="text-sm text-muted-foreground leading-relaxed mt-4 line-clamp-3">
-          {pageDoc.description}
-        </p>
+        <ExpandableDescription description={pageDoc.description} />
+
+        {/* Row 4: Worth It Vote */}
+        <div className="mt-4 p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <WorthItVote
+            topicPageId={String(pageDoc._id)}
+            type={type}
+            initialWorthIt={pageDoc.worthIt}
+            initialRating={pageDoc.rating}
+          />
+        </div>
 
         {/* Row 4: Worth It? vote */}
         <div className="mt-5">
@@ -176,8 +201,8 @@ export default function TopicPageLayout({
           <WorthItVote
             topicPageId={String(pageDoc._id)}
             type={type}
-            initialYes={pageDoc.worthIt?.yes ?? 0}
-            initialNo={pageDoc.worthIt?.no ?? 0}
+            initialWorthIt={pageDoc.worthIt}
+            initialRating={pageDoc.rating}
           />
         </div>
 
@@ -189,153 +214,231 @@ export default function TopicPageLayout({
         />
       </div>
 
-      {/* ── Desktop hero (sm+) ───────────────────────────────────────────── */}
-      <div className="hidden sm:block max-w-5xl mx-auto px-6 pt-10 pb-12">
-        <div className="flex gap-10 items-start">
+      {/* ── Desktop hero (sm+) - 12 Column Grid Layout ─────────────────── */}
+      <div className="hidden sm:block max-w-7xl mx-auto px-4 pt-4 pb-6">
+        <div className="grid grid-cols-12 gap-6">
 
-          {/* Poster */}
+          {/* Left: Poster - 3 columns */}
           {pageDoc.cover && (
-            <Image
-              src={pageDoc.cover}
-              alt={displayTitle}
-              width={208}
-              height={277}
-              priority
-              sizes="208px"
-              className="w-52 flex-shrink-0 rounded-xl shadow-lg aspect-[3/4] object-cover"
-            />
+            <div className="col-span-3">
+              <Image
+                src={pageDoc.cover}
+                alt={displayTitle}
+                width={208}
+                height={277}
+                priority
+                sizes="208px"
+                className="w-full rounded-xl shadow-lg aspect-[3/4] object-cover"
+              />
+            </div>
           )}
 
-          {/* Info column */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold leading-tight text-foreground mb-4">
-              {displayTitle}
-            </h1>
+          {/* Center: Info column - 6 columns */}
+          <div className="col-span-6">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <h1 className="text-3xl font-bold leading-tight text-foreground">
+                {displayTitle}
+              </h1>
+            </div>
 
-            <AddToListButton
-              type={type}
-              entityId={String(pageDoc._id)}
-              name={displayTitle}
-              slug={pageDoc.slug}
-              image={pageDoc.cover}
-            />
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <EntityTrackingBar
+                type={type}
+                entityId={String(pageDoc._id)}
+                name={displayTitle}
+                slug={pageDoc.slug}
+                image={pageDoc.cover}
+              />
+            </div>
 
             <MetaPills type={type} pageDoc={pageDoc} />
 
-            <p className="text-sm text-muted-foreground leading-relaxed mt-4 mb-5">
-              {pageDoc.description}
-            </p>
+            <ExpandableDescription description={pageDoc.description} />
 
             <DoneNudge entityId={String(pageDoc._id)} />
             <WorthItVote
               topicPageId={String(pageDoc._id)}
               type={type}
-              initialYes={pageDoc.worthIt?.yes ?? 0}
-              initialNo={pageDoc.worthIt?.no ?? 0}
+              initialWorthIt={pageDoc.worthIt}
+              initialRating={pageDoc.rating}
             />
+          </div>
 
-            <StreamingLinks
-              type={type}
-              streaming={streaming}
-              affiliateLinks={affiliateLinks}
-            />
+          {/* Right: Where to Watch + You Might Also Like - 3 columns */}
+          <div className="col-span-3 space-y-6">
+            {/* Where to Watch / Available On */}
+            {(streaming?.length > 0 || affiliateLinks?.length > 0) && (
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/40">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-foreground">
+                    {type === "game" ? "Available on" : "Where to watch"}
+                  </p>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4 text-muted-foreground"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+
+                {/* Provider List - Vertical Stack for better visibility */}
+                <div className="space-y-4">
+                  {/* Main featured provider */}
+                  {(streaming[0] || affiliateLinks[0]) && (
+                    <a
+                      href={(streaming[0]?.url || affiliateLinks[0]?.url) || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 w-full group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                        {streaming[0]?.logo_path || streaming[0]?.store?.domain ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={
+                              streaming[0]?.logo_path
+                                ? `https://image.tmdb.org/t/p/w92${streaming[0].logo_path}`
+                                : `https://www.google.com/s2/favicons?domain=${streaming[0]?.store?.domain}&sz=64`
+                            }
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg">🎬</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 border-b border-border/40 pb-2">
+                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                          {streaming[0]?.provider_name ||
+                            streaming[0]?.site ||
+                            streaming[0]?.store?.name ||
+                            affiliateLinks[0]?.name ||
+                            "Watch Now"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {affiliateLinks[0] ? "Sponsored" : "Stream Now"}
+                        </p>
+                      </div>
+                    </a>
+                  )}
+
+                  {/* All other providers as a clean grid of icons */}
+                  {(streaming.length + affiliateLinks.length > 1) && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 pl-1">
+                        Also available on:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {/* Combine remaining streaming and affiliate links */}
+                        {[...streaming.slice(1), ...affiliateLinks.slice(streaming[0] ? 0 : 1)].map((provider, i) => (
+                          <a
+                            key={i}
+                            href={provider.url || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-lg bg-muted border border-border/40 flex items-center justify-center overflow-hidden hover:bg-accent hover:border-primary/30 transition-all group"
+                            title={provider.provider_name || provider.site || provider.store?.name || provider.name}
+                          >
+                            {(provider.logo_path || provider.store?.domain) ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={
+                                  provider.logo_path
+                                    ? `https://image.tmdb.org/t/p/w45${provider.logo_path}`
+                                    : `https://www.google.com/s2/favicons?domain=${provider.store?.domain || provider.url}&sz=32`
+                                }
+                                alt=""
+                                className="w-6 h-6 rounded-md object-cover group-hover:scale-110 transition-transform"
+                              />
+                            ) : (
+                              <span className="text-xs">🎬</span>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── Leaderboard ad ──────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+      {/* Commented out for cleaner layout */}
+      {/* <div className="max-w-5xl mx-auto px-2 sm:px-4 py-4">
         <AdaptiveLeaderBoardAds
           desktopSlot="2668822790"
           mobileSlot="8451962089"
         />
-      </div>
+      </div> */}
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-6">
+        {/* Unified Head Row: Spans on both Desktop and Mobile */}
+        <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4 gap-4">
+          <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-foreground">
+            <span className="w-1 h-5 sm:h-6 rounded-full bg-primary inline-block" aria-hidden="true" />
+            Community Discussion
+          </h2>
+        </div>
 
-        <SpinHistoryBadge result={displayTitle} />
-
-        {extras?.trailerKey && (
-          <section>
-            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-primary inline-block" aria-hidden="true" />
-              Trailer
-            </h2>
-            <TrailerPlayer trailerKey={extras.trailerKey} title={displayTitle} />
-          </section>
+        {/* ── Characters & Cast Carousel ──────────────────────────────────── */}
+        {animeCharacters?.length > 0 && (
+          <div className="mb-10 px-0 sm:px-0">
+            <CharacterCarousel characters={animeCharacters} />
+          </div>
         )}
 
-        <TopicInteractionTabs
-          type={type}
-          pageId={pageDoc._id}
-          contentId={String(relatedId)}
-          contentSlug={pageDoc.slug}
-          contentTitle={displayTitle}
-          contentCover={pageDoc.cover || null}
-          contentTags={pageDoc.tags || []}
-          taggedWheels={taggedWheels}
-          animeCharacters={type === "anime" ? animeCharacters : []}
-          entityId={String(relatedId)}
-        />
-
-        {relatedPages?.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-primary inline-block" aria-hidden="true" />
-              You Might Also Like
-            </h2>
-            <div
-              className="flex overflow-x-auto gap-4 pb-2 [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {relatedPages.map((related) => {
-                const relatedTitle =
-                  related.title?.default ||
-                  related.title?.english ||
-                  related.title?.romaji ||
-                  related.title?.localized ||
-                  related.title?.original ||
-                  "Untitled";
-                return (
-                  <a
-                    key={String(related._id)}
-                    href={`/${related.type}/${related.slug}`}
-                    className="group flex-shrink-0 w-28 sm:w-32 block"
-                  >
-                    <div className="rounded-xl overflow-hidden bg-muted mb-2 aspect-[3/4] group-hover:scale-105 transition-transform duration-200">
-                      {related.cover ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={related.cover}
-                          alt={relatedTitle}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">No image</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
-                      {relatedTitle}
-                    </p>
-                    <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                      {related.type}
-                    </p>
-                  </a>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
+        {/* Centered Single-Column Feed */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-3xl space-y-6">
+            <CreatePostTeaser
+              defaultTag={displayTitle}
+              className="mb-6"
+              contentRef={
+                relatedId
+                  ? {
+                      type,
+                      externalId: String(relatedId),
+                      slug: pageDoc.slug,
+                      title: displayTitle,
+                      image: pageDoc.cover || null,
+                    }
+                  : null
+              }
+            />
+            <InfiniteFeedStream
+              initialItems={initialFeed}
+              type={type}
+              externalId={relatedId}
+              tag={tag}
+              relatedPages={relatedPages}
+              initialNextCursor={initialCursor}
+              currentContextId={relatedId}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Bottom-of-page ad */}
-      <div className="min-h-[90px]">
+      {/* Bottom-of-page ad - Commented out for cleaner layout */}
+      {/* <div className="min-h-[90px]">
         <AdsUnit slot="9397002286" />
-      </div>
+      </div> */}
+
+      {/* Floating Create Button - Commented out in favor of inline button in Community Discussion */}
+      {/* <TopicCreateFAB
+        tag={pageDoc.slug.replace(/^\d+-/, "")}
+        tagDisplay={displayTitle}
+        contentRef={relatedId ? { type, externalId: String(relatedId), slug: pageDoc.slug, title: displayTitle, image: pageDoc.cover || null } : null}
+      /> */}
     </div>
   );
 }

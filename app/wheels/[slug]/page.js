@@ -182,6 +182,7 @@ export default async function Home({ params }) {
           wheelSlug={slug}
           createdAt={pageData.wheel.createdAt}
           createdBy={pageData.wheel.createdBy}
+          authorHandle={pageData.wheel.authorHandle}
         />
       </Suspense>
 

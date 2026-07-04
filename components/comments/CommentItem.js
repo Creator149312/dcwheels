@@ -3,6 +3,7 @@ import { useState } from "react";
 import { timeAgo } from "./helpers";
 import CommentForm from "./CommentForm";
 import RepliesList from "./RepliesList";
+import ReportButton from "@components/ReportButton";
 
 export default function CommentItem({
   comment,
@@ -10,6 +11,7 @@ export default function CommentItem({
   isLoggedIn,
   onReply,
   onEdit,
+  onDelete,
   fetchReplies,
 }) {
   const username = comment.userId?.name || "User";
@@ -65,23 +67,42 @@ export default function CommentItem({
             </div>
           )}
 
-          <div className="flex gap-3 mt-1 text-xs">
+          <div className="flex gap-3 mt-1 text-xs items-center">
             {/* Reply button only for parent comments */}
             {comment.parentCommentId == null && (
               <button
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-primary hover:underline"
                 onClick={() => setIsReplying(!isReplying)}
               >
                 Reply
               </button>
             )}
             {isAuthor && (
-              <button
-                className="text-muted-foreground hover:underline"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                Edit
-              </button>
+              <>
+                <button
+                  className="text-muted-foreground hover:underline"
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-destructive hover:underline"
+                  onClick={() => {
+                    if (window.confirm("Delete this comment?")) {
+                      onDelete(comment._id);
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
+            {!isAuthor && (
+              <ReportButton
+                targetType="comment"
+                targetId={String(comment._id)}
+                isLoggedIn={isLoggedIn}
+              />
             )}
           </div>
 
@@ -104,7 +125,7 @@ export default function CommentItem({
           {replyCount > 0 && comment.parentCommentId == null && (
             <button
               onClick={handleToggleReplies}
-              className="mt-2 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
             >
               <ChevronIcon open={expanded} />
               {replyCount} {replyCount === 1 ? "reply" : "replies"}
@@ -118,6 +139,7 @@ export default function CommentItem({
               isLoggedIn={isLoggedIn}
               onReply={onReply}
               onEdit={onEdit}
+              onDelete={onDelete}
               disableReply
             />
           )}

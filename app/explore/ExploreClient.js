@@ -335,7 +335,7 @@ export default function ExploreClient({
               </p>
             </div>
             <Link
-              href="/dashboard"
+              href="/"
               className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
             >
               Share yours →

@@ -22,7 +22,7 @@ export default function CommentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-1">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <input
         type="text"
         placeholder={isLoggedIn ? placeholder : "Log in to comment"}
@@ -34,23 +34,21 @@ export default function CommentForm({
         }}
         autoFocus={autoFocus}
         disabled={!isLoggedIn || loading}
-        className="w-full border border-border rounded-md px-2 py-2 text-sm 
-                   bg-card text-foreground
-                   focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full border border-border/80 rounded-xl px-3 py-2.5 text-sm bg-card text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
       />
 
       {isLoggedIn && focused && (
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">
+        <div className="flex justify-between items-center px-0.5">
+          <span className="text-xs text-muted-foreground/90">
             Posting as {currentUser?.name || "User"}
           </span>
           <button
             type="submit"
             disabled={!text.trim() || loading}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               loading || !text.trim()
-                ? "bg-gray-300 bg-muted text-muted-foreground cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
             }`}
           >
             {loading ? "Posting…" : submitLabel}

@@ -3,6 +3,7 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import defaultWheelJSON from "@data/formatJSON";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { normalizeSegments, createSegment } from "@utils/segmentUtils";
+import toast from "react-hot-toast";
 
 export const SegmentsContext = createContext();
 export const SegmentsProvider = ({ children }) => {
@@ -92,16 +93,20 @@ export const SegmentsProvider = ({ children }) => {
 
   // Add a new segment
   const addSegment = useCallback((index) => {
-    if (index >= 0) {
-      setSegData((prevSegData) => {
+    setSegData((prevSegData) => {
+      if (prevSegData.length >= 100) {
+        toast.error("Maximum 100 segments allowed");
+        return prevSegData;
+      }
+      if (index >= 0) {
         const newSegData = JSON.parse(JSON.stringify(prevSegData[index]));
         // Give the duplicate a new id
         newSegData.id = createSegment().id;
         return [...prevSegData, newSegData];
-      });
-    } else {
-      setSegData((prevSegData) => [...prevSegData, createSegment()]);
-    }
+      } else {
+        return [...prevSegData, createSegment()];
+      }
+    });
   }, []);
 
   // Update a segment's property

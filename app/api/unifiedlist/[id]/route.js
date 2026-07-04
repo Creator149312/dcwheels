@@ -48,6 +48,11 @@ export async function GET(req, { params }) {
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
       isPublic: list.isPublic ?? false,
+      isSystem: list.isSystem ?? false,
+      settings: {
+        sortBy: list.settings?.sortBy || "recently-saved",
+        visibility: list.settings?.visibility || "private",
+      },
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,
@@ -103,10 +108,10 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // ✅ 4. Protect the Favorites list — name cannot be changed
-    if (list.name === "Favorites" && name && name !== "Favorites") {
+    // ✅ 4. Protect system lists — name cannot be changed
+    if (list.isSystem && name && name !== list.name) {
       return NextResponse.json(
-        { error: "The Favorites list cannot be renamed" },
+        { error: `The ${list.name} list cannot be renamed` },
         { status: 403 }
       );
     }
@@ -142,6 +147,10 @@ export async function PUT(req, { params }) {
           name: list.name,
           userId: list.userId,
           description: list.description,
+          settings: {
+            sortBy: list.settings?.sortBy || "recently-saved",
+            visibility: list.settings?.visibility || "private",
+          },
           items: list.items,
         },
       },
@@ -178,10 +187,10 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // ✅ 3. Protect the Favorites list — it cannot be deleted
-    if (list.name === "Favorites") {
+    // ✅ 3. Protect system lists — they cannot be deleted
+    if (list.isSystem) {
       return NextResponse.json(
-        { error: "The Favorites list cannot be deleted" },
+        { error: `The ${list.name} list is a system list and cannot be deleted` },
         { status: 403 }
       );
     }
@@ -210,6 +219,124 @@ export async function DELETE(req, { params }) {
     console.error("DELETE /api/lists/:id error:", err);
     return NextResponse.json(
       { error: "Failed to delete list", details: err.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req, { params }) {
+  await connectMongoDB();
+
+  try {
+    const { id } = params;
+
+    // ✅ 1. Auth check
+    const userId = await sessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // ✅ 2. Parse body — only allow sortBy and visibility updates
+    const body = await req.json();
+    const { sortBy, visibility } = body;
+
+    if (!sortBy && !visibility) {
+      return NextResponse.json(
+        { error: "Must provide sortBy or visibility" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ 3. Validate values
+    const validSortBy = ["recently-saved", "alphabetical", "status", "entity-type"];
+    const validVisibility = ["private", "public"];
+
+    if (sortBy && !validSortBy.includes(sortBy)) {
+      return NextResponse.json(
+        { error: `Invalid sortBy. Must be one of: ${validSortBy.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    if (visibility && !validVisibility.includes(visibility)) {
+      return NextResponse.json(
+        { error: `Invalid visibility. Must be one of: ${validVisibility.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // ✅ 4. Find and update list
+    const list = await UnifiedList.findOne({ _id: id, userId });
+
+    if (!list) {
+      return NextResponse.json(
+        { error: "List not found or access denied" },
+        { status: 404 }
+      );
+    }
+
+    // ✅ 5. Update settings
+    if (!list.settings) {
+      list.settings = {};
+    }
+
+    if (sortBy) {
+      list.settings.sortBy = sortBy;
+    }
+
+    if (visibility) {
+      list.settings.visibility = visibility;
+      // For backward compatibility, also update isPublic
+      list.isPublic = visibility === "public";
+    }
+
+    await list.save();
+
+    // ✅ 6. Revalidate cache
+    revalidatePath("/lists");
+    revalidatePath(`/lists/${id}`);
+    revalidateTag(`list-${id}`);
+
+    // ✅ 7. Format and return full list object
+    const formatted = {
+      id: list._id,
+      name: list.name,
+      userId: list.userId,
+      description: list.description,
+      createdAt: list.createdAt,
+      updatedAt: list.updatedAt,
+      isPublic: list.isPublic ?? false,
+      isSystem: list.isSystem ?? false,
+      settings: {
+        sortBy: list.settings?.sortBy || "recently-saved",
+        visibility: list.settings?.visibility || "private",
+      },
+      items: list.items.map((item) => ({
+        _id: item._id,
+        type: item.type,
+        word: item.word,
+        wordData: item.wordData,
+        entityType: item.entityType,
+        entityId: item.entityId,
+        name: item.name,
+        slug: item.slug,
+        image: item.image,
+        status: item.status ?? "want",
+        addedAt: item.addedAt,
+      })),
+    };
+
+    return NextResponse.json(
+      {
+        message: "List settings updated",
+        list: formatted,
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("PATCH /api/unifiedlist/:id error:", err);
+    return NextResponse.json(
+      { error: "Failed to update settings", details: err.message },
       { status: 500 }
     );
   }

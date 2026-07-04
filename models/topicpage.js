@@ -54,6 +54,15 @@ const TopicPageSchema = new Schema(
     worthIt: {
       yes: { type: Number, default: 0 },
       no:  { type: Number, default: 0 },
+      meh: { type: Number, default: 0 },
+    },
+    // Nuanced rating system (1-5 stars)
+    // totalScore: sum of all star ratings
+    // ratingCount: number of star ratings
+    // averageRating = totalScore / ratingCount
+    rating: {
+      totalScore: { type: Number, default: 0 },
+      count: { type: Number, default: 0 },
     },
     tags: {
       type: [String],

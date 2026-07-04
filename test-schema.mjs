@@ -1,1 +1,0 @@
-export default async function run() { const html = await fetch("https://wheelofnames.com").then(r => r.text()); const matches = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi); if(matches) { console.log(matches.join("\n\n")); } else { console.log("No JSON-LD found"); } } run();

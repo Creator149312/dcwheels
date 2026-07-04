@@ -11,7 +11,9 @@ import Link from "next/link";
 import { UserCircle, LogOut, BarChart2, Disc3 } from "lucide-react";
 import { ThemeToggleSwitch } from "@components/ThemeToggleSwitch";
 
-const UserDropDownMenu = ({ name, setOpen }) => {
+const UserDropDownMenu = ({ name, username, setOpen }) => {
+  const profileUrl = `/u/${encodeURIComponent((username || name).toLowerCase())}`;
+  
   return (
      <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,7 +32,7 @@ const UserDropDownMenu = ({ name, setOpen }) => {
 
         <DropdownMenuItem>
           <BarChart2 size={20} className="mr-2" />
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href={profileUrl}>Profile</Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem>

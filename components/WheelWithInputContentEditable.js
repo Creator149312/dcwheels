@@ -5,7 +5,7 @@ import { SegmentsContext } from "@app/SegmentsContext";
 import WheelPlayerControls from "./WheelPlayerControls";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Edit2 } from "lucide-react";
 
 const Wheel = dynamic(
@@ -13,8 +13,9 @@ const Wheel = dynamic(
   { ssr: false }
 );
 
-// Editor + modal — only used on the home page (/). Dynamic imports prevent
-// their chunks from being downloaded on /wheels and /uwheels routes at all.
+// Editor + modal — used on home page (/) and wheel creation (/wheels/create). 
+// Dynamic imports prevent their chunks from being downloaded on /wheels and 
+// /uwheels routes at all.
 const WheelEditor = dynamic(() => import("./WheelEditor"), { ssr: false });
 const WheelEditorModal = dynamic(() => import("./WheelEditorModal"), { ssr: false });
 
@@ -47,6 +48,8 @@ const WheelWithInputContentEditable = ({
     useContext(SegmentsContext);
   const currentPath = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get("edit") === "true";
 
   const quizState = useQuizState();
 
@@ -68,8 +71,15 @@ const WheelWithInputContentEditable = ({
   } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(isEditMode);
   const wheelContainerRef = useRef(null);
+
+  // Auto-open editor modal on mobile if edit=true is present
+  useEffect(() => {
+    if (isEditMode) {
+      setIsEditorOpen(true);
+    }
+  }, [isEditMode]);
 
   // Theater mode: fullscreen the wheel container only
   const handleToggleFullScreen = () => {
@@ -223,10 +233,10 @@ const WheelWithInputContentEditable = ({
           />
         </div>
 
-        {/* Desktop sidebar: related wheels on content pages, full editor on home */}
+        {/* Desktop sidebar: related wheels on content pages, full editor on home/wheels/create or if edit=true */}
         {!isFullScreen && (
-          <div className="hidden lg:contents">
-            {currentPath === "/" ? (
+          <div className="lg:contents">
+            {(currentPath === "/" || currentPath === "/wheels/create" || isEditMode) ? (
               <WheelEditor
                 mustSpin={mustSpin}
                 currentPath={currentPath}
@@ -243,8 +253,8 @@ const WheelWithInputContentEditable = ({
           </div>
         )}
 
-        {/* Mobile: Edit Wheel button + modal — home page only */}
-        {currentPath === "/" && (
+        {/* Mobile: Edit Wheel button + modal — home page, wheels/create, or if edit=true */}
+        {(currentPath === "/" || currentPath === "/wheels/create" || isEditMode) && (
           <>
             <div className="lg:hidden w-full pt-1 pb-4">
               <button

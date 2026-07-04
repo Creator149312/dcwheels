@@ -21,23 +21,29 @@ const validateForm = async (data) => {
 };
 
 const checkLogin = async (email, password) => {
+  console.log('CHECKLOGIN START:', { email });
   await connectMongoDB();
-  const user = await User.findOne({ email }); // Include fields you need explicitly;
+  const user = await User.findOne({ email: email.toLowerCase() });
+  console.log('USER FOUND:', !!user);
 
   if (!user) {
     return null;
   }
 
+  console.log('USER VERIFIED (RAW):', user.emailVerified);
   if (user.emailVerified) {
     const passwordsMatch = await bcrypt.compare(password, user.password);
-
+    console.log('PASSWORDS MATCH:', passwordsMatch);
     if (!passwordsMatch) {
       return null;
     }
 
     return user;
   }
-  else { return null; }
+  else { 
+    console.log('USER NOT VERIFIED (CHECKING BOOL):', !!user.emailVerified);
+    return null; 
+  }
 };
 
 export const authOptions = {
@@ -85,6 +91,7 @@ export const authOptions = {
       if (account?.provider === "credentials") {
         // credentials authorize() returns the full Mongoose document
         token.mongoId = user._id?.toString?.();
+        token.username = user.username;
         token.role = user.role || (isAdminEmail(user.email) ? "admin" : "user");
       } else if (account?.provider === "google") {
         // For Google, the user is created in signIn() callback above.
@@ -92,10 +99,11 @@ export const authOptions = {
         try {
           await connectMongoDB();
           const dbUser = await User.findOne({ email: user.email })
-            .select("_id role")
+            .select("_id role username")
             .lean();
           if (dbUser) {
             token.mongoId = dbUser._id.toString();
+            token.username = dbUser.username;
             token.role =
               dbUser.role || (isAdminEmail(user.email) ? "admin" : "user");
           }
@@ -114,6 +122,9 @@ export const authOptions = {
     async session({ session, token }) {
       if (token?.mongoId) {
         session.user.id = token.mongoId;
+      }
+      if (token?.username) {
+        session.user.username = token.username;
       }
       if (token?.role) {
         session.user.role = token.role;

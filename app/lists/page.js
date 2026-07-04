@@ -10,6 +10,7 @@ export const revalidate = 300;
 export const metadata = {
   title: "All Lists",
   description: "Browse all user-created lists across the platform.",
+  robots: "noindex",
   openGraph: {
     title: "All Lists",
     description: "Explore collections created by users.",

@@ -25,7 +25,11 @@ export default function UserInfo({ setOpen }) {
     return (
       <div className="cursor-pointer flex flex-col gap-5 align-middle items-center">
         {/* User profile section for future enhancements */}
-        <UserDropDownMenu name={session?.user?.name} setOpen={setOpen} />
+        <UserDropDownMenu 
+          name={session?.user?.name} 
+          username={session?.user?.username}
+          setOpen={setOpen} 
+        />
       </div>
     );
   } else {

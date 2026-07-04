@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
         ? list.description
         : `Explore the list "${list.name}"`;
 
-    return { title, description };
+    return { title, description, robots: "noindex" };
   }
 
   return {

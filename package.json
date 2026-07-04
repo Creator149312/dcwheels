@@ -45,11 +45,12 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.6",
-    "react-email": "2.1.5",
-    "xlsx": "^0.18.5",
+    "@playwright/test": "^1.61.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "react-email": "2.1.5",
+    "tailwindcss": "^3.4.1",
+    "xlsx": "^0.18.5"
   }
 }

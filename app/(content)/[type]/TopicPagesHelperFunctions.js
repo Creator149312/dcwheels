@@ -211,7 +211,7 @@ const _fetchAnimeUncached = async ({ search, genre, year, page, perPage, sort })
     const client = new AniList();
     const response = await client.media.search({
       type: MediaType.ANIME,
-      search: search || undefined,
+      search: search ? search.trim() : undefined,
       sort: [sort],
       page,
       perPage,
@@ -248,7 +248,7 @@ export async function fetchMovies({
     const url = new URL("https://api.themoviedb.org/3/search/movie");
     url.searchParams.set("api_key", API_KEY);
     url.searchParams.set("language", "en-US");
-    url.searchParams.set("query", search);
+    url.searchParams.set("query", search.trim());
     url.searchParams.set("page", page);
     return ((await (await fetch(url, opts)).json()).results || []).filter((m) => m.poster_path);
   }
@@ -283,18 +283,29 @@ export async function fetchGames({
   url.searchParams.set("key", API_KEY);
   url.searchParams.set("page", page);
   url.searchParams.set("page_size", page_size);
-  url.searchParams.set("ordering", ordering);
-  if (search) url.searchParams.set("search", search);
-  if (genres) url.searchParams.set("genres", genres);
-  if (year) {
-    url.searchParams.set("dates", `${year}-01-01,${year}-12-31`);
+  if (search) {
+    // When searching, let RAWG rank by relevance — don't force -added ordering
+    url.searchParams.set("search", search.trim());
+    // search_precise=false allows fuzzy match; RAWG still ranks by relevance
+    url.searchParams.set("search_precise", "false");
+    // Skip date filter so older titles (e.g. "Hill Climb Racing") aren't excluded
+    if (year) url.searchParams.set("dates", `${year}-01-01,${year}-12-31`);
   } else {
-    const now = new Date();
-    const ago = new Date(now);
-    ago.setFullYear(ago.getFullYear() - 1);
-    const fmt = (d) => d.toISOString().slice(0, 10);
-    url.searchParams.set("dates", `${fmt(ago)},${fmt(now)}`);
+    url.searchParams.set("ordering", ordering);
+    if (year) {
+      // User explicitly filtered by year — always respect it
+      url.searchParams.set("dates", `${year}-01-01,${year}-12-31`);
+    } else if (ordering !== "-rating" && ordering !== "-metacritic") {
+      // Date-range only makes sense for trending/new — not for all-time top rated
+      const now = new Date();
+      const ago = new Date(now);
+      ago.setFullYear(ago.getFullYear() - 1);
+      const fmt = (d) => d.toISOString().slice(0, 10);
+      url.searchParams.set("dates", `${fmt(ago)},${fmt(now)}`);
+    }
+    // For -rating / -metacritic (top sort): no date filter → true all-time top games
   }
+  if (genres) url.searchParams.set("genres", genres);
   const res = await fetch(url, { next: { revalidate: EXTERNAL_API_REVALIDATE, tags: ["external-rawg"] } });
   return ((await res.json()).results || []).filter((g) => g.background_image);
 }
@@ -322,7 +333,7 @@ const _fetchCharactersUncached = async ({ search, page, perPage, sort }) => {
   try {
     const client = new AniList();
     const response = await client.character.search({
-      search: search || undefined,
+      search: search ? search.trim() : undefined,
       sort: [sort],
       page,
       perPage,

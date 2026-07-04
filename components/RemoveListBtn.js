@@ -14,7 +14,8 @@ export default function RemoveListBtn({ id, type }) {
     const confirmed = confirm("Are you sure?");
 
     if (confirmed) {
-      const res = await fetch(`/api/${type}?id=${id}`, {
+      const url = type === "unifiedlist" ? `/api/unifiedlist/${id}` : `/api/${type}?id=${id}`;
+      const res = await fetch(url, {
         method: "DELETE",
       });
 

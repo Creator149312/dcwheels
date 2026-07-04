@@ -60,7 +60,11 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
 
     if (lines.length === 0) return;
 
-    const newSegments = lines.map((text) => createSegment(text));
+    if (lines.length > 100) {
+      toast.error("Maximum 100 segments allowed. Truncating to first 100.");
+    }
+
+    const newSegments = lines.slice(0, 100).map((text) => createSegment(text));
     setSegData(newSegments);
     html.current = segmentsToHTMLTxt(newSegments);
     setBulkMode(false);

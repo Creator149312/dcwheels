@@ -6,16 +6,22 @@ import toast from "react-hot-toast";
 
 export default function SharePopup({
   platforms = ["facebook", "twitter", "linkedin", "whatsapp", "telegram", "email"],
-  variant = "simple", // ✅ NEW PROP
+  variant = "simple",
+  url: urlProp,
 }) {
   const [showPopup, setShowPopup] = useState(false);
   const [url, setUrl] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setUrl(window.location.href);
+      if (urlProp) {
+        // Resolve relative paths like "/post/abc" against the current origin
+        setUrl(urlProp.startsWith("http") ? urlProp : `${window.location.origin}${urlProp}`);
+      } else {
+        setUrl(window.location.href);
+      }
     }
-  }, []);
+  }, [urlProp]);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
 

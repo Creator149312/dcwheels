@@ -1,9 +1,15 @@
-# Block all crawlers for
+# Block GPTBot and other AI scrapers to save on duration costs
 User-agent: GPTBot
 Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: ChatGPT-User
+Disallow: /
 
-# Block all crawlers for
+# General bot policy: add a Crawl-delay to slow down aggressive crawlers
+# This prevents bots from triggering thousands of ISR revalidations per minute.
 User-agent: *
+Crawl-delay: 5
 Disallow: /login
 Disallow: /register
 Disallow: /search
@@ -16,3 +22,7 @@ Disallow: /*sex*
 Disallow: /tags
 
 Allow: /sitemap.xml
+Allow: /character/sitemap.xml
+Allow: /anime/sitemap.xml
+Allow: /movie/sitemap.xml
+Allow: /game/sitemap.xml

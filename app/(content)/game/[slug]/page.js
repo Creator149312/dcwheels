@@ -9,6 +9,7 @@
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
+import { getFeedItems } from "@/lib/feedService";
 import { slugify } from "@utils/HelperFunctions";
 import {
   extractId,
@@ -19,6 +20,7 @@ import {
   fetchTaggedWheels,
   rewriteAndPersist,
 } from "@lib/topicPage";
+import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
 export const revalidate = 86400; // 1 day
@@ -123,7 +125,7 @@ async function getOrCreateGamePage(relatedId) {
     }
   }
 
-  return pageDoc?.toObject?.() || pageDoc || null;
+  return pageDoc ? JSON.parse(JSON.stringify(pageDoc)) : null;
 }
 
 const getCachedGamePage = cache(async (relatedId) => {
@@ -156,23 +158,32 @@ export default async function GamePage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  const [extras, relatedPages, taggedWheels] = await Promise.all([
+  const [extras, relatedPages, taggedWheels, feedData] = await Promise.all([
     fetchGameExtras(relatedId),
     getRelatedPages(pageDoc.tags || [], pageDoc._id),
     fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "game"),
+    getFeedItems({ 
+      type: "game", 
+      externalId: String(relatedId),
+      limit: 9 
+    }),
   ]);
 
   return (
-    <TopicPageLayout
-      type="game"
-      pageDoc={pageDoc}
-      extras={extras}
-      relatedPages={relatedPages}
-      taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-      animeCharacters={[]}
-      displayTitle={displayTitle}
-      affiliateLinks={buildAffiliateLinks("game", displayTitle)}
-      relatedId={relatedId}
-    />
+    <TopicPageContentWrapper>
+      <TopicPageLayout
+        type="game"
+        pageDoc={pageDoc}
+        extras={extras}
+        relatedPages={JSON.parse(JSON.stringify(relatedPages))}
+        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
+        animeCharacters={[]}
+        displayTitle={displayTitle}
+        affiliateLinks={buildAffiliateLinks("game", displayTitle)}
+        relatedId={relatedId}
+        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
+        initialCursor={feedData.length > 8 ? JSON.parse(JSON.stringify(feedData[7].createdAt)) : null}
+      />
+    </TopicPageContentWrapper>
   );
 }

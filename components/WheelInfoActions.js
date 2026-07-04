@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import QuickSaveButton from "@components/QuickSaveButton";
@@ -37,9 +38,11 @@ function formatCount(n) {
  * Props:
  *   wheelId    — MongoDB ObjectId string for the wheel
  *   createdAt  — ISO date string from the wheel document (for "X days ago")
+ *   createdBy  — Creator name/username for display
+ *   authorHandle — Creator username for profile link routing
  *   initialMeta — server-fetched meta: analytics, reactions, commentCount
  */
-export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, createdBy, initialMeta = null }) {
+export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, createdBy, authorHandle, initialMeta = null }) {
   const openLoginPrompt = useLoginPrompt();
   const { data: session } = useSession();
 
@@ -102,9 +105,17 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
     <div className="block md:flex md:items-center md:justify-between md:gap-4">
       {/* Creator avatar + stats line in one row */}
       <div className="flex items-center justify-start gap-3 mb-3 md:mb-0">
-        <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0">
-          {createdBy ? createdBy.charAt(0).toUpperCase() : ""}
-        </div>
+        {authorHandle ? (
+          <Link href={`/u/${encodeURIComponent(authorHandle)}`} className="hover:opacity-80 transition">
+            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0 cursor-pointer">
+              {createdBy ? createdBy.charAt(0).toUpperCase() : ""}
+            </div>
+          </Link>
+        ) : (
+          <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0">
+            {createdBy ? createdBy.charAt(0).toUpperCase() : ""}
+          </div>
+        )}
         <p className="text-xs text-gray-600 dark:text-gray-400">
           {formatCount(engagement.view_count)} views
           <span className="mx-1.5">•</span>

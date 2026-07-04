@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import LoginFormAdv from "@components/LoginFormAdv";
+import LoginForm from "@components/LoginForm";
 
 export const metadata = {
   title: "Login",
@@ -10,7 +10,7 @@ export const metadata = {
 function Page() {
   return (
     <Suspense fallback={null}>
-      <LoginFormAdv />
+      <LoginForm />
     </Suspense>
   );
 }

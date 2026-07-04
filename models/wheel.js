@@ -30,6 +30,26 @@ const wheelSchema = new Schema(
       type: String,
       required: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+      sparse: true,
+      // Required for new wheels; existing wheels backfilled via migration script
+    },
+    authorHandle: {
+      type: String,
+      index: true,
+      lowercase: true,
+    },
+    authorName: {
+      type: String,
+      index: true,
+    },
+    authorProfileImage: {
+      type: String,
+      default: null,
+    },
     wheelData: { type: Object, default: {} },
     // Tags are lowercased + trimmed on save so that:
     //   1) equal-match queries can fully use the `tags: 1` index
@@ -96,7 +116,7 @@ const wheelSchema = new Schema(
     // Defaults to false so existing wheels stay private until the owner opts in.
     // Admin-seeded wheels (createdBy = "admin") are surfaced separately via
     // the Page collection — this flag is for /uwheels user content only.
-    isPublic: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: true },
     // "basic" = standard word/label wheel; "quiz" = MCQ quiz wheel where each
     // segment carries a question, options[], and correctIndex.
     // Stored explicitly so admin queries (Wheel.find({ type:"quiz" })) work.
@@ -127,6 +147,11 @@ wheelSchema.index({ likeCount: -1, createdAt: -1 });
 // these queries; a dedicated compound turns them from collection scans into
 // bounded index scans as the per-user wheel count grows.
 wheelSchema.index({ createdBy: 1, createdAt: -1 });
+// NEW: Optimized userId compound index for profile/dashboard queries — preferred
+// over createdBy once backfill is complete (userId is ObjectId, much faster)
+wheelSchema.index({ userId: 1, createdAt: -1 });
+// NEW: Compound for public profile gallery (userId + isPublic + like sorting)
+wheelSchema.index({ userId: 1, isPublic: 1, likeCount: -1 });
 // Multikey index on the topic associations. Serves TopicPage → related
 // wheels lookups (e.g. Wheel.find({ relatedTopics: { $elemMatch: {type, id} } }))
 // without a collection scan once the wheels collection gets large.

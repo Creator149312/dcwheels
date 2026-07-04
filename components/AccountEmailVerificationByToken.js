@@ -55,7 +55,7 @@ const AccountEmailVerificationByToken = () => {
                   <div className="text-lg">
                     Your Email verified Successfully, Please login!
                   </div>
-                  <Link href="/login">
+                  <Link href="/login?callbackUrl=/dashboard">
                     <Button className="mt-4 px-4 py-2 rounded">
                       Login to Continue
                     </Button>

@@ -385,9 +385,9 @@ export default function UserDashboard({ initialData = null }) {
               <Link href="/dashboard/wheels" className="text-xs text-muted-foreground hover:text-primary transition-colors">
                 View all →
               </Link>
-              <a href="/" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+              <Link href="/wheels/create" className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
                 <Plus size={12} /> New
-              </a>
+              </Link>
             </div>
           }
         >
@@ -396,7 +396,7 @@ export default function UserDashboard({ initialData = null }) {
           ) : (
             <ExpandableList
               items={wheels}
-              emptyMessage={<>No wheels yet. <a href="/" className="text-primary hover:underline">Create one!</a></>}
+              emptyMessage={<>No wheels yet. <Link href="/wheels/create" className="text-primary hover:underline">Create one!</Link></>}
               renderItem={(item) => (
                 <WheelRowCard key={item._id} item={item} showToggle={false} />
               )}

@@ -2,15 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { List, ArrowLeft, Loader2 } from "lucide-react";
 
 export default function CreateListPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const backUrl = session?.user?.name 
+    ? `/u/${encodeURIComponent(session.user.name.toLowerCase())}`
+    : "/";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,11 +48,11 @@ export default function CreateListPage() {
   return (
     <div className="max-w-xl mx-auto px-4 py-8 md:py-12 min-h-screen">
       <Link
-        href="/dashboard"
+        href={backUrl}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
       >
         <ArrowLeft size={16} />
-        Back to Dashboard
+        Back to Profile
       </Link>
 
       <div className="bg-card border border-border shadow-sm rounded-2xl p-6 md:p-8">

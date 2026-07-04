@@ -26,14 +26,19 @@ function useUrlTopic() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const type = params.get("type");
-    const id = params.get("id");
+    const type = params.get("type") || params.get("cr_type");
+    const id = params.get("id") || params.get("cr_id");
+    const tag = params.get("tag");
+
     if (
       type &&
       id &&
       ["anime", "movie", "game", "character", "custom"].includes(type)
     ) {
       setTopic({ type, id });
+    } else if (tag) {
+      // Fallback for generic tags if no cr_id is present
+      setTopic({ type: "custom", id: tag });
     }
   }, []);
   return topic;
@@ -81,7 +86,7 @@ export default function SaveWheelBtn({ segmentsData }) {
       title,
       description,
       selectedWheel,
-      selectedTopics: [],
+      selectedTopics: urlTopic ? [urlTopic] : [],
       selectedTags,
       e,
     });
