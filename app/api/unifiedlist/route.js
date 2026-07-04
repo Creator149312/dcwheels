@@ -19,6 +19,45 @@ export async function GET(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ✅ Ensure SYS_SAVED list exists (Lazy Creation)
+    // This catches users who registered before this feature or via providers.
+    let savedList = await UnifiedList.findOne({ userId, systemKey: "SYS_SAVED" });
+    
+    if (!savedList) {
+      // Fallback: Check if user has a list named "Saved" already but without the key
+      // Use regex for case-insensitive match to catch "saved" or "SAVED"
+      savedList = await UnifiedList.findOne({ 
+        userId, 
+        name: { $regex: /^saved$/i } 
+      });
+      
+      if (savedList) {
+        // Upgrade legacy list to system list
+        savedList.isSystem = true;
+        savedList.systemKey = "SYS_SAVED";
+        // Standardize the name to "Saved"
+        savedList.name = "Saved";
+        if (!savedList.description) {
+          savedList.description = "Default list for items you've saved.";
+        }
+        await savedList.save();
+      } else {
+        // Create brand new system list
+        try {
+          await UnifiedList.create({
+            userId,
+            name: "Saved",
+            description: "Default list for items you've saved.",
+            isSystem: true,
+            systemKey: "SYS_SAVED",
+            settings: { visibility: "private", sortBy: "recently-saved" },
+          });
+        } catch (e) {
+          if (e.code !== 11000) console.error("Lazy create SYS_SAVED failed:", e);
+        }
+      }
+    }
+
     const { searchParams } = new URL(req.url);
     const slim = searchParams.get("slim") === "1";
 
@@ -26,17 +65,37 @@ export async function GET(req) {
       // Lightweight fetch — only id + name, no items. Used by AddToListButton
       // picker so it doesn't ship full item arrays across the wire.
       const lists = await UnifiedList.find({ userId })
-        .select("_id name")
+        .select("_id name isSystem systemKey")
         .lean();
-      const formatted = lists.map((l) => ({ id: l._id, name: l.name }));
+      
+      // Sort system lists to the top, then by name
+      const sorted = lists.sort((a, b) => {
+        if (a.isSystem && !b.isSystem) return -1;
+        if (!a.isSystem && b.isSystem) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      const formatted = sorted.map((l) => ({ 
+        id: l._id, 
+        name: l.name, 
+        isSystem: l.isSystem,
+        systemKey: l.systemKey 
+      }));
       return NextResponse.json({ lists: formatted }, { status: 200 });
     }
 
     // ✅ 2. Fetch all lists for this user
     const lists = await UnifiedList.find({ userId }).lean();
 
+    // Sort system lists to the top for the main response as well
+    const sortedLists = lists.sort((a, b) => {
+      if (a.isSystem && !b.isSystem) return -1;
+      if (!a.isSystem && b.isSystem) return 1;
+      return 0;
+    });
+
     // ✅ 3. Format response (optional but clean)
-    const formatted = lists.map((list) => ({
+    const formatted = sortedLists.map((list) => ({
       id: list._id,
       name: list.name,
       description: list.description,

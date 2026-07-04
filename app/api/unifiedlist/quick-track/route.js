@@ -93,26 +93,41 @@ export async function POST(req) {
         name: targetName,
         systemKey: targetKey,
         isSystem: true,
-        description: `Your saved ${entityType}s.`,
+        description: "Default list for items you've saved.",
         isPublic: false,
+        settings: { visibility: "private", sortBy: "recently-saved" },
       });
-    } else if (!targetList.systemKey) {
-      // Automatic Migration: Found a legacy list by name but it lacks system metadata.
-      // Update it with new systemKey and display name.
-      targetList.systemKey = targetKey;
-      targetList.isSystem = true;
-      targetList.name = targetName;  // ← Rename "Favorites" → "Saved"
-      
+    } else {
+      // Automatic Migration: Ensure metadata, locked description, and name are correct
+      let changed = false;
+      if (!targetList.systemKey) {
+        targetList.systemKey = targetKey;
+        changed = true;
+      }
+      if (!targetList.isSystem) {
+        targetList.isSystem = true;
+        changed = true;
+      }
+      if (targetList.name !== targetName) {
+        targetList.name = targetName;
+        changed = true;
+      }
+      if (targetList.description !== "Default list for items you've saved.") {
+        targetList.description = "Default list for items you've saved.";
+        changed = true;
+      }
+
       // MIGRATION: Map old "in-progress" status → "done"
-      // (Reasonable assumption: if user had it in-progress, treat as done now)
       if (targetList.items && Array.isArray(targetList.items)) {
         targetList.items = targetList.items.map(item => {
           if (item.status === "in-progress") {
             item.status = "done";
+            changed = true;
           }
           return item;
         });
       }
+      if (changed) await targetList.save();
     }
 
     // 3. Add item and save. 

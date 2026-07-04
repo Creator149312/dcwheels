@@ -108,16 +108,33 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // ✅ 4. Protect system lists — name cannot be changed
-    if (list.isSystem && name && name !== list.name) {
-      return NextResponse.json(
-        { error: `The ${list.name} list cannot be renamed` },
-        { status: 403 }
-      );
+    // ✅ 4. Protect system lists — name and description cannot be changed by user
+    if (list.isSystem) {
+      if (name && name !== list.name) {
+        return NextResponse.json(
+          { error: `The ${list.name} list cannot be renamed` },
+          { status: 403 }
+        );
+      }
+      if (description !== undefined && description !== list.description) {
+        return NextResponse.json(
+          { error: `The description of a system list cannot be modified` },
+          { status: 403 }
+        );
+      }
     }
 
-    // ✅ 5. Prevent duplicate list names
-    if (name && name !== list.name) {
+    // ✅ 5. Prevent duplicate list names or using reserved names
+    if (!list.isSystem && name && name !== list.name) {
+      // Block renaming to reserved system names
+      const RESERVED_NAMES = ["Saved", "Favorites", "My Collection"];
+      if (RESERVED_NAMES.map(n => n.toLowerCase()).includes(name.trim().toLowerCase())) {
+        return NextResponse.json(
+          { error: `"${name.trim()}" is a reserved list name. Please choose a different name.` },
+          { status: 409 }
+        );
+      }
+
       const exists = await UnifiedList.findOne({ userId, name }).lean();
       if (exists) {
         return NextResponse.json(
@@ -128,7 +145,7 @@ export async function PUT(req, { params }) {
       list.name = name;
     }
 
-    if (description !== undefined) {
+    if (!list.isSystem && description !== undefined) {
       list.description = description;
     }
 

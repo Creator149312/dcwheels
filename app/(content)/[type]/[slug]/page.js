@@ -23,8 +23,8 @@ import {
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-// Cache for 7 days to reduce Vercel duration costs and stabilize content
-export const revalidate = 604800;
+// Cache for 14 days (bi-weekly) to balance content freshness with Vercel duration costs.
+export const revalidate = 1209600;
 
 /**
  * Shared Topic Fetcher (Cached)

@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import { isAdminEmail } from "@utils/auth/isAdmin";
+import UnifiedList from "@models/unifiedlist";
 
 const validateForm = async (data) => {
   let err = {};
@@ -143,13 +144,23 @@ export const authOptions = {
           if (!userExists) {
             // Create the user directly instead of round-tripping through
             // /api/user — saves one HTTP hop + cold start during sign-in.
-            await User.create({
+            const newUser = await User.create({
               name,
               email,
               password: "",
               emailVerified: true,
               authMethod: "google",
               role: isAdminEmail(email) ? "admin" : "user",
+            });
+
+            // Create default "Saved" list for the new user
+            await UnifiedList.create({
+              userId: newUser._id,
+              name: "Saved",
+              description: "Default list for items you've saved.",
+              isSystem: true,
+              systemKey: "SYS_SAVED",
+              settings: { visibility: "private", sortBy: "recently-saved" },
             });
           }
           return user;

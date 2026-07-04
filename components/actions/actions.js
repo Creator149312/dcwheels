@@ -33,6 +33,7 @@ import apiConfig from "@utils/ApiUrlConfig";
 import { OpenAI } from "openai";
 import { extractTopSegments } from "@lib/wheelAnalytics";
 import ApiLog from "@models/apilogs";
+import UnifiedList from "@models/unifiedlist";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
@@ -274,12 +275,22 @@ export const registerUser = async (formData) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({
+    const newUser = await User.create({
       name: rawUsername, // use raw as display name
       username: handle,  // use normalized as handle
       email,
       password: hashedPassword,
       authMethod: "emailPassword",
+    });
+
+    // Create default "Saved" list for the new user
+    await UnifiedList.create({
+      userId: newUser._id,
+      name: "Saved",
+      description: "Default list for items you've saved.",
+      isSystem: true,
+      systemKey: "SYS_SAVED",
+      settings: { visibility: "private", sortBy: "recently-saved" },
     });
 
     let timeNow = new Date();

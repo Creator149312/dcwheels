@@ -25,8 +25,8 @@ import {
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-// Anime metadata is very stable — bump to 7 days.
-export const revalidate = 604800;
+// Anime metadata is stable — 14-day revalidation (bi-weekly) to reduce Vercel invocation costs.
+export const revalidate = 1209600;
 
 // ---------------------------------------------------------------------------
 // AniList fetchers (anime-only)

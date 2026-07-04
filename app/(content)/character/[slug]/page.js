@@ -18,8 +18,8 @@ import {
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-// Character data rarely changes — 7-day revalidation.
-export const revalidate = 604800;
+// Character data rarely changes — 30-day revalidation to reduce Vercel invocation costs.
+export const revalidate = 2592000;
 
 /**
  * Shared Topic Fetcher (Cached)

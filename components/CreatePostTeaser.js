@@ -35,8 +35,8 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
   return (
     <div className={`border border-border/40 bg-card rounded-xl shadow-sm p-3 sm:px-4 sm:py-3 ${className}`}>
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Avatar */}
-        <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs sm:text-sm font-bold text-primary">
+        {/* Avatar - Hidden on mobile to make room for all icons */}
+        <div className="hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-sm font-bold text-primary">
           {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "?"}
         </div>
         
@@ -51,12 +51,12 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
           </div>
         </Link>
 
-        {/* Quick Action Icons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 ml-1 text-muted-foreground">
+        {/* Quick Action Icons - All visible on both desktop & mobile */}
+        <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground">
           <Link 
             href={createUrl}
             onClick={handleInputClick}
-            className="p-2 sm:p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center group"
+            className="p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center group"
             title="Image/Video"
           >
             <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 group-hover:scale-110 transition-transform" strokeWidth={2} />
@@ -64,7 +64,7 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
           <Link 
             href={createUrl + (queryString ? "&poll=true" : "?poll=true")}
             onClick={handleInputClick}
-            className="p-2 sm:p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center group"
+            className="p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center group"
             title="Poll"
           >
             <BarChart2 className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
@@ -72,7 +72,7 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
           <Link 
             href={"/wheels/create" + (queryString ? `?${queryString}` : "")}
             onClick={handleInputClick}
-            className="p-2 sm:p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center hidden sm:flex group"
+            className="p-2 rounded-full hover:bg-muted transition-colors flex items-center justify-center group"
             title="Spin Wheel"
           >
             <CircleDashed className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500 group-hover:scale-110 transition-transform" strokeWidth={2.5} />

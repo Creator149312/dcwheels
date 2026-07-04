@@ -198,12 +198,6 @@ export default async function TopicPageLayout({
         {/* Row 4: Worth It? vote */}
         <div className="mt-5">
           <DoneNudge entityId={String(pageDoc._id)} />
-          <WorthItVote
-            topicPageId={String(pageDoc._id)}
-            type={type}
-            initialWorthIt={pageDoc.worthIt}
-            initialRating={pageDoc.rating}
-          />
         </div>
 
         {/* Row 5: streaming + affiliate links */}

@@ -19,10 +19,12 @@ const MobileSearchBar = dynamic(() => import("@components/MobileSearchBar"));
 const SCROLL_THRESHOLD = 10;
 
 function BottomNavItem({ href, icon, label, active, onClick }) {
+  const pathname = usePathname();
   const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
     active ? "text-primary" : "text-muted-foreground"
   }`;
-  if (onClick) {
+
+  if (onClick && !href) {
     return (
       <button onClick={onClick} className={cls} aria-label={label}>
         {icon}
@@ -30,8 +32,15 @@ function BottomNavItem({ href, icon, label, active, onClick }) {
       </button>
     );
   }
+
   return (
-    <Link href={href} className={cls}>
+    <Link 
+      href={href || "#"} 
+      className={cls}
+      onClick={(e) => {
+        if (onClick) onClick(e);
+      }}
+    >
       {icon}
       <span>{label}</span>
     </Link>
@@ -174,7 +183,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
-              <span className="text-sm font-bold text-foreground">{"Browse"}</span>
+              <span className="text-sm font-bold text-foreground">{"Library"}</span>
               <button
                 onClick={() => setLibraryOpen(false)}
                 className="p-1 rounded-full text-muted-foreground hover:text-foreground"
@@ -189,7 +198,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setLibraryOpen(false)}
               >
                 <LayoutGrid size={20} className="text-primary" />
-                {"Browse Wheels"}
+                {"Wheels"}
               </Link>
               <Link
                 href="/lists"
@@ -197,7 +206,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setLibraryOpen(false)}
               >
                 <List size={20} className="text-primary" />
-                {"My Lists"}
+                {"Lists"}
               </Link>
             </div>
           </div>
@@ -308,7 +317,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
           />
 
           <BottomNavItem
-            href={profileUrl || "/"}
+            href={profileUrl || "/login"}
             label={"Profile"}
             icon={<User size={18} />}
             active={pathname.startsWith("/u/") || pathname.startsWith("/profile") || pathname.startsWith("/dashboard")}

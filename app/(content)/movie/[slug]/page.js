@@ -24,7 +24,8 @@ import {
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-export const revalidate = 86400; // 1 day
+// Cache for 14 days (bi-weekly) to balance content freshness with Vercel duration costs.
+export const revalidate = 1209600;
 
 // ---------------------------------------------------------------------------
 // TMDB fetchers (movie-only)

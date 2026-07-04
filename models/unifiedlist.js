@@ -125,7 +125,11 @@ const ListSchema = new Schema(
 
 // Indexes
 ListSchema.index({ userId: 1, name: 1 }, { unique: true });
-ListSchema.index({ userId: 1, systemKey: 1 }); // Quick lookup for default lists
+// Enforce unique system keys per user (e.g. only one SYS_SAVED list)
+ListSchema.index(
+  { userId: 1, systemKey: 1 }, 
+  { unique: true, partialFilterExpression: { systemKey: { $exists: true } } }
+);
 
 // Powers GET /api/unifiedlist/by-entity — checks whether a user already has
 // a given entity saved in any of their lists. Without this, Mongo scans every
