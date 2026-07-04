@@ -21,6 +21,7 @@ Disallow: /lists
 Disallow: /*sex*
 Disallow: /tags
 Disallow: /u/*
+Disallow: /post/*
 
 Allow: /sitemap.xml
 Allow: /character/sitemap.xml
