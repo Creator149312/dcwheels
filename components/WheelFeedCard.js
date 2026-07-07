@@ -26,20 +26,10 @@ export default function WheelFeedCard({ wheel }) {
     ? wheel.wheelPreview.replace('.webp', '-thumb.webp')
     : null;
 
-  // Render simplified "hidden" state if user deletes or hides
-  if (isHidden) {
-    return (
-      <div className="border-b border-border/70 bg-card px-4 py-3 sm:border sm:rounded-2xl flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Wheel hidden</span>
-        <button
-          onClick={() => setIsHidden(false)}
-          className="text-primary text-xs font-semibold hover:underline"
-        >
-          Undo
-        </button>
-      </div>
-    );
-  }
+  // If the card is hidden (e.g. deleted by owner), don't render it at all.
+  // We don't show an "Undo" button here because deletion requires multiple
+  // confirmations and also triggers asset cleanup in the background.
+  if (isHidden) return null;
 
   return (
     <div className="border-b sm:border border-border/80 bg-card p-4 sm:p-5 sm:rounded-2xl transition hover:bg-muted/[0.04]">

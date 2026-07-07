@@ -4,6 +4,7 @@ import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import PostVote from "@models/postVote";
+import { cleanupBlobAssets } from "@lib/blob-cleanup";
 
 /**
  * GET /api/post/[id]
@@ -153,7 +154,7 @@ export async function DELETE(req, { params }) {
     const { id } = params;
     await connectMongoDB();
 
-    const post = await Post.findById(id).select("userId authorName isDeleted hasPoll").lean();
+    const post = await Post.findById(id).select("userId authorName isDeleted hasPoll image").lean();
 
     if (!post) {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
@@ -177,6 +178,13 @@ export async function DELETE(req, { params }) {
     // Clean up orphaned poll votes — no value keeping them after deletion
     if (post.hasPoll) {
       await PostVote.deleteMany({ postId: id });
+    }
+
+    // Clean up post image if it's on Vercel Blob
+    if (post.image && post.image.includes(".blob.vercel-storage.com")) {
+      cleanupBlobAssets(post.image).catch(err => 
+        console.error("Delayed cleanup failed for post image:", err)
+      );
     }
 
     return NextResponse.json({ message: "Post deleted" });

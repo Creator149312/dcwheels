@@ -18,18 +18,20 @@ const topicPageVoteSchema = new Schema(
       required: true,
       index: true,
     },
-    // The vote value: 1 for Yes, 0 for No (or could be 1-5 for rating later)
+    // DEPRECATED: Vote is now derived from rating at read time
+    // Derived mapping: rating >= 4 = "yes", rating === 3 = "meh", rating <= 2 = "no"
+    // Kept as optional for backward compatibility with existing data
     vote: {
       type: String,
-      enum: ["yes", "no"],
-      required: true,
+      enum: ["yes", "no", "meh"],
+      default: null,
     },
-    // Future-proofing for star ratings
+    // Star rating (1-5) — primary data source for vote derivation
     rating: {
       type: Number,
       min: 1,
       max: 5,
-      default: null,
+      required: true,
     },
   },
   { timestamps: true }

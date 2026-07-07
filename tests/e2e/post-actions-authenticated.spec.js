@@ -10,14 +10,14 @@ test.describe('Post Actions - Authenticated Testing', () => {
     // Fill in email
     const emailInput = page.locator('input[name="email"], input[type="email"]').first();
     if (await emailInput.isVisible()) {
-      await emailInput.fill('test@example.com');
+      await emailInput.fill(process.env.PW_TEST_EMAIL || 'test@example.com');
       await page.waitForTimeout(500);
     }
 
     // Fill in password
     const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
     if (await passwordInput.isVisible()) {
-      await passwordInput.fill('password123');
+      await passwordInput.fill(process.env.PW_TEST_PASSWORD || 'password123');
       await page.waitForTimeout(500);
     }
 

@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
   const list = await getListByIdCached(listId);
 
   if (list) {
-    const title = list.name || "User List";
+    const title = list.name ? `${list.name} — List` : "User List";
     const description =
       list.description?.trim()?.length > 0
         ? list.description

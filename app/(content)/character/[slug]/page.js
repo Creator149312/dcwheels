@@ -10,6 +10,7 @@ import { getFeedItems } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
+  optimizeTitle,
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
@@ -51,32 +52,28 @@ export default async function CharacterPage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  // Characters have no trailers or streaming links directly from Anilist character API.
-  // Fetch related pages, tagged wheels, and prioritizing the tag feed.
-  const [relatedPages, taggedWheels, feedData] = await Promise.all([
-    getRelatedPages(pageDoc.tags || [], pageDoc._id),
-    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "character"),
-    getFeedItems({ 
-      tag: displayTitle,
-      limit: 9 
-    }),
-  ]);
+  // Kicked off as async Promises to support fast loading and Suspense streaming
+  const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
+  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "character");
+  const feedPromise = getFeedItems({ 
+    tag: displayTitle,
+    limit: 9 
+  });
 
   return (
     <TopicPageContentWrapper>
       <TopicPageLayout
         type="character"
         pageDoc={pageDoc}
-        extras={{ trailerKey: null, streaming: [] }}
-        relatedPages={JSON.parse(JSON.stringify(relatedPages))}
-        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-        animeCharacters={[]}
         displayTitle={displayTitle}
         affiliateLinks={buildAffiliateLinks("character", displayTitle)}
         relatedId={relatedId}
-        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
-        initialCursor={feedData.length > 8 ? JSON.parse(JSON.stringify(feedData[8].createdAt)) : null}
         tag={displayTitle}
+        extrasPromise={Promise.resolve({ trailerKey: null, streaming: [] })}
+        relatedPagesPromise={relatedPagesPromise}
+        taggedWheelsPromise={taggedWheelsPromise}
+        charactersPromise={Promise.resolve([])}
+        feedPromise={feedPromise}
       />
     </TopicPageContentWrapper>
   );

@@ -11,7 +11,7 @@ export default function ListDashboardPage() {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { status } = useSession();
+  const { data: session, status } = useSession();
 
   const handleNewListClick = () => {
     setIsModalOpen(true);
@@ -34,7 +34,11 @@ export default function ListDashboardPage() {
       console.log(data.error);
     } else if (data.list) {
       console.log("List created successfully");
-      location.reload();
+      if (status === "authenticated" && session?.user?.username) {
+        window.location.href = `/u/${session.user.username}`;
+      } else {
+        location.reload();
+      }
     } else {
       console.log("Unexpected Error Occurred!");
     }

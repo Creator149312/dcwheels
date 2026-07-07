@@ -47,7 +47,7 @@ export default function Description({ pageData, wordsList }) {
   }, [pageData, wordsList]);
 
   return (
-    <div className="bg-muted p-4 rounded-xl mb-4 border border-transparent border-border/50 transition-colors">
+    <div className="bg-muted p-4 rounded-xl mb-4 border border-border/50 transition-colors">
       <div
         ref={ref}
         className="overflow-hidden transition-[max-height] duration-500 ease-in-out"

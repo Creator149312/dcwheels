@@ -92,7 +92,7 @@ const wheelSchema = new Schema(
     //
     // `_id: false` keeps each sub-doc id-free — we never query individual
     // array elements by their own _id, only by {type, id}.
-    relatedTopics: {
+        relatedTopics: {
       type: [
         {
           type: {
@@ -105,6 +105,7 @@ const wheelSchema = new Schema(
       ],
       default: [],
     }, //end of relatedTopics
+
     editorData: {
       type: Object,
       default: {

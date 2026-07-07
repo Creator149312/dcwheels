@@ -45,8 +45,8 @@ export default function ResultsGrid({ results, loading }) {
           ? (item.coverImage.extraLarge || item.coverImage.large)
           : `https://image.tmdb.org/t/p/w780${item.poster_path}`;
         const rating = isAnime
-          ? (item.averageScore / 10).toFixed(1)
-          : item.vote_average?.toFixed(1);
+          ? (item.averageScore / 20).toFixed(1)
+          : (item.vote_average / 2)?.toFixed(1);
         const releaseYear = isAnime
           ? item.startDate?.year
           : item.release_date?.split("-")[0];
@@ -76,7 +76,7 @@ export default function ResultsGrid({ results, loading }) {
               <div className="flex items-center gap-2 text-[10px]">
                 {rating && rating !== "0.0" && (
                   <span className="flex items-center gap-0.5 text-yellow-400 font-bold">
-                    <Star size={10} fill="currentColor" /> {rating}
+                    <Star size={10} fill="currentColor" /> {rating} <span className="text-[8px] opacity-40">/ 5</span>
                   </span>
                 )}
                 {releaseYear && (

@@ -6,7 +6,7 @@ import WheelPlayerControls from "./WheelPlayerControls";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Edit2 } from "lucide-react";
+import { Edit2, X } from "lucide-react";
 
 const Wheel = dynamic(
   () => import("react-custom-roulette").then((mod) => mod.Wheel),
@@ -52,6 +52,8 @@ const WheelWithInputContentEditable = ({
   const isEditMode = searchParams.get("edit") === "true";
 
   const quizState = useQuizState();
+
+  const isWheelsCreatePage = currentPath === "/wheels/create";
 
   const {
     mustSpin,
@@ -230,13 +232,15 @@ const WheelWithInputContentEditable = ({
             router={router}
             muted={muted}
             setMuted={setMuted}
+            onEditClick={() => setIsEditorOpen(true)}
+            isEditingActive={currentPath === "/" || isWheelsCreatePage || isEditMode}
           />
         </div>
 
-        {/* Desktop sidebar: related wheels on content pages, full editor on home/wheels/create or if edit=true */}
+        {/* Desktop sidebar: related wheels on content pages, full editor on home/wheels/create or if edit=true. Hidden on mobile. */}
         {!isFullScreen && (
-          <div className="lg:contents">
-            {(currentPath === "/" || currentPath === "/wheels/create" || isEditMode) ? (
+          <div className="hidden lg:contents">
+            {(currentPath === "/" || isWheelsCreatePage || isEditMode) ? (
               <WheelEditor
                 mustSpin={mustSpin}
                 currentPath={currentPath}
@@ -253,27 +257,15 @@ const WheelWithInputContentEditable = ({
           </div>
         )}
 
-        {/* Mobile: Edit Wheel button + modal — home page, wheels/create, or if edit=true */}
-        {(currentPath === "/" || currentPath === "/wheels/create" || isEditMode) && (
-          <>
-            <div className="lg:hidden w-full pt-1 pb-4">
-              <button
-                onClick={() => setIsEditorOpen(true)}
-                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary text-primary-foreground font-bold rounded-2xl shadow-md hover:bg-primary/90 active:scale-[0.98] transition-all"
-              >
-                <Edit2 size={20} strokeWidth={2.5} />
-                Edit Wheel Items
-              </button>
-            </div>
-
-            <WheelEditorModal
-              isOpen={isEditorOpen}
-              onClose={() => setIsEditorOpen(false)}
-              mustSpin={mustSpin}
-              currentPath={currentPath}
-              relatedWheelsSlot={relatedWheelsSlot}
-            />
-          </>
+        {/* Mobile: Fullscreen Editor Overlay — home page, wheels/create, or if edit=true */}
+        {!isFullScreen && (currentPath === "/" || isWheelsCreatePage || isEditMode) && (
+          <WheelEditorModal
+            isOpen={isEditorOpen}
+            onClose={() => setIsEditorOpen(false)}
+            mustSpin={mustSpin}
+            currentPath={currentPath}
+            relatedWheelsSlot={relatedWheelsSlot}
+          />
         )}
       </div>
       {showCelebration && <FireworksConfetti />}

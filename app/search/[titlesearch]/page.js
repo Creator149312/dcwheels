@@ -9,6 +9,12 @@ import AnimeSection from "./AnimeSection";
 import MovieSection from "./MovieSection";
 import GameSection from "./GameSection";
 import CharacterSection from "./CharacterSection";
+import {
+  fetchAnime,
+  fetchMovies,
+  fetchGames,
+  fetchCharacters,
+} from "@app/(content)/[type]/TopicPagesHelperFunctions";
 
 const perPage = 10;
 
@@ -36,19 +42,34 @@ export default async function Page({ params, searchParams }) {
   const searchtitle = decodeURIComponent(rawTitle);
   const activeType = searchParams?.type || "wheels";
 
-  // Always fetch the wheel search result — cheap and cached (s-maxage=300),
-  // and lets us surface the wheel count in the tab bar even when the user
-  // is viewing a non-wheel tab ("Wheels (8)"). Improves discovery without
-  // adding rendering cost per tab switch.
-  let list = [];
-  let total = 0;
-  try {
-    const data = await fetchInitialWheels(searchtitle);
-    list = data.list || [];
-    total = data.total || 0;
-  } catch {
-    list = [];
-  }
+  // UNIVERSAL PREFETCH: Fire all API calls in parallel so switching tabs is instant.
+  // We use Promise.allSettled to ensure one API failure doesn't crash the whole page.
+  const [wheelsRes, animeRes, moviesRes, gamesRes, charactersRes] = await Promise.allSettled([
+    fetchInitialWheels(searchtitle),
+    fetchAnime({ search: searchtitle, page: 1, perPage: 10 }),
+    fetchMovies({ search: searchtitle, page: 1 }),
+    fetchGames({ search: searchtitle, page: 1, page_size: 10 }),
+    fetchCharacters({ search: searchtitle, page: 1, perPage: 10 }),
+  ]);
+
+  // Extract data with fallbacks
+  const wheelData = wheelsRes.status === "fulfilled" ? wheelsRes.value : { list: [], total: 0 };
+  const wheelList = wheelData.list || [];
+  const wheelTotal = wheelData.total || 0;
+
+  const animeData = animeRes.status === "fulfilled" ? animeRes.value : [];
+  const moviesData = moviesRes.status === "fulfilled" ? moviesRes.value : [];
+  const gamesData = gamesRes.status === "fulfilled" ? gamesRes.value : [];
+  const charactersData = charactersRes.status === "fulfilled" ? charactersRes.value : [];
+
+  // Map counts for the tab labels
+  const counts = {
+    wheels: wheelTotal,
+    anime: animeData?.length || 0,
+    movie: moviesData?.length || 0,
+    game: gamesData?.length || 0,
+    character: charactersData?.length || 0,
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-10">
@@ -74,20 +95,19 @@ export default async function Page({ params, searchParams }) {
            style={{ scrollbarWidth: "none" }}>
         {TABS.map((tab) => {
           const isActive = activeType === tab.key;
-          // rawTitle is already URL-encoded from params — do NOT re-encode
           const href =
             tab.key === "wheels"
               ? `/search/${rawTitle}`
               : `/search/${rawTitle}?type=${tab.key}`;
-          // Surface wheel count inline — "🎡 Wheels (8)" — so visitors on
-          // other tabs can see there are wheel results without switching.
-          const label =
-            tab.key === "wheels" && total > 0 ? `${tab.label} (${total})` : tab.label;
+          
+          const count = counts[tab.key];
+          const label = count > 0 ? `${tab.label} (${count})` : tab.label;
+
           return (
             <Link
               key={tab.key}
               href={href}
-              prefetch={false}
+              prefetch={true}
               scroll={false}
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-colors
                 ${isActive
@@ -104,7 +124,7 @@ export default async function Page({ params, searchParams }) {
       {/* Wheels tab */}
       {activeType === "wheels" && (
         <>
-          {list.length === 0 ? (
+          {wheelList.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
@@ -131,10 +151,10 @@ export default async function Page({ params, searchParams }) {
           ) : (
             <>
               <p className="text-xs text-muted-foreground mb-4 font-medium">
-                Found {total} spin wheel{total !== 1 ? "s" : ""}
+                Found {wheelTotal} spin wheel{wheelTotal !== 1 ? "s" : ""}
               </p>
               <div className="grid grid-cols-1 gap-3 md:gap-4">
-                {list.map((item, index) => (
+                {wheelList.map((item, index) => (
                   <Fragment key={item._id}>
                     <Link href={`/uwheels/${item._id}`} className="group">
                       <Card className="group relative overflow-hidden border-none bg-card shadow-sm p-3.5 md:p-6 transition duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
@@ -169,7 +189,7 @@ export default async function Page({ params, searchParams }) {
                 <LoadMoreWheels
                   searchtitle={searchtitle}
                   initialStart={perPage}
-                  total={total}
+                  total={wheelTotal}
                 />
               </div>
             </>
@@ -177,25 +197,25 @@ export default async function Page({ params, searchParams }) {
         </>
       )}
 
-      {/* Content tabs — each fetches only its own API */}
+      {/* Content tabs — pass universal pre-fetched data to speed up immediate switches */}
       {activeType === "anime" && (
         <Suspense fallback={<ContentSkeleton />}>
-          <AnimeSection searchtitle={searchtitle} />
+          <AnimeSection searchtitle={searchtitle} initialData={animeData} />
         </Suspense>
       )}
       {activeType === "movie" && (
         <Suspense fallback={<ContentSkeleton />}>
-          <MovieSection searchtitle={searchtitle} />
+          <MovieSection searchtitle={searchtitle} initialData={moviesData} />
         </Suspense>
       )}
       {activeType === "game" && (
         <Suspense fallback={<ContentSkeleton />}>
-          <GameSection searchtitle={searchtitle} />
+          <GameSection searchtitle={searchtitle} initialData={gamesData} />
         </Suspense>
       )}
       {activeType === "character" && (
         <Suspense fallback={<ContentSkeleton />}>
-          <CharacterSection searchtitle={searchtitle} />
+          <CharacterSection searchtitle={searchtitle} initialData={charactersData} />
         </Suspense>
       )}
 

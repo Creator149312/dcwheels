@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle } from "lucide-react";
+import { PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle } from "lucide-react";
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
@@ -15,7 +14,7 @@ const NotificationBell = dynamic(
 // mismatch on the authenticated vs unauthenticated UI button state.
 const UserInfo = dynamic(
   () => import("@components/UserInfo"),
-  { ssr: false, loading: () => <div className="h-10 w-24 bg-muted rounded-lg animate-pulse" /> }
+  { ssr: false, loading: () => <div className="h-9 w-9 sm:w-10 sm:h-10 bg-muted rounded-full animate-pulse" /> }
 );
 
 // MobileSearchBar brings in the API fetch logic, extra states, and lucide icons.
@@ -25,8 +24,6 @@ const MobileSearchBar = dynamic(
 );
 
 const Navbar = ({ onToggleSidebar }) => {
-  const [open, setOpen] = useState(false);
-
   return (
     <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
       <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-3 md:px-6">
@@ -124,66 +121,13 @@ const Navbar = ({ onToggleSidebar }) => {
 
           <div className="hidden md:block h-6 w-[1px] bg-border mx-1" />
 
-          {/* User Section & Hamburger */}
+          {/* User Section */}
           <div className="flex items-center gap-3 relative z-[80]">
              <NotificationBell />
              <UserInfo />
-             <button
-                className="md:hidden p-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setOpen(!open)}
-              >
-                {open ? <X size={26} /> : <Menu size={26} />}
-              </button>
           </div>
         </div>
       </div>
-
-      {/* FIXED: SOLID NON-TRANSPARENT OVERLAY */}
-      <div 
-        className={`fixed inset-0 z-[200] md:hidden transition-opacity duration-300 ${
-          open 
-            ? "opacity-100 visible bg-background/90 backdrop-blur-sm" 
-            : "opacity-0 invisible pointer-events-none"
-        }`}
-        onClick={() => setOpen(false)}
-      />
-
-      {/* FIXED: MOBILE DRAWER */}
-      <div
-        className={`fixed top-0 bottom-0 right-0 w-[280px] z-[210] p-6 shadow-2xl md:hidden transition-transform duration-500 ease-out flex flex-col ${
-          open ? "translate-x-0" : "translate-x-full"
-        } bg-background border-l border-border`}
-      >
-        <div className="flex justify-between items-center mb-10">
-           <span className="text-xl font-black text-foreground uppercase tracking-tighter">
-             Spin<span className="text-primary">Papa</span>
-           </span>
-           <button onClick={() => setOpen(false)} className="p-2 bg-muted hover:bg-accent rounded-full text-muted-foreground hover:text-foreground transition-colors">
-             <X size={20} />
-           </button>
-        </div>
-
-        <nav className="flex flex-col gap-3">
-          <Link href="/wheels/create" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-md w-full hover:bg-primary/90 transition-colors">
-         <PlusCircle size={22} /> {"Create New Wheel"}
-          </Link>
-          <Link href="/explore" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
-         <Compass className="text-primary" size={22} /> {"Explore"}
-          </Link>
-
-          
-          <div className="border-t border-border my-4 pt-6">
-        <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 px-4 tracking-widest">{"Browse"}</p>
-            <Link href="/wheels" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
-          <Disc3 size={22} className="text-primary" /> {"Browse Wheels"}
-            </Link>
-            <Link href="/lists" onClick={() => setOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl font-bold text-foreground hover:bg-muted transition-colors">
-          <List size={22} className="text-primary" /> {"Collections"}
-            </Link>
-          </div>
-        </nav>
-      </div>
-
     </nav>
   );
 };

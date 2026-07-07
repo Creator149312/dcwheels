@@ -39,7 +39,7 @@ function toSegment(movie) {
     // Extra display hints the editor can show (non-authoritative)
     meta: {
       year,
-      rating: movie.vote_average || null,
+      rating: movie.vote_average ? (movie.vote_average / 2).toFixed(1) : null,
       overview: movie.overview || "",
     },
   };

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import TopicPage from "@models/topicpage";
 import TopicPageVote from "@models/topicPageVote";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { ratingToVote } from "@lib/worthItLogic";
 
 // ---------------------------------------------------------------------------
 // "Worth It?" vote endpoint
@@ -37,21 +39,19 @@ export async function GET(req) {
 
   // If user is logged in, also check if they have voted
   const session = await getServerSession(authOptions);
-  let userVote = null;
   let userRating = null;
-  if (session?.user?.mongoId) {
+  const userId = session?.user?.id || session?.user?.mongoId;
+  if (userId) {
     const existing = await TopicPageVote.findOne({
       topicPageId: id,
-      userId: session.user.mongoId,
+      userId: userId,
     }).lean();
-    userVote = existing?.vote || null;
     userRating = existing?.rating || null;
   }
 
   return NextResponse.json({
     worthIt: page.worthIt || { yes: 0, no: 0, meh: 0 },
     rating: page.rating || { totalScore: 0, count: 0 },
-    userVote,
     userRating,
   });
 }
@@ -67,11 +67,18 @@ export async function POST(req) {
 
   let { topicPageId, vote, rating } = body;
 
-  // Derive vote from rating if provided
+  // Validate rating is 1-5 if provided
+  if (rating && (typeof rating !== 'number' || rating < 1 || rating > 5)) {
+    return NextResponse.json({ error: "Rating must be 1-5" }, { status: 400 });
+  }
+
+  // Derive vote from rating using shared logic
   if (rating && !vote) {
-    if (rating >= 4) vote = "yes";
-    else if (rating === 3) vote = "meh";
-    else vote = "no";
+    try {
+      vote = ratingToVote(rating);
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
   }
 
   if (!topicPageId || (!vote && !rating)) {
@@ -84,9 +91,9 @@ export async function POST(req) {
   await connectMongoDB();
 
   // 1) Logic for Authenticated Users
-  if (session?.user?.mongoId) {
-    const userId = session.user.mongoId;
-    const existingVote = await TopicPageVote.findOne({ topicPageId, userId });
+  const userId = session?.user?.id || session?.user?.mongoId;
+  if (userId) {
+    const existingVote = await TopicPageVote.findOne({ topicPageId, userId: userId });
 
     if (existingVote) {
       // Logic for updating existing vote
@@ -122,10 +129,12 @@ export async function POST(req) {
         select: "worthIt rating",
       });
 
+      // Invalidate cache for this topic page
+      revalidateTag(`worthit-${topicPageId}`);
+
       return NextResponse.json({
         worthIt: updated.worthIt,
         rating: updated.rating,
-        userVote: vote,
         userRating: rating,
       });
     } else {
@@ -143,35 +152,22 @@ export async function POST(req) {
         select: "worthIt rating",
       });
 
+      // Invalidate cache for this topic page
+      revalidateTag(`worthit-${topicPageId}`);
+
       return NextResponse.json({
         worthIt: updated.worthIt,
         rating: updated.rating,
-        userVote: vote,
         userRating: rating,
       });
     }
   }
 
-  // 2) Logic for Guests (Simple increment)
-  const updateQuery = { $inc: { [`worthIt.${vote}`]: 1 } };
-  if (rating) {
-    updateQuery.$inc["rating.totalScore"] = rating;
-    updateQuery.$inc["rating.count"] = 1;
-  }
-
-  const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
-    new: true,
-    select: "worthIt rating",
-  });
-
-  if (!updated) {
-    return NextResponse.json({ error: "Page not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({
-    worthIt: updated.worthIt,
-    rating: updated.rating,
-  });
+  // 2) Block Guests (Prevents spam/multiple ratings from single anonymous users)
+  return NextResponse.json(
+    { error: "Authentication required to rate content" },
+    { status: 401 }
+  );
 }
 
 

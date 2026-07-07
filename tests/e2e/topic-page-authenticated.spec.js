@@ -10,13 +10,13 @@ test.describe('Topic Page - Authenticated Testing', () => {
     // Fill in email
     const emailInput = page.locator('input[name="email"], input[type="email"]').first();
     if (await emailInput.isVisible()) {
-      await emailInput.fill('dharamveer@email.com');
+      await emailInput.fill(process.env.PW_TEST_EMAIL || 'dharamveer@email.com');
     }
 
     // Fill in password
     const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
     if (await passwordInput.isVisible()) {
-      await passwordInput.fill('Dharam@1@');
+      await passwordInput.fill(process.env.PW_TEST_PASSWORD || 'Dharam@1@');
     }
 
     // Click sign in button

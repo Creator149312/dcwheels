@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
+import { cleanupBlobAssets } from "@lib/blob-cleanup";
 
 // Strip base64 images from segment data before persisting to DB.
 // Blob URLs (https://...) are kept; data:image/... strings are removed.
@@ -44,7 +45,6 @@ export async function POST(request) {
     if (vld.length !== 0) error = vld;
 
     if (error.length === 0) {
-      // console.log("Inside Processing and Trying to Create Wheel");
       await connectMongoDB();
       
       // Get userId from session (mongoId is set during auth callback)
@@ -75,7 +75,6 @@ export async function POST(request) {
           ? tags.filter((t) => typeof t === "string" && t.trim().length > 0)
           : [],
       });
-      // console.log("Creation Data", creationData);
       return NextResponse.json({
         message: "Wheel Created Successfully",
         creationID: creationData._id,
@@ -124,7 +123,7 @@ export async function DELETE(request) {
     }
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("createdBy").lean();
+    const wheel = await Wheel.findById(id).select("createdBy wheelPreview data").lean();
     if (!wheel) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
@@ -132,7 +131,36 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Collect assets to delete
+    const assetsToDelete = [];
+    
+    // 1. Wheel Preview (and its thumbnail)
+    if (wheel.wheelPreview) {
+      assetsToDelete.push(wheel.wheelPreview);
+      // If it's a .webp, we also generated a -thumb.webp
+      if (wheel.wheelPreview.endsWith('.webp')) {
+        assetsToDelete.push(wheel.wheelPreview.replace('.webp', '-thumb.webp'));
+      }
+    }
+
+    // 2. Segment images stored in Vercel Blob
+    if (Array.isArray(wheel.data)) {
+      wheel.data.forEach(seg => {
+        if (seg?.image && typeof seg.image === 'string' && seg.image.includes('.blob.vercel-storage.com')) {
+          assetsToDelete.push(seg.image);
+        }
+      });
+    }
+
     await Wheel.findByIdAndDelete(id);
+
+    // Best-effort cleanup (backgrounded)
+    if (assetsToDelete.length > 0) {
+      cleanupBlobAssets(assetsToDelete).catch(err => 
+        console.error("Delayed cleanup failed for wheel assets:", err)
+      );
+    }
+
     return NextResponse.json({ message: "Wheel deleted" }, { status: 200 });
   } catch (e) {
     console.error("DELETE /api/wheel failed:", e);

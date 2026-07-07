@@ -1,24 +1,21 @@
 /**
  * app/(content)/game/[slug]/page.js
  *
- * Game content pages — ISR, 1-day revalidation (store/streaming data changes).
- *
- * Only RAWG fetch calls live here. No AniList, no TMDB in this bundle.
+ * Game content pages — ISR, 14-day revalidation (store/streaming data changes).
  */
 
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
-import TopicPage from "@/models/topicpage";
 import { getFeedItems } from "@/lib/feedService";
-import { slugify } from "@utils/HelperFunctions";
 import {
   extractId,
   resolveTitle,
+  optimizeTitle,
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
   fetchTaggedWheels,
-  rewriteAndPersist,
+  fetchGameExtras,
 } from "@lib/topicPage";
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
@@ -26,112 +23,10 @@ import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 // Cache for 14 days (bi-weekly) to balance content freshness with Vercel duration costs.
 export const revalidate = 1209600;
 
-const RAWG_API_KEY = process.env.RAWG_API_KEY;
-const RAWG_BASE_URL = "https://api.rawg.io/api";
-
-// ---------------------------------------------------------------------------
-// RAWG fetchers (game-only)
-// ---------------------------------------------------------------------------
-
-async function fetchGameById(gameId) {
-  try {
-    const res = await fetch(
-      `${RAWG_BASE_URL}/games/${gameId}?key=${RAWG_API_KEY}`
-    );
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (err) {
-    console.error("fetchGameById error:", err.message);
-    return null;
-  }
-}
-
-async function fetchGameExtras(gameId) {
-  try {
-    const [detailRes, storesRes] = await Promise.all([
-      fetch(`${RAWG_BASE_URL}/games/${gameId}?key=${RAWG_API_KEY}`, {
-        next: { revalidate: 86400 },
-      }),
-      fetch(`${RAWG_BASE_URL}/games/${gameId}/stores?key=${RAWG_API_KEY}`, {
-        next: { revalidate: 86400 },
-      }),
-    ]);
-    if (!detailRes.ok) return { trailerKey: null, streaming: [] };
-
-    const detail = await detailRes.json();
-    const storesData = storesRes.ok ? await storesRes.json() : { results: [] };
-
-    // Build store_id → purchase URL map from the sub-endpoint
-    const urlMap = {};
-    for (const s of storesData.results || []) {
-      urlMap[s.store_id] = s.url;
-    }
-
-    // Merge metadata (name, domain) + real purchase URLs
-    const streaming = (detail.stores || []).slice(0, 6).map((s) => ({
-      url: urlMap[s.store.id] || null,
-      store: s.store,
-    }));
-
-    return { trailerKey: null, streaming };
-  } catch {
-    return { trailerKey: null, streaming: [] };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// DB upsert (game-only branch)
-// ---------------------------------------------------------------------------
-
-async function getOrCreateGamePage(relatedId) {
-  let pageDoc = await TopicPage.findOne({ type: "game", relatedId }).lean();
-  if (pageDoc) return pageDoc;
-
-  const media = await fetchGameById(relatedId);
-  if (!media) return null;
-
-  const rawDescription = media.description_raw || "";
-
-  const newDoc = {
-    type: "game",
-    source: "RAWG",
-    relatedId: media.id,
-    slug: `${media.id}-${slugify(media.name)}`,
-    title: { default: media.name },
-    cover: media.background_image || "",
-    description: rawDescription,
-    tags: (media.genres || []).map((g) => g.name.toLowerCase()),
-    details: {
-      platform: (media.platforms || [])
-        .map((p) => p.platform?.name)
-        .join(", "),
-      releaseYear: media.released
-        ? parseInt(media.released.split("-")[0])
-        : null,
-    },
-  };
-
-  try {
-    pageDoc = await TopicPage.create(newDoc);
-    if (newDoc.description) {
-      rewriteAndPersist(pageDoc._id, newDoc.description, "game").catch((err) =>
-        console.error("rewriteAndPersist failed:", err)
-      );
-    }
-  } catch (err) {
-    if (err.code === 11000) {
-      pageDoc = await TopicPage.findOne({ slug: newDoc.slug }).lean();
-    } else {
-      throw err;
-    }
-  }
-
-  return pageDoc ? JSON.parse(JSON.stringify(pageDoc)) : null;
-}
-
 const getCachedGamePage = cache(async (relatedId) => {
   await connectMongoDB();
-  return getOrCreateGamePage(relatedId);
+  const { getOrCreateTopicPage } = await import("@lib/topicPageLogic"); 
+  return getOrCreateTopicPage("game", relatedId);
 });
 
 // ---------------------------------------------------------------------------
@@ -159,31 +54,30 @@ export default async function GamePage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  const [extras, relatedPages, taggedWheels, feedData] = await Promise.all([
-    fetchGameExtras(relatedId),
-    getRelatedPages(pageDoc.tags || [], pageDoc._id),
-    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "game"),
-    getFeedItems({ 
-      type: "game", 
-      externalId: String(relatedId),
-      limit: 9 
-    }),
-  ]);
+  // Slow external and DB fetches are kicked off as Promises (no await)
+  const extrasPromise = fetchGameExtras(relatedId);
+  const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
+  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "game");
+  const feedPromise = getFeedItems({ 
+    type: "game", 
+    externalId: String(relatedId),
+    limit: 9 
+  });
 
   return (
     <TopicPageContentWrapper>
       <TopicPageLayout
         type="game"
         pageDoc={pageDoc}
-        extras={extras}
-        relatedPages={JSON.parse(JSON.stringify(relatedPages))}
-        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-        animeCharacters={[]}
         displayTitle={displayTitle}
         affiliateLinks={buildAffiliateLinks("game", displayTitle)}
         relatedId={relatedId}
-        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
-        initialCursor={feedData.length > 8 ? JSON.parse(JSON.stringify(feedData[7].createdAt)) : null}
+        tag={displayTitle}
+        extrasPromise={extrasPromise}
+        relatedPagesPromise={relatedPagesPromise}
+        taggedWheelsPromise={taggedWheelsPromise}
+        charactersPromise={Promise.resolve([])} // Cast carousel disabled for games
+        feedPromise={feedPromise}
       />
     </TopicPageContentWrapper>
   );

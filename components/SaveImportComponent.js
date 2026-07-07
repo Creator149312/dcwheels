@@ -2,31 +2,27 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import SaveWheelBtn from "./SaveWheelBtn";
+import { Button } from "@/components/ui/button";
+import { CloudUpload } from "lucide-react";
 
 const SaveImportComponent = ({ onImport, segments }) => {
   const { status, data: session } = useSession();
 
   return (
-    <div className="flex flex-wrap justify-between items-center">
+    <div className="w-full h-full flex items-center">
       {/* Save Button */}
       {session !== null ? (
-        <>
-          <div className="flex flex-wrap">
-            {/* Save on Cloud Button */}
-            {/* <SaveWheelLocally segmentsData={segments} /> */}
-            {/* Save on Cloud Button */}
-            
-            <SaveWheelBtn segmentsData={segments} />
-            {/* <ImportLocalWheel afterImport={onImport} /> */}
-          </div>
-        </>
+        <SaveWheelBtn segmentsData={segments} />
       ) : (
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Link href="/login" className="underline text-blue-500 hover:text-blue-600">
-            Login
+        <Button
+          variant="outline"
+          className="w-full h-10 flex items-center justify-center gap-2 text-sm shadow-sm"
+          asChild
+        >
+          <Link href="/login">
+            Login to save <CloudUpload size={16} />
           </Link>
-          to save
-        </p>
+        </Button>
       )}
     </div>
   );

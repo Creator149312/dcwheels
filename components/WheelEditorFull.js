@@ -10,6 +10,7 @@ import ContentEditableDivResult from "./ContentEditableDivResult";
 import GenerateWheel from "@components/GenerateWheel";
 import SaveImportComponent from "./SaveImportComponent";
 import { Brain, List } from "lucide-react";
+import { Suspense } from "react";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
 
@@ -93,7 +94,7 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
   };
 
   return (
-    <div className={`bg-card text-card-foreground border shadow-sm px-2 pt-1.5 pb-2 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden${inModal ? " border-none shadow-none p-0 flex-1 min-h-0" : " min-h-[32rem] lg:max-h-[521px]"}`}>
+    <div className={`bg-card text-card-foreground border shadow-sm px-2 pt-1.5 pb-2 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden ${inModal ? "border-none shadow-none p-0 flex-1 min-h-0" : "flex min-h-[32rem] lg:max-h-[521px]"}`}>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -174,7 +175,9 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
         </TabsContent>
       </Tabs>
       <div className="grid grid-cols-2 gap-2 mt-2 shrink-0">
-        <GenerateWheel url={currentPath} />
+        <Suspense fallback={<div className="h-10 bg-muted animate-pulse rounded-md" />}>
+          <GenerateWheel url={currentPath} />
+        </Suspense>
         <SaveImportComponent segments={segData} onImport={setSegData} />
       </div>
     </div>

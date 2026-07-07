@@ -1,6 +1,6 @@
 import { connectMongoDB } from "@lib/mongodb";
 import User from "@models/user";
-import NextAuth from "next-auth/next";
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -55,7 +55,10 @@ export const authOptions = {
     }),
     CredentialsProvider({
       name: "credentials",
-      credentials: {},
+      credentials: {
+        email: { label: "Email", type: "email", placeholder: "you@example.com" },
+        password: { label: "Password", type: "password" }
+      },
 
       async authorize(credentials) {
         const { email, password } = credentials;
@@ -169,7 +172,7 @@ export const authOptions = {
           return null;
         }
       } else if (account.provider === "credentials") {
-        if (user.emailVerified === true) {
+        if (user.emailVerified) {
           return user;
         } else {
           return null;

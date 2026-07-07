@@ -16,6 +16,11 @@ const TagsCarousel = dynamic(() => import("@components/TagsCarousel"));
 // MobileSearchBar brings debounce + API fetch logic — only needed on interaction.
 const MobileSearchBar = dynamic(() => import("@components/MobileSearchBar"));
 
+const NotificationBell = dynamic(
+  () => import("@components/notifications/NotificationBell"),
+  { ssr: false }
+);
+
 const SCROLL_THRESHOLD = 10;
 
 function BottomNavItem({ href, icon, label, active, onClick }) {
@@ -147,6 +152,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             </div>
 
             <div className="flex items-center gap-1">
+              <NotificationBell />
               <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="p-2 rounded-lg text-muted-foreground hover:bg-muted"

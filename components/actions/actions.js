@@ -15,6 +15,7 @@ import {
   validateEmail,
 } from "@utils/Validator";
 import Wheel from "@models/wheel";
+import TopicPage from "@models/topicpage";
 import { Resend } from "resend";
 import Registration from "@app/email/registration";
 import uuid4 from "uuid4";
@@ -455,6 +456,7 @@ export async function getPageDataBySlug(slug) {
         "wheel.authorHandle": 1,
         "wheel.createdAt": 1,
         "wheel.isPublic": 1,
+        "wheel.relatedTopics": 1,
       },
     },
   ]);
@@ -471,11 +473,11 @@ export async function getPageDataBySlug(slug) {
 export async function getWheelById(wheelId) {
   if (!wheelId || !mongoose.Types.ObjectId.isValid(wheelId)) return null;
   await connectMongoDB();
-  // Explicit projection — excludes heavy/unused fields (editorData, relatedTopics,
+  // Explicit projection — excludes heavy/unused fields (editorData, 
   // isPublic, likeCount) that /uwheels/[wheelId] never renders.
   return Wheel.findOne({ _id: wheelId })
     .select(
-      "title description data wheelData tags wheelPreview createdBy authorHandle createdAt wheelType isPublic"
+      "title description data wheelData tags wheelPreview createdBy authorHandle createdAt wheelType isPublic relatedTopics"
     )
     .lean();
 }
@@ -1054,4 +1056,41 @@ export async function callOpenAI(userId, prompt, options, promptToStoreInDB) {
   }
   
   return response;
+}
+
+/**
+ * Maps relatedTopics (type + id) to actual TopicPage documents (slug + title).
+ * Used to display back-links on wheel pages.
+ */
+export async function getRelatedTopicPages(relatedTopics) {
+  if (!relatedTopics || !Array.isArray(relatedTopics) || relatedTopics.length === 0) return [];
+  
+  await connectMongoDB();
+
+  // Filter out any entries missing type or ID
+  const validTopics = relatedTopics.filter(t => t.type && t.id);
+  if (validTopics.length === 0) return [];
+
+  // Batch query all related pages in one round-trip.
+  // We handle both String and Number relatedId to avoid type mismatch issues (e.g. Anilist IDs)
+  const queries = validTopics.map(t => {
+    const num = Number(t.id);
+    const resolvedId = !isNaN(num) ? num : t.id;
+    return {
+      type: t.type,
+      relatedId: resolvedId
+    };
+  });
+
+  const pages = await TopicPage.find({ $or: queries })
+    .select("title slug type cover relatedId")
+    .lean();
+
+  return pages.map(p => ({
+    title: p.title?.default || p.title?.english || p.title?.romaji || p.title?.localized || "Topic",
+    slug: p.slug,
+    type: p.type,
+    cover: p.cover,
+    id: p.relatedId
+  }));
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import apiConfig from "@utils/ApiUrlConfig";
 import {
@@ -9,6 +10,164 @@ import {
   validateListDescription,
   validateListTitle,
 } from "@utils/Validator";
+
+// --- WHEEL PREVIEW CANVAS DRAWING HELPERS ---
+const FALLBACK_COLORS = [
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#06b6d4",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+];
+
+function getSegmentText(segment) {
+  if (typeof segment === "string") return segment;
+  if (segment && typeof segment === "object") {
+    if (typeof segment.text === "string") return segment.text;
+    if (typeof segment.option === "string") return segment.option;
+  }
+  return "Option";
+}
+
+function getSegmentColor(segment, index, segColors) {
+  if (segment && typeof segment === "object") {
+    if (typeof segment.color === "string") return segment.color;
+    if (segment.style && typeof segment.style.backgroundColor === "string") {
+      return segment.style.backgroundColor;
+    }
+  }
+  if (segColors && segColors.length > 0) {
+    return segColors[index % segColors.length];
+  }
+  return FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+}
+
+function drawWheelPreview(canvas, wheel) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Canvas context is not available");
+  }
+
+  const size = canvas.width;
+  const isSmallCanvas = size <= 512;
+  const center = size / 2;
+  const radius = size * 0.45;
+
+  const rawSegments = Array.isArray(wheel?.data) && wheel.data.length > 0 ? wheel.data : ["Option"];
+  const segments = rawSegments.slice(0, 24);
+  const arcSize = (Math.PI * 2) / segments.length;
+  
+  const wheelData = wheel?.wheelData || {};
+  const segColors = wheelData.segColors || [];
+
+  ctx.clearRect(0, 0, size, size);
+
+  // Background
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, size, size);
+
+  // Math scaling
+  const titleFontSize = isSmallCanvas ? 16 : 26;
+  const segmentFontSize = isSmallCanvas ? 11 : 14;
+  const footerFontSize = isSmallCanvas ? 10 : 14;
+
+  // Wheel segments
+  for (let i = 0; i < segments.length; i += 1) {
+    const start = -Math.PI / 2 + i * arcSize;
+    const end = start + arcSize;
+
+    ctx.beginPath();
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, start, end);
+    ctx.closePath();
+    ctx.fillStyle = getSegmentColor(segments[i], i, segColors);
+    ctx.fill();
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = isSmallCanvas ? 1 : 2;
+    ctx.stroke();
+
+    const label = getSegmentText(segments[i]).replace(/<[^>]+>/g, "").trim() || "Option";
+    const angle = start + arcSize / 2;
+    const paddingMultiplier = wheelData?.textDistance || 80;
+    const textRadius = radius * (paddingMultiplier / 100) * 0.85; // Adjusted to stay within canvas boundaries effectively
+    
+    const tx = center + Math.cos(angle) * textRadius;
+    const ty = center + Math.sin(angle) * textRadius;
+
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(angle);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#111827";
+    ctx.font = `600 ${segmentFontSize}px sans-serif`;
+    const maxChars = isSmallCanvas ? 12 : 16;
+    const shortLabel = label.length > maxChars ? `${label.slice(0, maxChars - 2)}..` : label;
+    ctx.fillText(shortLabel, 0, 0);
+    ctx.restore();
+  }
+
+  // Draw inner radius (donut hole) or center cap
+  const innerRadiusPercent = wheelData?.innerRadius || 0;
+  if (innerRadiusPercent > 0) {
+    const minInnerPercent = Math.min(innerRadiusPercent, 60);
+    const innerRadiusPx = radius * (minInnerPercent / 100);
+    ctx.beginPath();
+    ctx.arc(center, center, innerRadiusPx, 0, Math.PI * 2);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fill();
+    ctx.lineWidth = isSmallCanvas ? 1 : 2;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(center, center, radius * 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.lineWidth = isSmallCanvas ? 2 : 4;
+    ctx.strokeStyle = "#0f172a";
+    ctx.stroke();
+  }
+
+  // Center Text Branding
+  if (wheelData?.centerText) {
+    ctx.fillStyle = "#0f172a";
+    ctx.font = `bold ${isSmallCanvas ? 14 : 20}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(wheelData.centerText, center, center);
+  }
+
+  // Footer with extra padding from top (move further down)
+  ctx.fillStyle = "#334155";
+  ctx.font = `500 ${footerFontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  const footerPadding = isSmallCanvas ? 6 : 12;
+  ctx.fillText("spinpapa.com", center, size - footerPadding);
+}
+
+async function canvasToBlob(canvas) {
+  // To improve sharpness, render at 2x and downscale
+  const tmpCanvas = document.createElement("canvas");
+  tmpCanvas.width = canvas.width * 2;
+  tmpCanvas.height = canvas.height * 2;
+  const tmpCtx = tmpCanvas.getContext("2d");
+  tmpCtx.scale(2, 2);
+  tmpCtx.drawImage(canvas, 0, 0);
+  return new Promise((resolve, reject) => {
+    tmpCanvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Failed to create image blob"));
+        return;
+      }
+      resolve(blob);
+    }, "image/webp", 1.0); // quality 100
+  });
+}
 
 function getQueryParams() {
   if (typeof window === "undefined") return { type: null, id: null, tag: null };
@@ -96,6 +255,7 @@ async function materializeImages(segData, wheelData) {
 
 export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
   const router = useRouter();
+  const { data: sessionData } = useSession();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -270,7 +430,31 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           toast.error("Failed to Update Wheel");
           return false;
         } else {
-          router.push("/dashboard");
+          // Generate and upload wheel preview back-to-back with saving
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 320;
+            canvas.height = 320;
+            drawWheelPreview(canvas, { data, wheelData: wheelDataToStore });
+            const blob = await canvasToBlob(canvas);
+
+            const form = new FormData();
+            form.append("wheelId", selectedWheel._id);
+            form.append("file", new File([blob], `${selectedWheel._id}.webp`, { type: "image/webp" }));
+
+            await fetch("/api/wheel-preview", {
+              method: "POST",
+              body: form,
+            });
+          } catch (previewErr) {
+            console.error("Preview generation/upload failed:", previewErr);
+          }
+
+          if (sessionData?.user?.username) {
+            router.push(`/u/${sessionData.user.username}`);
+          } else {
+            router.push("/dashboard");
+          }
           return true;
         }
       } else {
@@ -299,7 +483,31 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           toast.error("Failed to Create Wheel");
           return false;
         } else {
-          router.push("/dashboard");
+          // Generate and upload wheel preview back-to-back with saving
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 320;
+            canvas.height = 320;
+            drawWheelPreview(canvas, { data, wheelData: wheelDataToStore });
+            const blob = await canvasToBlob(canvas);
+
+            const form = new FormData();
+            form.append("wheelId", resObj.creationID);
+            form.append("file", new File([blob], `${resObj.creationID}.webp`, { type: "image/webp" }));
+
+            await fetch("/api/wheel-preview", {
+              method: "POST",
+              body: form,
+            });
+          } catch (previewErr) {
+            console.error("Preview generation/upload failed:", previewErr);
+          }
+
+          if (sessionData?.user?.username) {
+            router.push(`/u/${sessionData.user.username}`);
+          } else {
+            router.push("/dashboard");
+          }
           return true;
         }
       }

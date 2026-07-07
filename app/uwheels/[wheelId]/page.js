@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 import WheelInfoStatic from "@components/WheelInfoStatic";
 import Description from "@components/description/Description";
 import ViewTracker from "@components/ViewTracker";
-import { getWheelById } from "@components/actions/actions";
+import RelatedTopicLinks from "@components/RelatedTopicLinks";
+import { getWheelById, getRelatedTopicPages } from "@components/actions/actions";
 import {
   SuspendedRelatedWheels,
   SuspendedInfoActions,
@@ -19,19 +20,26 @@ import {
 // AdsUnit is ssr:false — AdSense has no crawlable content.
 const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
 
-// ISR: revalidate user-wheel pages every 30 minutes.
+// ISR: revalidate user-wheel pages every 7 days.
 // View tracking runs client-side via <ViewTracker /> so this page can be
 // CDN-cacheable. Per-user state (current user's reaction, follow status,
 // auth-only buttons) is resolved client-side via useSession() inside
-// WheelInfoSection — DO NOT call getServerSession() here, it forces
-// dynamic rendering and defeats the CDN cache for every visitor.
-export const revalidate = 1800;
+// WheelInfoSection.
+export const revalidate = 604800; // 7 days
 
 // React.cache() dedupes the call so generateMetadata + the page body share
-// a single DB round-trip per render. Without this, every cold ISR fill ran
-// the same query twice.
+// a single DB round-trip per render.
 const fetchWheelData = cache(async (id) => {
-  return getWheelById(id);
+  const wheel = await getWheelById(id);
+  if (!wheel) return null;
+
+  // PARALLEL OPTIMIZATION:
+  // Instead of awaiting database calls sequentially in the component,
+  // we can trigger the related topics fetch immediately and return it with the wheel.
+  // This "pre-packs" our data in one go.
+  const resolvedTopics = await getRelatedTopicPages(wheel.relatedTopics);
+  
+  return { ...wheel, _relatedTopicDocs: resolvedTopics };
 });
 
 export async function generateMetadata({ params }) {
@@ -88,8 +96,10 @@ export default async function Page({ params }) {
 
   // Single fetch — generateMetadata above already triggered the cached call,
   // so this is a no-op DB hit thanks to React.cache().
-  const rawWordsList = await fetchWheelData(wheelId);
-  const wordsList = rawWordsList ? JSON.parse(JSON.stringify(rawWordsList)) : null;
+  const wordsList = await fetchWheelData(wheelId);
+
+  // Extract pre-fetched topics — they were resolved in parallel in the cache layer
+  const relatedTopics = wordsList?._relatedTopicDocs || [];
 
   return (
     <div>
@@ -157,6 +167,13 @@ export default async function Page({ params }) {
                   #{tag}
                 </a>
               ))}
+            </div>
+          )}
+
+          {/* Associated TopicPage links — helps with the "Source of Truth" linking */}
+          {relatedTopics.length > 0 && (
+            <div className="w-full px-4 mb-3">
+              <RelatedTopicLinks topics={relatedTopics} />
             </div>
           )}
 

@@ -2,11 +2,12 @@ import { cache, Suspense } from "react";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { redirect } from "next/navigation";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { getPageDataBySlug } from "@components/actions/actions";
+import { getPageDataBySlug, getRelatedTopicPages } from "@components/actions/actions";
 import dynamic from "next/dynamic";
 import WheelInfoStatic from "@components/WheelInfoStatic";
 import Description from "@components/description/Description";
 import ViewTracker from "@components/ViewTracker";
+import RelatedTopicLinks from "@components/RelatedTopicLinks";
 import { connectMongoDB } from "@/lib/mongodb";
 import Page from "@models/page";
 import {
@@ -23,27 +24,10 @@ const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), {
   ssr: false,
 });
 
-// Admin-curated /wheels/[slug] pages change infrequently — revalidate once a
-// week. No session/headers calls here, so Next.js can fully static-render the
-// page and the CDN serves ~99% of requests without touching the origin.
-// Session-dependent UI (reactions, follow state) is resolved client-side via
-// useSession() inside WheelMeta / StatsBar. View tracking runs client-side via
-// <ViewTracker />. When an admin edits a page we can bust just that slug with
-// revalidateTag('page:<slug>') instead of waiting out the timer.
+// ISR: revalidate once a week.
 export const revalidate = 604800; // 7 days
 
-// Pre-render the highest-value indexed admin pages at build time. Anything
-// outside the list still renders on-demand and then gets cached via
-// `revalidate`, so the long tail costs nothing extra in build time.
-//
-// Sort by `wheel.likeCount` (popularity) rather than `createdAt`: the pages
-// most likely to be hit first by crawlers and users are the ones already
-// getting engagement, not the newest ones. Note that `likeCount` lives on the
-// Wheel doc, not the Page, so we $lookup through the `wheel` ref.
-//
-// Cap at 500 — beyond that the marginal benefit drops sharply (most pages
-// get <1 visit/day, so pre-building them just burns CI minutes for cache
-// entries no one warms).
+// Pre-render the highest-value admin pages at build time.
 export async function generateStaticParams() {
   try {
     await connectMongoDB();
@@ -58,7 +42,6 @@ export async function generateStaticParams() {
         },
       },
       { $unwind: { path: "$wheel", preserveNullAndEmptyArrays: true } },
-      // `ifNull` keeps wheels with no likes from being sorted as `null` first.
       { $addFields: { _likeCount: { $ifNull: ["$wheel.likeCount", 0] } } },
       { $sort: { _likeCount: -1, createdAt: -1 } },
       { $limit: 300 },
@@ -66,18 +49,19 @@ export async function generateStaticParams() {
     ]);
     return rows.filter((p) => p.slug).map((p) => ({ slug: p.slug }));
   } catch (err) {
-    // If DB is unreachable at build time, fall back to fully on-demand
-    // rendering instead of failing the whole build.
     console.error("generateStaticParams (/wheels) failed:", err);
     return [];
   }
 }
 
-// React.cache() dedupes the slug lookup between generateMetadata and the
-// page body — without this every cold ISR fill ran the same aggregation
-// twice.
+// React.cache() dedupes the slug lookup between generateMetadata and the body.
 const getCachedPageData = cache(async (slug) => {
-  return getPageDataBySlug(slug);
+  const pageData = await getPageDataBySlug(slug);
+  if (!pageData || !pageData.wheel) return pageData;
+
+  const resolvedTopics = await getRelatedTopicPages(pageData.wheel.relatedTopics);
+
+  return { ...pageData, _relatedTopicDocs: resolvedTopics };
 });
 
 export async function generateMetadata({ params }) {
@@ -126,6 +110,9 @@ export default async function Home({ params }) {
   if (pageData === undefined) redirect("/");
 
   const wheelIdStr = pageData.wheel._id.toString();
+
+  // Extract pre-fetched topics resolved in the cache layer
+  const relatedTopics = pageData._relatedTopicDocs || [];
 
   return (
     <div className="flex flex-col">
@@ -204,6 +191,13 @@ export default async function Home({ params }) {
               #{tag}
             </a>
           ))}
+        </div>
+      )}
+
+      {/* Associated TopicPage links — helps with the "Source of Truth" linking */}
+      {relatedTopics.length > 0 && (
+        <div className="w-full px-4 mb-3">
+          <RelatedTopicLinks topics={relatedTopics} />
         </div>
       )}
 

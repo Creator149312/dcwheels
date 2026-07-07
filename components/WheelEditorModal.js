@@ -12,11 +12,11 @@ export default function WheelEditorModal({ isOpen, onClose, mustSpin, currentPat
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-40 flex items-center justify-center">
       {/* Full-screen modal container */}
       <div className="absolute inset-0 bg-background flex flex-col">
         {/* Header with close button */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-card shrink-0">
           <h2 className="font-bold text-lg">Edit Wheel</h2>
           <button
             onClick={onClose}
@@ -28,7 +28,7 @@ export default function WheelEditorModal({ isOpen, onClose, mustSpin, currentPat
         </div>
 
         {/* Editor content - strict height bounds for internal scrolling */}
-        <div className="flex-1 min-h-0 flex flex-col p-2">
+        <div className="flex-1 min-h-0 flex flex-col p-2 overflow-hidden">
           <WheelEditorFull mustSpin={mustSpin} currentPath={currentPath} inModal={true} />
         </div>
       </div>

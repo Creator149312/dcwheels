@@ -28,6 +28,17 @@ const WHEELS = [
     border: "hover:border-emerald-400 dark:hover:border-emerald-500",
     ring: "focus-visible:ring-emerald-400",
   },
+  {
+    type: "smart",
+    icon: <Sparkles size={28} className="text-amber-500" />,
+    label: "Smart AI Wheel",
+    description: "Perfect for: Quick ideas, brainstorming, themed wheels",
+    fullDescription: "Let AI generate options for you! Just tell it what you need and watch the wheel populate automatically.",
+    badge: "AI Powered",
+    badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    border: "hover:border-amber-400 dark:hover:border-amber-500",
+    ring: "focus-visible:ring-amber-400",
+  },
 ];
 
 const OTHER_ITEMS = [
@@ -62,14 +73,15 @@ export default function CreateWheelModal({ open, onClose }) {
     }
 
     // Store chosen type so SegmentsContext can bootstrap correct defaults
-    localStorage.setItem("SpinpapaWheelType", type);
+    localStorage.setItem("SpinpapaWheelType", type === "smart" ? "basic" : type);
     // Clear any previously saved wheel
     localStorage.removeItem("SpinpapaWheel");
 
     onClose();
 
     // Route to the wheel creation page
-    router.push("/wheels/create");
+    const url = type === "smart" ? "/wheels/create?ai=true" : "/wheels/create";
+    router.push(url);
   };
 
   return (

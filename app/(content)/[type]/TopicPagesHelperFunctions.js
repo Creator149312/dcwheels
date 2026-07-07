@@ -23,8 +23,8 @@ function _getHeroData(item, type) {
       img: item.coverImage?.large,
       title,
       url: `/anime/${item.id}-${slugify(title)}`,
-      rating: item.averageScore ? (item.averageScore / 10).toFixed(1) : null,
-      ratingLabel: "/ 10",
+      rating: item.averageScore ? (item.averageScore / 20).toFixed(1) : null,
+      ratingLabel: "/ 5",
       genre: item.genres?.[0] || null,
       description: item.description?.replace(/<[^>]+>/g, "").slice(0, 180) || null,
     };
@@ -37,8 +37,8 @@ function _getHeroData(item, type) {
         : `https://image.tmdb.org/t/p/w500${item.poster_path}`,
       title,
       url: `/movie/${item.id}-${slugify(title)}`,
-      rating: item.vote_average ? item.vote_average.toFixed(1) : null,
-      ratingLabel: "/ 10",
+      rating: item.vote_average ? (item.vote_average / 2).toFixed(1) : null,
+      ratingLabel: "/ 5",
       genre: null,
       description: item.overview?.slice(0, 180) || null,
     };
@@ -96,7 +96,8 @@ export function renderHeroCard(item, type) {
 export function renderAnimeCard(anime) {
   const title = anime.title.english || anime.title.romaji || "Untitled";
   const url = `/anime/${anime.id}-${slugify(title)}`;
-  const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : null;
+  // Anilist: 0-100 -> 0-5
+  const score = anime.averageScore ? (anime.averageScore / 20).toFixed(1) : null;
   const genre = anime.genres?.[0];
   return (
     <div key={anime.id} className="group relative block">
@@ -124,7 +125,8 @@ export function renderAnimeCard(anime) {
 export function renderMovieCard(movie) {
   const name = movie.title;
   const url = `/movie/${movie.id}-${slugify(name)}`;
-  const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+  // TMDB: 0-10 -> 0-5
+  const rating = movie.vote_average ? (movie.vote_average / 2).toFixed(1) : null;
   const image = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
   return (
     <div key={movie.id} className="group relative block">
@@ -146,6 +148,7 @@ export function renderMovieCard(movie) {
 
 export function renderGameCard(game) {
   const url = `/game/${game.id}-${game.slug}`;
+  // RAWG: 0-5 -> 0-5 (already correct)
   const rating = game.rating ? game.rating.toFixed(1) : null;
   const isMobile = game.platforms?.some((p) => [21, 3].includes(p.platform?.id));
   const genre = game.genres?.[0]?.name;

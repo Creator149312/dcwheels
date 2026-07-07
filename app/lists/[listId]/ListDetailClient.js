@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trash2, Pencil, Plus, Zap, X, Image as ImageIcon, Check, Eye, EyeOff, ArrowUpDown } from "lucide-react";
+import { Trash2, Pencil, Plus, Zap, X, Image as ImageIcon, Check, Eye, EyeOff, ArrowUpDown, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createSegment } from "@utils/segmentUtils";
 import { sortListItems, getSortLabel, getVisibilityLabel } from "@lib/listSorting";
@@ -22,8 +22,8 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const { data: session, status } = useSession();
 
   const [list, setList] = useState(initialList);
-  // System list if either isSystem flag is true OR systemKey exists (for legacy backward compat)
-  const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey;
+  // System list if either isSystem flag is true OR systemKey exists (for legacy backward compat/SYS_SAVED)
+  const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey || initialList?.systemKey === "SYS_SAVED";
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -68,6 +68,9 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const [imgUploading, setImgUploading] = useState(false);
   const imgFileRef = useRef(null);
 
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
   const listMenuRef = useRef(null);
 
   // ✅ Close menu when clicking outside
@@ -75,16 +78,43 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     function handleClickOutside(e) {
       if (listMenuRef.current && !listMenuRef.current.contains(e.target)) {
         setListMenuOpen(false);
+        setDeleteConfirm(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ✅ Auto-reset delete confirmation
+  useEffect(() => {
+    if (deleteConfirm) {
+      const timer = setTimeout(() => setDeleteConfirm(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [deleteConfirm]);
+
   // ✅ Delete entire list
   async function deleteList() {
-    await fetch(`/api/unifiedlist/${listId}`, { method: "DELETE" });
-    router.push("/lists");
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      return;
+    }
+
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("List deleted");
+        router.push("/lists");
+      } else {
+        toast.error("Failed to delete list");
+      }
+    } catch (err) {
+      toast.error("An error occurred");
+    } finally {
+      setDeleteSubmitting(false);
+      setDeleteConfirm(false);
+    }
   }
 
   // ✅ Delete a single item
@@ -399,10 +429,23 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                 {!isSystemList && (
                   <button
                     onClick={deleteList}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm transition-colors border-t border-border"
-                    title="Delete this list"
+                    disabled={deleteSubmitting}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-colors border-t border-border ${
+                      deleteConfirm 
+                        ? "bg-red-50 text-red-600 hover:bg-red-100 font-bold" 
+                        : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    }`}
+                    title={deleteConfirm ? "Click again to confirm deletion" : "Delete this list"}
                   >
-                    <Trash2 className="h-4 w-4" /> Delete List
+                    {deleteSubmitting ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : deleteConfirm ? (
+                      "Confirm Delete?"
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" /> Delete List
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -550,8 +593,8 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         </div>
       </div>
 
-      {/* ✅ Add Item Panel (Owner Only) */}
-      {isOwner && (
+      {/* ✅ Add Item Panel (Owner Only) - Hidden for system lists */}
+      {isOwner && !isSystemList && (
         <div className="mb-6">
           {addPanelMode === null ? (
             // ── Collapsed: single button ───────────────────────────────────

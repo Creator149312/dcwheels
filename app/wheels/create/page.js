@@ -5,6 +5,14 @@ import WheelWithInputContentEditable from "@components/WheelWithInputContentEdit
 export const dynamic = "force-static";
 export const revalidate = false;
 
+export function generateMetadata() {
+  return {
+    title: "Create New Spin Wheel",
+    description:
+      "Create and customize a spin wheel to make decisions, run giveaways, or have fun with friends.",
+  };
+}
+
 export default async function CreateWheel() {
   return (
     <div className="mx-auto">

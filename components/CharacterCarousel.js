@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { slugify } from "@utils/HelperFunctions";
 
 /**
  * CharacterCarousel — horizontal scroll for cast/characters.
- * Works for Anime (AniList) and Movies (TMDb).
  */
 export default function CharacterCarousel({ characters = [] }) {
   if (!characters || characters.length === 0) return null;
@@ -29,11 +29,15 @@ export default function CharacterCarousel({ characters = [] }) {
             const charName = char.name?.full || char.name || "Unknown";
             const charImage = char.image?.large || char.image || char.profile_path;
             const role = char.role || char.character || "";
+            
+            // Generate SEO friendly URL: /character/[id]-[slugified-name]
+            const charSlug = slugify(charName);
+            const characterUrl = `/character/${charId}-${charSlug}`;
 
             return (
               <Link
                 key={`${charId}-${index}`}
-                href={`/character/${charId}`}
+                href={characterUrl}
                 className="flex-shrink-0 w-24 sm:w-28 snap-start group/card"
               >
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-border/50 group-hover/card:border-primary/50 transition-colors">

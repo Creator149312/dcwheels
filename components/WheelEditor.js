@@ -25,19 +25,7 @@ export default function WheelEditor({
 }) {
   if (isFullScreen) return null;
 
-  // Non-home/create routes: render only the lightweight related-wheels sidebar.
-  // Hidden below `lg` (RelatedWheels is desktop-only), so on mobile this is
-  // effectively `display:none` - zero painted pixels and zero CLS.
-  if (currentPath !== "/" && currentPath !== "/wheels/create") {
-    return (
-      <aside className="hidden lg:block relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden">
-        <div className="absolute inset-0 overflow-y-auto p-3">
-          {relatedWheelsSlot}
-        </div>
-      </aside>
-    );
-  }
-
-  // Home page or wheel creation page: lazy-load the full tabbed editor.
+  // Home page or wheel creation page: lazy-load the full tabbed editor. 
+  // This component handles its own internal grid positioning for the sidebar.
   return <WheelEditorFull mustSpin={mustSpin} currentPath={currentPath} />;
 }

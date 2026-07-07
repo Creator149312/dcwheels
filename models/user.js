@@ -1,4 +1,5 @@
-import mongoose, {Schema, models} from "mongoose";
+import mongoose from "mongoose";
+const { Schema, models } = mongoose;
 
 /**
  * Reserved usernames that cannot be claimed by users.

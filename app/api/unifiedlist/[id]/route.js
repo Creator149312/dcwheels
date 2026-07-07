@@ -5,14 +5,9 @@ import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
-import { del } from "@vercel/blob";
+import { cleanupBlobAssets } from "@lib/blob-cleanup";
 
 export const dynamic = "force-dynamic";
-
-/** Returns true only for URLs hosted on Vercel Blob CDN. */
-function isBlobUrl(url) {
-  return typeof url === "string" && url.includes(".blob.vercel-storage.com");
-}
 
 export async function GET(req, { params }) {
   await connectMongoDB();
@@ -214,7 +209,7 @@ export async function DELETE(req, { params }) {
 
     // ✅ 4. Collect all Vercel Blob URLs from word items before deletion
     const blobUrls = list.items
-      .filter((i) => i.type === "word" && isBlobUrl(i.wordData))
+      .filter((i) => i.type === "word" && typeof i.wordData === "string" && i.wordData.includes(".blob.vercel-storage.com"))
       .map((i) => i.wordData);
 
     // ✅ 4. Delete the list
@@ -225,7 +220,7 @@ export async function DELETE(req, { params }) {
 
     // ✅ 5. Best-effort blob cleanup (never blocks the response)
     if (blobUrls.length > 0) {
-      del(blobUrls).catch((e) => console.warn("Blob cleanup failed after list delete:", e));
+      cleanupBlobAssets(blobUrls).catch((e) => console.warn("Blob cleanup failed after list delete:", e));
     }
 
     return NextResponse.json(

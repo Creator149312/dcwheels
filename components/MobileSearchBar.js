@@ -41,7 +41,10 @@ export default function MobileSearchBar() {
     const controller = new AbortController();
     const timeoutId = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/wheel/suggest?query=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const res = await fetch(`/api/wheel/suggest?query=${encodeURIComponent(query)}`, { 
+          signal: controller.signal,
+          headers: { 'cache-control': 'max-age=600' } // Browser cache hint
+        });
         if (!res.ok) return;
         const data = await res.json();
         setSuggestions(data.suggestions || []);
@@ -85,7 +88,12 @@ export default function MobileSearchBar() {
     setSuggestions([]);
     setMobileSearchOpen(false);
     setIsFocused(false);
-    router.push(`/uwheels/${s._id}`);
+    
+    if (s.route) {
+      router.push(s.route);
+    } else {
+      router.push(`/uwheels/${s.id || s._id}`);
+    }
   };
 
   return (
@@ -111,11 +119,17 @@ export default function MobileSearchBar() {
             <div className='max-h-[400px] overflow-y-auto p-1'>
               {query && suggestions.length > 0 ? (
                 suggestions.map((s) => (
-                  <button key={s._id} onClick={() => handleSuggestionClick(s)} className='w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors rounded-xl mb-1 last:mb-0'>
-                    <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0'><Zap size={14} className='text-primary' /></div>
+                  <button key={s.id || s._id} onClick={() => handleSuggestionClick(s)} className='w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted transition-colors rounded-xl mb-1 last:mb-0 group'>
+                    <div className='w-10 h-10 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0'>
+                      {s.cover ? (
+                        <img src={s.cover} alt='' className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-300' />
+                      ) : (
+                        <Zap size={16} className='text-primary' />
+                      )}
+                    </div>
                     <div className='flex flex-col min-w-0'>
-                      <span className='text-sm font-bold truncate text-foreground'>{s.title}</span>
-                      <span className='text-[10px] text-muted-foreground uppercase tracking-tight'>Spin Wheel</span>
+                      <span className='text-sm font-bold truncate text-foreground group-hover:text-primary transition-colors'>{s.title}</span>
+                      <span className='text-[10px] text-muted-foreground uppercase tracking-tight font-semibold'>{s.type === 'wheel' ? 'Spin Wheel' : s.type}</span>
                     </div>
                   </button>
                 ))
@@ -151,10 +165,17 @@ export default function MobileSearchBar() {
                 <div className='fixed left-0 right-0 mx-4 bg-card border border-border rounded-3xl shadow-2xl overflow-hidden max-h-[70vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 pointer-events-auto p-1' style={{ top: 'calc(4.75rem + env(safe-area-inset-top))' }}>
                   {query && suggestions.length > 0 ? (
                     suggestions.map((s) => (
-                      <button key={s._id} onClick={() => handleSuggestionClick(s)} className='w-full flex items-center gap-4 px-4 py-4 rounded-2xl active:bg-muted transition-colors mb-1 last:mb-0'>
-                        <div className='w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0'><Zap size={18} className='text-primary' /></div>
+                      <button key={s.id || s._id} onClick={() => handleSuggestionClick(s)} className='w-full flex items-center gap-4 px-3 py-2.5 rounded-2xl active:bg-muted transition-colors mb-1 last:mb-0'>
+                        <div className='w-12 h-12 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0 border border-border/10'>
+                          {s.cover ? (
+                            <img src={s.cover} alt='' className='w-full h-full object-cover' />
+                          ) : (
+                            <Zap size={20} className='text-primary' />
+                          )}
+                        </div>
                         <div className='flex flex-col text-left min-w-0'>
-                          <span className='text-sm font-bold text-foreground truncate'>{s.title}</span><span className='text-[10px] text-muted-foreground uppercase tracking-tight'>Spin Wheel</span>
+                          <span className='text-base font-bold text-foreground truncate'>{s.title}</span>
+                          <span className='text-xs text-muted-foreground uppercase tracking-tight font-semibold'>{s.type === 'wheel' ? 'Spin Wheel' : s.type}</span>
                         </div>
                       </button>
                     ))

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
+import { Plus, Check, Bookmark, List, X, Loader2 } from "lucide-react";
 
 function getListLabel() {
   return "Save to List";
@@ -18,22 +19,22 @@ const getStatusConfig = (itemType) => {
   return {
     want: {
       label: "Saved",
-      icon: "🔖",
+      icon: <Bookmark size={16} />,
       next: "done",
       className: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
     },
     done: {
       label: doneLabel,
-      icon: "✓",
+      icon: <Check size={16} />,
       next: "want",
-      className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
+      className: "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600",
     },
     // BACKWARD COMPAT: Accept legacy "in-progress", map to "done"
     "in-progress": {
       label: doneLabel,
-      icon: "✓",
+      icon: <Check size={16} />,
       next: "want",
-      className: "bg-green-600 hover:bg-green-700 text-white border-green-600",
+      className: "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600",
     },
   };
 };
@@ -63,7 +64,8 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
   // updates can go straight to PATCH without re-fetching.
   const [savedRef, setSavedRef]          = useState(initialSavedRef); // { listId, itemId, status }
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const { status } = useSession();
+  const [isSavingToList, setIsSavingToList] = useState(null); // stores listId being saved to
+  const { status: authStatus } = useSession();
   const openLoginPrompt = useLoginPrompt();
 
   // On mount, check if the authenticated user already has this entity saved.
@@ -73,7 +75,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
       setSavedRef(initialSavedRef);
       return;
     }
-    if (status !== "authenticated" || !entityId) return;
+    if (authStatus !== "authenticated" || !entityId) return;
     fetch(`/api/unifiedlist/by-entity?entityId=${entityId}`)
       .then((r) => r.json())
       .then((d) => {
@@ -82,7 +84,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
         }
       })
       .catch(() => {}); // silent — degrades to "Add" button
-  }, [status, entityId, initialSavedRef]);
+  }, [authStatus, entityId, initialSavedRef]);
 
   // Auto-dismiss the success toast after 3 s
   useEffect(() => {
@@ -92,12 +94,12 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
   }, [savedPopup.show]);
   useEffect(() => {
     // Fetch only once — if lists are already loaded from a previous open, skip.
-    if (!open || status !== "authenticated" || lists.length > 0) return;
+    if (!open || authStatus !== "authenticated" || lists.length > 0) return;
     fetch("/api/unifiedlist?slim=1")
       .then((r) => r.json())
       .then((d) => setLists(d.lists || []));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, status]);
+  }, [open, authStatus]);
 
   // Payload shape expected by /api/unifiedlist/[id]/items
   const payload = {
@@ -110,45 +112,60 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
   };
 
   async function saveToList(listId) {
+    if (isSavingToList) return;
     const list = lists.find((l) => l.id === listId);
-    const res = await fetch(`/api/unifiedlist/${listId}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    // The API returns the full updated items array. The new item is last
-    // because the server used Array.push before saving.
-    const items = data?.list?.items || [];
-    const newItem = items[items.length - 1];
-    setSavedRef({ listId, itemId: newItem?._id || null, status: "want" });
-    setOpen(false);
-    setSavedPopup({ show: true, listName: list?.name || "List" });
+    setIsSavingToList(listId);
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      // The API returns the full updated items array. The new item is last
+      // because the server used Array.push before saving.
+      const items = data?.list?.items || [];
+      const newItem = items[items.length - 1];
+      setSavedRef({ listId, itemId: newItem?._id || null, status: "want" });
+      setOpen(false);
+      setSavedPopup({ show: true, listName: list?.name || "List" });
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setIsSavingToList(null);
+    }
   }
 
   async function createListAndSave() {
-    if (!newListName.trim()) return;
-    const res = await fetch("/api/unifiedlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newListName }),
-    });
-    const data = await res.json();
-    const newList = data.list;
-    const itemRes = await fetch(`/api/unifiedlist/${newList.id}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const itemData = await itemRes.json();
-    const items = itemData?.list?.items || [];
-    const newItemObj = items[items.length - 1];
-    setSavedRef({ listId: newList.id, itemId: newItemObj?._id || null, status: "want" });
-    setLists((prev) => [...prev, newList]);
-    setNewListName("");
-    setCreating(false);
-    setOpen(false);
-    setSavedPopup({ show: true, listName: newList.name });
+    if (!newListName.trim() || creating === "saving") return;
+    setCreating("saving");
+    try {
+      const res = await fetch("/api/unifiedlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newListName }),
+      });
+      const data = await res.json();
+      const newList = data.list;
+      const itemRes = await fetch(`/api/unifiedlist/${newList.id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const itemData = await itemRes.json();
+      const items = itemData?.list?.items || [];
+      const newItemObj = items[items.length - 1];
+      setSavedRef({ listId: newList.id, itemId: newItemObj?._id || null, status: "want" });
+      setLists((prev) => [...prev, newList]);
+      setNewListName("");
+      setCreating(false);
+      setOpen(false);
+      setSavedPopup({ show: true, listName: newList.name });
+    } catch (err) {
+      console.error("Create and save failed:", err);
+    } finally {
+      setCreating(false);
+    }
   }
 
   // Cycle status: want ↔ done (binary system)
@@ -201,7 +218,8 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
         /* ── Add-to-list button ──────────────────────────────────────── */
         <button
           onClick={() => {
-            if (status !== "authenticated") {
+            if (authStatus === "loading") return; // Avoid popup while checking session
+            if (authStatus === "unauthenticated") {
               openLoginPrompt?.();
               return;
             }
@@ -234,7 +252,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
                         bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl
                         animate-in fade-in slide-in-from-bottom-2 duration-200">
           <span className="text-sm">
-            Saved to <strong>{savedPopup.listName}</strong>
+            Added to <strong>{savedPopup.listName}</strong>
           </span>
           <button
             onClick={() => setSavedPopup({ show: false, listName: "" })}
@@ -249,89 +267,102 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
       {/* ── List picker modal ───────────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-lg p-5">
-            <h4 className="text-base font-semibold mb-4 text-foreground">
-              {label}
-            </h4>
+          <div className="bg-card border border-border w-full max-w-sm rounded-[24px] shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-5">
+              <h4 className="text-lg font-black text-foreground flex items-center gap-2">
+                <List size={20} className="text-primary" />
+                {label}
+              </h4>
+              <button 
+                onClick={closeModal}
+                className="p-2 hover:bg-muted rounded-full text-muted-foreground transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             {/* Existing lists */}
-            {lists.length > 0 && !creating && (
-              <ul className="space-y-1 mb-3 max-h-56 overflow-y-auto">
-                {lists.map((list) => (
-                  <li key={list.id}>
-                    <button
-                      onClick={() => saveToList(list.id)}
-                      className="w-full text-left px-3 py-2 rounded-lg
-                                 hover:bg-muted
-                                 text-foreground text-sm
-                                 transition-colors"
-                    >
-                      {list.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="space-y-1.5 mb-4 max-h-[300px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
+              {lists.length === 0 ? (
+                <div className="py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border mb-2">
+                   <Bookmark className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+                   <p className="text-xs text-muted-foreground font-medium px-4">No lists yet. Create your first collection below!</p>
+                </div>
+              ) : (
+                lists.map((list) => (
+                  <button
+                    key={list.id}
+                    onClick={() => saveToList(list.id)}
+                    disabled={isSavingToList === list.id}
+                    className="group w-full text-left px-4 py-3 rounded-xl
+                               hover:bg-primary/5 hover:border-primary/20
+                               border border-transparent
+                               text-foreground text-sm font-semibold
+                               transition-all flex items-center justify-between"
+                  >
+                    <span>{list.name}</span>
+                    {isSavingToList === list.id ? (
+                      <Loader2 size={16} className="animate-spin text-primary" />
+                    ) : (
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">Save</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
 
             {/* Create new list trigger */}
             {!creating && (
               <button
                 onClick={() => setCreating(true)}
-                className="w-full px-3 py-2.5 rounded-lg
-                           bg-muted hover:bg-accent
-                           text-foreground text-sm
-                           transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+                           bg-primary/5 hover:bg-primary/10 border border-primary/20
+                           text-primary text-sm font-bold
+                           transition-all active:scale-[0.98]"
               >
-                + Create new list
+                <Plus size={18} />
+                Create New List
               </button>
             )}
 
             {/* Inline create-list form */}
             {creating && (
-              <div className="space-y-2 mt-1">
+              <div className="space-y-2 mt-1 animate-in slide-in-from-top-2 duration-200">
                 <input
                   type="text"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") createListAndSave(); }}
-                  placeholder="List name…"
+                  placeholder="Enter list name..."
                   autoFocus
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background
-                             text-foreground text-sm
-                             outline-none focus:border-primary transition-colors"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background
+                             text-foreground text-sm font-medium
+                             focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={createListAndSave}
-                    className="flex-1 px-3 py-2 rounded-lg bg-primary hover:bg-primary/90
-                               text-primary-foreground text-sm font-medium transition-colors"
+                    disabled={creating === "saving"}
+                    className="flex-1 px-4 py-3 rounded-xl bg-primary hover:bg-primary/90
+                               text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20
+                               transition-all active:scale-[0.98] flex items-center justify-center"
                   >
-                    Create &amp; Save
+                    {creating === "saving" ? <Loader2 size={18} className="animate-spin" /> : "Create & Save"}
                   </button>
                   <button
                     onClick={() => { setCreating(false); setNewListName(""); }}
-                    className="px-3 py-2 rounded-lg bg-muted hover:bg-accent
-                               text-foreground text-sm
-                               transition-colors"
+                    className="px-4 py-3 rounded-xl bg-muted hover:bg-accent
+                               text-foreground text-sm font-bold
+                               transition-all"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             )}
-
-            {/* Modal close */}
-            <button
-              onClick={closeModal}
-              className="w-full mt-3 px-3 py-2 rounded-lg text-sm
-                         text-muted-foreground hover:text-foreground
-                         transition-colors"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

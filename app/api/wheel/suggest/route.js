@@ -1,11 +1,12 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
+import TopicPage from "@models/topicpage";
 import { NextResponse } from "next/server";
 
 // Simple in-memory rate limiter (per IP)
 const rateLimitMap = new Map();
 const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 10;     // max 30 requests per IP per minute
+const MAX_REQUESTS = 30;     // max 30 requests per IP per minute
 
 function rateLimit(ip) {
   const now = Date.now();
@@ -37,7 +38,7 @@ export async function GET(request) {
   }
 
   // Validate query length
-  if (!query || query.length < 3) {
+  if (!query || query.trim().length < 3) {
     return NextResponse.json(
       { suggestions: [], error: "Query must be at least 3 characters." },
       { status: 400 }
@@ -47,14 +48,44 @@ export async function GET(request) {
   await connectMongoDB();
 
   try {
-    const matches = await Wheel.find({
-      title: { $regex: new RegExp(query, "i") },
-    })
-      .limit(5)
-      .select("_id title");
+    // Run both searches in parallel for low latency.
+    const [wheelMatches, topicMatches] = await Promise.all([
+      Wheel.find({
+        title: { $regex: new RegExp(query, "i") },
+      })
+        .limit(3)
+        .select("_id title")
+        .lean(),
+      TopicPage.find({
+        $or: [
+          { "title.default": { $regex: new RegExp(query, "i") } },
+          { "title.english": { $regex: new RegExp(query, "i") } },
+        ]
+      })
+        .limit(5)
+        .select("title slug type cover")
+        .lean()
+    ]);
+
+    // Unify the results into a single array for the dropdown.
+    const suggestions = [
+      ...wheelMatches.map(w => ({
+        id: w._id,
+        title: w.title,
+        type: "wheel",
+        route: `/uwheels/${w._id}`
+      })),
+      ...topicMatches.map(t => ({
+        id: t._id,
+        title: t.title?.default || t.title?.english || t.title?.romaji || "Topic",
+        type: t.type,
+        cover: t.cover,
+        route: `/${t.type}/${t.slug}`
+      }))
+    ];
 
     return NextResponse.json(
-      { suggestions: matches, error: null },
+      { suggestions, error: null },
       { status: 200 }
     );
   } catch (error) {

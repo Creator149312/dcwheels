@@ -11,6 +11,7 @@ import { getFeedItems } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
+  optimizeTitle,
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
@@ -57,39 +58,39 @@ export default async function GenericTopicPage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  // Fetch all secondary data in parallel
-  const [extras, animeCharacters, relatedPages, taggedWheels, feedData] = await Promise.all([
+  // Slow external and DB fetches are kicked off as Promises (no await)
+  const extrasPromise = 
     type === "movie" || type === "tv"
       ? fetchMovieExtras(relatedId)
       : type === "anime"
       ? fetchAnimeExtras(relatedId)
       : type === "game"
       ? fetchGameExtras(relatedId)
-      : { trailerKey: null, streaming: [] },
-    type === "anime" ? fetchAnimeCharacters(relatedId) : [],
-    getRelatedPages(pageDoc.tags || [], pageDoc._id),
-    fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type),
-    getFeedItems({ 
-      type, 
-      externalId: String(relatedId),
-      limit: 9 
-    }),
-  ]);
+      : Promise.resolve({ trailerKey: null, streaming: [] });
+
+  const charactersPromise = type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]);
+  const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
+  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type);
+  const feedPromise = getFeedItems({ 
+    type, 
+    externalId: String(relatedId),
+    limit: 9 
+  });
 
   return (
     <TopicPageContentWrapper>
       <TopicPageLayout
         type={type}
         pageDoc={pageDoc}
-        extras={extras}
-        relatedPages={relatedPages}
-        taggedWheels={JSON.parse(JSON.stringify(taggedWheels))}
-        animeCharacters={animeCharacters}
         displayTitle={displayTitle}
         affiliateLinks={buildAffiliateLinks(type, displayTitle)}
         relatedId={relatedId}
-        initialFeed={JSON.parse(JSON.stringify(feedData.slice(0, 8)))}
-        initialCursor={feedData.length > 8 ? feedData[7].createdAt : null}
+        tag={displayTitle}
+        extrasPromise={extrasPromise}
+        relatedPagesPromise={relatedPagesPromise}
+        taggedWheelsPromise={taggedWheelsPromise}
+        charactersPromise={charactersPromise}
+        feedPromise={feedPromise}
       />
     </TopicPageContentWrapper>
   );

@@ -4,8 +4,8 @@ import { Button } from "@components/ui/button";
 import { useSession } from "next-auth/react";
 import { Wand2 } from "lucide-react";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
-import { useContext, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useContext, useState, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import toast from "react-hot-toast";
 import {
@@ -19,18 +19,25 @@ import {
 
 const WEIGHTS = [1, 2, 3];
 
-const GenerateWheel = () => {
+const GenerateWheel = ({ url }) => {
   const { status } = useSession();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingTxt, setLoadingTxt] = useState("Generating...");
   const [progress, setProgress] = useState(0);
   const currentPath = usePathname();
-  const isHomepage = currentPath === "/";
+  const searchParams = useSearchParams();
 
   const { setSegData, html, handleWheelSettingsChange } =
     useContext(SegmentsContext);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+
+  // Auto-open if ai=true is in URL (used by CreateWheelModal)
+  useEffect(() => {
+    if (searchParams.get("ai") === "true") {
+      setIsPopupVisible(true);
+    }
+  }, [searchParams]);
 
   // Review step state
   const [step, setStep] = useState("prompt"); // "prompt" | "review"
@@ -223,14 +230,16 @@ const GenerateWheel = () => {
     }
   };
 
-  if (!isHomepage) return null;
-
   return (
     <Dialog open={isPopupVisible} onOpenChange={setIsPopupVisible}>
       <DialogTrigger asChild>
-        <Button onClick={() => setIsPopupVisible(true)} className="shadow-sm">
-          <Wand2 size={15} className="mr-2" />
-          Smart Wheel
+        <Button
+          variant="outline"
+          onClick={() => setIsPopupVisible(true)}
+          className="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold shadow-md border border-input hover:bg-accent hover:text-accent-foreground text-foreground transition-all duration-150"
+        >
+          <Wand2 size={18} className="shrink-0 text-amber-500" />
+          <span>Smart Wheel</span>
         </Button>
       </DialogTrigger>
 

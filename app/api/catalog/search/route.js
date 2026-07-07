@@ -63,7 +63,7 @@ async function searchTMDB(q, mediaType, limit) {
         posterUrl: `${TMDB_IMAGE_BASE}${r.poster_path}`,
         canonicalSlug: toSlug(title),
         genres: [],
-        rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
+        rating: r.vote_average ? Math.round((r.vote_average / 2) * 10) / 10 : null,
         fetchedAt: new Date(),
       };
     });
@@ -106,7 +106,7 @@ async function searchAniList(q, limit) {
         posterUrl: m.coverImage.medium,
         canonicalSlug: toSlug(title),
         genres: m.genres || [],
-        rating: m.averageScore ? Math.round(m.averageScore / 10) : null,
+        rating: m.averageScore ? Math.round((m.averageScore / 20) * 10) / 10 : null,
         fetchedAt: new Date(),
       };
     });

@@ -20,6 +20,8 @@ export default function WheelPlayerControls({
   router,
   muted,
   setMuted,
+  onEditClick,
+  isEditingActive,
 }) {
   const toggleMute = () => {
     setMuted((prev) => !prev);
@@ -63,7 +65,16 @@ export default function WheelPlayerControls({
           </button>
         )} */}
 
-        {currentPath !== "/" && (
+        {/* Edit button */}
+        {isEditingActive ? (
+          <button
+            className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition text-yellow-400 font-bold"
+            onClick={onEditClick}
+          >
+            <Pencil size={20} />
+            <span>Edit</span>
+          </button>
+        ) : (
           <button
             className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
             onClick={(e) => {
