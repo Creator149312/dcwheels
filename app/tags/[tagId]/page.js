@@ -20,7 +20,7 @@ import { Hash, Layers } from "lucide-react";
 const NOINDEX_BELOW = 3;
 
 // Tag pages rarely change — cache aggressively.
-export const revalidate = 21600; // 6 hours
+export const revalidate = 86400; // 1 day
 
 // Pre-render the top 100 public tag pages at build time.
 // Prefers Tag collection slugs (canonical); falls back to raw Wheel.tags.
