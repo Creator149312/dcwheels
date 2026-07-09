@@ -31,64 +31,31 @@ const TRENDING = [
 
 export default function SearchDiscovery() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('recent_searches');
+    const saved = localStorage.getItem('recentSearches'); // Fixed key to match MobileSearchBar
     if (saved) setRecentSearches(JSON.parse(saved).slice(0, 5));
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query.trim()) {
-      saveSearch(query.trim());
-      router.push(`/search/${encodeURIComponent(query.trim())}`);
-    }
-  };
-
-  const saveSearch = (term) => {
-    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 10);
-    setRecentSearches(updated.slice(0, 5));
-    localStorage.setItem('recent_searches', JSON.stringify(updated));
-  };
-
   const removeSearch = (term, e) => {
     e.stopPropagation();
-    const updated = recentSearches.filter(s => s !== term);
-    setRecentSearches(updated);
-    localStorage.setItem('recent_searches', JSON.stringify(updated));
+    const saved = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    const updated = saved.filter(s => s !== term);
+    setRecentSearches(updated.slice(0, 5));
+    localStorage.setItem('recentSearches', JSON.stringify(updated));
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-16 space-y-12 animate-in fade-in duration-700">
-      {/* Search Hero */}
-      <div className="text-center space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-in fade-in duration-700">
+      {/* Search Hero - Simplified, relying on navbar search */}
+      <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
           Explore the <span className="text-primary italic">Universe</span>
         </h1>
         <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">
-          Search for your favorite anime, movies, games, or find the perfect spin wheel for your next decision.
+          Use the search bar at the top to find specific wheels, or browse our trending collections below.
         </p>
-        
-        <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto group">
-          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
-            <Search size={20} />
-          </div>
-          <input 
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search anything..."
-            className="w-full h-14 md:h-16 pl-14 pr-6 rounded-2xl border-2 border-border bg-card text-lg focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none shadow-sm"
-          />
-          <button 
-            type="submit"
-            className="absolute right-3 inset-y-3 bg-primary text-primary-foreground px-6 rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all hidden md:block"
-          >
-            Search
-          </button>
-        </form>
       </div>
 
       {/* Quick History/Trending */}
@@ -100,7 +67,14 @@ export default function SearchDiscovery() {
             </h2>
             <div className="flex flex-wrap gap-2">
               {recentSearches.map((s) => (
-                <div key={s} className="group flex items-center bg-muted/50 hover:bg-muted border border-border/50 rounded-full pl-4 pr-2 py-1.5 transition-colors cursor-pointer" onClick={() => router.push(`/search/${encodeURIComponent(s)}`)}>
+                <div 
+                  key={s} 
+                  className="group flex items-center bg-muted/50 hover:bg-muted border border-border/50 rounded-full pl-4 pr-2 py-1.5 transition-colors cursor-pointer" 
+                  onClick={() => {
+                    const cleaned = s.trim().replace(/\?/g, '_').toLowerCase();
+                    router.push(`/search/${encodeURIComponent(cleaned)}`);
+                  }}
+                >
                   <span className="text-sm font-medium">{s}</span>
                   <button onClick={(e) => removeSearch(s, e)} className="p-1 ml-1 rounded-full hover:bg-background/80 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                     <X size={12} />

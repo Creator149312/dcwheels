@@ -172,29 +172,64 @@ export default function ExploreClient({
         </section>
       )}
 
+      {/* ── Entity rails ───────────────────────────────────────────────── */}
+      <div className="mt-4 pt-2">
+        <div className="mb-4">
+          <h2 className="text-base md:text-xl font-black text-foreground">
+            Trending in pop culture
+          </h2>
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+            Hot games, anime and movies — perfect material for your next decision wheel
+          </p>
+        </div>
+
+        <ExploreEntityRail
+          title="Trending Games"
+          emoji="🎮"
+          items={games}
+          viewAllHref="/game"
+          accentColor="text-emerald-500"
+        />
+        <ExploreEntityRail
+          title="Trending Anime"
+          emoji="🌸"
+          items={anime}
+          viewAllHref="/anime"
+          accentColor="text-pink-500"
+        />
+        <ExploreEntityRail
+          title="Trending Movies"
+          emoji="🎬"
+          items={movies}
+          viewAllHref="/movie"
+          accentColor="text-amber-500"
+        />
+      </div>
+
       {/* ── Mood chips ─────────────────────────────────────────────────── */}
-      {/* Non-sticky: chips scroll away with the page so the mobile top bar
-          (which is itself scroll-aware) stays the only chrome on screen. */}
-      <div className="bg-background/95 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-border">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-          {moods.map((m) => {
-            const active = m.slug === activeMood || (activeMood === "trending" && m.slug === "trending");
-            return (
-              <button
-                key={m.slug}
-                onClick={() => setMood(m.slug)}
-                disabled={isPending && active}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
-              >
-                <span>{m.emoji}</span>
-                <span>{m.label}</span>
-              </button>
-            );
-          })}
+      {/* Moved down here because it helps in filtering the grid below */}
+      <div className="mt-10 pt-8 border-t border-border">
+        <div className="bg-background/95 -mx-4 md:-mx-6 px-4 md:px-6 py-2 mb-4 border-b border-border">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+            {moods.map((m) => {
+              const active = m.slug === activeMood || (activeMood === "trending" && m.slug === "trending");
+              return (
+                <button
+                  key={m.slug}
+                  onClick={() => setMood(m.slug)}
+                  disabled={isPending && active}
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                      : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                >
+                  <span>{m.emoji}</span>
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -284,95 +319,6 @@ export default function ExploreClient({
       {isPending && (
         <div className="flex justify-center mt-6">
           <Loader2 className="animate-spin text-primary" size={20} />
-        </div>
-      )}
-
-      {/* ── Entity rails ───────────────────────────────────────────────── */}
-      <div className="mt-10 pt-8 border-t border-border">
-        <div className="mb-4">
-          <h2 className="text-base md:text-xl font-black text-foreground">
-            Trending in pop culture
-          </h2>
-          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-            Hot games, anime and movies — perfect material for your next decision wheel
-          </p>
-        </div>
-
-        <ExploreEntityRail
-          title="Trending Games"
-          emoji="🎮"
-          items={games}
-          viewAllHref="/game"
-          accentColor="text-emerald-500"
-        />
-        <ExploreEntityRail
-          title="Trending Anime"
-          emoji="🌸"
-          items={anime}
-          viewAllHref="/anime"
-          accentColor="text-pink-500"
-        />
-        <ExploreEntityRail
-          title="Trending Movies"
-          emoji="🎬"
-          items={movies}
-          viewAllHref="/movie"
-          accentColor="text-amber-500"
-        />
-      </div>
-
-      {/* ── Community Wheels ───────────────────────────────────────────── */}
-      {communityWheels.length > 0 && (
-        <div className="mt-10 pt-8 border-t border-border">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base md:text-xl font-black text-foreground flex items-center gap-2">
-                <Sparkles size={18} className="text-purple-500" />
-                From the Community
-              </h2>
-              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                Wheels created and shared by SpinPapa users
-              </p>
-            </div>
-            <Link
-              href="/"
-              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-            >
-              Share yours →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-            {communityWheels.map((item) => (
-              <Link
-                key={item._id}
-                href={`/uwheels/${item._id}`}
-                className="group flex flex-col bg-muted/40 rounded-xl border border-border overflow-hidden hover:border-purple-500/70 transition-all active:scale-[0.98] hover:shadow-md"
-              >
-                <div className="relative aspect-square w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">
-                  {item.wheelPreview ? (
-                    <img
-                      src={item.wheelPreview}
-                      alt={item.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <span className="text-muted-foreground/40 text-5xl font-black group-hover:scale-110 transition-transform duration-500">
-                      {item.title?.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="p-2">
-                  <h3 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">
-                    {item.title}
-                  </h3>
-                  {item.likeCount > 0 && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">♥ {item.likeCount}</p>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       )}
     </div>

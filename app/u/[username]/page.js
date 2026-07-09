@@ -154,7 +154,7 @@ export default async function ProfilePage({ params }) {
       {/* ── Tabs: Wheels, Lists, Posts, Activity ── */}
       <ProfileTabs
         userId={String(user._id)}
-        username={user.name}
+        username={user.username || user.name}
         isOwner={isOwner}
         wheels={wheels}
         wheelsCursor={wheelsCursor}

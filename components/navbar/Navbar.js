@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle, Bookmark } from "lucide-react";
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
@@ -24,6 +25,10 @@ const MobileSearchBar = dynamic(
 );
 
 const Navbar = ({ onToggleSidebar }) => {
+  const { data: session } = useSession();
+  const username = session?.user?.username || session?.user?.name;
+  const savedUrl = username ? `/u/${encodeURIComponent(username.toLowerCase())}/saved` : null;
+
   return (
     <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
       <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-3 md:px-6">
@@ -98,25 +103,15 @@ const Navbar = ({ onToggleSidebar }) => {
               <span>Explore</span>
             </Link>
 
-            {/* Browse Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                <Library size={18} />
-                <span>Browse</span>
-                <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200 opacity-70" />
-              </button>
-
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-[opacity,visibility] duration-200 z-[70]">
-                <div className="bg-popover border border-border shadow-md rounded-xl p-1.5 flex flex-col">
-                  <Link href="/wheels" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    <Disc3 size={16} /> Wheels
-                  </Link>
-                  <Link href="/lists" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    <List size={16} /> Collections
-                  </Link>
-                </div>
-              </div>
-            </div>
+            {savedUrl && (
+              <Link
+                href={savedUrl}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+              >
+                <Bookmark size={18} />
+                <span>Saved</span>
+              </Link>
+            )}
           </div>
 
           <div className="hidden md:block h-6 w-[1px] bg-border mx-1" />

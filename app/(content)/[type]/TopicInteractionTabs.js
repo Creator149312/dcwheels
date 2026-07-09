@@ -18,14 +18,6 @@ function SectionHeader({ title, action }) {
   );
 }
 
-function getCompareHref(type, title, coverUrl, slug) {
-  const e = encodeURIComponent;
-  const params = new URLSearchParams({ type, a: title });
-  if (coverUrl) params.set("aPoster", coverUrl);
-  if (slug)     params.set("aSlug", slug);
-  return `/vs?${params.toString()}`;
-}
-
 export default function TopicInteractionTabs({
   type,
   pageId,

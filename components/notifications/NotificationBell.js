@@ -20,7 +20,7 @@ export default function NotificationBell() {
   // 1. Defer fetching the unread count until the user scrolls or interacts.
   // This saves the database call on initial page load / LCP calculation.
   useEffect(() => {
-    if (!session || fetchedInitialRef.current) return;
+    if (!session) return;
 
     const handleInteraction = () => {
       if (fetchedInitialRef.current) return;
@@ -42,18 +42,27 @@ export default function NotificationBell() {
       window.removeEventListener("mousemove", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
       window.removeEventListener("keydown", handleInteraction);
+      document.removeEventListener("visibilitychange", handleInteraction);
     };
+
+    // If already interacted or scrolled, fire immediately
+    if (typeof window !== 'undefined' && (window.scrollY > 0 || fetchedInitialRef.current)) {
+      handleInteraction();
+      return;
+    }
 
     window.addEventListener("scroll", handleInteraction, { passive: true });
     window.addEventListener("mousemove", handleInteraction, { passive: true });
     window.addEventListener("touchstart", handleInteraction, { passive: true });
     window.addEventListener("keydown", handleInteraction, { passive: true });
+    document.addEventListener("visibilitychange", handleInteraction, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", handleInteraction);
       window.removeEventListener("mousemove", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
       window.removeEventListener("keydown", handleInteraction);
+      document.removeEventListener("visibilitychange", handleInteraction);
     };
   }, [session]);
 
@@ -63,12 +72,32 @@ export default function NotificationBell() {
     if (!isInteractive) setIsInteractive(true);
   }, [isInteractive]);
 
+  // 2. OPTIMIZATION: Tab-Focus Syncing
+  // Re-check count when user switches back to this tab
+  useEffect(() => {
+    if (!session) return;
+
+    const handleFocus = () => {
+      fetch("/api/notifications")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.unreadCount !== undefined) {
+            setUnreadCount(data.unreadCount);
+          }
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [session]);
+
   // If there's no session, don't show the bell
   // (Or you could show a static bell that triggers a login prompt)
-  if (!session) return null;
+  if (!session) return <div className="w-9 h-9" />; // Placeholder to prevent layout shift
 
   return (
-    <div className="relative inline-flex items-center justify-center">
+    <div className="relative inline-flex items-center justify-center min-w-[36px] min-h-[36px]">
       <button
         onClick={toggleDropdown}
         className="relative p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

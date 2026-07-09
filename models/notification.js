@@ -38,6 +38,15 @@ const notificationSchema = new Schema(
     link: { 
       type: String, 
       required: true 
+    },
+    // OPTIMIZATION: Auto-Cleanup (TTL)
+    // Marks document for deletion 30 days after creation.
+    // In a real prod environment, you might only want to expire 'isRead' notifications,
+    // but a global 30-day retention is standard for social notifications.
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      index: { expires: 0 }
     }
   },
   {

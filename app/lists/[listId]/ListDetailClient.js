@@ -393,10 +393,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       : null;
 
   return (
-    <div className="px-4 py-4 md:px-6 relative">
+    <div className={`relative ${initialList?.systemKey === "SYS_SAVED" ? "" : "px-4 py-4 md:px-6"}`}>
 
       {/* ✅ Actions Menu (Owner Only) */}
-      {isOwner && (
+      {isOwner && !isSystemList && (
         <div className="absolute top-6 right-6 flex items-center gap-1" ref={listMenuRef}>
           {/* Edit button - disabled for system lists */}
           <button
@@ -470,59 +470,72 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       )}
 
       {/* ✅ Header */}
-      <div className="mb-8">
-        <div className="flex items-start gap-4 md:gap-6">
-          {/* Cover Image */}
-          <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center rounded-2xl overflow-hidden border border-border shadow-md shrink-0">
-            {coverImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverImage} alt={`${list.name} cover`} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-5xl md:text-6xl font-black text-primary/40">
-                {list.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
-
-          {/* Title + Meta */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h1 className="text-2xl md:text-3xl font-black text-foreground">
-                {list.name}
-              </h1>
-              {isSystemList && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
-                  🔒 Locked
+      {isSystemList ? (
+        <div className="mb-8">
+          <button
+            onClick={spinList}
+            disabled={list.items.length === 0}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-base font-black rounded-2xl shadow-lg transition-all active:scale-95 group"
+          >
+            <Zap size={20} className="fill-current group-hover:scale-110 transition-transform" />
+            Spin to Pick
+          </button>
+        </div>
+      ) : (
+        <div className="mb-8">
+          <div className="flex items-start gap-4 md:gap-6">
+            {/* Cover Image */}
+            <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center rounded-2xl overflow-hidden border border-border shadow-md shrink-0">
+              {coverImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coverImage} alt={`${list.name} cover`} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-5xl md:text-6xl font-black text-primary/40">
+                  {list.name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
-            
-            <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-semibold text-muted-foreground">
-                {list.items.length} {list.items.length === 1 ? "item" : "items"}
-              </p>
-              {list.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
-                  {list.description}
-                </p>
-              )}
-            </div>
 
-            {/* Action Button */}
-            <button
-              onClick={spinList}
-              disabled={list.items.length === 0}
-              className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-sm font-bold rounded-xl shadow-md transition-all active:scale-95"
-            >
-              <Zap size={16} className="fill-current" />
-              Spin this List
-            </button>
+            {/* Title + Meta */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h1 className="text-2xl md:text-3xl font-black text-foreground">
+                  {list.name}
+                </h1>
+                {isSystemList && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+                    🔒 Locked
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex flex-col gap-1.5">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {list.items.length} {list.items.length === 1 ? "item" : "items"}
+                </p>
+                {list.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
+                    {list.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Action Button */}
+              <button
+                onClick={spinList}
+                disabled={list.items.length === 0}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-sm font-bold rounded-xl shadow-md transition-all active:scale-95"
+              >
+                <Zap size={16} className="fill-current" />
+                Spin this List
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ✅ Controls Bar */}
-      <div className="mb-6 pb-4 border-b border-border">
+      <div className={`mb-6 pb-4 ${isSystemList ? "" : "border-b border-border"}`}>
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           {/* Sort Control */}
           <div className="flex items-center gap-3">
@@ -533,32 +546,27 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
             <select
               value={sortBy}
               onChange={(e) => updateSort(e.target.value)}
-              disabled={settingsSaving || isSystemList}
-              title={isSystemList ? "System lists use default sorting" : "Choose how to sort items"}
-              className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 ${
-                isSystemList
-                  ? "bg-muted/50 border-border text-muted-foreground cursor-not-allowed"
-                  : "bg-card border-border text-foreground hover:border-primary/50 cursor-pointer"
-              }`}
+              disabled={settingsSaving}
+              title="Choose how to sort items"
+              className="px-3 py-2 text-sm font-medium rounded-lg border bg-card border-border text-foreground hover:border-primary/50 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="recently-saved">Recently Saved</option>
               <option value="alphabetical">Alphabetical (A→Z)</option>
+              {/* Only show status/type sorting if there's diversity or it's not a minimal system view */}
               <option value="status">Status (Want → Done)</option>
               <option value="entity-type">By Type</option>
             </select>
           </div>
 
-          {/* Visibility + Share Controls (Owner Only) */}
-          {isOwner && (
+          {/* Visibility + Share Controls (Owner Only) - Hidden for system lists */}
+          {isOwner && !isSystemList && (
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
               <button
-                onClick={() => !isSystemList && updateVisibility(visibility === "private" ? "public" : "private")}
-                disabled={settingsSaving || isSystemList}
-                title={isSystemList ? "System lists are always private" : `Click to make ${visibility === "public" ? "private" : "public"}`}
+                onClick={() => updateVisibility(visibility === "private" ? "public" : "private")}
+                disabled={settingsSaving}
+                title={`Click to make ${visibility === "public" ? "private" : "public"}`}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
-                  isSystemList
-                    ? "bg-muted/50 border-border text-muted-foreground cursor-not-allowed"
-                    : visibility === "public"
+                  visibility === "public"
                     ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
                     : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                 }`}
@@ -575,11 +583,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               </button>
 
               {/* Share Link / Copied Feedback */}
-              {visibility === "public" && !isSystemList && (
+              {visibility === "public" && (
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/lists/${listId}`);
-                    // Simple feedback - could be enhanced with toast
                     alert("Share link copied!");
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"

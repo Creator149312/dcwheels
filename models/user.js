@@ -84,13 +84,6 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // Voter streak — consecutive days the user cast at least one Ask vote.
-    // `lastVotedDate` is stored as midnight UTC so day-diff math is stable.
-    voteStreak: {
-      current:       { type: Number, default: 0, min: 0 },
-      longest:       { type: Number, default: 0, min: 0 },
-      lastVotedDate: { type: Date },
-    },
     // Monthly AI quiz generation quota. Resets every 30 days.
     // `resetAt` marks when the current window expires; on the next call
     // after expiry the count is zeroed and a new window is set.

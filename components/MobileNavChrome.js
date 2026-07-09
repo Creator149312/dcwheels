@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Home, Compass, PlusCircle, Library, LayoutGrid, List, User, Moon, Sun, Menu, X, MessageCircle, Disc3 } from "lucide-react";
+import { Home, Compass, Plus, Search, LayoutGrid, List, User, Moon, Sun, Menu, X, MessageCircle, Disc3, Bookmark } from "lucide-react";
 
 // TagsCarousel has seasonal logic, scroll refs and useMemo — lazy-load so it
 // doesn't block the initial mobile nav chunk.
@@ -112,9 +112,8 @@ export default function MobileNavChrome({ onToggleSidebar }) {
   }, [pathname]);
 
   const isLibraryActive =
-    pathname.startsWith("/wheels") ||
     pathname.startsWith("/uwheels") ||
-    pathname.startsWith("/lists");
+    pathname.includes("/explore");
 
   return (
     <>
@@ -151,17 +150,21 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               </Link>
             </div>
 
-            <div className="flex items-center gap-1">
-              <NotificationBell />
+            <div className="flex items-center gap-1.5 justify-end">
+              <div className="flex items-center h-10">
+                <NotificationBell />
+              </div>
               <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted h-10 w-10 flex items-center justify-center transition-colors"
                 aria-label={"Toggle Theme"}
               >
                 {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
               </button>
 
-              <MobileSearchBar />
+              <div className="flex items-center h-10">
+                <MobileSearchBar />
+              </div>
             </div>
           </div>
         </div>
@@ -199,20 +202,12 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             </div>
             <div className="flex flex-col py-1">
               <Link
-                href="/wheels"
+                href="/explore"
                 className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
                 onClick={() => setLibraryOpen(false)}
               >
                 <LayoutGrid size={20} className="text-primary" />
-                {"Wheels"}
-              </Link>
-              <Link
-                href="/lists"
-                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
-                onClick={() => setLibraryOpen(false)}
-              >
-                <List size={20} className="text-primary" />
-                {"Lists"}
+                {"Explore Wheels"}
               </Link>
             </div>
           </div>
@@ -304,22 +299,22 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               setCreateSheetOpen((v) => !v);
             }}
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
-              createSheetOpen ? "text-primary" : "text-blue-600 dark:text-blue-400"
+              createSheetOpen ? "text-primary scale-110" : "text-muted-foreground hover:text-primary"
             }`}
             aria-label={"Create"}
           >
-            <PlusCircle size={22} />
+            <div className={`p-1.5 rounded-full transition-colors ${createSheetOpen ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+               <Plus size={20} />
+            </div>
             <span>{"Create"}</span>
           </button>
 
           <BottomNavItem
-            label={"Browse"}
-            icon={<Library size={18} />}
-            active={isLibraryActive || libraryOpen}
-            onClick={() => {
-              setCreateSheetOpen(false);
-              setLibraryOpen((v) => !v);
-            }}
+            href={profileUrl ? `${profileUrl}/saved` : "/login"}
+            label={"Saved"}
+            icon={<Bookmark size={18} />}
+            active={pathname.endsWith("/saved")}
+            onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
 
           <BottomNavItem

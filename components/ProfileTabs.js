@@ -11,6 +11,7 @@ import WheelFeedCard from "./WheelFeedCard";
 
 export default function ProfileTabs({ 
   userId, 
+  username,
   isOwner, 
   wheels = [], 
   wheelsCursor = null,
@@ -21,7 +22,9 @@ export default function ProfileTabs({
 }) {
   const [activeTab, setActiveTab] = useState("posts");
 
-  const publicLists = lists.filter(l => l.isPublic);
+  // Filter out system lists (like 'Saved') from the display
+  const filteredLists = lists.filter(l => !l.isSystem && l.systemKey !== "SYS_SAVED");
+  const publicListsFiltered = filteredLists.filter(l => l.isPublic);
 
   const tabList = [
     { id: "posts", label: "Posts", icon: <MessageSquare size={16} /> },
@@ -90,10 +93,10 @@ export default function ProfileTabs({
               </Link>
             )}
             
-            {(isOwner ? lists : publicLists).length === 0 ? (
+            {(isOwner ? filteredLists : publicListsFiltered).length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-12">No lists on display yet</p>
             ) : (
-              (isOwner ? lists : publicLists).map((list) => (
+              (isOwner ? filteredLists : publicListsFiltered).map((list) => (
                 <div key={list.id} className="relative group p-4 sm:p-5 border border-border rounded-2xl bg-card hover:shadow-sm transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">

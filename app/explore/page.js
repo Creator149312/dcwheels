@@ -55,7 +55,6 @@ export const metadata = {
 const TRENDING_LIMIT = 8;
 const GRID_LIMIT = 24;
 const ENTITY_RAIL_LIMIT = 10;
-const COMMUNITY_LIMIT = 12;
 
 /**
  * Normalize entity payloads from RAWG / AniList / TMDB into a single
@@ -174,32 +173,6 @@ const fetchPagesByTags = unstable_cache(
   { revalidate: 1800, tags: ["explore", "wheels-list"] }
 );
 
-/**
- * Fetch the most recently liked public user-created wheels.
- * These are /uwheels pages (no Page doc), so we query Wheel directly.
- */
-const _fetchCommunityWheelsUncached = async (limit = COMMUNITY_LIMIT) => {
-  await connectMongoDB();
-  const docs = await Wheel.find({ isPublic: true })
-    .select("_id title wheelPreview likeCount createdAt")
-    .sort({ likeCount: -1, createdAt: -1 })
-    .limit(limit)
-    .lean();
-  return docs.map((w) => ({
-    _id: w._id.toString(),
-    title: w.title,
-    wheelPreview: w.wheelPreview || null,
-    likeCount: w.likeCount || 0,
-    createdAt: w.createdAt,
-  }));
-};
-
-const fetchCommunityWheels = unstable_cache(
-  _fetchCommunityWheelsUncached,
-  ["explore-community-wheels"],
-  { revalidate: 1800, tags: ["explore", "wheels-list"] }
-);
-
 export default async function ExplorePage({ searchParams }) {
   const moodSlug = searchParams?.mood || "trending";
   const sort = searchParams?.sort === "recent" ? "recent" : "trending";
@@ -210,7 +183,6 @@ export default async function ExplorePage({ searchParams }) {
   let games = [];
   let anime = [];
   let movies = [];
-  let communityWheels = [];
 
   try {
     // Trending strip is always global (mood-agnostic) — it's the
@@ -226,14 +198,12 @@ export default async function ExplorePage({ searchParams }) {
       gamesRes,
       animeRes,
       moviesRes,
-      communityRes,
     ] = await Promise.allSettled([
       fetchPagesByTags({ tags: [], limit: TRENDING_LIMIT, sort: "trending" }),
       fetchPagesByTags({ tags: mood.tags, limit: GRID_LIMIT, sort }),
       fetchGames({ page: 1, page_size: ENTITY_RAIL_LIMIT }),
       fetchAnime({ page: 1, perPage: ENTITY_RAIL_LIMIT, sort: "POPULARITY_DESC" }),
       fetchMovies({ page: 1 }),
-      fetchCommunityWheels(COMMUNITY_LIMIT),
     ]);
 
     if (trendingRes.status === "fulfilled") trending = trendingRes.value;
@@ -241,12 +211,11 @@ export default async function ExplorePage({ searchParams }) {
     if (gamesRes.status === "fulfilled") games = normalizeGames(gamesRes.value);
     if (animeRes.status === "fulfilled") anime = normalizeAnime(animeRes.value);
     if (moviesRes.status === "fulfilled") movies = normalizeMovies(moviesRes.value);
-    if (communityRes.status === "fulfilled") communityWheels = communityRes.value;
 
     // Surface partial failures in logs without breaking the page render.
-    [trendingRes, gridRes, gamesRes, animeRes, moviesRes, communityRes].forEach((r, i) => {
+    [trendingRes, gridRes, gamesRes, animeRes, moviesRes].forEach((r, i) => {
       if (r.status === "rejected") {
-        const labels = ["trending", "grid", "games", "anime", "movies", "community"];
+        const labels = ["trending", "grid", "games", "anime", "movies"];
         console.error(`ExplorePage ${labels[i]} fetch failed:`, r.reason);
       }
     });
@@ -264,7 +233,7 @@ export default async function ExplorePage({ searchParams }) {
       games={games}
       anime={anime}
       movies={movies}
-      communityWheels={communityWheels}
+
     />
   );
 }
