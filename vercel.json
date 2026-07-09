@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "functions": {
+    "app/api/**/route.js": {
+      "memory": 512
+    },
+    "app/**/page.js": {
+      "memory": 512
+    }
+  }
+}
