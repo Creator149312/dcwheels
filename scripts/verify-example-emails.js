@@ -14,7 +14,7 @@ async function main() {
     const db = client.db();
 
     const filter = { email: { $regex: /@example/i } };
-    const update = { $set: { emailVerified: true } };
+    const update = { $set: { emailVerified: new Date() } };
 
     console.log('Searching for users with email matching /@example/i...');
     const matched = await db.collection('users').countDocuments(filter);

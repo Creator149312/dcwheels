@@ -8,7 +8,7 @@ async function main() {
     const db = client.db();
     const result = await db.collection('users').updateOne(
       { email: 'dharamveer@email.com' },
-      { $set: { emailVerified: true } }
+      { $set: { emailVerified: new Date() } }
     );
     console.log('Update result:', result);
     const user = await db.collection('users').findOne({ email: 'dharamveer@email.com' });

@@ -386,7 +386,7 @@ export const verifyUserEmailbyToken = async (token) => {
       if (ifUserExists) {
         await User.findOneAndUpdate(
           { email: record.email },
-          { emailVerified: true }
+          { emailVerified: new Date() }
         );
 
         // Schedule token deletion after a delay

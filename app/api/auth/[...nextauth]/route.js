@@ -151,7 +151,7 @@ export const authOptions = {
               name,
               email,
               password: "",
-              emailVerified: true,
+              emailVerified: new Date(),
               authMethod: "google",
               role: isAdminEmail(email) ? "admin" : "user",
             });
