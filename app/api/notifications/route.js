@@ -27,11 +27,27 @@ export async function GET(req) {
     });
 
     // Get latest 20 notifications
-    const notifications = await Notification.find({ recipient: user._id })
+    let notifications = await Notification.find({ recipient: user._id })
       .sort({ createdAt: -1 })
       .limit(20)
-      .populate("sender", "name avatar") // Only grab sender's name and image
+      .populate("sender", "name avatar")
       .lean();
+
+    // ── DYNAMIC MESSAGE REGENERATION ─────────────────────────────────────────
+    // If count > 1, we rewrite the message for better UX
+    notifications = notifications.map(notif => {
+      if (notif.count > 1 && notif.sender) {
+        const othersCount = notif.count - 1;
+        const senderName = notif.sender.name || "Someone";
+        
+        if (notif.type === "LIKE") {
+          notif.message = `${senderName} and ${othersCount} others liked your content`;
+        } else if (notif.type === "FOLLOW") {
+          notif.message = `${senderName} and ${othersCount} others followed you`;
+        }
+      }
+      return notif;
+    });
 
     return NextResponse.json({ unreadCount, notifications });
   } catch (error) {

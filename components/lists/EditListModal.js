@@ -6,12 +6,14 @@ import { X } from "lucide-react";
 export default function EditListModal({ isOpen, onClose, list, isSystem = false, onSave }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [tagInput, setTagInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (list) {
       setName(list.name || "");
       setDescription(list.description || "");
+      setTagInput(Array.isArray(list.tags) ? list.tags.join(", ") : "");
     }
   }, [list]);
 
@@ -20,7 +22,14 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave({ name, description });
+      const tagArray = tagInput
+        ? tagInput
+            .split(",")
+            .map((t) => t.trim().toLowerCase())
+            .filter((t) => t.length > 0)
+        : [];
+
+      await onSave({ name, description, tags: tagArray });
     } finally {
       setIsSaving(false);
     }
@@ -96,6 +105,25 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
               {description.length}/300 characters
             </p>
           </div>
+
+          {/* Tags Field */}
+          {!isSystem && (
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Tags (comma separated)
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2.5 rounded-lg border bg-card border-border text-foreground hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="e.g. watchlist, favorites, 2024"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1.5 opacity-70">
+                Tags help others discover your public lists in Tag Spaces.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

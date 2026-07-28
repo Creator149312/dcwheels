@@ -6,6 +6,7 @@ import { useTransition, useRef } from "react";
 import { Compass, Loader2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import EmptyState from "@components/EmptyState";
 import ExploreEntityRail from "./ExploreEntityRail";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 /**
  * ExploreClient — discovery UI driven entirely by URL searchParams.
@@ -142,7 +143,7 @@ export default function ExploreClient({
             {trending.map((item, i) => (
               <Link
                 key={item._id}
-                href={`/wheels/${item.slug}`}
+                href={getWheelUrl(item)}
                 className="snap-start shrink-0 w-[150px] md:w-[180px] group"
               >
                 <div className="relative aspect-square w-full bg-muted/40 rounded-2xl overflow-hidden border border-border group-hover:border-primary/50 transition-all">
@@ -283,7 +284,7 @@ export default function ExploreClient({
           {gridItems.map((item) => (
             <Link
               key={item._id}
-              href={`/wheels/${item.slug}`}
+              href={getWheelUrl(item)}
               className="group flex flex-col bg-muted/40 rounded-xl border border-border overflow-hidden hover:border-primary/50 transition-all active:scale-[0.98] hover:shadow-md"
             >
               <div className="relative aspect-[4/3] w-full bg-muted flex items-center justify-center border-b border-border overflow-hidden">

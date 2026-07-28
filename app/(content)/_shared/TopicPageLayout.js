@@ -109,29 +109,29 @@ export default async function TopicPageLayout({
     <div className="min-h-screen bg-background text-foreground">
 
       {/* ── Mobile hero (< sm) ────────────────────────────────────────────── */}
-      <div className="sm:hidden px-2 pt-6 pb-6">
+      <div className="sm:hidden px-3 pt-4 pb-4 border-b border-border/40">
 
         {/* Row 1: poster + title / CTA */}
         <div className="flex gap-4 items-start">
           {pageDoc.cover && (
-            <div className="flex flex-col gap-2 w-[120px] flex-shrink-0">
+            <div className="flex flex-col gap-2 w-[110px] flex-shrink-0">
               <Image
                 src={pageDoc.cover}
                 alt={displayTitle}
-                width={120}
-                height={160}
+                width={110}
+                height={145}
                 priority
-                sizes="120px"
-                className="w-full rounded-xl shadow-lg aspect-[3/4] object-cover"
+                sizes="110px"
+                className="w-full rounded-lg shadow-md aspect-[3/4] object-cover"
               />
               <Suspense fallback={<TrailerSkeleton />}>
                 <SuspendedTrailer extrasPromise={finalExtrasPromise} type={type} displayTitle={displayTitle} />
               </Suspense>
             </div>
           )}
-          <div className="flex flex-col gap-3 min-w-0 pt-1">
-            <div className="flex flex-col gap-1.5">
-              <h1 className="text-xl font-bold leading-tight text-foreground">
+          <div className="flex flex-col gap-2.5 min-w-0 pt-0.5">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-xl font-bold leading-tight text-foreground tracking-tight">
                 {displayTitle}
               </h1>
             </div>
@@ -257,16 +257,16 @@ export default async function TopicPageLayout({
       </div> */}
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-6">
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 py-6">
         {/* ── Characters & Cast Carousel ──────────────────────────────────── */}
-        <div className="mb-10">
+        <div className="mb-10 px-4 sm:px-0">
           <Suspense fallback={<CharactersSkeleton />}>
             <SuspendedCharacters charactersPromise={finalCharactersPromise} />
           </Suspense>
         </div>
 
         {/* Unified Head Row: Spans on both Desktop and Mobile */}
-        <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4 gap-4">
+        <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4 gap-4 px-4 sm:px-0">
           <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-foreground">
             <span className="w-1 h-5 sm:h-6 rounded-full bg-primary inline-block" aria-hidden="true" />
             Community Discussion
@@ -299,6 +299,7 @@ export default async function TopicPageLayout({
                 type={type}
                 relatedId={relatedId}
                 tag={tag}
+                docType="post,wheel"
               />
             </Suspense>
           </div>

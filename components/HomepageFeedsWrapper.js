@@ -14,11 +14,11 @@ export default function HomepageFeedsWrapper({
   initialGlobalCursor = null,
 }) {
   return (
-    <div className="space-y-4 px-4 sm:px-0">
+    <div className="space-y-2 px-0">
       <GlobalSpinFeed 
         initialItems={initialGlobalFeed} 
         initialCursor={initialGlobalCursor}
-        showTitle={true} 
+        showTitle={false} 
       />
     </div>
   );

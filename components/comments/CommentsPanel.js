@@ -21,38 +21,40 @@ export default function CommentsPanel({
     if (visible) fetchTopLevelComments();
   }, [visible]);
 
-  const fetchTopLevelComments = async () => {
+  const fetchTopLevelComments = async (isLoadMore = false) => {
+    if (loading && !isLoadMore) return;
     const fetchVersion = mutationVersionRef.current;
+    const skip = isLoadMore ? comments.length : 0;
+    
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/comments?entityType=${entityType}&entityId=${entityId}&parentCommentId=null`
+        `/api/comments?entityType=${entityType}&entityId=${entityId}&parentCommentId=null&limit=15&skip=${skip}`
       );
       const data = await res.json();
       const mappedComments = data.map((c) => ({
-          ...c,
-          replies: [],
-          repliesLoaded: false,
-          replyCount: c.replyCount ?? 0,
-        }));
+        ...c,
+        replies: [],
+        repliesLoaded: false,
+        replyCount: c.replyCount ?? 0,
+      }));
 
       setComments((prev) => {
-        if (mutationVersionRef.current !== fetchVersion) {
-          const merged = [...prev];
-          const seenIds = new Set(merged.map((comment) => String(comment._id)));
-
-          for (const comment of mappedComments) {
-            const commentId = String(comment._id);
-            if (!seenIds.has(commentId)) {
-              merged.push(comment);
-              seenIds.add(commentId);
-            }
-          }
-
-          return merged;
+        if (!isLoadMore && mutationVersionRef.current === fetchVersion) {
+            return mappedComments;
         }
 
-        return mappedComments;
+        const merged = [...prev];
+        const seenIds = new Set(merged.map((comment) => String(comment._id)));
+
+        for (const comment of mappedComments) {
+          const commentId = String(comment._id);
+          if (!seenIds.has(commentId)) {
+            merged.push(comment);
+            seenIds.add(commentId);
+          }
+        }
+        return merged;
       });
     } catch (err) {
       console.error(err);
@@ -249,38 +251,65 @@ export default function CommentsPanel({
   if (!visible) return null;
 
   return (
-    <div className="mt-2 rounded-xl border border-border/80 bg-card/60 p-3 sm:p-4 space-y-4" id="comments">
+    <div className="mt-0 space-y-4" id="comments">
       <CommentForm
         onSubmit={handleAddComment}
         isLoggedIn={isLoggedIn}
         currentUser={currentUser}
+        openLoginPrompt={openLoginPrompt}
         loading={posting}
-        autoFocus={true}
+        autoFocus={false}
       />
 
       {loading && comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground/90">
-          Loading comments…
-        </p>
+        <div className="flex flex-col items-center justify-center py-6 space-y-3">
+          <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground/60 font-medium">
+            Loading comments…
+          </p>
+        </div>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground/90">
-          No comments yet.
-        </p>
+        <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center mb-2 text-muted-foreground/40">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <p className="text-sm text-muted-foreground/90 font-medium">
+            No comments yet.
+          </p>
+        </div>
       ) : (
-        <ul className="space-y-3">
-          {comments.map((c) => (
-            <CommentItem
-              key={c._id}
-              comment={c}
-              currentUser={currentUser}
-              isLoggedIn={isLoggedIn}
-              onReply={handleReply}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              fetchReplies={fetchReplies}
-            />
-          ))}
-        </ul>
+        <div className="space-y-4">
+          <ul className="space-y-1">
+            {comments.map((c) => (
+              <CommentItem
+                key={c._id}
+                comment={c}
+                currentUser={currentUser}
+                isLoggedIn={isLoggedIn}
+                openLoginPrompt={openLoginPrompt}
+                onReply={handleReply}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                fetchReplies={fetchReplies}
+              />
+            ))}
+          </ul>
+          
+          {/* Simple Load More Trigger or Indicator */}
+          {comments.length >= 15 && (
+            <div className="flex justify-center pt-2">
+               <button 
+                  onClick={() => fetchTopLevelComments(true)}
+                  disabled={loading}
+                  className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2 hover:bg-muted/50 rounded-full"
+               >
+                 {loading ? "Loading..." : "Show more comments"}
+               </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -51,7 +51,7 @@ export default function SharePopup({
   // ✅ Conditional button styling
   const buttonClass =
     variant === "buttoned"
-      ? "flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
+      ? "flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm h-8 md:h-9"
       : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700";
 
   return (
@@ -59,7 +59,7 @@ export default function SharePopup({
       {/* Trigger Button */}
       <button onClick={togglePopup} className={buttonClass}>
         <Share2 size={15} />
-        Share
+        <span className="hidden sm:inline">Share</span>
       </button>
 
       {/* Popup */}

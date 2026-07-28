@@ -68,7 +68,8 @@ export default async function MoviePage({ params }) {
   const feedPromise = getFeedItems({ 
     type: "movie", 
     externalId: String(relatedId),
-    limit: 9 
+    limit: 9,
+    docType: "post,wheel"
   });
 
   return (

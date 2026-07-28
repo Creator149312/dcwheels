@@ -74,7 +74,8 @@ export default async function GenericTopicPage({ params }) {
   const feedPromise = getFeedItems({ 
     type, 
     externalId: String(relatedId),
-    limit: 9 
+    limit: 9,
+    docType: "post,wheel"
   });
 
   return (

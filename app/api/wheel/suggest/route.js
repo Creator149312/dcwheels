@@ -2,6 +2,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import TopicPage from "@models/topicpage";
 import { NextResponse } from "next/server";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 // Simple in-memory rate limiter (per IP)
 const rateLimitMap = new Map();
@@ -73,7 +74,7 @@ export async function GET(request) {
         id: w._id,
         title: w.title,
         type: "wheel",
-        route: `/uwheels/${w._id}`
+        route: getWheelUrl(w)
       })),
       ...topicMatches.map(t => ({
         id: t._id,

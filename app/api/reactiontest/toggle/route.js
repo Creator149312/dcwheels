@@ -100,7 +100,7 @@ export async function PATCH(req) {
               const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
               if (wheelCreator?._id) {
                 recipientId = wheelCreator._id;
-                link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/uwheels/${entityId}`;
+                link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
                 modelStr = "Wheel";
               }
             }

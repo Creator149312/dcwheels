@@ -105,11 +105,11 @@ export async function POST(req) {
   if (Array.isArray(ids) && ids.length > 0) {
     // Explicit ID list — still scope to system user for safety
     docs = await Wheel.find({ _id: { $in: ids }, createdBy: systemUserId })
-      .select("_id title description tags relatedTo")
+      .select("_id title description tags relatedTopics")
       .lean();
   } else {
     const q = Wheel.find(sparseFilter(systemUserId))
-      .select("_id title description tags relatedTo")
+      .select("_id title description tags relatedTopics")
       .sort({ createdAt: 1 })
       .skip(offset);
     if (limit > 0) q.limit(limit);

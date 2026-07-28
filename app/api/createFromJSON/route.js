@@ -120,7 +120,7 @@ export async function POST(req) {
         removeWinnerAfterSpin: false,
         customPopupDisplayMessage: "The Winner is...",
       },
-      relatedTo: null,
+      relatedTopics: [],
       createdBy: session.user.email,
       ...(userId ? { userId } : {}),
       tags: jsonData.tags || [],

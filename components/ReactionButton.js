@@ -72,7 +72,7 @@ export default function ReactionButton({
       disabled={loading}
       aria-pressed={reacted}
       aria-label={reacted ? "Unlike" : "Like"}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition ${
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition leading-none shadow-sm h-8 md:h-9 ${
         reacted
           ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
           : "border-border bg-muted text-foreground hover:bg-accent"
@@ -80,9 +80,9 @@ export default function ReactionButton({
     >
       <ThumbsUp
         size={15}
-        className={reacted ? "fill-blue-600 dark:fill-blue-300" : ""}
+        className={`${reacted ? "fill-current" : ""} ${loading ? "animate-pulse" : ""}`}
       />
-      <span>{formatCount(count)}</span>
+      <span className="hidden sm:inline">{formatCount(count)}</span>
     </button>
   );
 }

@@ -33,10 +33,10 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
   if (queryString) createUrl += `?${queryString}`;
 
   return (
-    <div className={`border border-border/40 bg-card rounded-xl shadow-sm p-3 sm:px-4 sm:py-3 ${className}`}>
+    <div className={`border-b sm:border border-border/40 bg-card p-3 sm:rounded-xl shadow-sm sm:px-4 sm:py-3 ${className}`}>
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Avatar - Hidden on mobile to make room for all icons */}
-        <div className="hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-sm font-bold text-primary">
+        {/* Avatar - visible on both now for that premium FB feel */}
+        <div className="flex flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-xs sm:text-sm font-bold text-primary">
           {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "?"}
         </div>
         
@@ -46,8 +46,8 @@ export default function CreatePostTeaser({ defaultTag = "", className = "", cont
           onClick={handleInputClick}
           className="flex-1 overflow-hidden"
         >
-          <div className="bg-muted/50 hover:bg-muted text-muted-foreground rounded-full px-4 py-2 sm:py-2.5 text-xs sm:text-sm transition-colors font-medium border border-border/50 truncate">
-            What&apos;s on your mind{session?.user?.name ? `, ${session.user.name}` : ""}?
+          <div className="bg-muted/50 hover:bg-muted text-muted-foreground rounded-full px-4 py-2 sm:py-2 text-[11px] sm:text-sm transition-colors font-medium border border-border/50 truncate">
+            What&apos;s on your mind{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}?
           </div>
         </Link>
 

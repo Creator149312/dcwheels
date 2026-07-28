@@ -1,0 +1,65 @@
+[
+  {
+    "username": "ShadowRogueX",
+    "email": "shadowroguex@example.ie",
+    "name": "Shadow Rogue",
+    "persona": "The Mystery Seeker",
+    "bio": "Searching for the darkest plots in Anime and Movies. If there's a plot twist, I'll find it.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=ShadowRogueX&backgroundColor=1a1a1a",
+    "interests": ["anime", "movie"]
+  },
+  {
+    "username": "PixelSamurai77",
+    "email": "pixelsamurai77@example.jp",
+    "name": "Pixel Samurai",
+    "persona": "The JRPG Elite",
+    "bio": "Gaming is an art form. From retro classics to modern JRPGs, I live for the grind.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=PixelSamurai77&backgroundColor=b91c1c",
+    "interests": ["game", "anime"]
+  },
+  {
+    "username": "CactusRiderMX",
+    "email": "cactusridermx@example.mx",
+    "name": "Cactus Rider",
+    "persona": "The Indie Gem Finder",
+    "bio": "Hidden gems and desert vibes. I find the games and movies everyone else misses.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=CactusRiderMX&backgroundColor=15803d",
+    "interests": ["game", "movie"]
+  },
+  {
+    "username": "FalconDune99",
+    "email": "falcondune99@example.ae",
+    "name": "Falcon Dune",
+    "persona": "The Action Critic",
+    "bio": "Speed, power, and high stakes. If it doesn't have an explosion or a chase scene, is it even a movie?",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=FalconDune99&backgroundColor=0369a1",
+    "interests": ["movie", "game"]
+  },
+  {
+    "username": "MysticLotusIN",
+    "email": "mysticlotusin@example.in",
+    "name": "Mystic Lotus",
+    "persona": "The Slice of Life Fan",
+    "bio": "Finding the beauty in the mundane. Love a good romance or a cozy anime to unwind.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=MysticLotusIN&backgroundColor=be185d",
+    "interests": ["anime", "movie"]
+  },
+  {
+    "username": "IronBritKnight",
+    "email": "ironbritknight@example.uk",
+    "name": "Iron Knight",
+    "persona": "The Hardcore Tactician",
+    "bio": "Strategy and honor. I break down mechanics and world-building like no other.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=IronBritKnight&backgroundColor=334155",
+    "interests": ["game", "anime"]
+  },
+  {
+    "username": "LibertyEagle",
+    "email": "libertyeagleusa@example.us",
+    "name": "Liberty Eagle",
+    "persona": "The Blockbuster King",
+    "bio": "Big screens, big games, big opinions. I keep up with everything trending so you don't have to.",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=LibertyEagle&backgroundColor=1d4ed8",
+    "interests": ["movie", "game", "anime"]
+  }
+]

@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
 import { Disc3 } from "lucide-react";
 import { Sparkles, Film, List } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 const WHEELS = [
   {
@@ -80,7 +81,8 @@ export default function CreateWheelModal({ open, onClose }) {
     onClose();
 
     // Route to the wheel creation page
-    const url = type === "smart" ? "/wheels/create?ai=true" : "/wheels/create";
+    const baseUrl = getWheelUrl({ _id: "create" });
+    const url = type === "smart" ? `${baseUrl}?ai=true` : baseUrl;
     router.push(url);
   };
 

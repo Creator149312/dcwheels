@@ -12,7 +12,7 @@ const CommentSchema = new Schema(
     // The content type this comment belongs to
     entityType: {
       type: String,
-      enum: ["post", "question", "page", "wheel"],
+      enum: ["post", "question", "page", "wheel", "uwheel", "list", "topicpage"],
       required: true,
       index: true,
     },

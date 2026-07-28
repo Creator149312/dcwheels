@@ -16,6 +16,7 @@ import Image from "next/image";
 import { Timer, MessageCircleQuestion, LayoutGrid, MessageSquare } from "lucide-react";
 import { Disc3 } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 // ── Dot colour per activity type ─────────────────────────────────────────
 const DOT_COLOR = {
@@ -52,8 +53,7 @@ const TYPE_BADGE = {
 // ── Card sub-components ───────────────────────────────────────────────────
 
 function SpinCard({ data }) {
-  const wheelRoute =
-    data.wheelId?.length === 24 ? `/uwheels/${data.wheelId}` : `/wheels/${data.wheelId}`;
+  const wheelRoute = getWheelUrl({ _id: data.wheelId, slug: data.wheelSlug });
 
   return (
     <div className="space-y-2">
@@ -100,7 +100,7 @@ function SpinCard({ data }) {
 }
 
 function WheelCard({ data }) {
-  const href = `/uwheels/${data._id}`;
+  const href = getWheelUrl(data);
   return (
     <div className="space-y-2">
       <p className="text-sm text-foreground">

@@ -10,7 +10,7 @@ export default function RepliesList({
   onDelete,
 }) {
   return (
-    <div className="ml-10 mt-2 border-l border-border pl-3 space-y-3">
+    <div className="mt-2 space-y-4">
       {replies.map((reply) => (
         <CommentItem
           key={reply._id}

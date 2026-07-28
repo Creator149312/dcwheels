@@ -15,10 +15,8 @@ export default function HomePageContent({ initialGlobalFeed, initialGlobalCursor
   useScrollRestoration();
 
   return (
-    <div className="mx-auto max-w-3xl px-0 sm:px-4 py-4 sm:py-8">
-      <div className="px-4 sm:px-0">
-        <CreatePostTeaser className="mb-6" />
-      </div>
+    <div className="mx-auto max-w-3xl px-0 py-2 sm:py-6">
+      <CreatePostTeaser className="mb-4" />
       {/* Client component that loads multiple feeds with batch optimization */}
       <HomepageFeedsWrapper 
         initialGlobalFeed={initialGlobalFeed}

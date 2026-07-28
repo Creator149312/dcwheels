@@ -8,10 +8,21 @@ const notificationSchema = new Schema(
       required: true, 
       index: true 
     },
+    // The most recent actor who triggered this notification
     sender: { 
       type: Schema.Types.ObjectId, 
       ref: "User", 
       required: false 
+    },
+    // Array of all actors for this notification (used for grouping)
+    senders: [{
+      type: Schema.Types.ObjectId, 
+      ref: "User"
+    }],
+    // Count of total actors if grouped (e.g., "...and 5 others")
+    count: {
+      type: Number,
+      default: 1
     },
     type: { 
       type: String, 

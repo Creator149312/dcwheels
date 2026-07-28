@@ -130,9 +130,9 @@ export default function RecommendationPage() {
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setShowWheel(true)}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold hover:opacity-90 transition"
                 >
-                  Spin To Decide
+                  Decide
                 </button>
               </div>
             </>

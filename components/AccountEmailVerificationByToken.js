@@ -6,37 +6,67 @@ import { verifyUserEmailbyToken } from "./actions/actions";
 import Link from "next/link";
 
 const AccountEmailVerificationByToken = () => {
-  const [isLoading, setIsLoading] = useState(true); // Track loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
   const verifyEmail = useCallback(async () => {
-    try {
-      if (!token) {
-        setError("No token provided");
-        setIsLoading(false);
-        return;
-      }
+    if (!token || hasStarted) return;
 
+    // Use sessionStorage to prevent multiple calls in development (StrictMode)
+    const sessionKey = `verify_attempt_${token}`;
+    const cachedStatus = typeof window !== "undefined" ? sessionStorage.getItem(sessionKey) : null;
+
+    if (cachedStatus) {
+      if (cachedStatus === "success") {
+        setSuccess(true);
+        setIsLoading(false);
+      } else if (cachedStatus === "failed") {
+        setError("Email verification completed or token already used.");
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    setHasStarted(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(sessionKey, "pending");
+    }
+    console.log("Starting verification for token:", token);
+
+    try {
       const data = await verifyUserEmailbyToken(token);
+      console.log("Verification response:", data);
 
       if (data.success) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(sessionKey, "success");
+        }
         setSuccess(true);
       } else {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(sessionKey, "failed");
+        }
         setError(data.error || "Email verification failed.");
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      console.error("Verification Error:", err);
+      setError(`An error occurred: ${err.message || "Unknown error"}`);
     } finally {
-      setIsLoading(false); 
+      console.log("Setting isLoading to false");
+      setIsLoading(false);
     }
-  }, [token]);
+  }, [token, hasStarted]);
 
   useEffect(() => {
-    verifyEmail();
-  }, [verifyEmail]); // Only re-run effect if verifyEmail changes
+    console.log("Effect running, hasStarted:", hasStarted, "token:", !!token);
+    if (!hasStarted && token) {
+      verifyEmail();
+    }
+  }, [verifyEmail, hasStarted, token]);
 
   return (
     <>

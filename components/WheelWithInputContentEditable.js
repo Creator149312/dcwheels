@@ -109,7 +109,7 @@ const WheelWithInputContentEditable = ({
 
   return (
     <>
-      <div className="grid lg:grid-cols-12 xl:grid-cols-8 gap-x-2 gap-y-1 max-w-7xl mx-auto px-2 mt-2">
+      <div className="grid lg:grid-cols-12 xl:grid-cols-8 gap-x-2 gap-y-1 max-w-7xl mx-auto px-0 sm:px-2 mt-2">
         <div
           ref={wheelContainerRef}
           className={`bg-card border shadow-sm flex flex-col items-center text-card-foreground lg:mb-0 lg:col-span-7 xl:col-span-5 mx-auto transition-all duration-300 ease-in-out ${
@@ -148,8 +148,8 @@ const WheelWithInputContentEditable = ({
           {/* Wheel */}
           <div
             onClick={handleSpinClick}
-            className={`relative flex items-center justify-center w-full ${
-              isFullScreen ? "flex-1" : "min-h-[30rem]"
+            className={`relative flex items-center justify-center w-full overflow-hidden ${
+              isFullScreen ? "flex-1" : "min-h-[300px] sm:min-h-[30rem]"
             }`}
           >
             {data.length > 0 && (

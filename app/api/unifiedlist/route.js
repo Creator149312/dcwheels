@@ -50,7 +50,7 @@ export async function GET(req) {
             description: "Default list for items you've saved.",
             isSystem: true,
             systemKey: "SYS_SAVED",
-            settings: { visibility: "private", sortBy: "recently-saved" },
+            settings: { visibility: "public", sortBy: "recently-saved" },
           });
         } catch (e) {
           if (e.code !== 11000) console.error("Lazy create SYS_SAVED failed:", e);
@@ -141,11 +141,21 @@ export async function POST(req) {
 
     // ✅ 2. Parse request body
     const body = await req.json();
-    const { name, description = "" } = body;
+    const { name, description = "", tags = [] } = body;
 
     if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "List name is required" },
+        { status: 400 }
+      );
+    }
+
+    // SEO & UX Validation: Name must contain a reasonable number of alphanumeric characters.
+    // Prevents lists named "." or "###" or only emojis/special characters.
+    const alphanumericMatch = name.match(/[a-z0-9]/i);
+    if (!alphanumericMatch || name.trim().length < 2) {
+      return NextResponse.json(
+        { error: "List name must be at least 2 characters long and contain alphanumeric characters." },
         { status: 400 }
       );
     }
@@ -173,6 +183,7 @@ export async function POST(req) {
       userId,
       name,
       description,
+      tags: Array.isArray(tags) ? tags : [],
       items: [],
     });
 
@@ -181,6 +192,7 @@ export async function POST(req) {
       id: newList._id,
       name: newList.name,
       description: newList.description,
+      tags: newList.tags,
       createdAt: newList.createdAt,
       updatedAt: newList.updatedAt,
       items: [],

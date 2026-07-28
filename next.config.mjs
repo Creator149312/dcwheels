@@ -151,6 +151,16 @@ const nextConfig = {
         destination: "/lists",
         permanent: true,
       },
+      {
+        source: "/uwheels/:wheelId",
+        destination: "/wheels/:wheelId",
+        permanent: true,
+      },
+      {
+        source: "/uwheels",
+        destination: "/wheels",
+        permanent: true,
+      },
     ];
   },
   async headers() {

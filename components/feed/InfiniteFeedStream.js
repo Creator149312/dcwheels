@@ -1,10 +1,12 @@
 ﻿"use client";
 
 import { Activity, Loader2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { useFeedCache } from "@/hooks/useFeedCache";
 import PostCard from "@components/PostCard";
 import WheelFeedCard from "@components/WheelFeedCard";
-import { distributeFeedItems, getFeedItemKey, injectAdMarkers } from "@/utils/feedUtils";
+import ListShelf from "@components/feed/ListShelf";
+import { getFeedItemKey, buildStandardFeed } from "@/utils/feedUtils";
 import dynamic from "next/dynamic";
 
 const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
@@ -76,8 +78,53 @@ export default function InfiniteFeedStream({
     limit: 8,
     endpoint: '/api/feed',
     initialItems,
-    initialNextCursor
+    initialNextCursor,
+    rootMargin: '1000px' // High-performance pre-fetching (1000px before reaching bottom)
   });
+
+  // Keep a stable, layout-frozen copy of all displayed feed items with hydration-safe initial items
+  const [stableItems, setStableItems] = useState(() => {
+    if (initialItems && initialItems.length > 0) {
+      // Use the standard Industrial Interleaver
+      return buildStandardFeed(initialItems, {
+        adInterval: 6,
+        wheelCadence: 4,
+        listIndices: [2] // Premium discovery lists at the 3rd slot
+      });
+    }
+    return [];
+  });
+
+  const processedIdsRef = useRef(new Set(initialItems ? initialItems.map(item => item._id || item.id) : []));
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setStableItems([]);
+      processedIdsRef.current.clear();
+      return;
+    }
+
+    // Capture ONLY raw items that have not been compiled into stable layout yet
+    const newRawItems = items.filter(item => !processedIdsRef.current.has(item._id || item.id));
+    
+    if (newRawItems.length > 0) {
+      // Mark these items as locked/processed
+      newRawItems.forEach(item => {
+        processedIdsRef.current.add(item._id || item.id);
+      });
+
+      setStableItems(prev => {
+        // Use the Industrial Interleaver for the new batch
+        const distributedNewWithAds = buildStandardFeed(newRawItems, {
+            adInterval: 6,
+            wheelCadence: 4,
+            listIndices: [] // Don't re-inject Discovery lists for infinite scroll pages
+        });
+
+        return [...prev, ...distributedNewWithAds];
+      });
+    }
+  }, [items]);
 
   if (!items || items.length === 0) {
     return (
@@ -119,39 +166,34 @@ export default function InfiniteFeedStream({
     );
   }
 
-  const distributedItems = distributeFeedItems(items);
-  const itemsWithAds = injectAdMarkers(distributedItems, 6);
-
   return (
-    <div className="flex flex-col space-y-0 sm:space-y-6 mt-4 sm:mt-6 max-w-3xl border-t sm:border-t-0 border-border">
-      {itemsWithAds.map((item, index) => {
+    <div className="flex flex-col space-y-0 sm:space-y-4 sm:mt-4 max-w-3xl border-border">
+      {stableItems.map((item, index) => {
         const key = getFeedItemKey(item, index);
         // Inject recommended topics after item index 2 (counting only content items)
         const showRecommendations = index === 2 && relatedPages.length > 0;
 
         if (item.isAdMarker) {
           return (
-            <div key={key} className="w-full py-2 bg-muted/50 border border-border sm:rounded-xl flex flex-col items-center justify-center min-h-[90px] my-2">
-              <AdsUnit slot="4694567949" />
-            </div>
+            <AdsUnit key={key} slot="4694567949" />
           );
         }
 
         return (
           <div key={key}>
             {showRecommendations && (
-              <div className="mb-6 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5">
+                <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-muted-foreground">
+                    <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground/60">
                       Recommended for You
                     </h3>
                   </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground/50">Swipe to browse →</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground/40">Swipe to browse →</span>
                 </div>
                 <div
-                  className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+                  className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden"
                   style={{ scrollbarWidth: "none" }}
                 >
                   {relatedPages.map((related) => (
@@ -163,9 +205,11 @@ export default function InfiniteFeedStream({
 
             {item.docType === "post" ? (
               <PostCard post={item} currentContextId={currentContextId} />
-            ) : (
+            ) : item.docType === "wheel" ? (
               <WheelFeedCard wheel={item} />
-            )}
+            ) : item.docType === "list" ? (
+              <ListShelf list={item} />
+            ) : null}
           </div>
         );
       })}

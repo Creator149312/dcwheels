@@ -8,8 +8,8 @@
  */
 export default function WheelInfoStatic({ wordsList }) {
   return (
-    <div className="mt-4 sm:mt-6 w-full px-4 text-left">
-      <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-0.5">
+    <div className="mt-1 mb-1 sm:mt-3 w-full px-3 text-left">
+      <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-0.5 truncate pr-8 sm:pr-0" title={wordsList.title}>
         {wordsList.title}
       </h1>
     </div>

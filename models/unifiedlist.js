@@ -73,6 +73,27 @@ const ListSchema = new Schema(
 
     description: { type: String, default: "", trim: true, maxlength: 300 },
 
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
+      set: (tags) =>
+        Array.isArray(tags)
+          ? tags
+              .map((t) =>
+                typeof t === "string"
+                  ? t
+                      .toLowerCase()
+                      .trim()
+                      .replace(/\s+/g, "-") // spaces → hyphens
+                      .replace(/[^a-z0-9-]/g, "") // strip non-url chars
+                      .replace(/^-+|-+$/g, "") // trim leading/trailing hyphens
+                  : t
+              )
+              .filter(Boolean) // drop any tags that normalised to empty string
+          : tags,
+    },
+
     items: {
       type: [ListItemSchema],
       default: [],
@@ -117,9 +138,18 @@ const ListSchema = new Schema(
       visibility: {
         type: String,
         enum: ["private", "public"],
-        default: "private",
+        default: "public",
       },
     },
+
+    // SEO & Unified Routing
+    slug: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    indexed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -137,6 +167,84 @@ ListSchema.index(
 // list document for the user to find a matching items.entityId.
 // Multikey index: Mongo expands the items array automatically.
 ListSchema.index({ userId: 1, "items.entityId": 1 });
+ListSchema.index({ tags: 1 });
+
+/**
+ * Mongoose Hooks for Tag Count Automation
+ * 
+ * Logic: A list only counts towards tag discovery if:
+ * 1. isSystem: false (don't index auto-generated library lists)
+ * 2. visibility: 'public' OR isPublic: true
+ */
+ListSchema.pre("save", async function (next) {
+  // Generate SEO-friendly slug from list name
+  if (this.name) {
+    this.slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  if (!this.isNew) {
+    try {
+      const oldDoc = await this.constructor
+        .findById(this._id)
+        .select("tags settings isPublic isSystem")
+        .lean();
+      if (oldDoc) {
+        this._oldState = {
+          tags: oldDoc.tags || [],
+          isPublic: oldDoc.isPublic === true || oldDoc.settings?.visibility === "public",
+          isSystem: !!oldDoc.isSystem
+        };
+      }
+    } catch (err) {
+      console.error("Error fetching old state in list pre-save:", err);
+    }
+  }
+  next();
+});
+
+ListSchema.post("save", async function () {
+  try {
+    const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+
+    const wasLive = this._oldState
+      ? !this._oldState.isSystem && this._oldState.isPublic
+      : false;
+    
+    const isLive = !this.isSystem && (this.isPublic === true || this.settings?.visibility === "public");
+
+    if (!wasLive && isLive) {
+      await updateTagCounts(this.tags, 1, "listCount");
+    } else if (wasLive && !isLive) {
+      await updateTagCounts(this._oldState.tags, -1, "listCount");
+    } else if (wasLive && isLive) {
+      const oldTags = this._oldState.tags || [];
+      const added = this.tags.filter((t) => !oldTags.includes(t));
+      const removed = oldTags.filter((t) => !this.tags.includes(t));
+
+      if (added.length > 0) await updateTagCounts(added, 1, "listCount");
+      if (removed.length > 0) await updateTagCounts(removed, -1, "listCount");
+    }
+  } catch (err) {
+    console.error("Error in list post-save hook:", err);
+  }
+});
+
+ListSchema.post("remove", async function () {
+  try {
+    const isLive = !this.isSystem && (this.isPublic === true || this.settings?.visibility === "public");
+    if (isLive) {
+      const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+      await updateTagCounts(this.tags, -1, "listCount");
+    }
+  } catch (err) {
+    console.error("Error in list post-remove hook:", err);
+  }
+});
 
 const UnifiedList = models.UnifiedList || mongoose.model("UnifiedList", ListSchema);
 export default UnifiedList;

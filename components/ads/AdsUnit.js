@@ -55,22 +55,22 @@ const AdsUnitInner = ({ slot }) => {
   }, [slot]);
 
   return (
-    <div className="w-full bg-muted/30 text-center py-2 my-4 rounded-lg border border-border">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+    <div className="w-full bg-muted/5 text-center py-3 sm:py-4 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40">
+      {/* <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 mb-">
         Advertisement
-      </div>
-      <div className="flex justify-center items-center overflow-hidden">
+      </div> */}
+      <div className="flex justify-center items-center overflow-hidden w-full">
         <ins
           ref={insRef}
+          className="w-full"
           style={{
             display: "block",
-            width: "100%",
-            minHeight: "280px",
+            minHeight: "250px",
           }}
           data-ad-client="ca-pub-6746947892342481"
           data-ad-slot={slot}
-          data-ad-format="rectangle, horizontal"
-          data-full-width-responsive="false"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
         />
       </div>
     </div>

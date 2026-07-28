@@ -10,9 +10,8 @@ import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { MessageSquare, Code2, ArrowLeftRight } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
-// Lazy-load on interaction only — removes comment thread + embed form from
+// Lazy-load on interaction only — removes embed form from
 // the initial JS parse path, cutting TBT.
-const CommentsPanel = dynamic(() => import("./comments/CommentsPanel"), { ssr: false });
 const EmbedCodePopup = dynamic(() => import("@components/EmbedCodePopup"), { ssr: false });
 
 function formatCount(n) {
@@ -50,9 +49,12 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
     view_count: initialMeta?.analytics?.view_count || 0,
     spin_count: initialMeta?.analytics?.spin_count || 0,
   });
-  const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(initialMeta?.commentCount || 0);
   const [showEmbed, setShowEmbed] = useState(false);
+
+  // Use authorHandle as preferred display name, or sanitize email from createdBy
+  const displayCreator =
+    authorHandle || (createdBy && createdBy.includes("@") ? createdBy.split("@")[0] : createdBy);
 
   useEffect(() => {
     let ignore = false;
@@ -101,90 +103,87 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
   }, [wheelId, initialMeta]);
 
   return (
-    <div className="w-full px-4 text-left text-gray-900 dark:text-gray-100 mb-3">
-    <div className="block md:flex md:items-center md:justify-between md:gap-4">
-      {/* Creator avatar + stats line in one row */}
-      <div className="flex items-center justify-start gap-3 mb-3 md:mb-0">
-        {authorHandle ? (
-          <Link href={`/u/${encodeURIComponent(authorHandle)}`} className="hover:opacity-80 transition">
-            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0 cursor-pointer">
-              {createdBy ? createdBy.charAt(0).toUpperCase() : ""}
+    <div className="w-full px-2 sm:px-3 text-left text-foreground mb-1">
+      <div className="flex items-center justify-between gap-2">
+        {/* Left: Avatar + Stats */}
+        <div className="flex items-center gap-2">
+          {authorHandle ? (
+            <Link href={`/u/${encodeURIComponent(authorHandle)}`} className="hover:opacity-80 transition flex-shrink-0">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground">
+                {displayCreator ? displayCreator.charAt(0).toUpperCase() : ""}
+              </div>
+            </Link>
+          ) : (
+            <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0">
+              {displayCreator ? displayCreator.charAt(0).toUpperCase() : ""}
             </div>
-          </Link>
-        ) : (
-          <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-black dark:text-white flex-shrink-0">
-            {createdBy ? createdBy.charAt(0).toUpperCase() : ""}
+          )}
+          
+          <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] font-medium text-muted-foreground whitespace-nowrap">
+            <span>{formatCount(engagement.view_count)} views</span>
+            <span className="opacity-40">•</span>
+            <span>{formatCount(engagement.spin_count)} spins</span>
           </div>
-        )}
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          {formatCount(engagement.view_count)} views
-          <span className="mx-1.5">•</span>
-          <ArrowLeftRight className="inline -mt-0.5 mr-0.5" size={14} />
-          {formatCount(engagement.spin_count)} spins
-          <span className="mx-1.5">•</span>
-          {timeAgo(createdAt)}
-        </p>
-      </div>
+        </div>
 
-      {/* Action buttons row */}
-      <div className="flex flex-wrap items-center gap-4 text-sm">
-        <StatsBar
-          entityType="wheel"
-          entityId={wheelId}
-          session={session}
-          initialStats={
-            initialMeta
-              ? {
-                  reactions: initialMeta.reactions,
-                  reactedByUser: initialMeta.reactedByUser,
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1 md:gap-2">
+          <StatsBar
+            entityType="wheel"
+            entityId={wheelId}
+            session={session}
+            initialStats={
+              initialMeta
+                ? {
+                    reactions: initialMeta.reactions,
+                    reactedByUser: initialMeta.reactedByUser,
+                  }
+                : null
+            }
+            show={{ like: true, share: true, save: false, follow: false, comment: true }}
+            commentCount={commentCount}
+            onCommentClick={() => {
+              if (window.innerWidth < 768) {
+                // Phase 3: Mobile Detail -> Simple custom event to open the drawer
+                window.dispatchEvent(new CustomEvent("comments:open-drawer", {
+                  detail: { entityId: String(wheelId) }
+                }));
+              } else {
+                // Desktop -> Scroll to the comments section AND focus input
+                const el = document.getElementById("comments-section");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth" });
+                  // Focus the comment textarea
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("comment-form:focus"));
+                  }, 300);
                 }
-              : null
-          }
-          show={{ like: true, share: true, save: false, follow: false }}
-        />
+              }
+            }}
+          />
 
-        <QuickSaveButton
-          entityType={wheelEntityType}
-          entityId={wheelId}
-          itemTitle={wheelTitle}
-          itemSlug={wheelSlug || wheelId}
-          variant="button"
-          showText={true}
-        />
+          <QuickSaveButton
+            entityType={wheelEntityType}
+            entityId={wheelId}
+            itemTitle={wheelTitle}
+            itemSlug={wheelSlug || wheelId}
+            variant="button"
+          />
 
-        <button
-          onClick={() => setShowComments((prev) => !prev)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
-        >
-          <MessageSquare size={15} />
-          <span>{commentCount > 0 ? formatCount(commentCount) : "0"}</span>
-        </button>
-
-        <button
-          onClick={() => setShowEmbed(true)}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
-        >
-          <Code2 size={15} />
-          <span>Embed</span>
-        </button>
+          <button
+            onClick={() => setShowEmbed(true)}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground transition-all leading-none shadow-sm h-8 md:h-9 flex-shrink-0"
+            title="Embed Wheel"
+          >
+            <Code2 size={16} />
+            <span className="text-sm font-medium">Embed</span>
+          </button>
+        </div>
       </div>
 
       {showEmbed && (
         <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
       )}
-    </div>
-
-      {/* Comments panel — lazy, only mounts after user clicks */}
-      <div className="pt-4">
-      <CommentsPanel
-        entityType="wheel"
-        entityId={wheelId}
-        isLoggedIn={!!session}
-        openLoginPrompt={openLoginPrompt}
-        currentUser={session?.user}
-        visible={showComments}
-      />
-      </div>
     </div>
   );
 }

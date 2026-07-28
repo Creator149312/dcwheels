@@ -99,6 +99,7 @@ const userSchema = new Schema(
       default: false,
       index: true,
     },
+
     // Unique lowercase handle/slug for the user profile URL.
     // e.g., Display name "Creators93" -> username handle "creators93".
     // Enables direct, index-optimized exact match lookups.

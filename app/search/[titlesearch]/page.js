@@ -156,7 +156,7 @@ export default async function Page({ params, searchParams }) {
               <div className="grid grid-cols-1 gap-3 md:gap-4">
                 {wheelList.map((item, index) => (
                   <Fragment key={item._id}>
-                    <Link href={`/uwheels/${item._id}`} className="group">
+                    <Link href={`/wheels/${item._id}`} className="group">
                       <Card className="group relative overflow-hidden border-none bg-card shadow-sm p-3.5 md:p-6 transition duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 transition-colors duration-500" />
                         <div className="relative flex items-center justify-between">

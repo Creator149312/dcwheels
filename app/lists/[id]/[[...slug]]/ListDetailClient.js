@@ -15,6 +15,10 @@ const EditListModal = dynamic(() => import("@components/lists/EditListModal"), {
 // click-triggered). Keeps BrandIcons SVGs + react-hot-toast out of the initial chunk.
 const SharePopup = dynamic(() => import("@components/SharePopup"), { ssr: false });
 
+import UniversalCommentsSection from "@components/UniversalCommentsSection";
+import StatsBar from "@app/(content)/[type]/StatsBar";
+import { getWheelUrl } from "@utils/UrlHandler";
+
 export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,12 +30,20 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey || initialList?.systemKey === "SYS_SAVED";
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
 
   // Settings state (sort and visibility)
   const [sortBy, setSortBy] = useState(initialList?.settings?.sortBy || "recently-saved");
   const [visibility, setVisibility] = useState(initialList?.settings?.visibility || "private");
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [shareLink, setShareLink] = useState("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   // isOwner starts false (safe default for guests/cached pages).
   // Resolves client-side after session is known — keeps page ISR-cacheable.
@@ -184,7 +196,9 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         }));
         // Generate share link if going public
         if (newVis === "public") {
-          setShareLink(`${window.location.origin}/lists/${listId}`);
+          if (typeof window !== 'undefined') {
+            setShareLink(`${window.location.origin}/lists/${listId}`);
+          }
         }
       }
     } catch (err) {
@@ -529,6 +543,34 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                 <Zap size={16} className="fill-current" />
                 Spin this List
               </button>
+
+              <div className="mt-4">
+                <StatsBar
+                  entityType="list"
+                  entityId={listId}
+                  session={session}
+                  show={{ like: true, share: true, save: false, follow: false, comment: true }}
+                  shareUrl={origin ? `${origin}/lists/${listId}` : ""}
+                  commentCount={commentCount}
+                  onCommentClick={() => {
+                    if (typeof window !== 'undefined') {
+                      if (window.innerWidth < 768) {
+                        window.dispatchEvent(new CustomEvent("comments:open-drawer", {
+                          detail: { entityId: String(listId) }
+                        }));
+                      } else {
+                        const el = document.getElementById("comments-section");
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth" });
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent("comment-form:focus"));
+                          }, 300);
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -586,8 +628,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               {visibility === "public" && (
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/lists/${listId}`);
-                    alert("Share link copied!");
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(`${window.location.origin}/lists/${listId}`);
+                      alert("Share link copied!");
+                    }
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"
                   title="Copy share link"
@@ -863,8 +907,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                       <>
                       <a
                           href={
-                            item.entityType === "wheel" ? `/wheels/${item.slug}` :
-                            item.entityType === "uwheel" ? `/uwheels/${item.slug}` :
+                            (item.entityType === "wheel" || item.entityType === "uwheel") ? getWheelUrl({ _id: item.entityId, slug: item.slug }) :
                             `/${item.entityType}/${item.slug}`
                           }
                           className="font-bold text-sm md:text-base hover:underline text-foreground truncate block"
@@ -917,6 +960,12 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         list={list}
         isSystem={isSystemList}
         onSave={saveListEdits}
+      />
+
+      <UniversalCommentsSection 
+        entityId={listId} 
+        entityType="list" 
+        onCountChange={setCommentCount}
       />
     </div>
   );

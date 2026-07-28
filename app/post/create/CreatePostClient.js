@@ -41,6 +41,61 @@ function CreatePostForm() {
   const [tagTrayVisible, setTagTrayVisible] = useState(false);
   const textareaRef = useRef(null);
 
+  // Minimalist Link detection for Wheels/Lists
+  useEffect(() => {
+    const detectInternalLink = async () => {
+      // Don't override if user already has an image or poll
+      if (imagePreview || hasPoll || ogMeta) return;
+
+      const wheelRegex = /\/(?:embed|wheel)\/([a-f\d]{24})/i;
+      const listRegex = /\/lists\/([a-f\d]{24})/i;
+      
+      const wheelMatch = text.match(wheelRegex);
+      const listMatch = text.match(listRegex);
+
+      if (wheelMatch) {
+        const id = wheelMatch[1];
+        try {
+          const res = await fetch(`/api/wheel/${id}`);
+          if (res.ok) {
+            const { list } = await res.json();
+            if (list) {
+              setOgMeta({
+                type: "wheel",
+                internalId: id,
+                title: list.title,
+                description: list.description || `Spin the ${list.title} wheel!`,
+                image: list.wheelPreview || null,
+                url: `/embed/${id}`
+              });
+            }
+          }
+        } catch (e) { console.error(e); }
+      } else if (listMatch) {
+        const id = listMatch[1];
+        try {
+          const res = await fetch(`/api/unifiedlist/${id}`);
+          if (res.ok) {
+            const { list } = await res.json();
+            if (list) {
+              setOgMeta({
+                type: "list",
+                internalId: id,
+                title: list.name,
+                description: list.description || `Check out this list: ${list.name}`,
+                image: list.image || null,
+                url: `/lists/${id}`
+              });
+            }
+          }
+        } catch (e) { console.error(e); }
+      }
+    };
+
+    const timer = setTimeout(detectInternalLink, 1000);
+    return () => clearTimeout(timer);
+  }, [text, imagePreview, hasPoll, ogMeta]);
+
   useEffect(() => {
     if (postId && !initialLoadDone) {
       const loadPost = async () => {
@@ -308,7 +363,7 @@ function CreatePostForm() {
         finalImageUrl = null;
       }
 
-      const contentRef = (cr_type && cr_id) ? {
+      const contentRefBase = (cr_type && cr_id) ? {
         type: cr_type,
         externalId: cr_id,
         slug: cr_slug || "",
@@ -316,10 +371,20 @@ function CreatePostForm() {
         image: cr_image || null,
       } : null;
 
+      // If we detected an internal wheel/list, set it as contentRef for better rendering
+      const isInternal = ogMeta?.internalId && (ogMeta.type === "wheel" || ogMeta.type === "list");
+      const finalContentRef = isInternal ? {
+        type: ogMeta.type,
+        externalId: ogMeta.internalId,
+        slug: ogMeta.url,
+        title: ogMeta.title,
+        image: ogMeta.image,
+      } : contentRefBase;
+
       const payload = {
         content: rawText,
         image: finalImageUrl,
-        contentRef,
+        contentRef: finalContentRef,
         hasPoll,
         pollOptions: hasPoll
           ? pollOptions
@@ -328,7 +393,7 @@ function CreatePostForm() {
           : [],
         tags: extractedTags,
         isPublic,
-        ogMeta: !image && !hasPoll ? ogMeta : null,
+        ogMeta: !image && !hasPoll && !isInternal ? ogMeta : null,
       };
 
       const method = postId ? "PATCH" : "POST";
@@ -515,7 +580,9 @@ function CreatePostForm() {
                       <h4 className="font-bold text-sm text-foreground line-clamp-1">{ogMeta.title}</h4>
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ogMeta.description}</p>
                       <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-semibold">
-                        {new URL(ogMeta.url).hostname.replace('www.', '')}
+                        {ogMeta.url?.startsWith("/") 
+                          ? "Spinpapa Internal" 
+                          : new URL(ogMeta.url).hostname.replace('www.', '')}
                       </p>
                     </div>
                   </div>

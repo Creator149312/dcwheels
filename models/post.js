@@ -1,4 +1,5 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, models } = mongoose;
 
 /**
  * Post — unified model for community discussion.
@@ -162,6 +163,15 @@ const postSchema = new Schema(
       default: 0,
       min: 0,
     },
+
+    // SEO & Unified Routing
+    slug: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    indexed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -175,6 +185,18 @@ postSchema.pre("save", function (next) {
   } else {
     this.hasTruncation = false;
   }
+
+  // Generate SEO-friendly slug from content
+  if (this.content) {
+    this.slug = this.content
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 100);
+  }
+
   next();
 });
 
@@ -198,6 +220,77 @@ postSchema.index(
   { tags: 1, createdAt: -1 },
   { partialFilterExpression: { isDeleted: false, shadowBanned: false, isPublic: true } }
 );
+
+/**
+ * Mongoose Hooks for Tag Count Automation
+ * 
+ * Logic: A post only counts towards tag discovery if:
+ * 1. isPublic: true
+ * 2. isDeleted: false
+ * 3. shadowBanned: false
+ */
+postSchema.pre("save", async function (next) {
+  if (!this.isNew) {
+    try {
+      const oldDoc = await this.constructor
+        .findById(this._id)
+        .select("tags isPublic isDeleted shadowBanned")
+        .lean();
+      if (oldDoc) {
+        this._oldState = {
+          tags: oldDoc.tags || [],
+          isPublic: oldDoc.isPublic !== false,
+          isDeleted: !!oldDoc.isDeleted,
+          shadowBanned: !!oldDoc.shadowBanned,
+        };
+      }
+    } catch (err) {
+      console.error("Error fetching old state in post pre-save:", err);
+    }
+  }
+  next();
+});
+
+postSchema.post("save", async function () {
+  try {
+    const { updateTagCounts } = await import("../lib/tagUpdateHelper.js");
+
+    const wasLive = this._oldState
+      ? this._oldState.isPublic &&
+        !this._oldState.isDeleted &&
+        !this._oldState.shadowBanned
+      : false;
+    const isLive =
+      this.isPublic && !this.isDeleted && !this.shadowBanned;
+
+    if (!wasLive && isLive) {
+      await updateTagCounts(this.tags, 1, "askCount");
+    } else if (wasLive && !isLive) {
+      await updateTagCounts(this._oldState.tags, -1, "askCount");
+    } else if (wasLive && isLive) {
+      const oldTags = this._oldState.tags || [];
+      const added = this.tags.filter((t) => !oldTags.includes(t));
+      const removed = oldTags.filter((t) => !this.tags.includes(t));
+
+      if (added.length > 0) await updateTagCounts(added, 1, "askCount");
+      if (removed.length > 0) await updateTagCounts(removed, -1, "askCount");
+    }
+  } catch (err) {
+    console.error("Error in post post-save hook:", err);
+  }
+});
+
+postSchema.post("remove", async function () {
+  try {
+    const isLive = this.isPublic && !this.isDeleted && !this.shadowBanned;
+    if (isLive) {
+      const { updateTagCounts } = await import("../lib/tagUpdateHelper.js");
+      await updateTagCounts(this.tags, -1, "askCount");
+    }
+  } catch (err) {
+    console.error("Error in post post-remove hook:", err);
+  }
+});
 
 const Post = models.Post || mongoose.model("Post", postSchema);
 

@@ -249,19 +249,19 @@ export default function PostGeneratorPage() {
 
           {loading ? (
             <div className="text-muted-foreground text-sm animate-pulse">
-              Fetching topics without posts...
+              Fetching topics...
             </div>
           ) : topics.length === 0 ? (
             <div className="text-muted-foreground text-sm py-8 text-center">
                 {search
                   ? `No topics found matching &quot;${search}&quot;.`
-                  : "All TopicPages in this category already have posts."}
+                  : "No TopicPages found in this category."}
               </div>
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
                 Showing <span className="font-bold text-foreground">{topics.length}</span> of{" "}
-                <span className="font-bold text-foreground">{total}</span> topics with no posts yet
+                <span className="font-bold text-foreground">{total}</span> total topics
                 {search && <> matching <span className="font-semibold">&quot;{search}&quot;</span></>}.
               </p>
               {topics.map((topic) => (
@@ -424,6 +424,34 @@ export default function PostGeneratorPage() {
 
 function TopicRow({ topic, onGenerate }) {
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seededCount, setSeededCount] = useState(0);
+
+  const handleQuickSeed = async (count, forceType = null) => {
+    const typeLabel = forceType || "Random";
+    if (!confirm(`Are you sure you want to seed ${count} ${typeLabel} post(s) for ${topic.displayTitle}?`)) return;
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/admin/quick-seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: topic.slug,
+          type: topic.type,
+          title: topic.displayTitle,
+          count,
+          forceType
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Seeding failed");
+      setSeededCount(prev => prev + count);
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition">
@@ -440,21 +468,47 @@ function TopicRow({ topic, onGenerate }) {
           <span className="text-[10px] text-muted-foreground">
             Score: {topic.popularityScore} pts
           </span>
+          {seededCount > 0 && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-200">
+              +{seededCount} Seeded
+            </span>
+          )}
         </div>
         <p className="font-bold text-sm truncate">{topic.displayTitle}</p>
         <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
           {topic.description || topic.tags?.join(", ") || "No description"}
         </p>
       </div>
-      <div className="shrink-0 flex flex-col items-end gap-1">
-        <span className="text-xs text-muted-foreground">{topic.recommendedCount} posts</span>
-        <button
-          onClick={async () => { setLoading(true); await onGenerate(topic); setLoading(false); }}
-          disabled={loading}
-          className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 disabled:opacity-50 transition whitespace-nowrap"
-        >
-          {loading ? "Generating..." : "✦ Generate"}
-        </button>
+      <div className="shrink-0 flex items-center gap-2">
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-xs text-muted-foreground">{topic.recommendedCount} posts</span>
+          <button
+            onClick={async () => { setLoading(true); await onGenerate(topic); setLoading(false); }}
+            disabled={loading || seeding}
+            className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 disabled:opacity-50 transition whitespace-nowrap"
+          >
+            {loading ? "Generating..." : "✦ Generate"}
+          </button>
+        </div>
+
+        <div className="h-10 w-px bg-border/50 mx-1" />
+
+        <div className="flex flex-col gap-1">
+          <button
+            onClick={() => handleQuickSeed(1, "Text")}
+            disabled={seeding || loading}
+            className="px-3 py-1 rounded-lg border border-green-400 bg-green-500/10 text-green-700 text-[10px] font-bold hover:bg-green-500/20 disabled:opacity-50 transition"
+          >
+            {seeding ? "..." : "+1 Text Post"}
+          </button>
+          <button
+            onClick={() => handleQuickSeed(1, "Poll")}
+            disabled={seeding || loading}
+            className="px-3 py-1 rounded-lg border border-blue-400 bg-blue-500/10 text-blue-700 text-[10px] font-bold hover:bg-blue-500/20 disabled:opacity-50 transition"
+          >
+            {seeding ? "..." : "+1 Poll Post"}
+          </button>
+        </div>
       </div>
     </div>
   );

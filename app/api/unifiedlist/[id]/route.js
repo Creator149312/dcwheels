@@ -40,6 +40,7 @@ export async function GET(req, { params }) {
       name: list.name,
       userId: list.userId,
       description: list.description,
+      tags: list.tags || [],
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
       isPublic: list.isPublic ?? false,
@@ -87,9 +88,9 @@ export async function PUT(req, { params }) {
 
     // ✅ 2. Parse body
     const body = await req.json();
-    const { name, description } = body;
+    const { name, description, tags } = body;
 
-    if (!name && !description) {
+    if (!name && !description && !tags) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
@@ -144,6 +145,10 @@ export async function PUT(req, { params }) {
       list.description = description;
     }
 
+    if (tags !== undefined && Array.isArray(tags)) {
+      list.tags = tags;
+    }
+
     await list.save();
 
     // Bust ISR cache for both the index and this detail page.
@@ -159,6 +164,7 @@ export async function PUT(req, { params }) {
           name: list.name,
           userId: list.userId,
           description: list.description,
+          tags: list.tags,
           settings: {
             sortBy: list.settings?.sortBy || "recently-saved",
             visibility: list.settings?.visibility || "private",
@@ -315,6 +321,7 @@ export async function PATCH(req, { params }) {
       name: list.name,
       userId: list.userId,
       description: list.description,
+      tags: list.tags || [],
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
       isPublic: list.isPublic ?? false,

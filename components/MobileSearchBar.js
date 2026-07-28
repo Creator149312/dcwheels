@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowLeft, X, Clock, History, Zap } from 'lucide-react';
+import { getWheelUrl } from "@utils/UrlHandler";
 
 export default function MobileSearchBar() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function MobileSearchBar() {
     if (s.route) {
       router.push(s.route);
     } else {
-      router.push(`/uwheels/${s.id || s._id}`);
+      router.push(getWheelUrl({ _id: s.id || s._id, slug: s.slug }));
     }
   };
 

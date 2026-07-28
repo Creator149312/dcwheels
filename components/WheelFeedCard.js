@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { timeAgo } from "@utils/HelperFunctions";
 import { Play } from "lucide-react";
 import WheelMenu from "./WheelMenu";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 /**
  * WheelFeedCard — renders a full-width social feed card for a wheel.
@@ -15,11 +16,18 @@ import WheelMenu from "./WheelMenu";
 export default function WheelFeedCard({ wheel }) {
   const { data: session } = useSession();
   const [isHidden, setIsHidden] = useState(false);
-  const wheelUrl = `/uwheels/${wheel._id || wheel.id}`;
-  const authorName = wheel.authorName || "Community";
-  const authorHandle = wheel.authorHandle || authorName;
+  
+  // UNIFIED ROUTING: Prefer slug (official/indexed) -> fallback to ID (user/fresh).
+  const wheelUrl = getWheelUrl(wheel);
+  
+  // Sanitize display name (hide email)
+  const authorNameRaw = wheel.authorName || "Community";
+  const authorHandle = wheel.authorHandle || authorNameRaw;
+  const authorName = authorHandle === authorNameRaw && authorNameRaw.includes("@") 
+    ? authorNameRaw.split("@")[0] 
+    : authorNameRaw;
 
-  const isOwner = session?.user?.username === authorHandle || session?.user?.name === authorName;
+  const isOwner = session?.user?.username === authorHandle || session?.user?.name === authorNameRaw;
 
   const firstLetter = authorName.charAt(0).toUpperCase();
   const thumbSrc = wheel.wheelPreview
@@ -32,11 +40,11 @@ export default function WheelFeedCard({ wheel }) {
   if (isHidden) return null;
 
   return (
-    <div className="border-b sm:border border-border/80 bg-card p-4 sm:p-5 sm:rounded-2xl transition hover:bg-muted/[0.04]">
+    <div className="border-b border-border/40 bg-card py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition hover:bg-muted/[0.04]">
       {/* Header: Author + Time + Menu */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
+        <div className="flex items-center gap-2">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">
             {firstLetter}
           </div>
           <div className="leading-tight">
@@ -46,12 +54,12 @@ export default function WheelFeedCard({ wheel }) {
             >
               <span>{authorName}</span>
               {isOwner && !wheel.isPublic && (
-                <span className="flex items-center gap-0.5 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0 rounded-full font-bold ml-1 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                <span className="flex items-center gap-0.5 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-1 py-0 rounded-full font-bold ml-1 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
                    Private
                 </span>
               )}
             </Link>
-            <p className="text-[10px] font-semibold text-muted-foreground/85">
+            <p className="text-[10px] font-semibold text-muted-foreground/60">
               {timeAgo(wheel.createdAt)}
             </p>
           </div>
@@ -67,7 +75,7 @@ export default function WheelFeedCard({ wheel }) {
       </div>
 
       {/* Title */}
-      <h3 className="font-bold text-foreground mb-2 text-base sm:text-lg leading-snug">
+      <h3 className="font-bold text-foreground mb-1.5 text-base sm:text-lg leading-tight px-4 sm:px-0">
         <Link href={wheelUrl} className="hover:text-primary transition">
           {wheel.title}
         </Link>
@@ -75,13 +83,13 @@ export default function WheelFeedCard({ wheel }) {
 
       {/* Content (Description) */}
       {wheel.description && (
-        <p className="text-sm text-foreground/80 mb-4 whitespace-pre-wrap line-clamp-3">
+        <p className="text-[13px] text-foreground/70 mb-3 whitespace-pre-wrap line-clamp-2 leading-snug px-4 sm:px-0">
           {wheel.description}
         </p>
       )}
 
-      <div className="mb-4">
-        <Link href={wheelUrl} className="block group relative w-full aspect-video sm:aspect-[21/9] bg-muted/20 sm:rounded-2xl overflow-hidden border border-border/40 transition isolate">
+      <div className="mb-1 px-0 sm:px-0">
+        <Link href={wheelUrl} className="block group relative w-full sm:mx-0 sm:w-full aspect-video sm:aspect-[21/9] bg-muted/20 sm:rounded-2xl overflow-hidden border-y sm:border border-border/40 transition isolate">
           {/* Wheel Graphic */}
           <div className="absolute inset-0 flex items-center justify-center py-4 bg-background/50 backdrop-blur-[2px] group-hover:bg-background/20 transition-colors z-0">
             {thumbSrc ? (
@@ -110,7 +118,7 @@ export default function WheelFeedCard({ wheel }) {
 
       {/* Tags */}
       {wheel.tags && wheel.tags.length > 0 && (
-        <div className="mb-1 flex flex-wrap gap-2">
+        <div className="mb-1 flex flex-wrap gap-2 px-4 sm:px-0 mt-3">
           {wheel.tags.slice(0, 3).map((tag) => (
             <Link
               key={tag}

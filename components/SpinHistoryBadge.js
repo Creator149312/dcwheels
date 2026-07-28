@@ -41,7 +41,7 @@ export default function SpinHistoryBadge({ result }) {
       <span>
         You spun to this from{" "}
         <a
-          href={`/uwheels/${log.wheelId}`}
+          href={`/wheels/${log.wheelId}`}
           className="font-semibold underline underline-offset-2 hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
         >
           {log.wheelTitle || "a wheel"}

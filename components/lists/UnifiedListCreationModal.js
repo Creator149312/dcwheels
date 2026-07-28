@@ -5,6 +5,7 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    tags: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -35,10 +36,18 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
 
     if (!validateForm()) return;
 
-    // ✅ Backend expects ONLY name + description
+    // ✅ Clean up tags: comma separated string -> array
+    const tagArray = formData.tags
+      ? formData.tags
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter((t) => t.length > 0)
+      : [];
+
     const listData = {
       name: formData.name,
       description: formData.description,
+      tags: tagArray,
     };
 
     addNewList(listData);
@@ -87,6 +96,24 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
             {errors.description && (
               <p className="text-red-500 text-sm">{errors.description}</p>
             )}
+          </div>
+
+          {/* Tags */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              placeholder="e.g. anime, movies, horror"
+              className="w-full p-2.5 border border-border rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1.5 opacity-70">
+              Tags help others discover your public lists.
+            </p>
           </div>
 
           {/* Buttons */}

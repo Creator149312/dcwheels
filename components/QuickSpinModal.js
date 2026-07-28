@@ -68,8 +68,8 @@ export default function QuickSpinModal({ options, title, onClose }) {
         {/* Header */}
         <div className="flex items-start justify-between p-4 border-b border-border">
           <div>
-            <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider mb-0.5">
-              Spin to Decide
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wider mb-0.5">
+              Spin to decide
             </p>
             <h3 className="font-bold text-foreground text-sm line-clamp-2">{title}</h3>
           </div>

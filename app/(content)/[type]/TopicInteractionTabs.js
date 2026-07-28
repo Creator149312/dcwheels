@@ -78,6 +78,7 @@ export default function TopicInteractionTabs({
           tagId={contentSlug} 
           initialItems={initialFeedItems} 
           initialNextCursor={initialFeedCursor} 
+          docType="post,wheel"
         />
       </section>
 

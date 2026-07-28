@@ -5,6 +5,7 @@ import Post from "@models/post";
 import User from "@models/user";
 import PostCard from "@components/PostCard";
 import mongoose from "mongoose";
+import { getPostUrl } from "@utils/UrlHandler";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,8 @@ const getPostAndAuthor = cache(async (id) => {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
   await connectMongoDB();
-  const post = await Post.findById(id).lean();
+  // SEO optimization: Only find public, non-deleted posts.
+  const post = await Post.findOne({ _id: id, isPublic: true, isDeleted: false }).lean();
   if (!post) return null;
 
   const author = post.userId
@@ -24,10 +26,10 @@ const getPostAndAuthor = cache(async (id) => {
 });
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  const { id } = await params;
   const data = await getPostAndAuthor(id);
   if (!data) {
-    return { title: "Post Not Found", description: "The requested post does not exist." };
+    return { title: "Post Not Found", description: "The requested post does not exist.", robots: "noindex" };
   }
 
   const { post, author } = data;
@@ -38,17 +40,37 @@ export async function generateMetadata({ params }) {
   const description = raw.length > 160 ? raw.slice(0, 157).trim() + "..." : raw || `${authorName} shared a post.`;
 
   const metaTitle = `${authorName} — Post`;
-  const image = post.image || null;
+  const image = post.image || post.contentRef?.image || null;
+
+  const isIndexed = post.isPublic && !post.isDeleted && post.indexed !== false;
 
   return {
     title: metaTitle,
     description,
-    openGraph: image ? { title: metaTitle, description, images: [image] } : { title: metaTitle, description },
+    alternates: {
+      canonical: `https://www.spinpapa.com${getPostUrl(post)}`,
+    },
+    robots: {
+      index: isIndexed,
+      follow: true,
+    },
+    openGraph: {
+      type: "article",
+      title: metaTitle,
+      description,
+      images: image ? [{ url: image, width: 1200, height: 630 }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metaTitle,
+      description,
+      images: image ? [image] : [],
+    },
   };
 }
 
 export default async function SinglePostPage({ params }) {
-  const { id } = params;
+  const { id } = await params;
 
   const data = await getPostAndAuthor(id);
   if (!data) {

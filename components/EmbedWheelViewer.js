@@ -107,7 +107,7 @@ export default function EmbedWheelViewer({
 
         {/* Powered by SpinPapa */}
         <Link
-          href={`https://spinpapa.com/uwheels/${wheelId}`}
+          href={`https://spinpapa.com/wheels/${wheelId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[11px] text-white/50 hover:text-white/90 transition"

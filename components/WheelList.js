@@ -63,11 +63,11 @@ export default function WordLists({ createdBy }) {
               <p className="text-lg font-bold m-1">{item.title}</p>
               <div className="flex items-center mt-1">
                 <div className="mx-2">{item.data.length} Options</div>
-                <Link href={`/uwheels/${item._id}`} className="mx-2">
+                <Link href={`/wheels/${item._id}`} className="mx-2">
                   <Eye size={24} />
                 </Link>
                 <SharePopup
-                  url={`/uwheels/${item._id}`}
+                  url={`/wheels/${item._id}`}
                   variant="simple"
                 />
                 <RemoveListBtn id={item._id} type={"wheel"} />

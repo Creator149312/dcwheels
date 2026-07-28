@@ -61,7 +61,8 @@ export default async function GamePage({ params }) {
   const feedPromise = getFeedItems({ 
     type: "game", 
     externalId: String(relatedId),
-    limit: 9 
+    limit: 9,
+    docType: "post,wheel"
   });
 
   return (

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { PlusCircle, ChevronDown, Compass, Library, List, Disc3, PanelLeft, MessageCircle, Bookmark } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
@@ -85,7 +86,7 @@ const Navbar = ({ onToggleSidebar }) => {
                   <Link href="/post/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
                     <MessageCircle size={16} /> Post
                   </Link>
-                  <Link href="/wheels/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
+                  <Link href={getWheelUrl({ _id: "create" })} className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
                     <Disc3 size={16} /> Wheel
                   </Link>
                   <Link href="/lists/create" className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left">
@@ -118,6 +119,15 @@ const Navbar = ({ onToggleSidebar }) => {
 
           {/* User Section */}
           <div className="flex items-center gap-3 relative z-[80]">
+             {!session && (
+               <div className="hidden sm:flex items-center gap-2 mr-2">
+                 <Link href="/register">
+                    <button className="cursor-pointer font-bold rounded-full px-5 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm active:scale-95">
+                      Sign Up
+                    </button>
+                 </Link>
+               </div>
+             )}
              <NotificationBell />
              <UserInfo />
           </div>

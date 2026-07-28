@@ -53,6 +53,11 @@ const tagSchema = new Schema(
       default: 0,
       min: 0,
     },
+    listCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     isPublic: {
       type: Boolean,
       default: true,

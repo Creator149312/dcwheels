@@ -46,7 +46,7 @@ export default function LoadMoreWheels({ searchtitle, initialStart, total }) {
 
           return (
             <Fragment key={item._id || `loadmore-${i}`}>
-              <Link href={`/uwheels/${item._id}`} className="block group w-full">
+              <Link href={`/wheels/${item._id}`} className="block group w-full">
                 {/* Enhanced Card: Added w-full and matched padding/hover effects to parent page */}
                 <Card className="relative overflow-hidden p-3.5 md:p-6 border-none bg-card shadow-sm transition duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 transition-colors duration-500" />

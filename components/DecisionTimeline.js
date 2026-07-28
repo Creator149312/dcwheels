@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 // ── Decision status config ────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -20,9 +21,7 @@ export function DecisionTimelineItem({ item, isOwner }) {
 
   const wheelRoute =
     item.wheelId && item.wheelId !== "home"
-      ? item.wheelId.length === 24
-        ? `/uwheels/${item.wheelId}`
-        : `/wheels/${item.wheelId}`
+      ? getWheelUrl({ _id: item.wheelId, slug: item.wheelSlug })
       : "/";
 
   async function cycleStatus(e) {

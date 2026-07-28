@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
@@ -72,7 +72,7 @@ export default function QuickSaveButton({
           { method: "DELETE" }
         );
         if (!res.ok) throw new Error();
-        toast.success("Removed from Favorites");
+        toast.success("Removed from Library");
       } else {
         // ── SAVE ───────────────────────────────────────────────────────
         // Use the optimized quick-track endpoint:
@@ -94,7 +94,7 @@ export default function QuickSaveButton({
 
         const data = await res.json();
         setSavedRef({ listId: data.listId, itemId: data.itemId }); 
-        toast.success("Saved to Favorites!");
+        toast.success("Saved to Library!");
       }
     } catch {
       setSavedRef(prevRef); // revert
@@ -111,15 +111,15 @@ export default function QuickSaveButton({
       <button
         onClick={handleToggle}
         disabled={loading}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors leading-none shadow-sm h-8 md:h-9 ${
           isSaved
-            ? "border-pink-400 bg-pink-50 text-pink-600 dark:border-pink-600 dark:bg-pink-900/30 dark:text-pink-300"
+            ? "border-primary/40 bg-primary/10 text-primary dark:border-primary/60 dark:bg-primary/20 dark:text-primary-foreground"
             : "border-border bg-muted text-foreground hover:bg-accent"
         } ${loading ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
-        aria-label={isSaved ? "Remove from Favorites" : "Add to Favorites"}
+        aria-label={isSaved ? "Remove from Library" : "Save to Library"}
       >
-        <Heart size={15} className={isSaved ? "fill-pink-600 dark:fill-pink-300" : ""} />
-        {(showText || isSaved) && <span>{isSaved ? "Saved" : "Save"}</span>}
+        <Bookmark size={15} className={isSaved ? "fill-current" : ""} />
+        <span className={showText ? "inline" : "hidden md:inline"}>{isSaved ? "Saved" : "Save"}</span>
       </button>
     );
   }
@@ -130,12 +130,12 @@ export default function QuickSaveButton({
       disabled={loading}
       className={`absolute top-2 right-2 p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 z-10 shadow-sm ${
         isSaved
-          ? "bg-pink-500 text-white"
+          ? "bg-primary text-white"
           : "bg-black/40 text-white hover:bg-black/60 opacity-100 md:opacity-0 group-hover:opacity-100"
       } ${loading ? "opacity-60" : ""} ${className}`}
-      aria-label={isSaved ? "Remove from Favorites" : "Add to Favorites"}
+      aria-label={isSaved ? "Remove from Library" : "Save to Library"}
     >
-      <Heart size={18} className={isSaved ? "fill-current" : "fill-transparent"} />
+      <Bookmark size={18} className={isSaved ? "fill-current" : "fill-transparent"} />
     </button>
   );
 }

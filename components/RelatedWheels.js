@@ -1,6 +1,7 @@
 "use client";
 
 import { Disc3, Zap } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 export default function RelatedWheels({ relatedWheels }) {
   return (
@@ -20,7 +21,7 @@ export default function RelatedWheels({ relatedWheels }) {
         {relatedWheels.map((wheel) => (
           <a
             key={wheel._id}
-            href={`/uwheels/${wheel._id}`}
+            href={getWheelUrl(wheel)}
             className="group flex items-center gap-3 p-2 rounded-xl bg-transparent hover:bg-muted/60 border border-transparent hover:border-border transition-colors duration-150 active:scale-[0.98]"
           >
             <div className="relative flex-shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-muted flex items-center justify-center group-hover:bg-primary transition-colors">

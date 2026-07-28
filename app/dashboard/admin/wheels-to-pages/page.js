@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Loader, CheckCircle, AlertCircle, X } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 const STEPS = [
   { id: 1, label: "Title", icon: "✏️" },
@@ -143,7 +144,7 @@ export default function AIWheelGenerator() {
       }
 
       const data = await response.json();
-      setSuccess(`Wheel created! Visit /wheels/${data.slug}`);
+      setSuccess(`Wheel created! Visit ${getWheelUrl({ slug: data.slug })}`);
       setCompleted((prev) => new Set([...prev, 5]));
       setCurrentStep(6);
 
@@ -437,7 +438,7 @@ export default function AIWheelGenerator() {
                   Page URL Slug
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground font-medium">/wheels/</span>
+                  <span className="text-muted-foreground font-medium">{getWheelUrl({ slug: "" })}</span>
                   <input
                     type="text"
                     value={slug}
@@ -453,7 +454,7 @@ export default function AIWheelGenerator() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Your wheel will be accessible at: <code className="bg-muted px-2 py-1 rounded">/wheels/{slug}</code>
+                  Your wheel will be accessible at: <code className="bg-muted px-2 py-1 rounded">{getWheelUrl({ slug })}</code>
                 </p>
               </div>
 
@@ -505,7 +506,7 @@ export default function AIWheelGenerator() {
                   <p>✓ {generated?.segments.length} wheel segments</p>
                   <p>✓ {generated?.contentParagraphs?.length || 0} content paragraphs (~{generated?.contentParagraphs?.join(" ").split(" ").length || 0} words)</p>
                   <p>✓ Tags: {selectedTags.join(", ") || "None selected"}</p>
-                  <p>✓ URL: <code className="bg-muted px-2 py-1 rounded">/wheels/{slug}</code></p>
+                  <p>✓ URL: <code className="bg-muted px-2 py-1 rounded">{getWheelUrl({ slug })}</code></p>
                 </div>
               </div>
 

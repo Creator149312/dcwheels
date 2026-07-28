@@ -1,0 +1,123 @@
+{
+  "categories": {
+    "anime": {
+      "hashtags": [
+        "anime",
+        "manga",
+        "otaku",
+        "animefan",
+        "animelover",
+        "animescene",
+        "trendinganime"
+      ],
+      "attributes": [
+        "world-building",
+        "animation",
+        "character growth",
+        "plot twists",
+        "soundtrack",
+        "voice acting",
+        "pacing"
+      ],
+      "vibes": [
+        "stunning",
+        "heartbreaking",
+        "epic",
+        "wholesome",
+        "insane",
+        "masterpiece",
+        "underrated"
+      ],
+      "topics": [
+        "overrated",
+        "better than the manga",
+        "ruined by the ending",
+        "carried by the animation",
+        "peak fiction",
+        "better than the Big Three",
+        "mid",
+        "a visual masterpiece",
+        "emotional damage",
+        "the GOAT of this season"
+      ],
+      "templates": [
+        {
+          "type": "controversial",
+          "weight": 0.35,
+          "variations": [
+            "Hot Take: [ITEM_NAME] is [TOPIC]. Change my mind. [ITEM_LINK]",
+            "Am I the only one who thinks [ITEM_NAME] is slightly [TOPIC]? The [ATTRIBUTE] is cool but... [ITEM_LINK]",
+            "Just going to say it: [ITEM_NAME] is [TOPIC]. It's time we talked about it. [ITEM_LINK]",
+            "Unpopular opinion: [ITEM_NAME] was [TOPIC]. Fight me in the comments. 🥊 [ITEM_LINK]",
+            "Stop what you're doing and tell me: Is [ITEM_NAME] [TOPIC] or are we just hyped? [ITEM_LINK]",
+            "Be honest: Is [ITEM_NAME] actually [TOPIC]? Everyone acts like it's perfect. [ITEM_LINK]"
+          ]
+        },
+        {
+          "type": "simple",
+          "weight": 0.35,
+          "variations": [
+            "Just started watching [ITEM_NAME]! The [ATTRIBUTE] is absolutely [VIBE]. Check out my progress: [ITEM_LINK]",
+            "If you haven't seen [ITEM_NAME] yet, you're missing out on the best [ATTRIBUTE] of the season. [ITEM_LINK] #recommended",
+            "Can we talk about the latest arc in [ITEM_NAME]? My mind is blown. [ITEM_LINK]",
+            "[ITEM_NAME] is definitely in my top 5 anime right now. What do you guys think? [ITEM_LINK]",
+            "That [ATTRIBUTE] in [ITEM_NAME] just hits different. [VIBE] work! [ITEM_LINK]",
+            "Obsessed with [ITEM_NAME] lately. The [ATTRIBUTE] is on another level. [VIBE] vibes only. [ITEM_LINK]"
+          ]
+        },
+        {
+          "type": "poll",
+          "weight": 0.3,
+          "variations": [
+            {
+              "question": "Which [ITEM_NAME] character has the best [ATTRIBUTE]?",
+              "options": [
+                "Main Protagonist",
+                "Secondary Hero",
+                "The Antagonist",
+                "Fan Favorite Sidekick"
+              ]
+            },
+            {
+              "question": "Rating [ITEM_NAME] so far. What would you give it?",
+              "options": [
+                "Masterpiece (10/10)",
+                "Solid Watch (8/10)",
+                "Average (5/10)",
+                "Not for me (Drop)"
+              ]
+            },
+            {
+              "question": "Who's winning in a fight? [ITEM_NAME] edition!",
+              "options": [
+                "Main Protagonist",
+                "The Rival",
+                "The Final Boss",
+                "The Mentor"
+              ]
+            },
+            {
+              "question": "Truth time: Is [ITEM_NAME] overrated or underrated?",
+              "options": [
+                "Overrated af",
+                "Underrated gem",
+                "Exactly where it should be",
+                "Masterpiece status only"
+              ]
+            },
+            {
+              "question": "If you could only choose one, [ITEM_NAME] is best at:",
+              "options": [
+                "Animation quality",
+                "Story progression",
+                "Emotional impact",
+                "Epic soundtrack"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+

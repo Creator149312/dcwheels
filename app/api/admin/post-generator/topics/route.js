@@ -44,7 +44,7 @@ export async function GET(req) {
       ];
     }
 
-    // Aggregate: find TopicPages that have no post with a matching contentRef
+    // Aggregate: find TopicPages and lookup linked post counts
     const lookupAndFilter = [
       { $match: matchStage },
       { $sort: { createdAt: -1 } },
@@ -69,12 +69,8 @@ export async function GET(req) {
           as: "postStats",
         },
       },
-      // Only keep pages with 0 linked posts
-      {
-        $match: {
-          $or: [{ postStats: { $size: 0 } }, { "postStats.0.total": { $lte: 0 } }],
-        },
-      },
+      // Note: Removed the filter that kept only pages with 0 posts.
+      // We now show all topics, regardless of post count.
     ];
 
     const [facetResult] = await db.collection("topicpages").aggregate([

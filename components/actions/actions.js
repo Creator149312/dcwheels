@@ -17,9 +17,9 @@ import {
 import Wheel from "@models/wheel";
 import TopicPage from "@models/topicpage";
 import { Resend } from "resend";
-import Registration from "@app/email/registration";
+import Registration from "@app/(auth)/email/registration";
 import uuid4 from "uuid4";
-import PasswordResetEmail from "@app/email/PasswordResetEmail";
+import PasswordResetEmail from "@app/(auth)/email/PasswordResetEmail";
 import {
   ensureArrayOfObjects,
   replaceUnderscoreWithDash,
@@ -35,6 +35,12 @@ import { OpenAI } from "openai";
 import { extractTopSegments } from "@lib/wheelAnalytics";
 import ApiLog from "@models/apilogs";
 import UnifiedList from "@models/unifiedlist";
+import {
+  fetchAnime,
+  fetchGames,
+  fetchMovies,
+} from "../../app/(content)/[type]/TopicPagesHelperFunctions";
+import { slugify } from "@utils/HelperFunctions";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
@@ -49,9 +55,18 @@ export const updateNewPassword = async (formData) => {
   // previous implementation overwrote `errorData.error` on each line, so a
   // bad currentPassword or newPassword was silently discarded if the
   // retypeNewPassword check happened to pass, and vice versa.
-  const current = formData instanceof FormData ? formData.get("currentPassword") : formData.currentPassword;
-  const next = formData instanceof FormData ? formData.get("newPassword") : formData.newPassword;
-  const retype = formData instanceof FormData ? formData.get("retypeNewPassword") : formData.retypeNewPassword;
+  const current =
+    formData instanceof FormData
+      ? formData.get("currentPassword")
+      : formData.currentPassword;
+  const next =
+    formData instanceof FormData
+      ? formData.get("newPassword")
+      : formData.newPassword;
+  const retype =
+    formData instanceof FormData
+      ? formData.get("retypeNewPassword")
+      : formData.retypeNewPassword;
 
   errorData.error =
     validatePassword(current) ||
@@ -126,7 +141,7 @@ export const updateNewPasswordbyToken = async (formData, token) => {
 
         const newhashedPassword = await bcrypt.hash(
           formData.get("newPassword"),
-          10
+          10,
         );
 
         const filter = { email: record.email };
@@ -217,9 +232,12 @@ const sendPasswordResetLinkEmail = async (email, token) => {
 export const registerUser = async (formData) => {
   let errorData = { error: "" };
 
-  const usernameVal = formData instanceof FormData ? formData.get("username") : formData.username;
-  const emailVal = formData instanceof FormData ? formData.get("email") : formData.email;
-  const passwordVal = formData instanceof FormData ? formData.get("password") : formData.password;
+  const usernameVal =
+    formData instanceof FormData ? formData.get("username") : formData.username;
+  const emailVal =
+    formData instanceof FormData ? formData.get("email") : formData.email;
+  const passwordVal =
+    formData instanceof FormData ? formData.get("password") : formData.password;
 
   let vu = validateUsername(usernameVal);
   let ve = validateEmail(emailVal);
@@ -241,7 +259,9 @@ export const registerUser = async (formData) => {
     const password = passwordVal;
 
     // Standardize handle from username (lowercase, trim, alphanumeric)
-    const handle = rawUsername.toLowerCase().trim()
+    const handle = rawUsername
+      .toLowerCase()
+      .trim()
       .replace(/\s+/g, "_")
       .replace(/[^a-z0-9_.-]/g, "");
 
@@ -262,11 +282,8 @@ export const registerUser = async (formData) => {
 
     // 3. Check for existing handle or name
     // We check both the username field and the display name field for collisions.
-    const userNameTaken = await User.findOne({ 
-      $or: [
-        { username: handle },
-        { name: new RegExp(`^${handle}$`, "i") }
-      ]
+    const userNameTaken = await User.findOne({
+      $or: [{ username: handle }, { name: new RegExp(`^${handle}$`, "i") }],
     }).select("_id");
 
     if (userNameTaken) {
@@ -278,7 +295,7 @@ export const registerUser = async (formData) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       name: rawUsername, // use raw as display name
-      username: handle,  // use normalized as handle
+      username: handle, // use normalized as handle
       email,
       password: hashedPassword,
       authMethod: "emailPassword",
@@ -291,19 +308,23 @@ export const registerUser = async (formData) => {
       description: "Default list for items you've saved.",
       isSystem: true,
       systemKey: "SYS_SAVED",
-      settings: { visibility: "private", sortBy: "recently-saved" },
+      settings: { visibility: "public", sortBy: "recently-saved" },
     });
 
     let timeNow = new Date();
     let expiringTime = new Date(timeNow.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days
 
-    let token = uuid4(); 
+    let token = uuid4();
 
-    await EmailVerificationToken.create({
-      email,
-      token,
-      expires: expiringTime,
-    });
+    // Create verification token (upsert to handle repeated registration attempts)
+    await EmailVerificationToken.findOneAndUpdate(
+      { email },
+      { 
+        token, 
+        expires: expiringTime 
+      },
+      { upsert: true, new: true }
+    );
 
     await sendAccountVerificationEmail(email, token);
     return { success: true };
@@ -371,6 +392,7 @@ export const generatePasswordResetLink = async (formData) => {
 };
 
 export const verifyUserEmailbyToken = async (token) => {
+  console.log("SERVER: verifyUserEmailbyToken called with token:", token);
   //check if token is valid
   await connectMongoDB();
 
@@ -384,15 +406,16 @@ export const verifyUserEmailbyToken = async (token) => {
       let ifUserExists = await User.findOne({ email: record.email });
 
       if (ifUserExists) {
+        if (ifUserExists.emailVerified) {
+          return { success: "Email Verified Successfully!" };
+        }
         await User.findOneAndUpdate(
           { email: record.email },
-          { emailVerified: new Date() }
+          { emailVerified: new Date() },
         );
 
-        // Schedule token deletion after a delay
-        setTimeout(async () => {
-          await deleteExistingTokenByEmail(record.email); //delete token after being verified
-        }, 1000 * 60 * 5); // Delete token after 5 minutes
+        // Delete the token immediately since it's used
+        await EmailVerificationToken.deleteOne({ token });
 
         return { success: "Email Verified Successfully!" };
       } else {
@@ -402,13 +425,17 @@ export const verifyUserEmailbyToken = async (token) => {
       //token expired
       let newToken = uuid4();
 
-      let verificationLink = `https://humble-computing-machine-97ww6wrxr6x37x7x.github.dev/new-email?token=${newToken}`;
+      // Use relative URL or Environment variable for the verification link
+      const baseUrl = process.env.NEXTAUTH_URL || "https://www.spinpapa.com";
+      let verificationLink = `${baseUrl}/verify/new-email?token=${newToken}`;
 
-      await EmailVerificationToken.findOneAndUpdate({
-        email: record.email,
-        token: newToken,
-        expires: new Date() + 3600 * 1000,
-      });
+      await EmailVerificationToken.findOneAndUpdate(
+        { email: record.email },
+        {
+          token: newToken,
+          expires: new Date(Date.now() + 3600 * 1000),
+        }
+      );
 
       await sendAccountVerificationEmail(record.email, newToken);
       return { success: "Verification Email has been sent Successfully" };
@@ -473,11 +500,11 @@ export async function getPageDataBySlug(slug) {
 export async function getWheelById(wheelId) {
   if (!wheelId || !mongoose.Types.ObjectId.isValid(wheelId)) return null;
   await connectMongoDB();
-  // Explicit projection — excludes heavy/unused fields (editorData, 
+  // Explicit projection — excludes heavy/unused fields (editorData,
   // isPublic, likeCount) that /uwheels/[wheelId] never renders.
   return Wheel.findOne({ _id: wheelId })
     .select(
-      "title description data wheelData tags wheelPreview createdBy authorHandle createdAt wheelType isPublic relatedTopics"
+      "title description data wheelData tags wheelPreview createdBy authorHandle createdAt wheelType isPublic relatedTopics",
     )
     .lean();
 }
@@ -514,7 +541,10 @@ export async function resolveTagSlug(raw) {
   return { canonical: normalized, tagDoc: null };
 }
 
-export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {}) {
+export async function getUnifiedTagFeed(
+  tag,
+  { limit = 20, cursor = null } = {},
+) {
   if (!tag || typeof tag !== "string") return [];
   try {
     await connectMongoDB();
@@ -528,12 +558,22 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
       shadowBanned: { $ne: true },
       isDeleted: { $ne: true },
     };
-    const wheelMatch = { tags: tag };
+    const wheelMatch = {
+      tags: tag,
+      isPublic: true,
+      isDeleted: false,
+    };
+    const listMatch = {
+      tags: tag,
+      isSystem: false,
+      $or: [{ "settings.visibility": "public" }, { isPublic: true }],
+    };
 
     if (cursor) {
       const cursorDate = new Date(cursor);
       postMatch.createdAt = { $lt: cursorDate };
       wheelMatch.createdAt = { $lt: cursorDate };
+      listMatch.createdAt = { $lt: cursorDate };
     }
 
     const items = await Post.aggregate([
@@ -543,9 +583,18 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
         $project: {
           _docType: { $literal: "post" },
           userId: 1,
-          title: 1, content: 1, authorName: 1, authorImage: 1,
-          createdAt: 1, image: 1, hasPoll: 1, pollOptions: 1,
-          tags: 1, likeCount: 1, commentCount: 1, contentRef: 1,
+          title: 1,
+          content: 1,
+          authorName: 1,
+          authorImage: 1,
+          createdAt: 1,
+          image: 1,
+          hasPoll: 1,
+          pollOptions: 1,
+          tags: 1,
+          likeCount: 1,
+          commentCount: 1,
+          contentRef: 1,
         },
       },
       // ── 2. Wheels that match the tag ─────────────────────────────────────
@@ -557,9 +606,34 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
             {
               $project: {
                 _docType: { $literal: "wheel" },
-                title: 1, description: 1, authorName: 1,
-                authorProfileImage: 1, createdAt: 1,
-                wheelPreview: 1, tags: 1,
+                title: 1,
+                description: 1,
+                authorName: 1,
+                authorProfileImage: 1,
+                createdAt: 1,
+                wheelPreview: 1,
+                tags: 1,
+              },
+            },
+          ],
+        },
+      },
+      // ── 3. Lists that match the tag ──────────────────────────────────────
+      {
+        $unionWith: {
+          coll: "unifiedlists",
+          pipeline: [
+            { $match: listMatch },
+            {
+              $project: {
+                _docType: { $literal: "list" },
+                title: "$name",
+                description: 1,
+                authorName: 1, // Will handle below
+                createdAt: 1,
+                tags: 1,
+                userId: 1,
+                itemsCount: { $size: "$items" },
               },
             },
           ],
@@ -569,27 +643,39 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
       { $limit: safeLimit + 1 },
     ]);
 
-    const postUserIds = [...new Set(
-      items
-        .filter((doc) => doc._docType === "post" && doc.userId)
-        .map((doc) => String(doc.userId))
-    )];
-    const users = postUserIds.length
-      ? await User.find({ _id: { $in: postUserIds } }).select("name").lean()
+    const postOrListUserIds = [
+      ...new Set(
+        items
+          .filter(
+            (doc) =>
+              (doc._docType === "post" || doc._docType === "list") &&
+              doc.userId,
+          )
+          .map((doc) => String(doc.userId)),
+      ),
+    ];
+    const users = postOrListUserIds.length
+      ? await User.find({ _id: { $in: postOrListUserIds } })
+          .select("name")
+          .lean()
       : [];
-    const nameById = new Map(users.map((u) => [String(u._id), u.name || "Community"]));
+    const nameById = new Map(
+      users.map((u) => [String(u._id), u.name || "Community"]),
+    );
 
     return items.map((doc) => {
-      const docType = doc._docType; // reliably "post" or "wheel"
+      const docType = doc._docType; // reliably "post", "wheel" or "list"
       const base = {
         id: String(doc._id),
         _id: String(doc._id),
         docType,
         title: doc.title || "",
-        authorName: doc.authorName || "Community",
-        createdAt: doc.createdAt instanceof Date
-          ? doc.createdAt.toISOString()
-          : String(doc.createdAt || ""),
+        authorName:
+          doc.authorName || nameById.get(String(doc.userId)) || "Community",
+        createdAt:
+          doc.createdAt instanceof Date
+            ? doc.createdAt.toISOString()
+            : String(doc.createdAt || ""),
         tags: doc.tags || [],
       };
 
@@ -598,7 +684,6 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
           ...base,
           userId: doc.userId ? String(doc.userId) : null,
           content: doc.content || "",
-          authorName: doc.authorName || nameById.get(String(doc.userId)) || "Community",
           authorImage: doc.authorImage || null,
           hasPoll: doc.hasPoll || false,
           pollOptions: (doc.pollOptions || []).map((o) => ({
@@ -610,6 +695,14 @@ export async function getUnifiedTagFeed(tag, { limit = 20, cursor = null } = {})
           commentCount: doc.commentCount || 0,
           image: doc.image || null,
           contentRef: doc.contentRef || null,
+        };
+      }
+
+      if (docType === "list") {
+        return {
+          ...base,
+          description: doc.description || "",
+          itemsCount: doc.itemsCount || 0,
         };
       }
 
@@ -665,7 +758,7 @@ export async function getAsksByTag(tag, { limit = 12, skip = 0 } = {}) {
 }
 
 /**
- * Count stats for a tag Space: { wheelCount, askCount }
+ * Count stats for a tag Space: { wheelCount, askCount, listCount }
  * Called in SSR to power the hero stats bar.
  */
 /**
@@ -674,19 +767,25 @@ export async function getAsksByTag(tag, { limit = 12, skip = 0 } = {}) {
  * so the page can render richer metadata without an extra query.
  */
 export async function getTagSpaceStats(tag) {
-  if (!tag || typeof tag !== "string") return { wheelCount: 0, askCount: 0, tagDoc: null };
+  if (!tag || typeof tag !== "string")
+    return { wheelCount: 0, askCount: 0, listCount: 0, tagDoc: null };
   await connectMongoDB();
   const { canonical, tagDoc } = await resolveTagSlug(tag);
-  const [wheelCount, askCount] = await Promise.all([
-    Wheel.countDocuments({ tags: canonical }),
+  const [wheelCount, askCount, listCount] = await Promise.all([
+    Wheel.countDocuments({ tags: canonical, isPublic: true, isDeleted: false }),
     Post.countDocuments({
       tags: canonical,
       isPublic: true,
       shadowBanned: { $ne: true },
       isDeleted: { $ne: true },
     }),
+    UnifiedList.countDocuments({
+      tags: canonical,
+      isSystem: false,
+      $or: [{ "settings.visibility": "public" }, { isPublic: true }],
+    }),
   ]);
-  return { wheelCount, askCount, tagDoc };
+  return { wheelCount, askCount, listCount, tagDoc };
 }
 
 /**
@@ -838,7 +937,14 @@ export async function storeWheelDataToDatabase(initialJSONData) {
  * @param {string} params.entityId   - ObjectId string
  */
 
-export async function getContentStats({ entityType, entityId, show, userEmail, userId: passedUserId, knownCounts }) {
+export async function getContentStats({
+  entityType,
+  entityId,
+  show,
+  userEmail,
+  userId: passedUserId,
+  knownCounts,
+}) {
   await connectMongoDB();
 
   const id = mongoose.Types.ObjectId.isValid(entityId)
@@ -880,7 +986,11 @@ export async function getContentStats({ entityType, entityId, show, userEmail, u
     // This eliminates one DB round-trip per feed card on the global feed.
     if (knownCounts?.like == null) {
       queries.push(
-        Reaction.countDocuments({ entityType, entityId: id, reactionType: "like" })
+        Reaction.countDocuments({
+          entityType,
+          entityId: id,
+          reactionType: "like",
+        }),
       );
       queryKeys.push("likeCount");
     }
@@ -889,22 +999,18 @@ export async function getContentStats({ entityType, entityId, show, userEmail, u
       queries.push(
         Reaction.findOne({ entityType, entityId: id, userId })
           .select("reactionType")
-          .lean()
+          .lean(),
       );
       queryKeys.push("userReact");
     }
   }
 
   if (show?.follow) {
-    queries.push(
-      Follow.countDocuments({ entityType, entityId: id })
-    );
+    queries.push(Follow.countDocuments({ entityType, entityId: id }));
     queryKeys.push("followCount");
 
     if (userId) {
-      queries.push(
-        Follow.findOne({ entityType, entityId: id, userId }).lean()
-      );
+      queries.push(Follow.findOne({ entityType, entityId: id, userId }).lean());
       queryKeys.push("userFollow");
     }
   }
@@ -913,7 +1019,9 @@ export async function getContentStats({ entityType, entityId, show, userEmail, u
 
   // Map results back by key
   const resultMap = {};
-  queryKeys.forEach((key, i) => { resultMap[key] = results[i]; });
+  queryKeys.forEach((key, i) => {
+    resultMap[key] = results[i];
+  });
 
   const result = {};
 
@@ -1054,43 +1162,162 @@ export async function callOpenAI(userId, prompt, options, promptToStoreInDB) {
       responseId: response.id,
     }).catch((err) => console.error("Failed to log API usage:", err));
   }
-  
+
   return response;
 }
 
+const formatTopicPage = (p) => ({
+  title:
+    p.title?.default ||
+    p.title?.english ||
+    p.title?.romaji ||
+    p.title?.localized ||
+    "Topic",
+  slug: p.slug,
+  type: p.type,
+  cover: p.cover,
+  id: p.relatedId,
+  _id: p._id?.toString(),
+});
+
 /**
  * Maps relatedTopics (type + id) to actual TopicPage documents (slug + title).
- * Used to display back-links on wheel pages.
+ * Also fetches secondary relations via tag overlap to fill up to 10 recommendations.
  */
 export async function getRelatedTopicPages(relatedTopics) {
-  if (!relatedTopics || !Array.isArray(relatedTopics) || relatedTopics.length === 0) return [];
-  
+  if (
+    !relatedTopics ||
+    !Array.isArray(relatedTopics) ||
+    relatedTopics.length === 0
+  )
+    return { direct: [], secondary: [] };
+
   await connectMongoDB();
 
-  // Filter out any entries missing type or ID
-  const validTopics = relatedTopics.filter(t => t.type && t.id);
-  if (validTopics.length === 0) return [];
+  const validTopics = relatedTopics.filter((t) => t.type && t.id);
+  if (validTopics.length === 0) return { direct: [], secondary: [] };
 
-  // Batch query all related pages in one round-trip.
-  // We handle both String and Number relatedId to avoid type mismatch issues (e.g. Anilist IDs)
-  const queries = validTopics.map(t => {
+  const queries = validTopics.map((t) => {
     const num = Number(t.id);
     const resolvedId = !isNaN(num) ? num : t.id;
-    return {
-      type: t.type,
-      relatedId: resolvedId
-    };
+    return { type: t.type, relatedId: resolvedId };
   });
 
-  const pages = await TopicPage.find({ $or: queries })
-    .select("title slug type cover relatedId")
+  const directPages = await TopicPage.find({ $or: queries })
+    .select("title slug type cover relatedId tags")
     .lean();
 
-  return pages.map(p => ({
-    title: p.title?.default || p.title?.english || p.title?.romaji || p.title?.localized || "Topic",
-    slug: p.slug,
-    type: p.type,
-    cover: p.cover,
-    id: p.relatedId
-  }));
+  if (directPages.length === 0) return { direct: [], secondary: [] };
+
+  const formattedDirect = directPages.map(formatTopicPage);
+  let formattedSecondary = [];
+
+  if (formattedDirect.length < 10) {
+    const allTags = [...new Set(directPages.flatMap((p) => p.tags || []))];
+    const directIds = directPages.map((p) => p._id);
+
+    if (allTags.length > 0) {
+      const secondaryPages = await TopicPage.aggregate([
+        {
+          $match: {
+            tags: { $in: allTags.slice(0, 30) },
+            _id: { $nin: directIds },
+          },
+        },
+        {
+          $addFields: {
+            overlapCount: {
+              $size: {
+                $filter: {
+                  input: "$tags",
+                  as: "t",
+                  cond: { $in: ["$$t", allTags] },
+                },
+              },
+            },
+          },
+        },
+        { $sort: { overlapCount: -1, wheels: -1, updatedAt: -1 } },
+        { $limit: 10 - formattedDirect.length },
+        { $project: { title: 1, cover: 1, slug: 1, type: 1, relatedId: 1 } },
+      ]);
+
+      formattedSecondary = secondaryPages.map(formatTopicPage);
+    }
+  }
+
+  return { direct: formattedDirect, secondary: formattedSecondary };
+}
+
+/**
+ * Fetches higher-value TopicPages (trending/featured) for global discovery.
+ * Refactored to fetch Top 10 from API sources and pick a random subset
+ * for diversity on every load. Order is fixed to: Movies, Anime, Games.
+ */
+export async function getTrendingTopicPages(limit = 9) {
+  // Fetch enough to allow for randomization
+  const perType = 12;
+
+  const [moviesRes, animeRes, gamesRes] = await Promise.allSettled([
+    fetchMovies({ page: 1 }),
+    fetchAnime({ page: 1, perPage: perType }),
+    fetchGames({ page: 1, page_size: perType }),
+  ]);
+
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+  const movies = (
+    moviesRes.status === "fulfilled" ? moviesRes.value || [] : []
+  ).slice(0, 10);
+  const anime = (
+    animeRes.status === "fulfilled" ? animeRes.value || [] : []
+  ).slice(0, 10);
+  const games = (
+    gamesRes.status === "fulfilled" ? gamesRes.value || [] : []
+  ).slice(0, 10);
+
+  // Pick 3 from each for a total of 9 (or adjust based on limit)
+  const countPerType = Math.ceil(limit / 3);
+
+  const formattedMovies = shuffle(movies)
+    .slice(0, countPerType)
+    .map((m) => {
+      const title = m.title;
+      return {
+        title,
+        slug: `${m.id}-${slugify(title)}`,
+        type: "movie",
+        cover: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+        id: m.id,
+      };
+    });
+
+  const formattedAnime = shuffle(anime)
+    .slice(0, countPerType)
+    .map((a) => {
+      const title = a.title?.english || a.title?.romaji || "Anime";
+      return {
+        title,
+        slug: `${a.id}-${slugify(title)}`,
+        type: "anime",
+        cover: a.coverImage?.large,
+        id: a.id,
+      };
+    });
+
+  const formattedGames = shuffle(games)
+    .slice(0, countPerType)
+    .map((g) => ({
+      title: g.name,
+      slug: `${g.id}-${g.slug}`,
+      type: "game",
+      cover: g.background_image,
+      id: g.id,
+    }));
+
+  // Return in fixed order requested: [Movies] -> [Anime] -> [Games]
+  return [...formattedMovies, ...formattedAnime, ...formattedGames].slice(
+    0,
+    limit,
+  );
 }

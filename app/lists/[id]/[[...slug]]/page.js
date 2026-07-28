@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { validateObjectID } from "@utils/Validator";
 import { getListByIdCached } from "@lib/lists";
 import ListDetailClient from "./ListDetailClient";
+import { getListUrl } from "@utils/UrlHandler";
 
 // ISR: list data is cached across requests and busted by revalidateTag
 // whenever a mutation API route runs. The session/isOwner check is done
@@ -9,9 +10,9 @@ import ListDetailClient from "./ListDetailClient";
 export const revalidate = 604800; // 7 days — tag-busted instantly on mutations
 
 export async function generateMetadata({ params }) {
-  const { listId } = params;
+  const { id } = await params;
 
-  if (!validateObjectID(listId)) {
+  if (!validateObjectID(id)) {
     return {
       title: "List Not Found",
       description: "The requested list does not exist.",
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const list = await getListByIdCached(listId);
+  const list = await getListByIdCached(id);
 
   if (list) {
     const title = list.name ? `${list.name} — List` : "User List";
@@ -28,7 +29,19 @@ export async function generateMetadata({ params }) {
         ? list.description
         : `Explore the list "${list.name}"`;
 
-    return { title, description, robots: "noindex" };
+    const isIndexed = list.isPublic && !list.isDeleted && list.indexed;
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical: `https://www.spinpapa.com${getListUrl(list)}`,
+      },
+      robots: {
+        index: !!isIndexed,
+        follow: true,
+      }
+    };
   }
 
   return {
@@ -39,13 +52,13 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ListDetailPage({ params }) {
-  const { listId } = params;
+  const { id } = await params;
 
-  if (!validateObjectID(listId)) {
+  if (!validateObjectID(id)) {
     notFound();
   }
 
-  const list = await getListByIdCached(listId);
+  const list = await getListByIdCached(id);
 
   if (!list) {
     notFound();
@@ -54,7 +67,7 @@ export default async function ListDetailPage({ params }) {
   return (
     <ListDetailClient
       initialList={list}
-      listId={listId}
+      listId={id}
       listOwnerId={list.userId}
     />
   );

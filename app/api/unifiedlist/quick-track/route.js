@@ -94,8 +94,8 @@ export async function POST(req) {
         systemKey: targetKey,
         isSystem: true,
         description: "Default list for items you've saved.",
-        isPublic: false,
-        settings: { visibility: "private", sortBy: "recently-saved" },
+        isPublic: true,
+        settings: { visibility: "public", sortBy: "recently-saved" },
       });
     } else {
       // Automatic Migration: Ensure metadata, locked description, and name are correct

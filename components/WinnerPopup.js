@@ -9,12 +9,14 @@ import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import MCQQuestion from "@components/MCQQuestion";
 import ShareableResultCard from "./ShareableResultCard";
 import AddToListButton from "./AddToListButton";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 // Map entity type → action-specific CTA label so the button reads naturally
 // for the content category the wheel is about.
-function getEntityUrl(entityType, slug) {
-  if (entityType === "wheel") return `/wheels/${slug}`;
-  if (entityType === "uwheel") return `/uwheels/${slug}`;
+function getEntityUrl(entityType, slug, wheelId) {
+  if (entityType === "wheel" || entityType === "uwheel") {
+    return getWheelUrl({ _id: wheelId, slug: slug });
+  }
   return `/${entityType}/${slug}`;
 }
 
@@ -244,118 +246,148 @@ const WinnerPopup = ({
               </button>
 
               {/* Winner Display */}
-              <div className="text-center mb-5">
-                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: winnerColor }}>
+              <div className="text-center mb-6">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-3 opacity-50" style={{ color: winnerColor }}>
                   The wheel has spoken
                 </p>
 
                 {winner?.image && (
-                  <img
-                    src={winner.image}
-                    alt={winner.text}
-                    className="max-w-[200px] max-h-[200px] w-auto h-auto object-contain rounded-lg mx-auto mb-3 shadow-md"
-                  />
+                  <div className="relative group mx-auto mb-4 w-fit">
+                    <img
+                      src={winner.image}
+                      alt={winner.text}
+                      className="relative max-w-[180px] max-h-[180px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-white dark:border-gray-800 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
                 )}
                 {winner?.type === "quiz" && winner?.question ? (
                   <MCQQuestion questionData={winner.question} />
                 ) : (
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <span
-                      className={`font-extrabold ${
-                        winner?.text?.length > 50 ? "text-xl" : "text-2xl"
-                      }`}
+                  <div className="px-4">
+                    <h2 
+                      className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tight drop-shadow-sm"
                       dangerouslySetInnerHTML={{
                         __html: setImgMaxWidth(winner),
                       }}
                     />
-                  </p>
+                  </div>
                 )}
               </div>
 
               {/* Share Card — only shown when user clicks Share */}
               {showShareCard && winner?.type !== "quiz" && (
-                <ShareableResultCard winner={winner} wheelTitle={wheelTitle} />
+                <div className="animate-in zoom-in-95 duration-200 mb-4">
+                  <ShareableResultCard winner={winner} wheelTitle={wheelTitle} />
+                </div>
               )}
 
-              {/* ── Primary Action ────────────────────────────────────── */}
+              {/* ── Action Loop ────────────────────────────────────────── */}
               {winner?.type !== "quiz" && (
-                <>
+                <div className="space-y-4">
                   {decisionSaved ? (
-                    <div className="mb-3">
-                      <p className="text-center text-sm text-green-600 dark:text-green-400 font-medium py-2.5 rounded-lg bg-green-50 dark:bg-green-900/20">
-                        ✅ Decision saved!
-                      </p>
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      <div className="flex flex-col items-center gap-3 p-4 rounded-[20px] bg-green-500/10 border border-green-500/20 backdrop-blur-sm">
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black text-xs uppercase tracking-widest">
+                          <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-500/30">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                          Post Published!
+                        </div>
+                        <p className="text-[11px] text-green-700/60 dark:text-green-400/60 font-medium text-center leading-relaxed">
+                          Your choice is now live in the community feed and saved to your profile history.
+                        </p>
+                        <div className="flex gap-2 w-full pt-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 h-9 text-[10px] font-black uppercase tracking-wider rounded-xl border-green-500/20 bg-white/50 dark:bg-black/50"
+                            onClick={() => router.push(`/u/${session?.user?.username || session?.user?.name || "profile"}`)}
+                          >
+                            View Log
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="flex-1 h-9 text-[10px] font-black uppercase tracking-wider rounded-xl bg-gray-900 dark:bg-white dark:text-gray-900 shadow-lg"
+                            onClick={() => setShowShareCard(true)}
+                          >
+                            External Share
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ) : showNoteInput ? (
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 p-1.5 rounded-2xl bg-gray-100 dark:bg-gray-800/80 border border-black/5 dark:border-white/5 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
                       <input
                         type="text"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        placeholder="Add a quick note..."
+                        placeholder="Add a thought..."
                         maxLength={500}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-3 py-2 text-sm bg-transparent border-none focus:ring-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 font-medium"
                         onKeyDown={(e) => e.key === "Enter" && saveDecision(true)}
                         autoFocus
                       />
-                      <Button onClick={() => saveDecision(true)} disabled={saving} size="sm">
-                        {saving ? "..." : "Save"}
-                      </Button>
-                      <Button variant="ghost" onClick={() => saveDecision(false)} disabled={saving} size="sm">
-                        Skip
+                      <Button onClick={() => saveDecision(true)} disabled={saving} size="sm" className="h-9 px-5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white">
+                        {saving ? "..." : "Post"}
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex gap-2 mb-3">
-                      <Button
-                        onClick={() => setShowNoteInput(true)}
-                        className="flex-1 font-semibold text-white"
-                        style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}cc)` }}
-                        disabled={saving}
-                      >
-                        {getPickLabel(winner)}
-                      </Button>
-                      <button
-                        onClick={() => setShowShareCard((prev) => !prev)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-gray-900 dark:bg-gray-800 text-white hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                        </svg>
-                        Share
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Entity Actions: Add to List + Explore */}
-                  {winner?.type === "entity" &&
-                    (winner?.payload?.entityId || winner?.payload?.slug) && (
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      {winner?.payload?.entityId ? (
-                        <AddToListButton
-                          type={winner.payload.entityType || winner.entityType}
-                          entityId={winner.payload.entityId || winner.entityId}
-                          name={winner.text}
-                          slug={winner.payload.slug || winner.slug}
-                          image={winner.image}
-                        />
-                      ) : <div />}
-                      {winner?.payload?.slug ? (
-                        <button
-                          onClick={() => {
-                            const et = winner.payload?.entityType || winner.entityType || "";
-                            const sl = winner.payload?.slug || winner.slug || "";
-                            window.location.href = getEntityUrl(et, sl);
-                          }}
-                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2.5">
+                        <Button
+                          onClick={() => setShowNoteInput(true)}
+                          className="flex-1 h-12 font-black text-sm uppercase tracking-widest text-white shadow-xl active:scale-[0.97] transition-all rounded-2xl group relative overflow-hidden"
+                          style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}dd)` }}
+                          disabled={saving}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                          </svg>
-                          Explore
-                        </button>
-                      ) : <div />}
+                          <span className="relative z-10">{getPickLabel(winner)}</span>
+                          <div className="absolute inset-0 bg-white/10 translate-y-12 group-hover:translate-y-0 transition-transform duration-300" />
+                        </Button>
+                        
+                        {!showShareCard && (
+                          <button
+                            onClick={() => setShowShareCard(true)}
+                            className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-all active:scale-90 flex-shrink-0"
+                            title="Share Externally"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Optimized Entity Hub Actions */}
+                      {winner?.type === "entity" && (winner?.payload?.entityId || winner?.payload?.slug) && (
+                        <div className={`grid ${ (winner?.payload?.entityId && winner?.payload?.slug) ? "grid-cols-2" : "grid-cols-1"} gap-2.5 items-center`}>
+                          {winner?.payload?.entityId && (
+                            <AddToListButton
+                              type={winner.payload.entityType || winner.entityType}
+                              entityId={winner.payload.entityId || winner.entityId}
+                              name={winner.text}
+                              slug={winner.payload.slug || winner.slug}
+                              image={winner.image}
+                            />
+                          )}
+                          {winner?.payload?.slug && (
+                            <button
+                              onClick={() => {
+                                const et = winner.payload?.entityType || winner.entityType || "";
+                                const sl = winner.payload?.slug || winner.slug || "";
+                                const wid = winner.payload?.wheelId || winner.wheelId || "";
+                                window.location.href = getEntityUrl(et, sl, wid);
+                              }}
+                              className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                              </svg>
+                              Explore
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -397,7 +429,7 @@ const WinnerPopup = ({
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>

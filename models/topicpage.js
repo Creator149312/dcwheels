@@ -1,4 +1,5 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, models } = mongoose;
 
 //It instantly communicates that each page is centered around a specific topic,
 // whether it's anime, movies, games, science, or even custom discussions like SquareTables.

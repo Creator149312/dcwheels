@@ -13,11 +13,11 @@ const PWAInstallTracker = dynamic(() => import("@components/PWAInstallTracker"),
 
 export const metadata = {
   title: {
-    default: "Spinpapa – Explore, Discover, Spin Wheel & Decide",
+    default: "Spinpapa – Spin, Talk & Decide",
     template: "%s - Spinpapa",
   },
   description:
-    "Spinpapa is the social way to explore ideas, discover new options, and let the wheel decide. Create your own spins, share with friends, and pick anything—from dinner plans to big life choices—in a fun way.",
+    "Spinpapa is the social decision hub for fandoms & pop culture. Create custom wheels, build lists, and join the debate. Spin, Talk, and Decide today!",
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/apple-touch-icon.png",

@@ -163,7 +163,7 @@ export const authOptions = {
               description: "Default list for items you've saved.",
               isSystem: true,
               systemKey: "SYS_SAVED",
-              settings: { visibility: "private", sortBy: "recently-saved" },
+              settings: { visibility: "public", sortBy: "recently-saved" },
             });
           }
           return user;

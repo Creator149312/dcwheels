@@ -63,7 +63,8 @@ export default async function AnimePage({ params }) {
   const feedPromise = getFeedItems({ 
     type: "anime", 
     externalId: String(relatedId),
-    limit: 9 
+    limit: 9,
+    docType: "post,wheel"
   });
 
   return (

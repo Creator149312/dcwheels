@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { MessageCircle } from "lucide-react";
 import ReactionButton from "@components/ReactionButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import SharePopup from "@components/SharePopup";
@@ -16,8 +17,11 @@ export default function StatsBar({
     share: true,
     save: true,
     follow: true,
+    comment: false,
   },
   onSaveClick,
+  onCommentClick,
+  commentCount,
   shareUrl,
   initialStats = null,
 }) {
@@ -79,6 +83,22 @@ export default function StatsBar({
 
       {/* Share pill */}
       {show.share && <SharePopup variant="buttoned" url={shareUrl} />}
+
+      {/* Comment pill (Unified Engagement) */}
+      {show.comment && (
+        <button
+          onClick={onCommentClick}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm h-8 md:h-9"
+        >
+          <MessageCircle size={15} />
+          <span className="flex items-center">
+            <span className="text-sm md:hidden">{commentCount || 0}</span>
+            <span className="hidden md:inline">
+              {commentCount > 0 ? `${commentCount} Comments` : "Comment"}
+            </span>
+          </span>
+        </button>
+      )}
 
       {/* Save pill */}
       {show.save && (

@@ -57,7 +57,8 @@ export default async function CharacterPage({ params }) {
   const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "character");
   const feedPromise = getFeedItems({ 
     tag: displayTitle,
-    limit: 9 
+    limit: 9,
+    docType: "post,wheel"
   });
 
   return (

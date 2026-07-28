@@ -16,7 +16,7 @@
  * POST /api/admin/wheel-tags/batch
  *   Streaming batch endpoint — see batch/route.js
  *
- * Future: link wheel tags to their parent TopicPage tags via relatedTo.id
+ * Future: link wheel tags to their parent TopicPage tags via relatedTopics array entries.
  */
 
 import { NextResponse } from "next/server";
@@ -91,9 +91,9 @@ async function generateTagsForWheel(wheel) {
     // existing tags are often malformed (e.g. "classroomactivities").
     // Fresh AI tags replace them. Manual tags can always be added in the UI.
     //
-    // TODO (Future): if wheel.relatedTo.type & relatedTo.id are set,
-    // fetch the matching TopicPage and prepend its tags so this wheel
-    // surfaces alongside its parent topic in tag-overlap queries.
+    // TODO (Future): if wheel.relatedTopics has entries,
+    // fetch the matching TopicPages and prepend their tags so this wheel
+    // surfaces alongside its parent topics in tag-overlap queries.
 
     return aiTags;
   }
@@ -134,7 +134,7 @@ export async function GET(req) {
 
   const [docs, total] = await Promise.all([
     Wheel.find(match)
-      .select("_id title description tags wheelPreview relatedTo createdAt data wheelData")
+      .select("_id title description tags wheelPreview relatedTopics createdAt data wheelData")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -155,7 +155,7 @@ export async function POST(req) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const wheel = await Wheel.findById(id)
-    .select("title description tags relatedTo")
+    .select("title description tags relatedTopics")
     .lean();
   if (!wheel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

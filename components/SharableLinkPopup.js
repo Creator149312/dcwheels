@@ -2,7 +2,7 @@ import toast from "react-hot-toast";
 
 const SharableLinkPopup = ({ link, onClose }) => {
   // Use the current origin so this works in dev and production without hardcoding
-  const fullLink = `${window.location.origin}/uwheels/${link}`;
+  const fullLink = `${window.location.origin}/wheels/${link}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullLink);

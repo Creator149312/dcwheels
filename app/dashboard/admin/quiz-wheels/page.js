@@ -7,6 +7,7 @@ import {
   Brain, Plus, Trash2, ExternalLink,
   CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 const ADMIN_EMAIL = "gauravsingh9314@gmail.com";
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -149,7 +150,7 @@ function QuizRow({ wheel, onDeleted }) {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
-          {wheel.page?.slug ? `/wheels/${wheel.page.slug}` : "No page linked"}
+          {wheel.page?.slug || wheel.slug ? getWheelUrl({ ...wheel, slug: wheel.page?.slug || wheel.slug }) : "No page linked"}
         </p>
         {wheel.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
@@ -165,9 +166,9 @@ function QuizRow({ wheel, onDeleted }) {
         )}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {wheel.page?.slug && (
+        {(wheel.page?.slug || wheel.slug) && (
           <Link
-            href={`/wheels/${wheel.page.slug}`}
+            href={getWheelUrl({ ...wheel, slug: wheel.page?.slug || wheel.slug })}
             target="_blank"
             className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground transition-colors"
             title="Open page"
@@ -322,8 +323,8 @@ export default function AdminQuizWheelsPage() {
         <div className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
           <CheckCircle2 size={14} />
           Quiz wheel published at{" "}
-          <Link href={`/wheels/${savedSlug}`} target="_blank" className="underline font-semibold">
-            /wheels/{savedSlug}
+          <Link href={getWheelUrl({ slug: savedSlug })} target="_blank" className="underline font-semibold">
+            {getWheelUrl({ slug: savedSlug })}
           </Link>
         </div>
       )}
@@ -367,7 +368,7 @@ export default function AdminQuizWheelsPage() {
               <span className="text-muted-foreground font-normal">(auto-generated, or type to override)</span>
             </label>
             <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-              <span className="text-xs text-muted-foreground flex-shrink-0">/wheels/</span>
+              <span className="text-xs text-muted-foreground flex-shrink-0">{getWheelUrl({ slug: "" })}</span>
               <input
                 value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true); }}

@@ -491,23 +491,32 @@ export function formatWheelData(inputData) {
 }
 
 export const timeAgo = (date) => {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  const d = new Date(date);
+  const now = new Date();
+  const seconds = Math.floor((now - d) / 1000);
+
+  // If older than 7 days, show absolute date (e.g., Jul 18)
+  // This avoids "6 months ago" which can make a new site look "empty"
+  if (seconds > 604800) {
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  }
 
   const intervals = {
-    year: 31536000,
-    month: 2592000,
-    week: 604800,
-    day: 86400,
-    hour: 3600,
-    minute: 60,
+    d: 86400,
+    h: 3600,
+    m: 60,
   };
 
   for (const [unit, value] of Object.entries(intervals)) {
     const count = Math.floor(seconds / value);
     if (count >= 1) {
-      return `${count} ${unit}${count > 1 ? "s" : ""} ago`;
+      return `${count}${unit}`; // Minimalist: "2d", "5h", "12m"
     }
   }
 
-  return "just now";
+  return "now";
 };

@@ -4,11 +4,9 @@ import { useEffect } from "react";
 
 // 1-in-N probabilistic sample. The bulk of Vercel function cost on cached
 // content pages comes from this single endpoint — every page hit fires a
-// POST. Skipping 4 of 5 calls on the client saves ~80% of those invocations.
-// The server compensates by incrementing the counter by SAMPLE_RATE when a
-// ping does come through, so totals remain statistically equivalent. Per-tab
-// sessionStorage dedupe still applies as the first gate (back/forward etc).
-const SAMPLE_RATE = 5;
+// POST. Setting SAMPLE_RATE to 1 during this phase to ensure the user sees
+// instant feedback during their testing.
+const SAMPLE_RATE = 1;
 
 /**
  * Tiny client component that POSTs a view-tracking ping on mount.

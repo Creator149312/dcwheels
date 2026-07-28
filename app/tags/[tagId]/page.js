@@ -2,8 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
+import Post from "@models/post";
+import UnifiedList from "@models/unifiedlist";
 import Tag from "@models/tag";
-import { getUnifiedTagFeed, getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
+import { getFeedItems } from "@/lib/feedService";
+import { getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
 import TagSpaceClient from "@components/TagSpaceClient";
 
 // React.cache() deduplicates resolveTagSlug between generateMetadata and the
@@ -30,7 +33,7 @@ export async function generateStaticParams() {
 
     // Hero tier: registered canonical tags that are public and have content
     const canonicalTags = await Tag.find({ isPublic: true })
-      .sort({ wheelCount: -1 })
+      .sort({ wheelCount: -1, askCount: -1, listCount: -1 })
       .limit(100)
       .select("slug")
       .lean();
@@ -64,10 +67,19 @@ export async function generateMetadata({ params }) {
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const description = tagDoc?.description ||
     `Explore Decision wheels and community dilemmas about "${display}" on Spinpapa.`;
-  // Count wheels to decide noindex for thin tags
-  const wheelCount = tagDoc?.wheelCount ??
-    await Wheel.countDocuments({ tags: canonical });
-  const isThin = wheelCount < NOINDEX_BELOW;
+  // Count total content to decide noindex for thin tags
+  const totalCount = tagDoc 
+    ? (tagDoc.wheelCount || 0) + (tagDoc.askCount || 0) + (tagDoc.listCount || 0)
+    : await (async () => {
+        const [w, a, l] = await Promise.all([
+          Wheel.countDocuments({ tags: canonical, isPublic: true, isDeleted: false }),
+          Post.countDocuments({ tags: canonical, isPublic: true, isDeleted: false, shadowBanned: false }),
+          UnifiedList.countDocuments({ tags: canonical, isSystem: false, $or: [{ "settings.visibility": "public" }, { isPublic: true }] })
+        ]);
+        return w + a + l;
+      })();
+  
+  const isThin = totalCount < NOINDEX_BELOW;
 
   return {
     title: `${display} Space – Decision Wheels & Dilemmas`,
@@ -100,7 +112,11 @@ export default async function TagDetailPage({ params }) {
 
   // Unified feed logic
   const [initialData, stats] = await Promise.all([
-    getUnifiedTagFeed(canonical, { limit: 21 }), // Fetch 21 to get cursor for 20
+    getFeedItems({ 
+      tag: canonical, 
+      limit: 21,
+      docType: "post,wheel"
+    }),
     getTagSpaceStats(canonical),
   ]);
 
@@ -116,12 +132,12 @@ export default async function TagDetailPage({ params }) {
 
   // Wider feed column to better match modern social layouts on desktop.
   return (
-    <div className="max-w-3xl mx-auto px-4 md:px-0 py-6 pb-20 min-h-screen">
+    <div className="max-w-3xl mx-auto px-0 md:px-0 py-3 md:py-6 pb-20 min-h-screen">
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <div className="pb-5 mb-2">
+      <div className="px-4 md:px-0 pb-3 mb-1">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 mb-4">
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground/60 mb-3">
           <Link href="/tags" className="hover:text-primary transition-colors">
             All Spaces
           </Link>
@@ -130,20 +146,20 @@ export default async function TagDetailPage({ params }) {
         </div>
 
         {/* Title row */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 md:gap-5">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-5">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
-                <span className="text-primary-foreground font-black text-lg md:text-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
+                <span className="text-primary-foreground font-black text-base md:text-lg">
                   {display.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-black text-foreground leading-tight truncate">
+              <h1 className="text-xl md:text-2xl font-black text-foreground leading-tight truncate">
                 {display}{" "}
                 <span className="text-primary">Space</span>
               </h1>
             </div>
-            <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-xl">
+            <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-xl">
               {tagDoc?.description
                 ? tagDoc.description
                 : <>Decision picker wheels, community discussions, and everything{" "}
@@ -156,27 +172,28 @@ export default async function TagDetailPage({ params }) {
         </div>
 
         {/* Stats pills */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-muted/50 rounded-full border border-border">
-            <Layers size={13} className="text-primary" />
-            <span className="text-xs font-semibold text-foreground">
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted/50 rounded-full border border-border">
+            <Layers size={11} className="text-primary" />
+            <span className="text-[10px] font-semibold text-foreground">
               {stats.wheelCount.toLocaleString()} {stats.wheelCount === 1 ? "Wheel" : "Wheels"}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border">
-            <Hash size={12} className="text-muted-foreground" />
-            <span className="text-xs text-muted-foreground font-medium">{tagId}</span>
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted rounded-full border border-border">
+            <Hash size={10} className="text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-medium">{tagId}</span>
           </div>
         </div>
       </div>
 
       {/* ── Community Feed ───────────────────────────────────────────── */}
-      <section>
+      <section className="mt-2">
         <TagSpaceClient
           tagId={canonical}
           initialItems={initialItems}
           initialNextCursor={initialNextCursor}
+          docType="post,wheel"
         />
       </section>
     </div>

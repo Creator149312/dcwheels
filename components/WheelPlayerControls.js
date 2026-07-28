@@ -28,74 +28,70 @@ export default function WheelPlayerControls({
   };
 
   return (
-    <div className="bottom-0 relative w-full bg-black/80 text-white flex items-center justify-between px-3 text-sm">
+    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent text-white flex items-center justify-between px-3 sm:px-4 pb-2 sm:pb-3 pt-6 sm:pt-8 z-10 pointer-events-auto">
       {/* Left Controls: Play/Pause + Volume */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1 sm:gap-4 pointer-events-auto">
         {/* Play/Pause */}
         <button
           onClick={handleSpinClick}
-          className="p-2 rounded hover:bg-white/20 transition"
+          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
-          {mustSpin ? <Pause size={24} /> : <Play size={24} />}
+          {mustSpin ? (
+            <Pause size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+          ) : (
+            <Play size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+          )}
         </button>
 
         {/* Mute/Unmute */}
         <button
           onClick={toggleMute}
-          className="p-2 rounded hover:bg-white/20 transition"
+          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
           title={muted ? "Unmute" : "Mute"}
         >
-          {muted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          {muted ? (
+            <VolumeX size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+          ) : (
+            <Volume2 size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+          )}
         </button>
       </div>
 
       {/* Right Controls: Fullscreen */}
-      <div className="flex items-center gap-4">
-        {/* Edit button */}
-        {/* {currentPath !== "/" && (
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
-            onClick={(e) => {
-              saveWheelData(segData, wheelData);
-              router.push("/");
-            }}
-          >
-            <Pencil size={20} />
-            <span>Edit</span>
-          </button>
-        )} */}
-
-        {/* Edit button */}
+      <div className="flex items-center gap-1 sm:gap-4 pointer-events-auto">
+        {/* Edit button: 
+            1. If editing is active (Home/Create/?edit=true), show yellow button on mobile only 
+            2. Otherwise show white button that redirects to creates on all devices */}
         {isEditingActive ? (
           <button
-            className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition text-yellow-400 font-bold"
+            className="lg:hidden flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all text-yellow-400 outline-none focus-visible:ring-2 focus-visible:ring-white"
             onClick={onEditClick}
           >
-            <Pencil size={20} />
-            <span>Edit</span>
+            <Pencil size={18} className="sm:w-[20px] sm:h-[20px]" />
+            <span className="font-bold text-xs sm:text-sm">Edit</span>
           </button>
         ) : (
           <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/20 transition"
+            className="flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
             onClick={(e) => {
               saveWheelData(segData, wheelData);
               window.location.href = "/wheels/create";
             }}
           >
-            <Pencil size={20} />
-            <span>Edit</span>
+            <Pencil size={18} className="sm:w-[20px] sm:h-[20px]" />
+            <span className="font-medium text-xs sm:text-sm">Edit</span>
           </button>
         )}
 
         {/* Fullscreen Button*/}
         <button
           onClick={handleToggleFullScreen}
-          className="p-2 rounded hover:bg-white/20 transition"
+          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           {isFullScreen ? (
-            <Minimize size={24} />
+            <Minimize size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
           ) : (
-            <Maximize size={24} />
+            <Maximize size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
           )}
         </button>
       </div>

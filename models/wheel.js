@@ -1,4 +1,5 @@
-import mongoose, { Schema, models } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, models } = mongoose;
 
 /**
  * title : used to display title at the tab of browser and to display heading in page
@@ -16,15 +17,23 @@ const wheelSchema = new Schema(
     title: {
       type: String,
       required: true,
+      maxlength: [100, "Title cannot exceed 100 characters"],
     },
     description: {
       type: String,
       required: true,
+      maxlength: [500, "Description cannot exceed 500 characters"],
     },
     data: {
       type: [Object],
       default: [],
       required: true,
+      validate: {
+        validator: function (v) {
+          return v.length <= 200;
+        },
+        message: "A wheel cannot have more than 200 segments to ensure performance.",
+      },
     }, // Array of wordDataObjects
     createdBy: {
       type: String,
@@ -49,6 +58,18 @@ const wheelSchema = new Schema(
     authorProfileImage: {
       type: String,
       default: null,
+    },
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
     wheelData: { type: Object, default: {} },
     // Tags are lowercased + trimmed on save so that:
@@ -118,6 +139,10 @@ const wheelSchema = new Schema(
     // Admin-seeded wheels (createdBy = "admin") are surfaced separately via
     // the Page collection — this flag is for /uwheels user content only.
     isPublic: { type: Boolean, default: true },
+
+    // Soft-delete: hidden from public feeds and direct hits. Preserved for audits.
+    isDeleted: { type: Boolean, default: false, index: true },
+
     // "basic" = standard word/label wheel; "quiz" = MCQ quiz wheel where each
     // segment carries a question, options[], and correctIndex.
     // Stored explicitly so admin queries (Wheel.find({ type:"quiz" })) work.
@@ -125,6 +150,9 @@ const wheelSchema = new Schema(
     // viewCount intentionally omitted — view tracking lives in WheelAnalytics.view_count
     // (bot-filtered, no auth required — a more accurate signal than auth-only visit logs)
     likeCount: { type: Number, default: 0 }, // denormalized from Reaction; kept here for fast index-based sorting
+    // SEO & Content fields from legacy Page model
+    content: [{ type: Object, default: {} }],
+    indexed: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -135,30 +163,95 @@ wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing uni
 
 // New indexes for performance improvements 
 wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
-wheelSchema.index({ createdAt: -1 }); // speeds up sorting by recency (?sort=recent)
-// Compound for /api/wheels/popular ?sort=likes — always sorts by both fields.
-// The old single-field { likeCount:-1 } was redundant (this compound's prefix
-// serves any sort on likeCount alone) and has been removed.
-wheelSchema.index({ likeCount: -1, createdAt: -1 });
-// { wheelPreview:1 } removed — the admin missing-preview query uses $or over
-// null/exists/empty which btree indexes can't serve efficiently; admin-only and
-// infrequent, so the write overhead wasn't worth it.
-// Profile page + dashboard: `find({ createdBy }).sort({ createdAt: -1 })`.
-// The existing `{ title, createdBy }` index is prefixed by title and can't serve
-// these queries; a dedicated compound turns them from collection scans into
-// bounded index scans as the per-user wheel count grows.
-wheelSchema.index({ createdBy: 1, createdAt: -1 });
-// NEW: Optimized userId compound index for profile/dashboard queries — preferred
-// over createdBy once backfill is complete (userId is ObjectId, much faster)
+
+// NEW: Optimized userId compound index for profile/dashboard queries
 wheelSchema.index({ userId: 1, createdAt: -1 });
+
 // NEW: Compound for public profile gallery (userId + isPublic + like sorting)
 wheelSchema.index({ userId: 1, isPublic: 1, likeCount: -1 });
+
 // Multikey index on the topic associations. Serves TopicPage → related
-// wheels lookups (e.g. Wheel.find({ relatedTopics: { $elemMatch: {type, id} } }))
-// without a collection scan once the wheels collection gets large.
 wheelSchema.index({ "relatedTopics.type": 1, "relatedTopics.id": 1 });
+
 // Powers the community gallery query: public user wheels sorted by likes/recency.
 wheelSchema.index({ isPublic: 1, likeCount: -1, createdAt: -1 });
+
+// SEO & Unified Routing: lookup by slug is the primary path for indexed content.
+wheelSchema.index({ slug: 1 }, { sparse: true });
+
+// SCALING: Compound indexes for high-traffic filtering & sorting
+wheelSchema.index({ userId: 1, isPublic: 1, createdAt: -1 });
+wheelSchema.index({ tags: 1, isPublic: 1, likeCount: -1 });
+
+/**
+ * Mongoose Hooks for Tag Count Automation
+ * 
+ * Logic: A wheel only counts towards tag discovery if:
+ * 1. isPublic: true
+ * 2. isDeleted: false
+ */
+wheelSchema.pre("save", async function (next) {
+  if (!this.isNew) {
+    try {
+      const oldDoc = await this.constructor
+        .findById(this._id)
+        .select("tags isPublic isDeleted")
+        .lean();
+      if (oldDoc) {
+        this._oldState = {
+          tags: oldDoc.tags || [],
+          isPublic: oldDoc.isPublic !== false,
+          isDeleted: !!oldDoc.isDeleted,
+        };
+      }
+    } catch (err) {
+      console.error("Error fetching old state in wheel pre-save:", err);
+    }
+  }
+  next();
+});
+
+wheelSchema.post("save", async function () {
+  try {
+    const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+
+    const wasLive = this._oldState
+      ? this._oldState.isPublic && !this._oldState.isDeleted
+      : false;
+    const isLive = this.isPublic && !this.isDeleted;
+
+    if (!wasLive && isLive) {
+      // Just became live (newly created OR toggled from private/deleted)
+      await updateTagCounts(this.tags, 1, "wheelCount");
+    } else if (wasLive && !isLive) {
+      // Just hidden or deleted
+      await updateTagCounts(this._oldState.tags, -1, "wheelCount");
+    } else if (wasLive && isLive) {
+      // Stayed live, but tags might have changed
+      const oldTags = this._oldState.tags || [];
+      const added = this.tags.filter((t) => !oldTags.includes(t));
+      const removed = oldTags.filter((t) => !this.tags.includes(t));
+
+      if (added.length > 0) await updateTagCounts(added, 1, "wheelCount");
+      if (removed.length > 0) await updateTagCounts(removed, -1, "wheelCount");
+    }
+  } catch (err) {
+    console.error("Error in wheel post-save hook:", err);
+  }
+});
+
+// Handle physical deletion
+wheelSchema.post("remove", async function () {
+  try {
+    const isLive = this.isPublic && !this.isDeleted;
+    if (isLive) {
+      const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+      await updateTagCounts(this.tags, -1, "wheelCount");
+    }
+  } catch (err) {
+    console.error("Error in wheel post-remove hook:", err);
+  }
+});
 
 const Wheel = models.Wheel || mongoose.model("Wheel", wheelSchema);
 

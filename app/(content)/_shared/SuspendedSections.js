@@ -298,6 +298,7 @@ export async function SuspendedFeedStream({
   type,
   relatedId,
   tag,
+  docType = null
 }) {
   const [feedData, relatedPages] = await Promise.all([
     feedPromise,
@@ -316,6 +317,7 @@ export async function SuspendedFeedStream({
       relatedPages={JSON.parse(JSON.stringify(relatedPages))}
       initialNextCursor={initialCursor ? JSON.parse(JSON.stringify(initialCursor)) : null}
       currentContextId={relatedId}
+      docType={docType}
     />
   );
 }

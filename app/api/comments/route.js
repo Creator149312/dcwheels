@@ -52,7 +52,7 @@ export async function POST(req) {
     try {
       if (entityType === "post") {
         await Post.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
-      } else if (entityType === "wheel") {
+      } else if (entityType === "wheel" || entityType === "uwheel") {
         await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
       }
     } catch (countErr) {
@@ -69,8 +69,8 @@ export async function POST(req) {
         const parentComment = await Comment.findById(parentCommentId).select("userId").lean();
         if (parentComment?.userId) {
           recipientId = parentComment.userId;
-          link = entityType === "wheel" 
-            ? `/uwheels/${entityId}` // fallback, could fetch wheel for exact link
+          link = (entityType === "wheel" || entityType === "uwheel")
+            ? `/wheels/${entityId}` // fallback, could fetch wheel for exact link
             : `/post/${entityId}`;
           modelStr = "Comment";
         }
@@ -83,7 +83,7 @@ export async function POST(req) {
             link = `/post/${entityId}`;
             modelStr = "Post";
           }
-        } else if (entityType === "wheel") {
+        } else if (entityType === "wheel" || entityType === "uwheel") {
           const wheel = await Wheel.findById(entityId).select("createdBy urlEndpoint").lean();
           if (wheel?.createdBy) {
             // createdBy usually holds the email -> find the User ObjectId
@@ -91,7 +91,7 @@ export async function POST(req) {
             if (wheelCreator?._id) {
               recipientId = wheelCreator._id;
               // Link fallback
-              link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/uwheels/${entityId}`;
+              link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
               modelStr = "Wheel";
             }
           }
@@ -133,7 +133,7 @@ export async function GET(req) {
     const entityType = searchParams.get("entityType");
     const entityId = searchParams.get("entityId");
     const parentCommentId = searchParams.get("parentCommentId");
-    const limit = parseInt(searchParams.get("limit") || "4");
+    const limit = parseInt(searchParams.get("limit") || "15");
     const skip = parseInt(searchParams.get("skip") || "0");
 
     if (!entityType || !entityId) {
@@ -143,15 +143,15 @@ export async function GET(req) {
       );
     }
 
-    // Replies for a specific parent: plain find (no count needed)
+    // Replies for a specific parent: plain find
     if (parentCommentId && parentCommentId !== "null") {
       const replies = await Comment.find({
         entityType,
         entityId,
         parentCommentId,
       })
-        .populate("userId", "name avatar")
-        .sort({ createdAt: 1 }); // oldest first feels natural
+        .populate("userId", "name avatar image")
+        .sort({ createdAt: 1 });
 
       return NextResponse.json(replies, { status: 200 });
     }
@@ -163,7 +163,7 @@ export async function GET(req) {
     // exactly: each item is a plain object with the original Comment fields,
     // `userId` is the populated subset { _id, name, avatar }, and
     // `replyCount` is appended.
-    if (parentCommentId === "null") {
+    if (parentCommentId === "null" || !parentCommentId) {
       const merged = await Comment.aggregate([
         {
           $match: {
@@ -190,7 +190,7 @@ export async function GET(req) {
             localField: "userId",
             foreignField: "_id",
             as: "user",
-            pipeline: [{ $project: { name: 1, avatar: 1 } }],
+            pipeline: [{ $project: { name: 1, avatar: 1, image: 1 } }],
           },
         },
         {
@@ -207,19 +207,10 @@ export async function GET(req) {
       return NextResponse.json(merged, { status: 200 });
     }
 
-    // Default: if no parentCommentId provided, behave like top-level
-    const comments = await Comment.find({
-      entityType,
-      entityId,
-      parentCommentId: null,
-    })
-      .populate("userId", "name avatar")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Fallback without count
-    return NextResponse.json(comments, { status: 200 });
+    return NextResponse.json(
+      { error: "Invalid parentCommentId" },
+      { status: 400 }
+    );
   } catch (err) {
     console.error("Error fetching comments:", err);
     return NextResponse.json(

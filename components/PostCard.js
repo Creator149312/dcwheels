@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { timeAgo } from "@utils/HelperFunctions";
-import { MessageCircle, Zap, MoreHorizontal, Trash2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { Zap, MoreHorizontal } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 
 /**
@@ -55,8 +55,8 @@ const DilemmaViewer = dynamic(() => import("@components/DilemmaViewer"), {
   ssr: false,
 });
 
-// Lazy load CommentsPanel — only mounts after user clicks
-const CommentsPanel = dynamic(() => import("@components/comments/CommentsPanel"), {
+// Lazy load UniversalCommentsSection — proactive & shared component
+const UniversalCommentsSection = dynamic(() => import("@components/UniversalCommentsSection"), {
   ssr: false,
 });
 
@@ -65,6 +65,7 @@ const CommentsPanel = dynamic(() => import("@components/comments/CommentsPanel")
  * Handles both statement posts and polls
  */
 export default function PostCard({ post, defaultOpenComments = false, currentContextId = null }) {
+  const router = useRouter();
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
   const [showComments, setShowComments] = useState(defaultOpenComments);
@@ -75,6 +76,10 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
   const [menuOpen, setMenuOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Preferred Name: Use authorName for display.
+  // authorHandle is reserved for the unique URL slug/handle.
+  const displayName = post.authorName || "Someone";
 
   const postId = String(post._id || post.id);
 
@@ -98,40 +103,40 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
   });
 
   return (
-    <article className="border-b border-border/70 bg-card px-4 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-5 transition-colors hover:bg-muted/[0.03]">
+    <article className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 transition-colors hover:bg-muted/[0.03]">
       {/* Header: Author + Time */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-muted border border-border/70 flex items-center justify-center text-sm font-bold text-foreground/85">
-            {post.authorName.charAt(0).toUpperCase()}
+      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
+        <div className="flex items-center gap-2">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">
+            {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="leading-tight">
             <Link
-              href={`/u/${encodeURIComponent((post.authorHandle || post.authorName).toLowerCase())}`}
-              className="font-semibold text-foreground hover:underline transition text-sm flex items-center gap-1"
+              href={`/u/${encodeURIComponent((post.authorHandle || post.authorName || "someone").toLowerCase())}`}
+              className="font-bold text-foreground hover:underline transition text-sm flex items-center gap-1"
             >
-              <span>{post.authorName}</span>
+              <span>{displayName}</span>
               {isOwnPost && !post.isPublic && (
                 <span className="flex items-center gap-0.5 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0 rounded-full font-bold ml-1 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
                    Private
                 </span>
               )}
             </Link>
-            <p className="text-[11px] text-muted-foreground/85">
+            <p className="text-[10px] font-semibold text-muted-foreground/60">
               {timeAgo(post.createdAt)}
             </p>
           </div>
         </div>
 
         {/* Top-right actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {/* Spin to Decide — only shown for poll posts */}
           {post.hasPoll && post.pollOptions?.length > 0 && (
             <button
               onClick={() => setShowSpinModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-border/80 bg-muted/50 text-foreground hover:bg-muted transition"
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold tracking-tighter rounded-md border border-border/80 bg-muted/30 text-foreground hover:bg-muted transition"
             >
-              <Zap size={13} /> Spin to Decide
+              <Zap size={11} /> Decide
             </button>
           )}
 
@@ -142,7 +147,7 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
               className="p-1.5 rounded-full hover:bg-muted text-muted-foreground transition"
               aria-label="Post options"
             >
-              <MoreHorizontal size={18} />
+              <MoreHorizontal size={16} />
             </button>
 
             {menuOpen && (
@@ -166,24 +171,24 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
       </div>
 
       {/* Post Text content (Threads/Facebook style) */}
-      <div className="mb-3">
-        <p className={`text-[15px] leading-6 text-foreground whitespace-pre-wrap ${post.hasTruncation && !isExpanded ? "line-clamp-4" : ""}`}>
+      <div className="mb-2.5 px-4 sm:px-0">
+        <p className={`text-[13px] leading-relaxed text-foreground whitespace-pre-wrap ${post.hasTruncation && !isExpanded ? "line-clamp-4" : ""}`}>
           {renderContent(post.content)}
         </p>
         
         {post.hasTruncation && !isExpanded && (
           <button
             onClick={() => setIsExpanded(true)}
-            className="text-primary text-xs font-bold hover:underline mt-1 inline-block"
+            className="text-primary text-[10px] font-black uppercase tracking-tighter hover:underline mt-1 inline-block"
           >
-            Read More
+            ...more
           </button>
         )}
       </div>
 
       {/* Image Uploaded to Post */}
       {post.image && (
-        <div className="mb-4 -mx-4 sm:mx-0 sm:rounded-2xl overflow-hidden bg-muted/20 border-y sm:border border-border/50">
+        <div className="mb-3 w-full sm:mx-0 sm:rounded-xl overflow-hidden bg-muted/20 border-y sm:border border-border/40">
           <img
             src={post.image}
             alt="Post attachment"
@@ -193,44 +198,54 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
         </div>
       )}
 
-      {/* Content Ref (if linked to anime/movie/game) */}
+      {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
       {post.contentRef && String(post.contentRef.externalId) !== String(currentContextId) && (
-        <Link
-          href={`/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`}
-          className="block mb-4"
-        >
-          <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-muted/10 hover:bg-muted/20 transition-colors">
-            <div className="flex flex-col sm:flex-row gap-0">
-              {post.contentRef.image && (
-                <div className="relative flex-shrink-0 w-full sm:w-28 h-40 sm:h-32 bg-muted overflow-hidden rounded-t-2xl sm:rounded-t-none sm:rounded-l-2xl">
-                  <Image
-                    src={post.contentRef.image}
-                    alt={post.contentRef.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, 112px"
-                  />
+        <div className="px-4 sm:px-0 mb-4">
+          <Link
+            href={
+              post.contentRef.type === "wheel"
+                ? `/embed/${post.contentRef.externalId}`
+                : post.contentRef.type === "list"
+                ? `/lists/${post.contentRef.externalId}`
+                : `/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`
+            }
+            className="block"
+          >
+            <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-muted/10 hover:bg-muted/20 transition-colors">
+              <div className="flex flex-col sm:flex-row gap-0">
+                {post.contentRef.image && (
+                  <div className="relative flex-shrink-0 w-full sm:w-28 h-40 sm:h-32 bg-muted overflow-hidden rounded-t-2xl sm:rounded-t-none sm:rounded-l-2xl">
+                    <Image
+                      src={post.contentRef.image}
+                      alt={post.contentRef.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 112px"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 p-4 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-primary/15 text-primary">
+                      {post.contentRef.type}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-foreground text-sm line-clamp-2">
+                    {post.contentRef.title}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {post.contentRef.type === "wheel" ? "Spin to decide" : "See details"}
+                  </p>
                 </div>
-              )}
-              <div className="flex-1 p-4 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="inline-flex items-center text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-primary/15 text-primary">
-                    {post.contentRef.type}
-                  </span>
-                </div>
-                <h4 className="font-semibold text-foreground text-sm line-clamp-2">
-                  {post.contentRef.title}
-                </h4>
-                <p className="text-[11px] text-muted-foreground mt-1.5">See details</p>
               </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
       )}
 
       {/* OG Link Preview Card */}
       {!post.image && !post.hasPoll && !post.contentRef && post.ogMeta && (
-        <div className="mb-4">
+        <div className="px-4 sm:px-0 mb-4">
           <Link 
             href={post.ogMeta.url}
             target="_blank"
@@ -269,19 +284,23 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
 
       {/* Dilemma Viewer (for polls) */}
       {post.hasPoll && post.pollOptions?.length > 0 && (
-        <div className="mb-5 pt-4 border-t border-border/70">
+        <div className="mb-5 pt-4 border-t border-border/70 px-4 sm:px-0">
           <DilemmaViewer post={post} postId={post._id || post.id} />
         </div>
       )}
 
       {/* Tags */}
+      {/* 
+        Discovery Optimized: Only show tag pills for tags that are NOT already present in the text body.
+        This provides categorization without redundancy.
+      */}
       {visibleTags.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="mb-4 flex flex-wrap gap-1.5 px-4 sm:px-0">
           {visibleTags.slice(0, 3).map((tag) => (
             <Link
               key={tag}
               href={`/tags/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center text-xs font-medium rounded-full px-2.5 py-1 bg-muted text-muted-foreground hover:text-foreground transition"
+              className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all border border-border/40"
             >
               #{tag}
             </Link>
@@ -289,14 +308,25 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
         </div>
       )}
 
-      {/* Footer: Engagement */}
-      <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-border/70">
+      {/* Footer: Engagement bit */}
+      <div className="flex flex-wrap items-center gap-2.5 pt-2 sm:pt-3 px-4 sm:px-0">
         <StatsBar
           entityType="post"
           entityId={post._id || post.id}
           session={session}
-          show={{ like: true, share: true, save: false, follow: false }}
+          show={{ like: true, share: true, save: false, follow: false, comment: true }}
           shareUrl={`/post/${post._id || post.id}`}
+          commentCount={commentCount}
+          onCommentClick={() => {
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            if (isMobile) {
+              window.dispatchEvent(new CustomEvent("comments:open-drawer", {
+                detail: { entityId: String(postId) }
+              }));
+              return;
+            }
+            setShowComments((prev) => !prev);
+          }}
           initialStats={{
             // Pre-populate from the denormalized counters already on the post doc.
             // This avoids a countDocuments() DB hit per post card on the feed.
@@ -306,25 +336,17 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
             reactedByUser: { like: null }, // null = "not yet checked"
           }}
         />
-
-        <button
-          onClick={() => setShowComments((prev) => !prev)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition"
-        >
-          <MessageCircle size={15} />
-          <span>{commentCount > 0 ? `${commentCount} Comments` : "Comment"}</span>
-        </button>
       </div>
 
-      {/* Comments panel — lazy, only mounts after user clicks */}
-      <CommentsPanel
+      {/* Universal Comments Section — togglable in feed, proactive in single view */}
+      <UniversalCommentsSection
         entityType="post"
-        entityId={post._id || post.id}
-        isLoggedIn={!!session}
-        openLoginPrompt={openLoginPrompt}
-        currentUser={session?.user}
+        entityId={postId}
         visible={showComments}
+        showTitle={false}
         onCountChange={setCommentCount}
+        className=""
+        isInFeed={!defaultOpenComments}
       />
 
       {/* Quick Spin Modal — lazy, only mounts when user taps Spin to Decide */}

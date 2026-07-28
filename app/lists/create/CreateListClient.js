@@ -63,7 +63,7 @@ export default function CreateListClient() {
           <h1 className="text-2xl font-black text-foreground">Create a List</h1>
         </div>
         <p className="text-muted-foreground text-sm mb-6">
-          Organize items, favorites, or anything you want to track or spin.
+          Organize movies, anime, games, or anything you want to track or spin.
         </p>
 
         {error && (

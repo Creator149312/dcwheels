@@ -206,7 +206,7 @@ export function renderCharacterCard(character) {
 // \u2500\u2500\u2500 Fetch functions \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // External APIs are rate-limited. unstable_cache deduplucates identical
 // requests within the revalidation window so we never hammer the upstreams.
-const EXTERNAL_API_REVALIDATE = 3600; // 1 hour
+const EXTERNAL_API_REVALIDATE = 43200; // 12 hours
 
 // ---------- Anime ----------
 const _fetchAnimeUncached = async ({ search, genre, year, page, perPage, sort }) => {

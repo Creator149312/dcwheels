@@ -24,7 +24,7 @@ export function DecisionTimelineItem({ item }) {
   const wheelRoute =
     item.wheelId && item.wheelId !== "home"
       ? item.wheelId.length === 24
-        ? `/uwheels/${item.wheelId}`
+        ? `/wheels/${item.wheelId}`
         : `/wheels/${item.wheelId}`
       : "/";
 
@@ -258,7 +258,7 @@ export function WheelRowCard({ item, showToggle = true }) {
 
   return (
     <RowCard
-      href={`/uwheels/${item._id}`}
+      href={`/wheels/${item._id}`}
       title={item.title}
       meta={`${item.segmentCount} segments`}
       actions={

@@ -30,43 +30,61 @@ export async function POST(req) {
     await connectMongoDB();
     const db = mongoose.connection.db;
 
-    // Get bot/admin user
-    const botUser = await User.findOne({ email: ADMIN_EMAIL }).select("_id name image").lean();
-    if (!botUser) {
-      return NextResponse.json({ message: "Admin user not found" }, { status: 404 });
-    }
+    // PERSONAS with valid database IDs from verify-all-users.js
+    const personas = [
+      { id: "6a49165a4e84a6766406ad59", name: "ShadowRogueX", handle: "ShadowRogueX" },
+      { id: "6a4916b84e84a6766406ada0", name: "LibertyEagle", handle: "LibertyEagle" },
+      { id: "6a4916934e84a6766406ad8e", name: "MysticLotusIN", handle: "MysticLotusIN" },
+      { id: "6a49166c4e84a6766406ad73", name: "PixelSamurai77", handle: "PixelSamurai77" },
+      { id: "6a4916a04e84a6766406ad97", name: "IronBritKnight", handle: "IronBritKnight" }
+    ];
 
     const now = new Date();
 
-    const docsToInsert = posts.map((p) => ({
-      userId: botUser._id,
-      authorName: botUser.name || "Spinpapa",
-      authorImage: botUser.image || null,
-      title: (p.title || "").trim().slice(0, 500),
-      content: (p.content || "").trim().slice(0, 2000),
-      image: null,
-      tags: Array.isArray(p.tags) ? p.tags.slice(0, 5) : [],
-      isPublic: true,
-      hasPoll: Array.isArray(p.pollOptions) && p.pollOptions.length >= 2,
-      pollOptions: (p.pollOptions || []).slice(0, 4).map((opt) => ({
-        _id: new mongoose.Types.ObjectId(),
-        text: (opt.text || "").trim().slice(0, 100),
-        voteCount: 0,
-      })),
-      contentRef: p.contentRef
-        ? {
-            type: p.contentRef.type || "",
-            externalId: String(p.contentRef.externalId || ""),
-            slug: p.contentRef.slug || null,
-            title: (p.contentRef.title || "").slice(0, 200),
-            image: p.contentRef.image || null,
-          }
-        : null,
-      likeCount: 0,
-      commentCount: 0,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const docsToInsert = posts.map((p) => {
+      // Pick a random persona for each post to look natural
+      const persona = personas[Math.floor(Math.random() * personas.length)];
+      
+      // Random date within last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const randomTimestamp = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
+
+      return {
+        userId: new mongoose.Types.ObjectId(persona.id),
+        authorName: persona.name,
+        authorHandle: persona.handle,
+        authorImage: null,
+        content: (p.content || "").trim().slice(0, 2000),
+        type: (Array.isArray(p.pollOptions) && p.pollOptions.length >= 2) ? "poll" : "text",
+        image: null,
+        tags: Array.isArray(p.tags) ? p.tags.slice(0, 5) : [],
+        isPublic: true,
+        isDeleted: false,
+        isShadowBanned: false,
+        hasPoll: Array.isArray(p.pollOptions) && p.pollOptions.length >= 2,
+        pollOptions: (p.pollOptions || []).slice(0, 4).map((opt) => ({
+          _id: new mongoose.Types.ObjectId(),
+          text: (opt.text || "").trim().slice(0, 100),
+          voteCount: 0,
+        })),
+        contentRef: p.contentRef
+          ? {
+              type: p.contentRef.type || "",
+              externalId: String(p.contentRef.externalId || ""),
+              slug: p.contentRef.slug || null,
+              title: (p.contentRef.title || "").slice(0, 200),
+              image: p.contentRef.image || null,
+            }
+          : null,
+        likeCount: 0,
+        commentCount: 0,
+        viewCount: Math.floor(Math.random() * 50),
+        status: "published",
+        createdAt: randomTimestamp,
+        updatedAt: randomTimestamp,
+      };
+    });
 
     // Enrich contentRef with the full slug (needed for correct PostCard links).
     // Posts from AI drafts arrive without a slug, so we look it up once per
