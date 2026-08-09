@@ -2,43 +2,37 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import TopicPage from "@models/topicpage";
 import { NextResponse } from "next/server";
-import { getWheelUrl } from "@utils/UrlHandler";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
+import {
+  runTopicAtlasSearch,
+  runTopicRegexSearch,
+  formatTopic,
+} from "@lib/search/topicSearch";
+import {
+  runWheelAtlasSearch,
+  runWheelRegexSearch,
+  formatWheel,
+} from "@lib/search/wheelSearch";
 
-// Simple in-memory rate limiter (per IP)
-const rateLimitMap = new Map();
-const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 30;     // max 30 requests per IP per minute
-
-function rateLimit(ip) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip) || { count: 0, start: now };
-
-  if (now - entry.start > WINDOW_MS) {
-    // reset window
-    entry.count = 1;
-    entry.start = now;
-  } else {
-    entry.count += 1;
-  }
-
-  rateLimitMap.set(ip, entry);
-  return entry.count <= MAX_REQUESTS;
-}
+/**
+ * GET /api/wheel/suggest?query=naruto
+ *
+ * Unified autosuggest for wheels + topic pages. Uses Atlas Search on the
+ * local database only (no external APIs). Regex fallback covers wheels or
+ * topics if Atlas Search returns nothing.
+ */
+const WHEEL_LIMIT = 3;
+const TOPIC_LIMIT = 5;
+const MAX_SUGGESTIONS = WHEEL_LIMIT + TOPIC_LIMIT;
 
 export async function GET(request) {
+  const ip = getIpFromRequest(request);
+  const { limited, retryAfter } = await checkRateLimit(ip, "/api/wheel/suggest");
+  if (limited) return rateLimitResponse(retryAfter);
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query");
-  const ip = request.headers.get("x-forwarded-for") || "unknown";
 
-  // Rate limiting check
-  if (!rateLimit(ip)) {
-    return NextResponse.json(
-      { suggestions: [], error: "Too many requests, please slow down." },
-      { status: 429 }
-    );
-  }
-
-  // Validate query length
   if (!query || query.trim().length < 3) {
     return NextResponse.json(
       { suggestions: [], error: "Query must be at least 3 characters." },
@@ -49,46 +43,31 @@ export async function GET(request) {
   await connectMongoDB();
 
   try {
-    // Run both searches in parallel for low latency.
-    const [wheelMatches, topicMatches] = await Promise.all([
-      Wheel.find({
-        title: { $regex: new RegExp(query, "i") },
-      })
-        .limit(3)
-        .select("_id title")
-        .lean(),
-      TopicPage.find({
-        $or: [
-          { "title.default": { $regex: new RegExp(query, "i") } },
-          { "title.english": { $regex: new RegExp(query, "i") } },
-        ]
-      })
-        .limit(5)
-        .select("title slug type cover")
-        .lean()
+    const q = query.trim();
+
+    // Atlas Search first.
+    let [wheelDocs, topicDocs] = await Promise.all([
+      runWheelAtlasSearch(Wheel, q, WHEEL_LIMIT),
+      runTopicAtlasSearch(TopicPage, q, TOPIC_LIMIT),
     ]);
 
-    // Unify the results into a single array for the dropdown.
-    const suggestions = [
-      ...wheelMatches.map(w => ({
-        id: w._id,
-        title: w.title,
-        type: "wheel",
-        route: getWheelUrl(w)
-      })),
-      ...topicMatches.map(t => ({
-        id: t._id,
-        title: t.title?.default || t.title?.english || t.title?.romaji || "Topic",
-        type: t.type,
-        cover: t.cover,
-        route: `/${t.type}/${t.slug}`
-      }))
-    ];
+    // Regex fallback if either corpus is empty.
+    if (wheelDocs.length === 0) {
+      wheelDocs = await runWheelRegexSearch(Wheel, q, WHEEL_LIMIT);
+    }
+    if (topicDocs.length === 0) {
+      topicDocs = await runTopicRegexSearch(TopicPage, q, TOPIC_LIMIT);
+    }
 
-    return NextResponse.json(
-      { suggestions, error: null },
-      { status: 200 }
-    );
+    const suggestions = [
+      ...wheelDocs.map(formatWheel),
+      ...topicDocs.map((t) => ({
+        ...formatTopic(t),
+        route: `/${t.type}/${t.slug}`,
+      })),
+    ].slice(0, MAX_SUGGESTIONS);
+
+    return NextResponse.json({ suggestions, error: null }, { status: 200 });
   } catch (error) {
     console.error("Suggest error:", error);
     return NextResponse.json(

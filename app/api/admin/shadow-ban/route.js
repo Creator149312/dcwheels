@@ -6,8 +6,7 @@ import User from "@models/user";
 import Post from "@models/post";
 import Comment from "@models/comment";
 import { shadowBanUser } from "@lib/shadowBan";
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "gauravsingh9314@gmail.com";
+import { isAdminSession } from "@utils/auth/isAdmin";
 
 /**
  * POST /api/admin/shadow-ban
@@ -23,10 +22,8 @@ export async function POST(req) {
 
     await connectMongoDB();
 
-    // Check admin role OR admin email fallback
-    const admin = await User.findOne({ email: session.user.email }).select("role").lean();
-    const isAdmin = admin?.role === "admin" || session.user.email === ADMIN_EMAIL;
-    if (!isAdmin) {
+    // Centralized admin gate (uses JWT role claim, falls back to env/legacy email).
+    if (!isAdminSession(session)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 

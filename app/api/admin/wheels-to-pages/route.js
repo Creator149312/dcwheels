@@ -16,6 +16,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import User from "@models/user";
 import Page from "@models/page";
+import { slugify } from "@lib/slug";
 import mongoose from "mongoose";
 
 async function requireAuth() {
@@ -26,15 +27,7 @@ async function requireAuth() {
   return { isValid: true, session };
 }
 
-// Generate slug from title
-function generateSlug(title) {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+
 
 export async function GET(request) {
   const { isValid, session } = await requireAuth();
@@ -105,7 +98,7 @@ export async function GET(request) {
       .map((w) => ({
         ...w,
         _id: w._id.toString(),
-        slug: generateSlug(w.title),
+        slug: slugify(w.title),
       }));
 
     return NextResponse.json(
@@ -179,7 +172,7 @@ export async function POST(request) {
     }
 
     // Generate slug
-    const pageSlug = slug || generateSlug(title || wheel.title);
+    const pageSlug = slug || slugify(title || wheel.title);
 
     // Check if slug is already taken
     const slugExists = await Page.findOne({ slug: pageSlug });

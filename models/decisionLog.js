@@ -23,11 +23,8 @@ const DecisionLogSchema = new Schema(
     entityType: { type: String, default: "" }, // "movie" | "anime" | "game" | "character"
     entityId:   { type: String, default: "" }, // stringified external ID (TMDB, AniList, RAWG)
     entitySlug: { type: String, default: "" }, // e.g. "550-fight-club" — for /[type]/[slug] links
-    // Lifecycle status the user can manually advance after committing.
-    // "pending" → committed but not yet acted on
-    // "done"    → user completed/watched/played it
-    // "dropped" → user gave up / changed their mind
-    status: { type: String, enum: ["pending", "done", "dropped"], default: "pending" },
+    // DecisionLog is intentionally an append-only spin ledger. User progress
+    // for content entities is tracked separately in UserEntityStatus.
   },
   { timestamps: true }
 );
@@ -49,14 +46,6 @@ DecisionLogSchema.index({ isPublic: 1, createdAt: -1 });
 //   DecisionLog.find({ entityType, entityId, isPublic: true }).sort({ createdAt: -1 })
 DecisionLogSchema.index({ entityType: 1, entityId: 1, isPublic: 1, createdAt: -1 });
 
-// Powers user-scoped content queries (all three prefixes are index-covered):
-//   1. Has user watched a specific entity?
-//        .findOne({ userId, entityType: "movie", entityId: "550", status: "done" })
-//   2. How many of user's decisions are movies?
-//        .countDocuments({ userId, entityType: "movie" })
-//   3. How many movies has user finished/dropped/pending?
-//        .countDocuments({ userId, entityType: "movie", status: "done" })
-DecisionLogSchema.index({ userId: 1, entityType: 1, entityId: 1, status: 1 });
 
 const DecisionLog =
   models.DecisionLog || mongoose.model("DecisionLog", DecisionLogSchema);

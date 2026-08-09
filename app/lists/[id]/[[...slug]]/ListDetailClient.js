@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trash2, Pencil, Plus, Zap, X, Image as ImageIcon, Check, Eye, EyeOff, ArrowUpDown, Loader2 } from "lucide-react";
+import { Trash2, Pencil, Zap, X, Image as ImageIcon, Eye, EyeOff, ArrowUpDown, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createSegment } from "@utils/segmentUtils";
-import { sortListItems, getSortLabel, getVisibilityLabel } from "@lib/listSorting";
+import { getListUrl } from "@utils/UrlHandler";
+
+import AddItemPanel from "./components/AddItemPanel";
+import ListItems from "./components/ListItems";
 
 // Lazy-loaded — EditListModal is only needed when owner clicks the pencil icon.
 const EditListModal = dynamic(() => import("@components/lists/EditListModal"), { ssr: false });
@@ -17,7 +20,6 @@ const SharePopup = dynamic(() => import("@components/SharePopup"), { ssr: false 
 
 import UniversalCommentsSection from "@components/UniversalCommentsSection";
 import StatsBar from "@app/(content)/[type]/StatsBar";
-import { getWheelUrl } from "@utils/UrlHandler";
 
 export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const router = useRouter();
@@ -26,15 +28,15 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const { data: session, status } = useSession();
 
   const [list, setList] = useState(initialList);
-  // System list if either isSystem flag is true OR systemKey exists (for legacy backward compat/SYS_SAVED)
-  const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey || initialList?.systemKey === "SYS_SAVED";
+  // System list if isSystem flag is true or a systemKey is set (covers SYS_SAVED and legacy lists)
+  const isSystemList = (initialList?.isSystem ?? false) || !!initialList?.systemKey;
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [commentCount, setCommentCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(initialList?.commentCount || 0);
 
-  // Settings state (sort and visibility)
-  const [sortBy, setSortBy] = useState(initialList?.settings?.sortBy || "recently-saved");
-  const [visibility, setVisibility] = useState(initialList?.settings?.visibility || "private");
+  // Visibility state (sort order is a local UI preference only)
+  const [sortBy, setSortBy] = useState("recently-saved");
+  const [isPublic, setIsPublic] = useState(initialList?.isPublic ?? true);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [origin, setOrigin] = useState("");
@@ -151,59 +153,40 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     setEditModalOpen(false);
   }
 
-  // ✅ Update sort setting
-  async function updateSort(newSortBy) {
+  // ✅ Update sort order (local UI preference — not persisted to the list)
+  function updateSort(newSortBy) {
     setSortBy(newSortBy);
-    setSettingsSaving(true);
-    try {
-      const res = await fetch(`/api/unifiedlist/${listId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sortBy: newSortBy }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Update local list settings
-        setList(prev => ({
-          ...prev,
-          settings: { ...prev.settings, sortBy: newSortBy }
-        }));
-      }
-    } catch (err) {
-      console.error("Failed to update sort:", err);
-      setSortBy(sortBy); // revert
-    } finally {
-      setSettingsSaving(false);
-    }
   }
 
   // ✅ Update visibility setting
-  async function updateVisibility(newVis) {
-    setVisibility(newVis);
+  async function updateVisibility(newIsPublic) {
+    setIsPublic(newIsPublic);
     setSettingsSaving(true);
     try {
       const res = await fetch(`/api/unifiedlist/${listId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibility: newVis }),
+        body: JSON.stringify({ isPublic: newIsPublic }),
       });
       if (res.ok) {
         const data = await res.json();
-        // Update local list settings
+        const updatedList = data.list || list;
+        // Update local list state with full server response
         setList(prev => ({
           ...prev,
-          settings: { ...prev.settings, visibility: newVis }
+          ...updatedList,
+          isPublic: newIsPublic,
         }));
         // Generate share link if going public
-        if (newVis === "public") {
+        if (newIsPublic) {
           if (typeof window !== 'undefined') {
-            setShareLink(`${window.location.origin}/lists/${listId}`);
+            setShareLink(`${window.location.origin}${getListUrl(updatedList)}`);
           }
         }
       }
     } catch (err) {
       console.error("Failed to update visibility:", err);
-      setVisibility(visibility); // revert
+      setIsPublic(isPublic); // revert
     } finally {
       setSettingsSaving(false);
     }
@@ -270,7 +253,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       console.error("addItem failed:", data?.error);
       return;
     }
-    setList(data.list);
+    setList(prev => ({ ...prev, ...data.list }));
   }
 
   // ✅ Start inline edit
@@ -298,6 +281,11 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   function handleEditImageSelect(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be smaller than 5MB.");
+      if (editingImgFileRef.current) editingImgFileRef.current.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => setEditingImgPreview(reader.result);
     reader.readAsDataURL(file);
@@ -334,7 +322,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       body: JSON.stringify(patch),
     });
     const data = await res.json();
-    if (res.ok && data.list) setList(data.list);
+    if (res.ok && data.list) setList(prev => ({ ...prev, ...data.list }));
     setEditingItemId(null);
     setEditingItemValue("");
     setEditingImgPreview("");
@@ -363,6 +351,11 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   function handleImageSelect(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be smaller than 5MB.");
+      if (imgFileRef.current) imgFileRef.current.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => setImgPreview(reader.result);
     reader.readAsDataURL(file);
@@ -409,65 +402,6 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   return (
     <div className={`relative ${initialList?.systemKey === "SYS_SAVED" ? "" : "px-4 py-4 md:px-6"}`}>
 
-      {/* ✅ Actions Menu (Owner Only) */}
-      {isOwner && !isSystemList && (
-        <div className="absolute top-6 right-6 flex items-center gap-1" ref={listMenuRef}>
-          {/* Edit button - disabled for system lists */}
-          <button
-            onClick={() => setEditModalOpen(true)}
-            disabled={isSystemList}
-            title={isSystemList ? "This is a system list and cannot be edited" : "Edit List Details"}
-            className={`p-2 rounded-full transition-colors ${
-              isSystemList
-                ? "text-muted-foreground/40 cursor-not-allowed"
-                : "hover:bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Pencil size={18} />
-          </button>
-          
-          {/* Menu dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setListMenuOpen((prev) => !prev)}
-              className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors font-bold"
-              title="More options"
-            >
-              ⋮
-            </button>
-
-            {listMenuOpen && (
-              <div className="absolute right-0 mt-2 bg-popover shadow-lg border border-border rounded-lg w-40 z-50 overflow-hidden">
-                <SharePopup url={`/lists/${listId}`} variant="simple" />
-
-                {!isSystemList && (
-                  <button
-                    onClick={deleteList}
-                    disabled={deleteSubmitting}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-colors border-t border-border ${
-                      deleteConfirm 
-                        ? "bg-red-50 text-red-600 hover:bg-red-100 font-bold" 
-                        : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    }`}
-                    title={deleteConfirm ? "Click again to confirm deletion" : "Delete this list"}
-                  >
-                    {deleteSubmitting ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : deleteConfirm ? (
-                      "Confirm Delete?"
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4" /> Delete List
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Content Mode Banner */}
       {isContentMode && (
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
@@ -510,27 +444,80 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               )}
             </div>
 
-            {/* Title + Meta */}
+            {/* Title + Meta + Actions */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="text-2xl md:text-3xl font-black text-foreground">
-                  {list.name}
-                </h1>
-                {isSystemList && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
-                    🔒 Locked
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex flex-col gap-1.5">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {list.items.length} {list.items.length === 1 ? "item" : "items"}
-                </p>
-                {list.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
-                    {list.description}
-                  </p>
+              {/* Top row: title + owner actions */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h1 className="text-2xl md:text-3xl font-black text-foreground">
+                      {list.name}
+                    </h1>
+                    {isSystemList && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30">
+                        🔒 Locked
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {list.items.length} {list.items.length === 1 ? "item" : "items"}
+                    </p>
+                    {list.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
+                        {list.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Owner actions — inline on mobile, absolute-like on desktop */}
+                {isOwner && !isSystemList && (
+                  <div className="flex items-center gap-1 shrink-0" ref={listMenuRef}>
+                    <button
+                      onClick={() => setEditModalOpen(true)}
+                      title="Edit List Details"
+                      className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setListMenuOpen((prev) => !prev)}
+                        className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors font-bold"
+                        title="More options"
+                      >
+                        ⋮
+                      </button>
+
+                      {listMenuOpen && (
+                        <div className="absolute right-0 mt-2 bg-popover shadow-lg border border-border rounded-lg w-40 z-50 overflow-hidden">
+                          <SharePopup url={getListUrl(list)} variant="simple" />
+                          <button
+                            onClick={deleteList}
+                            disabled={deleteSubmitting}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-colors border-t border-border ${
+                              deleteConfirm
+                                ? "bg-red-50 text-red-600 hover:bg-red-100 font-bold"
+                                : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            }`}
+                            title={deleteConfirm ? "Click again to confirm deletion" : "Delete this list"}
+                          >
+                            {deleteSubmitting ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : deleteConfirm ? (
+                              "Confirm Delete?"
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4" /> Delete List
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -550,7 +537,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                   entityId={listId}
                   session={session}
                   show={{ like: true, share: true, save: false, follow: false, comment: true }}
-                  shareUrl={origin ? `${origin}/lists/${listId}` : ""}
+                  shareUrl={origin ? `${origin}${getListUrl(list)}` : ""}
                   commentCount={commentCount}
                   onCommentClick={() => {
                     if (typeof window !== 'undefined') {
@@ -576,15 +563,13 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         </div>
       )}
 
-      {/* ✅ Controls Bar */}
+          {/* ✅ Controls Bar */}
       <div className={`mb-6 pb-4 ${isSystemList ? "" : "border-b border-border"}`}>
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-wrap gap-3 items-center justify-between">
           {/* Sort Control */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <ArrowUpDown size={16} className="text-muted-foreground" />
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort</label>
-            </div>
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={16} className="text-muted-foreground" />
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort</label>
             <select
               value={sortBy}
               onChange={(e) => updateSort(e.target.value)}
@@ -594,7 +579,6 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
             >
               <option value="recently-saved">Recently Saved</option>
               <option value="alphabetical">Alphabetical (A→Z)</option>
-              {/* Only show status/type sorting if there's diversity or it's not a minimal system view */}
               <option value="status">Status (Want → Done)</option>
               <option value="entity-type">By Type</option>
             </select>
@@ -602,18 +586,18 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
 
           {/* Visibility + Share Controls (Owner Only) - Hidden for system lists */}
           {isOwner && !isSystemList && (
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
+            <div className="flex flex-wrap gap-2 items-center">
               <button
-                onClick={() => updateVisibility(visibility === "private" ? "public" : "private")}
+                onClick={() => updateVisibility(!isPublic)}
                 disabled={settingsSaving}
-                title={`Click to make ${visibility === "public" ? "private" : "public"}`}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
-                  visibility === "public"
+                title={`Click to make ${isPublic ? "private" : "public"}`}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg border transition-all ${
+                  isPublic
                     ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
                     : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                 }`}
               >
-                {visibility === "public" ? (
+                {isPublic ? (
                   <>
                     <Eye size={16} /> Public
                   </>
@@ -625,15 +609,15 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               </button>
 
               {/* Share Link / Copied Feedback */}
-              {visibility === "public" && (
+              {isPublic && (
                 <button
                   onClick={() => {
                     if (typeof window !== 'undefined') {
-                      navigator.clipboard.writeText(`${window.location.origin}/lists/${listId}`);
+                      navigator.clipboard.writeText(`${window.location.origin}${getListUrl(list)}`);
                       alert("Share link copied!");
                     }
                   }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"
                   title="Copy share link"
                 >
                   🔗 Copy Link
@@ -645,313 +629,43 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       </div>
 
       {/* ✅ Add Item Panel (Owner Only) - Hidden for system lists */}
-      {isOwner && !isSystemList && (
-        <div className="mb-6">
-          {addPanelMode === null ? (
-            // ── Collapsed: single button ───────────────────────────────────
-            <button
-              onClick={() => setAddPanelMode("text")}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95"
-            >
-              <Plus size={16} /> Add Item
-            </button>
-          ) : (
-            // ── Expanded panel ─────────────────────────────────────────────
-            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-              {/* Tab bar */}
-              <div className="flex items-center border-b border-border">
-                {["text", "bulk", "image"].map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setAddPanelMode(mode)}
-                    className={`px-4 py-2.5 text-xs font-bold capitalize transition-colors ${
-                      addPanelMode === mode
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {mode === "text" ? "Quick Add" : mode === "bulk" ? "Bulk Import" : "Image"}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setAddPanelMode(null)}
-                  className="ml-auto p-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                  title="Close"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Quick Add */}
-              {addPanelMode === "text" && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const txt = new FormData(e.target).get("quickAdd")?.trim();
-                    if (!txt) return;
-                    addItem({ type: "word", word: txt, wordData: "" });
-                    e.target.reset();
-                  }}
-                  className="flex gap-2 items-center p-3"
-                >
-                  <input
-                    type="text"
-                    name="quickAdd"
-                    placeholder="Type an item and press Enter..."
-                    autoFocus
-                    autoComplete="off"
-                    className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl active:scale-95 transition-transform shrink-0"
-                  >
-                    Add
-                  </button>
-                </form>
-              )}
-
-              {/* Bulk Import */}
-              {addPanelMode === "bulk" && (
-                <form onSubmit={handleBulkSubmit} className="p-3 space-y-2">
-                  <textarea
-                    name="bulkText"
-                    rows={5}
-                    autoFocus
-                    placeholder={"One item per line:\nMario\nLuigi\nBowser"}
-                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                    disabled={bulkLoading}
-                  />
-                  <button
-                    type="submit"
-                    disabled={bulkLoading}
-                    className="w-full py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs font-bold rounded-xl active:scale-95 transition-transform"
-                  >
-                    {bulkLoading ? "Importing..." : "Import All"}
-                  </button>
-                </form>
-              )}
-
-              {/* Image Upload */}
-              {addPanelMode === "image" && (
-                <form onSubmit={handleImageSubmit} className="p-3 space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Item name (e.g. Mario, Pizza...)"
-                    value={imgWord}
-                    onChange={(e) => setImgWord(e.target.value)}
-                    autoFocus
-                    disabled={imgUploading}
-                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-
-                  {imgPreview ? (
-                    <div className="relative w-full h-28 rounded-xl overflow-hidden border border-border group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imgPreview} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => { setImgPreview(""); if (imgFileRef.current) imgFileRef.current.value = ""; }}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => imgFileRef.current?.click()}
-                      className="w-full h-20 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/50 cursor-pointer flex items-center justify-center gap-2 text-muted-foreground transition-colors"
-                    >
-                      <ImageIcon size={18} className="opacity-50" />
-                      <span className="text-sm">Click to upload image</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" className="hidden" ref={imgFileRef} onChange={handleImageSelect} />
-
-                  <button
-                    type="submit"
-                    disabled={!imgWord.trim() || !imgPreview || imgUploading}
-                    className="w-full py-2 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-xs font-bold rounded-xl active:scale-95 transition-transform"
-                  >
-                    {imgUploading ? "Uploading..." : "Add Image Item"}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <AddItemPanel
+        addPanelMode={addPanelMode}
+        isOwner={isOwner}
+        isSystemList={isSystemList}
+        bulkLoading={bulkLoading}
+        imgWord={imgWord}
+        imgPreview={imgPreview}
+        imgUploading={imgUploading}
+        imgFileRef={imgFileRef}
+        setAddPanelMode={setAddPanelMode}
+        addItem={addItem}
+        handleBulkSubmit={handleBulkSubmit}
+        handleImageSelect={handleImageSelect}
+        handleImageSubmit={handleImageSubmit}
+        setImgWord={setImgWord}
+        setImgPreview={setImgPreview}
+      />
 
       {/* ✅ Items */}
-      {list.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-            <Plus size={24} className="text-muted-foreground" />
-          </div>
-          <p className="font-bold text-foreground">No items yet</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isOwner ? "Click \"Add Item\" above to get started." : "This list is empty."}
-          </p>
-        </div>
-      ) : (
-        <>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-            {list.items.length} item{list.items.length !== 1 ? "s" : ""}
-          </p>
-          <div className="space-y-2 pb-10">
-            {sortListItems(list.items, sortBy).map((item, index) => {
-              const isEntity = item.type === "entity";
-              const isWord = item.type === "word";
-              const safeId = item._id || `missing-id-${index}`;
-              const isEditing = editingItemId === safeId;
-
-              const thumbnail = isEntity
-                ? item.image
-                : isWord && (item.wordData?.startsWith("data:image") || item.wordData?.startsWith("http"))
-                ? item.wordData
-                : null;
-
-              // ── Editing mode: expand into a mini-form card ─────────────
-              if (isEditing) {
-                return (
-                  <div
-                    key={safeId}
-                    className="border border-primary/40 ring-2 ring-primary/20 bg-muted/40 rounded-xl p-3 space-y-2.5 shadow-sm"
-                  >
-                    {/* Row: image picker + name input */}
-                    <div className="flex items-start gap-3">
-                      {/* Clickable thumbnail / image picker */}
-                      <button
-                        type="button"
-                        onClick={() => editingImgFileRef.current?.click()}
-                      className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-dashed border-primary/40 hover:border-primary shrink-0 group/imgpick transition-colors"
-                        title="Change image"
-                      >
-                        {editingImgPreview ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={editingImgPreview} alt="preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="w-full h-full flex items-center justify-center bg-muted text-xl font-black uppercase text-muted-foreground select-none">
-                            {editingItemValue.charAt(0) || "?"}
-                          </span>
-                        )}
-                        {/* Hover overlay */}
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/imgpick:opacity-100 transition-opacity">
-                          <ImageIcon size={14} className="text-white" />
-                        </span>
-                      </button>
-                      <input type="file" accept="image/*" className="hidden" ref={editingImgFileRef} onChange={handleEditImageSelect} />
-
-                      {/* Name input */}
-                      <input
-                        ref={editInputRef}
-                        value={editingItemValue}
-                        onChange={(e) => setEditingItemValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveItemEdit(safeId);
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        disabled={editingSaving}
-                        placeholder="Item name"
-                        className="flex-1 bg-background border border-primary/50 rounded-lg px-2 py-1.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:font-normal placeholder:text-muted-foreground"
-                      />
-                    </div>
-
-                    {/* Image hint */}
-                    <p className="text-[11px] text-muted-foreground pl-0.5">
-                      {editingImgPreview ? "Tap the thumbnail to replace the image." : "Tap the thumbnail to add a cover image."}
-                    </p>
-
-                    {/* Save / Cancel buttons */}
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={cancelEdit}
-                        disabled={editingSaving}
-                        className="px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => saveItemEdit(safeId)}
-                        disabled={editingSaving || !editingItemValue.trim()}
-                        className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-sm font-bold transition-colors"
-                      >
-                        {editingSaving ? "Saving…" : "Save"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-
-              // ── Normal (view) mode ──────────────────────────────────────
-              return (
-                <div
-                  key={safeId}
-                  className="group flex items-center justify-between bg-card hover:bg-muted/30 border border-border shadow-sm rounded-2xl p-2 md:p-2.5 transition-colors"
-                >
-                  {/* Thumbnail */}
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-muted flex items-center justify-center rounded-xl mr-3 overflow-hidden shrink-0">
-                    {thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumbnail} alt={isWord ? item.word : item.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-muted-foreground text-xl md:text-2xl font-black uppercase select-none">
-                        {(isWord ? item.word : item.name)?.charAt(0) ?? "?"}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Name */}
-                  <div className="min-w-0 flex-1 pr-2">
-                    {isEntity ? (
-                      <>
-                      <a
-                          href={
-                            (item.entityType === "wheel" || item.entityType === "uwheel") ? getWheelUrl({ _id: item.entityId, slug: item.slug }) :
-                            `/${item.entityType}/${item.slug}`
-                          }
-                          className="font-bold text-sm md:text-base hover:underline text-foreground truncate block"
-                        >
-                          {item.name}
-                        </a>
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                          {item.entityType}
-                        </span>
-                      </>
-                    ) : (
-                      <p className="font-bold text-sm md:text-base text-foreground truncate">
-                        {item.word}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Action buttons (owner only) */}
-                  {isOwner && (
-                    <div className="flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isWord && (
-                        <button
-                          onClick={() => startEdit(item)}
-                          className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteItem(item._id)}
-                        className="p-2 rounded-lg hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-muted-foreground transition-colors"
-                        title="Remove"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+      <ListItems
+        list={list}
+        sortBy={sortBy}
+        isOwner={isOwner}
+        isSystemList={isSystemList}
+        editingItemId={editingItemId}
+        editingItemValue={editingItemValue}
+        editingImgPreview={editingImgPreview}
+        editingSaving={editingSaving}
+        editInputRef={editInputRef}
+        editingImgFileRef={editingImgFileRef}
+        startEdit={startEdit}
+        saveItemEdit={saveItemEdit}
+        cancelEdit={cancelEdit}
+        deleteItem={deleteItem}
+        handleEditImageSelect={handleEditImageSelect}
+        setEditingItemValue={setEditingItemValue}
+      />
 
       {/* ✅ Edit List Modal (lazy-loaded) */}
       <EditListModal
@@ -962,9 +676,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         onSave={saveListEdits}
       />
 
-      <UniversalCommentsSection 
-        entityId={listId} 
-        entityType="list" 
+      <UniversalCommentsSection
+        entityId={listId}
+        entityType="list"
+        initialCount={initialList?.commentCount || 0}
         onCountChange={setCommentCount}
       />
     </div>

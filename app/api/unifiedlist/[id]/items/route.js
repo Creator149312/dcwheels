@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
+import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
 
@@ -22,8 +23,44 @@ export async function POST(req, { params }) {
     // ✅ 2. Parse body
     const body = await req.json();
 
+    // ✅ 2a. Pre-validate payloads
+    if (body.items && Array.isArray(body.items)) {
+      if (body.items.length === 0) {
+        return NextResponse.json({ error: "No items provided" }, { status: 400 });
+      }
+      if (body.items.length > 100) {
+        return NextResponse.json({ error: "Cannot add more than 100 items at once" }, { status: 400 });
+      }
+      const invalid = body.items.find(
+        (item) => item.type !== "word" || !item.word || typeof item.word !== "string" || item.word.trim().length === 0
+      );
+      if (invalid) {
+        return NextResponse.json(
+          { error: "Each bulk item must be a non-empty word string" },
+          { status: 400 }
+        );
+      }
+    } else {
+      const { type } = body;
+      if (!type || !["word", "entity"].includes(type)) {
+        return NextResponse.json(
+          { error: "Invalid item type. Must be 'word' or 'entity'." },
+          { status: 400 }
+        );
+      }
+      if (type === "word" && (!body.word || typeof body.word !== "string" || body.word.trim().length === 0)) {
+        return NextResponse.json({ error: "word is required for word items" }, { status: 400 });
+      }
+      if (type === "entity" && (!body.entityType || !body.entityId || !body.name || !body.slug)) {
+        return NextResponse.json(
+          { error: "entityType, entityId, name, and slug are required for entity items" },
+          { status: 400 }
+        );
+      }
+    }
+
     // ✅ 3. Fetch list (must belong to user)
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
     if (!list) {
       return NextResponse.json(
@@ -54,8 +91,8 @@ export async function POST(req, { params }) {
         await list.save();
       }
 
-      revalidatePath("/lists");
       revalidatePath(`/lists/${id}`);
+      revalidatePath(getListUrl(list));
       revalidateTag(`list-${id}`);
 
       return NextResponse.json(
@@ -138,8 +175,8 @@ export async function POST(req, { params }) {
     list.items.push(newItem);
     await list.save();
 
-    revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
 
     return NextResponse.json(

@@ -7,7 +7,9 @@ import Reaction from "@models/reaction";
 import Wheel from "@models/wheel";
 import User from "@models/user";
 import Post from "@models/post";
+import UnifiedList from "@models/unifiedlist";
 import Comment from "@models/comment";
+import { sessionUserId } from "@/utils/SessionData";
 import { createNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
@@ -38,19 +40,13 @@ export async function PATCH(req) {
 
     const entityObjectId = new mongoose.Types.ObjectId(entityId);
 
-    let user = null;
-    if (session.user?.id && mongoose.Types.ObjectId.isValid(session.user.id)) {
-      user = await User.findById(session.user.id).select("_id").lean();
-    }
-    if (!user && session.user?.email) {
-      user = await User.findOne({ email: session.user.email }).select("_id").lean();
-    }
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const existing = await Reaction.findOne({
-      userId: user._id,
+      userId: userId,
       entityType,
       entityId: entityObjectId,
     });
@@ -73,7 +69,7 @@ export async function PATCH(req) {
       }
     } else {
       await Reaction.create({
-        userId: user._id,
+        userId: userId,
         entityType,
         entityId: entityObjectId,
         reactionType,
@@ -95,8 +91,13 @@ export async function PATCH(req) {
               modelStr = "Post";
             }
           } else if (entityType === "wheel") {
-            const wheel = await Wheel.findById(entityObjectId).select("createdBy urlEndpoint").lean();
-            if (wheel?.createdBy) {
+            const wheel = await Wheel.findById(entityObjectId).select("userId createdBy urlEndpoint").lean();
+            if (wheel?.userId) {
+              recipientId = wheel.userId;
+              link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
+              modelStr = "Wheel";
+            } else if (wheel?.createdBy) {
+              // Legacy fallback: createdBy stored an email. Avoid for new wheels.
               const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
               if (wheelCreator?._id) {
                 recipientId = wheelCreator._id;
@@ -106,10 +107,10 @@ export async function PATCH(req) {
             }
           }
 
-          if (recipientId && String(recipientId) !== String(user._id)) {
+          if (recipientId && String(recipientId) !== String(userId)) {
             await createNotification({
               recipientId,
-              senderId: user._id,
+              senderId: userId,
               type: "LIKE",
               entityId: entityObjectId,
               entityModel: modelStr,
@@ -124,7 +125,7 @@ export async function PATCH(req) {
       // -----------------------------
     }
 
-    // Update denormalized likeCount on Wheel or Post
+    // Update denormalized likeCount on the parent entity
     if (entityType === "wheel" && likeCountDelta !== 0) {
       await Wheel.updateOne(
         { _id: entityObjectId },
@@ -132,6 +133,11 @@ export async function PATCH(req) {
       );
     } else if (entityType === "post" && likeCountDelta !== 0) {
       await Post.updateOne(
+        { _id: entityObjectId },
+        { $inc: { likeCount: likeCountDelta } }
+      );
+    } else if (entityType === "list" && likeCountDelta !== 0) {
+      await UnifiedList.updateOne(
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
@@ -146,7 +152,7 @@ export async function PATCH(req) {
     });
 
     const reactedByCurrentUser = await Reaction.exists({
-      userId: user._id,
+      userId: userId,
       entityType,
       entityId: entityObjectId,
       reactionType,

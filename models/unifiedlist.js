@@ -109,38 +109,19 @@ const ListSchema = new Schema(
     },
 
     // When true, unauthenticated users can read this list via GET /api/unifiedlist/[id].
-    // Defaults false so existing lists stay private until the owner opts in.
-    // DEPRECATED: Kept for backward compat. Use settings.visibility instead.
-    isPublic: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: true },
+
+    // Soft-delete flag. When true, the list is hidden from all reads except
+    // owner recovery/admin queries, and its public URL returns 404.
+    isDeleted: { type: Boolean, default: false },
 
     // SYSTEM FLAGS (Optimization for TopicPages)
     // Helps identify default lists regardless of their display name.
     isSystem: { type: Boolean, default: false },
     systemKey: { type: String, trim: true },
 
-    // List-level settings: sort order, visibility, etc.
-    // Applied to all lists (both system and custom)
-    settings: {
-      // Sort order for display
-      // "recently-saved" — newest items first
-      // "alphabetical"   — A→Z by name
-      // "status"         — want first, then done
-      // "entity-type"    — group by type
-      sortBy: {
-        type: String,
-        enum: ["recently-saved", "alphabetical", "status", "entity-type"],
-        default: "recently-saved",
-      },
-
-      // Visibility: who can see this list
-      // "private"  — only owner
-      // "public"   — anyone with link (public profile)
-      visibility: {
-        type: String,
-        enum: ["private", "public"],
-        default: "public",
-      },
-    },
+    commentCount: { type: Number, default: 0, min: 0 }, // denormalized from Comment; kept here for fast feed/page reads
+    likeCount: { type: Number, default: 0, min: 0 }, // denormalized from Reaction; kept here for fast feed/page reads
 
     // SEO & Unified Routing
     slug: {
@@ -169,34 +150,34 @@ ListSchema.index(
 ListSchema.index({ userId: 1, "items.entityId": 1 });
 ListSchema.index({ tags: 1 });
 
+// Partial compound for public list discovery feeds filtered by tag or userId.
+ListSchema.index(
+  { tags: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isSystem: false, isPublic: true } }
+);
+ListSchema.index(
+  { userId: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isSystem: false } }
+);
+
 /**
  * Mongoose Hooks for Tag Count Automation
  * 
  * Logic: A list only counts towards tag discovery if:
  * 1. isSystem: false (don't index auto-generated library lists)
- * 2. visibility: 'public' OR isPublic: true
+ * 2. isPublic: true
  */
 ListSchema.pre("save", async function (next) {
-  // Generate SEO-friendly slug from list name
-  if (this.name) {
-    this.slug = this.name
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "")
-      .replace(/^-+|-+$/g, "");
-  }
-
   if (!this.isNew) {
     try {
       const oldDoc = await this.constructor
         .findById(this._id)
-        .select("tags settings isPublic isSystem")
+        .select("tags isPublic isSystem")
         .lean();
       if (oldDoc) {
         this._oldState = {
           tags: oldDoc.tags || [],
-          isPublic: oldDoc.isPublic === true || oldDoc.settings?.visibility === "public",
+          isPublic: oldDoc.isPublic === true,
           isSystem: !!oldDoc.isSystem
         };
       }
@@ -215,7 +196,7 @@ ListSchema.post("save", async function () {
       ? !this._oldState.isSystem && this._oldState.isPublic
       : false;
     
-    const isLive = !this.isSystem && (this.isPublic === true || this.settings?.visibility === "public");
+    const isLive = !this.isSystem && this.isPublic === true;
 
     if (!wasLive && isLive) {
       await updateTagCounts(this.tags, 1, "listCount");
@@ -236,7 +217,7 @@ ListSchema.post("save", async function () {
 
 ListSchema.post("remove", async function () {
   try {
-    const isLive = !this.isSystem && (this.isPublic === true || this.settings?.visibility === "public");
+    const isLive = !this.isSystem && this.isPublic === true;
     if (isLive) {
       const { updateTagCounts } = await import("../lib/tagUpdateHelper");
       await updateTagCounts(this.tags, -1, "listCount");

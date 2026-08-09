@@ -34,18 +34,33 @@ export async function POST(req) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Google OAuth users have no password
-  if (user.authMethod === "google") {
-    return NextResponse.json({ error: "Google accounts cannot change password here" }, { status: 400 });
+  // Google OAuth users may not have a password yet. If they don't, allow
+  // them to set one using currentPassword as the new password on first use.
+  const hasPassword = !!user.password;
+
+  if (hasPassword) {
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+    }
   }
 
-  const isMatch = await bcrypt.compare(currentPassword, user.password);
-  if (!isMatch) {
-    return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+  // If currentPassword was provided but the user has no password, require it
+  // to match the intended new password so this endpoint can't be used to set
+  // an arbitrary password without confirmation.
+  if (!hasPassword && currentPassword !== newPassword) {
+    return NextResponse.json(
+      { error: "To set your first password, enter the same value in both fields." },
+      { status: 400 }
+    );
   }
 
   const hashed = await bcrypt.hash(newPassword, 10);
-  await User.findOneAndUpdate({ email: session.user.email }, { password: hashed });
+  const update = { password: hashed };
+  // Once a password is set, the account can authenticate via credentials.
+  if (user.authMethod === "google") update.authMethod = "emailPassword";
+
+  await User.findOneAndUpdate({ email: session.user.email }, update);
 
   return NextResponse.json({ message: "Password updated successfully" }, { status: 200 });
 }

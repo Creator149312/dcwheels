@@ -8,8 +8,8 @@ import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@utils/SessionData";
 import mongoose from "mongoose";
 
-export const dynamic = "force-dynamic";
-
+// Private read-only indicator: no need to force dynamic. Response is small
+// and user-specific; set a short private cache to reduce repeated calls.
 export async function GET(req) {
   await connectMongoDB();
 
@@ -34,7 +34,7 @@ export async function GET(req) {
     }
 
     const list = await UnifiedList.findOne(
-      { userId, "items.entityId": { $in: queryIds } },
+      { userId, isDeleted: { $ne: true }, "items.entityId": { $in: queryIds } },
       { name: 1, "items.$": 1 }
     ).lean();
 
@@ -44,14 +44,22 @@ export async function GET(req) {
 
     const item = list.items[0];
 
-    return NextResponse.json({
-      found: true,
-      listId:   String(list._id),
-      listName: list.name,
-      itemId:   String(item._id),
-      status:   item.status || "want",
-      addedAt:  item.addedAt,
-    });
+    return NextResponse.json(
+      {
+        found: true,
+        listId: String(list._id),
+        listName: list.name,
+        itemId: String(item._id),
+        status: item.status || "want",
+        addedAt: item.addedAt,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, max-age=10, stale-while-revalidate=30",
+        },
+      }
+    );
   } catch (err) {
     console.error("GET /api/unifiedlist/by-entity error:", err);
     return NextResponse.json({ found: false }, { status: 200 }); // fail-safe: never 500 on read

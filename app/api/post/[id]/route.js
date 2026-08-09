@@ -1,30 +1,40 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import PostVote from "@models/postVote";
+import { sessionUser } from "@utils/SessionData";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
+
+const POST_API_PROJECTION =
+  "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
 
 /**
  * GET /api/post/[id]
  *
- * Fetches a post by ID. Returns post data for editing or viewing.
- * Owner can edit, anyone can view public posts.
+ * Fetches a post by ID. Public posts are visible to anyone.
+ * Private, deleted, or shadow-banned posts are visible only to the author.
  */
 export async function GET(req, { params }) {
   try {
     const { id } = params;
     await connectMongoDB();
 
-    const post = await Post.findById(id).lean();
+    const post = await Post.findById(id).select(POST_API_PROJECTION).lean();
 
     if (!post) {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
 
-    if (post.isDeleted) {
-      return NextResponse.json({ message: "Post has been deleted" }, { status: 410 });
+    const isRestricted = post.isDeleted || post.shadowBanned || post.isPublic === false;
+    if (isRestricted) {
+      const sessionData = await sessionUser("_id");
+      const requestingUserId = sessionData?.userId;
+      const isOwner = requestingUserId && String(requestingUserId) === String(post.userId);
+      if (!isOwner) {
+        const status = post.isDeleted ? 410 : 403;
+        const message = post.isDeleted ? "Post has been deleted" : "Post is not available";
+        return NextResponse.json({ message }, { status });
+      }
     }
 
     return NextResponse.json(post);
@@ -48,13 +58,13 @@ export async function GET(req, { params }) {
  */
 export async function PATCH(req, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id");
+    if (!sessionData) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = params;
-    const { content, image, hasPoll, pollOptions, tags, isPublic, ogMeta } = await req.json();
+    const { content, image, imageVariants, hasPoll, pollOptions, tags, isPublic, ogMeta } = await req.json();
 
     await connectMongoDB();
 
@@ -68,12 +78,9 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ message: "Post has been deleted" }, { status: 410 });
     }
 
-    // Allow editing only by the post author (multi-tier check: userId OR authorName)
-    const isOwnPost =
-      (session?.user?.id && post.userId && String(session.user.id) === String(post.userId)) ||
-      (session?.user?.name && post.authorName && session.user.name === post.authorName);
-
-    if (!isOwnPost) {
+    // Allow editing only by the post author. Display names are not unique,
+    // so we rely solely on the stable userId comparison.
+    if (!sessionData.userId || !post.userId || String(sessionData.userId) !== String(post.userId)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
@@ -112,6 +119,12 @@ export async function PATCH(req, { params }) {
               { status: 400 }
             );
           }
+          if (opt.image && typeof opt.image !== "string") {
+            return NextResponse.json(
+              { message: "Poll option image must be a valid URL" },
+              { status: 400 }
+            );
+          }
         }
       }
     }
@@ -120,6 +133,15 @@ export async function PATCH(req, { params }) {
     const updateData = {};
     if (content !== undefined) updateData.content = content.trim();
     if (image !== undefined) updateData.image = image || null;
+    if (imageVariants !== undefined) {
+      updateData.imageVariants = imageVariants
+        ? {
+            sm: imageVariants.sm || image || null,
+            md: imageVariants.md || image || null,
+            lg: imageVariants.lg || image || null,
+          }
+        : null;
+    }
     if (hasPoll !== undefined) updateData.hasPoll = hasPoll;
     if (pollOptions !== undefined && hasPoll !== false) {
       updateData.pollOptions = hasPoll
@@ -127,6 +149,13 @@ export async function PATCH(req, { params }) {
             .filter((o) => o.text?.trim())
             .map((opt) => ({
               text: opt.text?.trim() || "",
+              image: opt.image || null,
+              imageVariants: opt.imageVariants
+                ? {
+                    sm: opt.imageVariants.sm || opt.image || null,
+                    md: opt.imageVariants.md || opt.image || null,
+                  }
+                : null,
               voteCount: opt.voteCount || 0,
             }))
         : [];
@@ -146,8 +175,8 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id");
+    if (!sessionData) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -164,12 +193,9 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ message: "Already deleted" }, { status: 410 });
     }
 
-    // Allow deletion only by the post author (multi-tier check: userId OR authorName)
-    const isOwnPost =
-      (session?.user?.id && post.userId && String(session.user.id) === String(post.userId)) ||
-      (session?.user?.name && post.authorName && session.user.name === post.authorName);
-
-    if (!isOwnPost) {
+    // Allow deletion only by the post author. Display names are not unique,
+    // so we rely solely on the stable userId comparison.
+    if (!sessionData.userId || !post.userId || String(sessionData.userId) !== String(post.userId)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 

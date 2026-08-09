@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { Button } from "./ui/button";
 import toast from "react-hot-toast";
 
-export default function SignInBtn({ callbackUrl = "/dashboard", fullWidth = false }) {
+export default function SignInBtn({ callbackUrl = "/u/me", fullWidth = false }) {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", { callbackUrl });

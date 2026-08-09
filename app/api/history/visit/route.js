@@ -25,11 +25,10 @@ export async function POST(req) {
     }
 
     // 2) Resolve user
-    const user = await User.findOne({ email: session.user.email }).lean();
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    const userId = user._id;
 
     // 3) Parse body
     const body = await req.json();

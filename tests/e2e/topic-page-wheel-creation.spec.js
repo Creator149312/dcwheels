@@ -23,10 +23,10 @@ test.describe('Topic Page Wheel Creation and Visibility', () => {
     console.log('Fired login submit...');
     await page.click('button[type="submit"]');
 
-    // Wait for login redirect - allow for both dashboard and profile pages
+    // Wait for login redirect - allow for profile pages
     try {
       await page.waitForResponse(resp => resp.url().includes('/api/auth/callback/credentials') && resp.status() === 200, { timeout: 30000 });
-      await page.waitForURL(url => url.pathname.includes('/dashboard') || url.pathname.includes('/u/'), { timeout: 30000 });
+      await page.waitForURL(url => url.pathname.includes('/u/'), { timeout: 30000 });
       console.log('Login successful');
     } catch (e) {
       console.log('Login wait failed. Current URL:', page.url());

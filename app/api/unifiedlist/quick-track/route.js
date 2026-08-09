@@ -2,27 +2,14 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
+import { ensureSavedListExists } from "@lib/savedList";
+import { getListUrl } from "@utils/UrlHandler";
 import { sessionUserId } from "@utils/SessionData";
 
 export const dynamic = "force-dynamic";
 
-// Configuration for system-managed lists. 
-// We use a unified "Saved" model (like Facebook, Instagram, Threads)
-// that works for all entity types (media + wheels).
-const SYSTEM_LIST_CONFIG = {
-  // All content types go to unified "Saved" bucket
-  movie:     { key: "SYS_SAVED", name: "Saved" },
-  tv:        { key: "SYS_SAVED", name: "Saved" },
-  anime:     { key: "SYS_SAVED", name: "Saved" },
-  game:      { key: "SYS_SAVED", name: "Saved" },
-  character: { key: "SYS_SAVED", name: "Saved" },
-  wheel:     { key: "SYS_SAVED", name: "Saved" },
-  uwheel:    { key: "SYS_SAVED", name: "Saved" },
-};
-
-const getDefaultInfo = (entityType) => {
-  return SYSTEM_LIST_CONFIG[entityType] || { key: "SYS_COLLECTION", name: "My Collection" };
-};
+// All quick-tracked entities land in the unified "Saved" system list.
+const DEFAULT_TARGET_NAME = "Saved";
 
 export async function POST(req) {
   await connectMongoDB();
@@ -47,6 +34,7 @@ export async function POST(req) {
     // The multi-key index on { userId, "items.entityId" } makes this O(1).
     const foundList = await UnifiedList.findOne({
       userId,
+      isDeleted: { $ne: true },
       "items.entityId": { $in: [entityId, String(entityId)] }
     });
 
@@ -59,8 +47,8 @@ export async function POST(req) {
         item.status = status;
         await foundList.save();
 
-        revalidatePath("/lists");
         revalidatePath(`/lists/${foundList._id}`);
+        revalidatePath(getListUrl(foundList));
 
         return NextResponse.json({ 
           message: "Status updated", 
@@ -71,64 +59,32 @@ export async function POST(req) {
       }
     }
 
-    // 2. Resolve or Create the appropriate target list.
-    const { key: targetKey, name: targetName } = getDefaultInfo(entityType);
-    
-    // Tiered lookup for robustness:
-    // a) Search by systemKey (New optimized way)
-    // b) Search by legacy name (Backward compatibility for "Favorites" → "Saved")
-    let targetList = await UnifiedList.findOne({
-      userId,
-      $or: [
-        { systemKey: targetKey },
-        // LEGACY: If no systemKey, check for old "Favorites" or old list names
-        { name: targetName },
-        { name: "Favorites" },  // ← production "Favorites" lists get migrated here
-      ]
-    });
+    // 2. Resolve or create the target system list.
+    // For all media types we now use the unified "Saved" bucket.
+    const targetName = DEFAULT_TARGET_NAME;
+    let targetList = await ensureSavedListExists(userId);
 
-    if (!targetList) {
-      targetList = new UnifiedList({
-        userId,
-        name: targetName,
-        systemKey: targetKey,
-        isSystem: true,
-        description: "Default list for items you've saved.",
-        isPublic: true,
-        settings: { visibility: "public", sortBy: "recently-saved" },
-      });
-    } else {
-      // Automatic Migration: Ensure metadata, locked description, and name are correct
-      let changed = false;
-      if (!targetList.systemKey) {
-        targetList.systemKey = targetKey;
-        changed = true;
-      }
-      if (!targetList.isSystem) {
-        targetList.isSystem = true;
-        changed = true;
-      }
-      if (targetList.name !== targetName) {
-        targetList.name = targetName;
-        changed = true;
-      }
-      if (targetList.description !== "Default list for items you've saved.") {
-        targetList.description = "Default list for items you've saved.";
-        changed = true;
-      }
-
-      // MIGRATION: Map old "in-progress" status → "done"
-      if (targetList.items && Array.isArray(targetList.items)) {
-        targetList.items = targetList.items.map(item => {
-          if (item.status === "in-progress") {
-            item.status = "done";
-            changed = true;
-          }
-          return item;
-        });
-      }
-      if (changed) await targetList.save();
+    // Migration safety net: if the returned list has old name/description or
+    // legacy status values, normalize them before adding the new item.
+    let changed = false;
+    if (targetList.name !== targetName) {
+      targetList.name = targetName;
+      changed = true;
     }
+    if (targetList.description !== "Default list for items you've saved.") {
+      targetList.description = "Default list for items you've saved.";
+      changed = true;
+    }
+    if (targetList.items && Array.isArray(targetList.items)) {
+      targetList.items = targetList.items.map((item) => {
+        if (item.status === "in-progress") {
+          item.status = "done";
+          changed = true;
+        }
+        return item;
+      });
+    }
+    if (changed) await targetList.save();
 
     // 3. Add item and save. 
     // We don't worry about duplicates here because the initial check above caught them.
@@ -146,8 +102,9 @@ export async function POST(req) {
     targetList.items.push(newItem);
     await targetList.save();
 
-    revalidatePath("/lists");
     revalidatePath(`/lists/${targetList._id}`);
+    revalidatePath(getListUrl(targetList));
+    revalidateTag(`list-${targetList._id}`);
 
     const savedItem = targetList.items[targetList.items.length - 1];
 

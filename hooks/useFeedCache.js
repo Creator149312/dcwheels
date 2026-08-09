@@ -32,7 +32,9 @@ export function useFeedCache({
   const [items, setItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [hasMore, setHasMore] = useState(initialNextCursor !== null || initialItems.length === 0);
+  const [hasMore, setHasMore] = useState(
+    initialNextCursor !== null || initialItems.length === 0
+  );
 
   // Track if initial load is done
   const initialLoadDone = useRef(false);
@@ -40,18 +42,20 @@ export function useFeedCache({
   const cursorRef = useRef(initialNextCursor);
   // Track if we're currently fetching to prevent race conditions
   const fetchingRef = useRef(false);
+  // Track if we've ever completed a successful fetch so transient errors don't kill hasMore
+  const everFetchedRef = useRef(initialItems.length > 0);
 
   /**
    * Fetch feed items from API
    */
   const fetchFeed = useCallback(
-    async (cursor = null) => {
+    async (cursor = null, { isSWR = false } = {}) => {
       // Prevent duplicate fetches
       if (fetchingRef.current) return;
       fetchingRef.current = true;
 
       try {
-        setError(null);
+        if (!isSWR) setError(null);
 
         // Build query params
         const params = new URLSearchParams({
@@ -91,13 +95,19 @@ export function useFeedCache({
 
         cursorRef.current = nextCursor;
         setHasMore(more);
+        everFetchedRef.current = true;
       } catch (err) {
         console.error('Feed cache error:', err);
-        setError(err.message || 'Failed to load feed');
-        setHasMore(false);
+        if (!isSWR) {
+          setError(err.message || 'Failed to load feed');
+          // Don't kill infinite scroll on transient errors if we've already loaded successfully
+          if (!everFetchedRef.current) {
+            setHasMore(false);
+          }
+        }
       } finally {
         fetchingRef.current = false;
-        setLoading(false);
+        if (!isSWR) setLoading(false);
       }
     },
     [type, externalId, tag, userId, docType, limit, endpoint]
@@ -152,37 +162,47 @@ export function useFeedCache({
   }, [hasMore, loading, loadMore]);
 
   /**
-   * Initial load: check cache first, then fetch if needed
+   * Initial load: check cache first, then fetch if needed.
+   * Implements stale-while-revalidate: show cached/SSR data immediately,
+   * then refresh in background if the cache is stale.
    */
   useEffect(() => {
     // Only run once per component mount
     if (initialLoadDone.current) return;
     initialLoadDone.current = true;
 
-    // Try to use cached items
+    // Try to use cached items first
     const cachedItems = feedCache.get(type, externalId, tag, userId, docType);
 
     if (cachedItems && cachedItems.length > 0) {
-      // Use cached items
+      // Show cached items immediately
       setItems(cachedItems);
       const lastCursor = feedCache.getLastCursor(type, externalId, tag, userId, docType);
       cursorRef.current = lastCursor;
       setHasMore(lastCursor !== null);
+      everFetchedRef.current = true;
       setLoading(false);
-    } else if (items.length > 0) {
+
+      // Revalidate in background if the cache is older than 1 minute
+      const cacheAge = Date.now() - (feedCache.getTimestamp?.(type, externalId, tag, userId, docType) || 0);
+      if (cacheAge > 60 * 1000) {
+        fetchFeed(null, { isSWR: true });
+      }
+    } else if (initialItems.length > 0) {
       // Already has initial items (SSR), don't fetch page 1
       // But we should store them in cache so they are available on next navigation
-      feedCache.set(type, externalId, tag, items, initialNextCursor, userId, docType);
+      feedCache.set(type, externalId, tag, initialItems, initialNextCursor, userId, docType);
       // Ensure the cursorRef is synced with what we got from SSR
       cursorRef.current = initialNextCursor;
       setHasMore(initialNextCursor !== null);
+      everFetchedRef.current = true;
       setLoading(false);
     } else {
       // No cache and no initial items: fetch from API
       setLoading(true);
       fetchFeed(null);
     }
-  }, [type, externalId, tag, userId, docType, fetchFeed, items, initialNextCursor]);
+  }, [type, externalId, tag, userId, docType, fetchFeed, initialItems, initialNextCursor]);
 
   return {
     items,

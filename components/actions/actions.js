@@ -1,6 +1,8 @@
 "use server";
 import { getServerSession } from "next-auth";
+import { headers } from "next/headers";
 import { connectMongoDB } from "@lib/mongodb";
+import { checkActionRateLimit } from "@lib/rateLimit";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import User, { RESERVED_USERNAMES } from "@models/user";
 import EmailVerificationToken from "@models/emailverificationtoken";
@@ -35,6 +37,7 @@ import { OpenAI } from "openai";
 import { extractTopSegments } from "@lib/wheelAnalytics";
 import ApiLog from "@models/apilogs";
 import UnifiedList from "@models/unifiedlist";
+import { ensureSavedListExists } from "@lib/savedList";
 import {
   fetchAnime,
   fetchGames,
@@ -45,6 +48,18 @@ import { slugify } from "@utils/HelperFunctions";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
 });
+
+/**
+ * Build a rate-limit key for Server Actions.
+ * Prefer an email identifier when available (stops abuse per-account),
+ * otherwise fall back to the request IP.
+ */
+function getRateLimitKey(email = null) {
+  if (email) return email.toLowerCase().trim();
+  const forwarded = headers().get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  return `ip:${ip}`;
+}
 
 //this method is used when user is logged in
 export const updateNewPassword = async (formData) => {
@@ -84,7 +99,8 @@ export const updateNewPassword = async (formData) => {
       // Use findOne + lean-ish path — the previous `User.find().[0]` loaded
       // an array only to throw the rest away, and masked a "no such user"
       // situation as a crash (userData[0].password on undefined).
-      const userData = await User.findOne({ email: session.user.email });
+      const userData = await User.findOne({ email: session.user.email })
+        .select("password")
       if (!userData) {
         return { error: "User not found" };
       }
@@ -118,86 +134,59 @@ export const updateNewPassword = async (formData) => {
 
 //this method is used when user has forgot his current password
 export const updateNewPasswordbyToken = async (formData, token) => {
-  let errorData = { error: "" };
+  // Normalize input: handle both FormData and plain objects from client components
+  const getValue = (key) => {
+    if (formData instanceof FormData) return formData.get(key);
+    return formData?.[key];
+  };
+
   await connectMongoDB();
   let record = await PasswordReset.findOne({ token: token });
 
   if (record) {
-    errorData.error = validatePassword(formData.get("newPassword"));
-    errorData.error = validatePassword(formData.get("retypeNewPassword"));
+    const newPassword = getValue("newPassword");
+    const retypeNewPassword = getValue("retypeNewPassword");
 
-    if (formData.get("newPassword") !== formData.get("retypeNewPassword"))
-      errorData.error = "Passwords do not match";
+    let errorData = "";
+    errorData = validatePassword(newPassword) || validatePassword(retypeNewPassword);
 
-    if (errorData.error.length !== 0) {
+    if (newPassword !== retypeNewPassword)
+      errorData = "Passwords do not match";
+
+    if (errorData.length !== 0) {
+      return { error: errorData };
+    }
+
+    // Rate limit reset attempts per token / email
+    const rl = await checkActionRateLimit(
+      `reset:${getRateLimitKey(record.email)}`,
+      5,
+      60 * 60 * 1000
+    );
+    if (rl.limited) {
       return {
-        error: errorData.error,
+        error: `Too many password reset attempts. Please try again in ${rl.retryAfter} seconds.`,
       };
     }
 
     try {
-      if (errorData.error.length === 0) {
-        await connectMongoDB();
+      const newhashedPassword = await bcrypt.hash(newPassword, 10);
+      const update = { password: newhashedPassword };
 
-        const newhashedPassword = await bcrypt.hash(
-          formData.get("newPassword"),
-          10,
-        );
+      const user = await User.findOne({ email: record.email }).select("authMethod").lean();
+      // Google-only accounts that set a password become credentials-capable.
+      if (user?.authMethod === "google") update.authMethod = "emailPassword";
 
-        const filter = { email: record.email };
-        const update = { password: newhashedPassword };
-        await User.findOneAndUpdate(filter, update);
-        await PasswordReset.deleteOne({ email: record.email });
-      } else {
-        //send error message to client
-        return {
-          error: "Please login to change Password!",
-        };
-      }
+      await User.findOneAndUpdate({ email: record.email }, update);
+      await PasswordReset.deleteOne({ token });
+
+      return { success: "Password updated successfully." };
     } catch (error) {
-      // console.log(error);
+      console.error("updateNewPasswordbyToken error:", error);
       return { error: "Error resetting password" };
     }
   } else {
     return { error: "InValid Password Reset Request" };
-  }
-
-  // if (ifPasswordsMatch) {
-  //   redirect("/login");
-  // }
-};
-
-export const deleteUserAccount = async (formData) => {
-  const session = await getServerSession(authOptions);
-  try {
-    if (session) {
-      //delete user record from database
-      const result = await User.deleteOne({ email: session.user.email });
-    }
-  } catch (error) {
-    return { error: "Please login to delete your Account" };
-  }
-
-  // if (isUserDeleted) {
-  //   redirect("/login");
-  // }
-};
-
-const getVerificationTokenByEmail = async (email) => {
-  try {
-    const result = await EmailVerificationToken.findOne({ email: email });
-  } catch (error) {
-    return { error: "Please login to delete your Account" };
-  }
-};
-
-const deleteExistingTokenByEmail = async (email) => {
-  try {
-    const result = await EmailVerificationToken.findOneAndDelete({
-      email: email,
-    });
-  } catch (error) {
-    return { error: "Please login to delete your Account" };
   }
 };
 
@@ -254,9 +243,21 @@ export const registerUser = async (formData) => {
 
     await connectMongoDB();
 
-    const email = emailVal;
     const rawUsername = usernameVal;
     const password = passwordVal;
+    const email = emailVal.toLowerCase().trim();
+
+    // Rate limit registration attempts per email / IP
+    const rl = await checkActionRateLimit(
+      `register:${getRateLimitKey(email)}`,
+      5,
+      60 * 60 * 1000
+    );
+    if (rl.limited) {
+      return {
+        error: `Too many registration attempts. Please try again in ${rl.retryAfter} seconds.`,
+      };
+    }
 
     // Standardize handle from username (lowercase, trim, alphanumeric)
     const handle = rawUsername
@@ -293,23 +294,33 @@ export const registerUser = async (formData) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      name: rawUsername, // use raw as display name
-      username: handle, // use normalized as handle
-      email,
-      password: hashedPassword,
-      authMethod: "emailPassword",
-    });
+
+    let newUser;
+    try {
+      newUser = await User.create({
+        name: rawUsername, // use raw as display name
+        username: handle, // use normalized as handle
+        email,
+        password: hashedPassword,
+        authMethod: "emailPassword",
+      });
+    } catch (dbErr) {
+      // Catch unique-index race conditions (e.g. simultaneous registrations)
+      if (dbErr?.code === 11000) {
+        const field = Object.keys(dbErr?.keyPattern || {})[0];
+        if (field === "email") {
+          return { error: "User with this email already exists!" };
+        }
+        if (field === "username") {
+          return { error: "Username is already taken!" };
+        }
+        return { error: "That account detail is already in use." };
+      }
+      throw dbErr;
+    }
 
     // Create default "Saved" list for the new user
-    await UnifiedList.create({
-      userId: newUser._id,
-      name: "Saved",
-      description: "Default list for items you've saved.",
-      isSystem: true,
-      systemKey: "SYS_SAVED",
-      settings: { visibility: "public", sortBy: "recently-saved" },
-    });
+    await ensureSavedListExists(newUser._id);
 
     let timeNow = new Date();
     let expiringTime = new Date(timeNow.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days
@@ -338,61 +349,71 @@ export const generatePasswordResetLink = async (formData) => {
   let errorData = { error: "" };
   let token = "";
 
-  let ve = validateEmail(formData.get("email"));
+  // Normalize input: handle both FormData and plain objects from client components
+  const getValue = (key) => {
+    if (formData instanceof FormData) return formData.get(key);
+    return formData?.[key];
+  };
+
+  const email = getValue("email");
+
+  let ve = validateEmail(email);
 
   if (ve.length !== 0) errorData.error = ve;
 
   try {
     if (errorData.error.length !== 0) {
-      return { error: errorData };
+      return { error: errorData.error };
+    }
+
+    // Rate limit forgot-password requests per email / IP
+    const rl = await checkActionRateLimit(
+      `forgot:${getRateLimitKey(email)}`,
+      3,
+      60 * 60 * 1000
+    );
+    if (rl.limited) {
+      return {
+        error: `Too many password reset requests. Please try again in ${rl.retryAfter} seconds.`,
+      };
     }
 
     await connectMongoDB();
 
-    let email = formData.get("email");
     const ifUserExists = await User.findOne({ email });
 
+    // Always return the same message, even if the email isn't registered.
+    // This prevents account-enumeration attacks via timing or response content.
     if (ifUserExists) {
       const user = await PasswordReset.findOne({ email }).select("_id");
 
+      const expiresAt = new Date(Date.now() + 3600 * 1000); // expire in 1 hr
+      token = uuid4();
+
       if (user) {
-        let timeNow = new Date();
-        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000); //expire in 1 hr
-
-        //TODO: send Email for verification
-        token = uuid4(); // we want a unique token of 16 characters
-
-        const filter = { email: email };
-        const update = { token: token };
-        const expires = { expires: expriringTime };
-        let res = await PasswordReset.findOneAndUpdate(filter, update, expires);
+        await PasswordReset.findOneAndUpdate(
+          { email },
+          { token, expires: expiresAt }
+        );
       } else {
-        let timeNow = new Date();
-        let expriringTime = timeNow.setTime(timeNow.getTime() + 3600 * 1000); //expire in 1 hr
-        token = uuid4(); // we want a unique token of 16 characters
-
-        let res = await PasswordReset.create({
+        await PasswordReset.create({
           email,
           token,
-          expires: expriringTime,
+          expires: expiresAt,
         });
       }
 
-      // console.log(`http://localhost:3000/reset-password?token=${token}`);
-
       await sendPasswordResetLinkEmail(email, token);
-
-      return { success: "Check your email for password reset link!" };
-    } else {
-      return { error: "User not found!" };
     }
+
+    return { success: "If an account exists, a password reset link has been sent." };
   } catch (error) {
+    console.error("generatePasswordResetLink error:", error);
     return { error: "Unexpected Error Occured!" };
   }
 };
 
 export const verifyUserEmailbyToken = async (token) => {
-  console.log("SERVER: verifyUserEmailbyToken called with token:", token);
   //check if token is valid
   await connectMongoDB();
 
@@ -424,6 +445,18 @@ export const verifyUserEmailbyToken = async (token) => {
     } else {
       //token expired
       let newToken = uuid4();
+
+      // Rate limit verification-resend requests per email / IP
+      const rl = await checkActionRateLimit(
+        `verify:${getRateLimitKey(record.email)}`,
+        3,
+        60 * 60 * 1000
+      );
+      if (rl.limited) {
+        return {
+          error: `Too many verification attempts. Please try again in ${rl.retryAfter} seconds.`,
+        };
+      }
 
       // Use relative URL or Environment variable for the verification link
       const baseUrl = process.env.NEXTAUTH_URL || "https://www.spinpapa.com";
@@ -566,7 +599,8 @@ export async function getUnifiedTagFeed(
     const listMatch = {
       tags: tag,
       isSystem: false,
-      $or: [{ "settings.visibility": "public" }, { isPublic: true }],
+      isPublic: { $ne: false },
+      isDeleted: { $ne: true },
     };
 
     if (cursor) {
@@ -612,6 +646,8 @@ export async function getUnifiedTagFeed(
                 authorProfileImage: 1,
                 createdAt: 1,
                 wheelPreview: 1,
+                likeCount: 1,
+                commentCount: 1,
                 tags: 1,
               },
             },
@@ -633,6 +669,8 @@ export async function getUnifiedTagFeed(
                 createdAt: 1,
                 tags: 1,
                 userId: 1,
+                likeCount: 1,
+                commentCount: 1,
                 itemsCount: { $size: "$items" },
               },
             },
@@ -703,6 +741,8 @@ export async function getUnifiedTagFeed(
           ...base,
           description: doc.description || "",
           itemsCount: doc.itemsCount || 0,
+          likeCount: doc.likeCount || 0,
+          commentCount: doc.commentCount || 0,
         };
       }
 
@@ -712,6 +752,8 @@ export async function getUnifiedTagFeed(
         description: doc.description || "",
         authorProfileImage: doc.authorProfileImage || null,
         wheelPreview: doc.wheelPreview || "",
+        likeCount: doc.likeCount || 0,
+        commentCount: doc.commentCount || 0,
       };
     });
   } catch (err) {
@@ -782,7 +824,8 @@ export async function getTagSpaceStats(tag) {
     UnifiedList.countDocuments({
       tags: canonical,
       isSystem: false,
-      $or: [{ "settings.visibility": "public" }, { isPublic: true }],
+      isPublic: { $ne: false },
+      isDeleted: { $ne: true },
     }),
   ]);
   return { wheelCount, askCount, listCount, tagDoc };
@@ -1042,6 +1085,100 @@ export async function getContentStats({
 }
 
 /**
+ * Batch viewer state for many entities in a single DB round-trip.
+ *
+ * Called from the StatsBatchProvider. Given a list of {entityType, entityId},
+ * returns a map keyed `${entityType}:${entityId}` with the current user's
+ * reaction/follow state for each item.
+ *
+ * @param {Object} params
+ * @param {Array<{entityType: string, entityId: string}>} params.items
+ * @param {string|null} params.userId
+ * @param {string|null} params.userEmail
+ */
+export async function getBatchContentStats({ items = [], userId: passedUserId, userEmail }) {
+  await connectMongoDB();
+
+  if (!Array.isArray(items) || items.length === 0) return {};
+
+  // Resolve userId using the same logic as getContentStats
+  let userId = null;
+  try {
+    if (passedUserId && mongoose.Types.ObjectId.isValid(passedUserId)) {
+      userId = new mongoose.Types.ObjectId(passedUserId);
+    } else if (userEmail) {
+      const user = await User.findOne({ email: userEmail }).select("_id").lean();
+      if (user) userId = user._id;
+    } else {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        userId = new mongoose.Types.ObjectId(session.user.id);
+      } else if (session?.user?.email) {
+        const user = await User.findOne({ email: session.user.email })
+          .select("_id")
+          .lean();
+        if (user) userId = user._id;
+      }
+    }
+  } catch (err) {
+    console.error("[getBatchContentStats] user lookup failed:", err);
+  }
+
+  if (!userId) return {};
+
+  // Group valid IDs by entityType
+  const groups = {};
+  const validKeys = new Set();
+  items.forEach(({ entityType, entityId }) => {
+    if (!entityType || !entityId) return;
+    if (!mongoose.Types.ObjectId.isValid(entityId)) return;
+    if (!groups[entityType]) groups[entityType] = [];
+    groups[entityType].push(new mongoose.Types.ObjectId(entityId));
+    validKeys.add(`${entityType}:${entityId}`);
+  });
+
+  if (Object.keys(groups).length === 0) return {};
+
+  const [reactions, follows] = await Promise.all([
+    Reaction.find({
+      entityType: { $in: Object.keys(groups) },
+      entityId: { $in: Object.values(groups).flat() },
+      userId,
+    })
+      .select("entityType entityId reactionType")
+      .lean(),
+    Follow.find({
+      entityType: { $in: Object.keys(groups) },
+      entityId: { $in: Object.values(groups).flat() },
+      userId,
+    })
+      .select("entityType entityId")
+      .lean(),
+  ]);
+
+  const result = {};
+  validKeys.forEach((key) => {
+    result[key] = { like: false, follow: false };
+  });
+
+  reactions.forEach(({ entityType, entityId, reactionType }) => {
+    const key = `${entityType}:${String(entityId)}`;
+    if (result[key] && reactionType === "like") {
+      result[key].like = true;
+    }
+  });
+
+  follows.forEach(({ entityType, entityId }) => {
+    const key = `${entityType}:${String(entityId)}`;
+    if (result[key]) {
+      result[key].follow = true;
+    }
+  });
+
+  return result;
+}
+
+/**
  * Batched wheel-page hydration data.
  * Replaces 3 separate client calls (/api/wheel-analytics/:id,
  * /api/comments/count, getContentStats) with a single parallel DB round-trip.
@@ -1066,21 +1203,15 @@ export async function getWheelMeta(wheelId, userId = null) {
       ? new mongoose.Types.ObjectId(userId)
       : null;
 
-  // Run all 4 independent reads in parallel.
-  const [analytics, commentCount, likeCount, userReact] = await Promise.all([
+  // Run all 4 independent reads in parallel. Like/comment counts are
+  // denormalized on the wheel document, so we skip countDocuments here.
+  const [analytics, wheelDoc, userReact] = await Promise.all([
     WheelAnalytics.findOne({ wheel: wheelObjectId })
       .select("view_count spin_count segmentHits lastSpunAt")
       .lean(),
-    Comment.countDocuments({
-      entityType: "wheel",
-      entityId: wheelObjectId,
-      parentCommentId: null,
-    }),
-    Reaction.countDocuments({
-      entityType: "wheel",
-      entityId: wheelObjectId,
-      reactionType: "like",
-    }),
+    Wheel.findById(wheelObjectId)
+      .select("likeCount commentCount")
+      .lean(),
     userObjectId
       ? Reaction.findOne({
           entityType: "wheel",
@@ -1101,8 +1232,8 @@ export async function getWheelMeta(wheelId, userId = null) {
         : null,
       topSegments: extractTopSegments(analytics?.segmentHits, 5),
     },
-    commentCount: commentCount || 0,
-    reactions: { like: likeCount || 0 },
+    commentCount: wheelDoc?.commentCount || 0,
+    reactions: { like: wheelDoc?.likeCount || 0 },
     reactedByUser: { like: !!userReact },
   };
 }
@@ -1251,73 +1382,94 @@ export async function getRelatedTopicPages(relatedTopics) {
 
 /**
  * Fetches higher-value TopicPages (trending/featured) for global discovery.
- * Refactored to fetch Top 10 from API sources and pick a random subset
- * for diversity on every load. Order is fixed to: Movies, Anime, Games.
+ * Tries external APIs first, then falls back to the local TopicPage collection
+ * so the sidebar never stays empty when APIs are down.
  */
 export async function getTrendingTopicPages(limit = 9) {
-  // Fetch enough to allow for randomization
-  const perType = 12;
-
-  const [moviesRes, animeRes, gamesRes] = await Promise.allSettled([
-    fetchMovies({ page: 1 }),
-    fetchAnime({ page: 1, perPage: perType }),
-    fetchGames({ page: 1, page_size: perType }),
-  ]);
-
+  const countPerType = Math.ceil(limit / 3);
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-  const movies = (
-    moviesRes.status === "fulfilled" ? moviesRes.value || [] : []
-  ).slice(0, 10);
-  const anime = (
-    animeRes.status === "fulfilled" ? animeRes.value || [] : []
-  ).slice(0, 10);
-  const games = (
-    gamesRes.status === "fulfilled" ? gamesRes.value || [] : []
-  ).slice(0, 10);
+  try {
+    const perType = 12;
 
-  // Pick 3 from each for a total of 9 (or adjust based on limit)
-  const countPerType = Math.ceil(limit / 3);
+    const [moviesRes, animeRes, gamesRes] = await Promise.allSettled([
+      fetchMovies({ page: 1 }),
+      fetchAnime({ page: 1, perPage: perType }),
+      fetchGames({ page: 1, page_size: perType }),
+    ]);
 
-  const formattedMovies = shuffle(movies)
-    .slice(0, countPerType)
-    .map((m) => {
-      const title = m.title;
-      return {
-        title,
-        slug: `${m.id}-${slugify(title)}`,
-        type: "movie",
-        cover: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
-        id: m.id,
-      };
-    });
+    const movies = (
+      moviesRes.status === "fulfilled" ? moviesRes.value || [] : []
+    ).slice(0, 10);
+    const anime = (
+      animeRes.status === "fulfilled" ? animeRes.value || [] : []
+    ).slice(0, 10);
+    const games = (
+      gamesRes.status === "fulfilled" ? gamesRes.value || [] : []
+    ).slice(0, 10);
 
-  const formattedAnime = shuffle(anime)
-    .slice(0, countPerType)
-    .map((a) => {
-      const title = a.title?.english || a.title?.romaji || "Anime";
-      return {
-        title,
-        slug: `${a.id}-${slugify(title)}`,
-        type: "anime",
-        cover: a.coverImage?.large,
-        id: a.id,
-      };
-    });
+    const hasApiData = movies.length > 0 || anime.length > 0 || games.length > 0;
+    if (hasApiData) {
+      const formattedMovies = shuffle(movies)
+        .slice(0, countPerType)
+        .map((m) => {
+          const title = m.title;
+          return {
+            title,
+            slug: `${m.id}-${slugify(title)}`,
+            type: "movie",
+            cover: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+            id: m.id,
+          };
+        });
 
-  const formattedGames = shuffle(games)
-    .slice(0, countPerType)
-    .map((g) => ({
-      title: g.name,
-      slug: `${g.id}-${g.slug}`,
-      type: "game",
-      cover: g.background_image,
-      id: g.id,
-    }));
+      const formattedAnime = shuffle(anime)
+        .slice(0, countPerType)
+        .map((a) => {
+          const title = a.title?.english || a.title?.romaji || "Anime";
+          return {
+            title,
+            slug: `${a.id}-${slugify(title)}`,
+            type: "anime",
+            cover: a.coverImage?.large,
+            id: a.id,
+          };
+        });
 
-  // Return in fixed order requested: [Movies] -> [Anime] -> [Games]
-  return [...formattedMovies, ...formattedAnime, ...formattedGames].slice(
-    0,
-    limit,
-  );
+      const formattedGames = shuffle(games)
+        .slice(0, countPerType)
+        .map((g) => ({
+          title: g.name,
+          slug: `${g.id}-${g.slug}`,
+          type: "game",
+          cover: g.background_image,
+          id: g.id,
+        }));
+
+      return [...formattedMovies, ...formattedAnime, ...formattedGames].slice(0, limit);
+    }
+  } catch (err) {
+    console.error("[getTrendingTopicPages] external API fetch failed:", err);
+  }
+
+  // Local DB fallback: highest-value TopicPages (most wheels, recently updated).
+  try {
+    await connectMongoDB();
+    const fallbackPages = await TopicPage.find({
+      cover: { $exists: true, $ne: null },
+      slug: { $exists: true, $ne: null },
+    })
+      .sort({ wheels: -1, updatedAt: -1 })
+      .limit(limit)
+      .select("title slug type cover relatedId wheels")
+      .lean();
+
+    if (fallbackPages.length > 0) {
+      return fallbackPages.map(formatTopicPage);
+    }
+  } catch (err) {
+    console.error("[getTrendingTopicPages] local fallback failed:", err);
+  }
+
+  return [];
 }

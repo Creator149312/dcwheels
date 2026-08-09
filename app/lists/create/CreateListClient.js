@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { List, ArrowLeft, Loader2 } from "lucide-react";
+import { getListUrl } from "@utils/UrlHandler";
 
 export default function CreateListClient() {
   const router = useRouter();
   const { data: session } = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,7 +31,7 @@ export default function CreateListClient() {
       const res = await fetch("/api/unifiedlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() }),
+        body: JSON.stringify({ name: name.trim(), description: description.trim(), isPublic }),
       });
 
       const data = await res.json();
@@ -38,7 +40,7 @@ export default function CreateListClient() {
         throw new Error(data.error || "Something went wrong");
       }
 
-      router.push(`/lists/${data.list.id}`);
+      router.push(getListUrl(data.list));
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -101,6 +103,19 @@ export default function CreateListClient() {
               className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none min-h-[100px]"
               disabled={loading}
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="isPublic"
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500"
+            />
+            <label htmlFor="isPublic" className="text-sm text-muted-foreground">
+              Make this list public
+            </label>
           </div>
 
           <div className="pt-2">

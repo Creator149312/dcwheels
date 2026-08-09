@@ -1,50 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Zap } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 import { getWheelUrl } from "@utils/UrlHandler";
 
-// ── Decision status config ────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  pending: { label: "Pending",  emoji: "⏳", cls: "bg-muted text-muted-foreground hover:border-border" },
-  done:    { label: "Done",     emoji: "✅", cls: "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:border-green-400" },
-  dropped: { label: "Dropped",  emoji: "❌", cls: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:border-red-400" },
-};
-const STATUS_CYCLE = { pending: "done", done: "dropped", dropped: "pending" };
-
-// ── Single decision card (timeline style, with status badge) ──────────────
-export function DecisionTimelineItem({ item, isOwner }) {
-  const [status, setStatus] = useState(item.status || "pending");
-  const [updating, setUpdating] = useState(false);
-
+// ── Single decision card (timeline style) ─────────────────────────────────
+export function DecisionTimelineItem({ item }) {
   const wheelRoute =
     item.wheelId && item.wheelId !== "home"
       ? getWheelUrl({ _id: item.wheelId, slug: item.wheelSlug })
       : "/";
-
-  async function cycleStatus(e) {
-    e.preventDefault();
-    if (!isOwner || updating) return;
-    const next = STATUS_CYCLE[status] || "pending";
-    setStatus(next); // optimistic
-    setUpdating(true);
-    try {
-      const res = await fetch(`/api/decision-log/${item._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
-      if (!res.ok) setStatus(status); // rollback
-    } catch {
-      setStatus(status);
-    } finally {
-      setUpdating(false);
-    }
-  }
-
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   return (
     <div className="relative sm:pl-10">
@@ -58,14 +23,6 @@ export function DecisionTimelineItem({ item, isOwner }) {
             <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 bg-primary/10 text-primary">
               🎯 Spin Result
             </span>
-            <button
-              onClick={cycleStatus}
-              disabled={!isOwner || updating}
-              title={isOwner ? "Click to cycle status: Pending → Done → Dropped" : ""}
-              className={`inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 border border-transparent transition-colors disabled:opacity-50 ${cfg.cls} ${!isOwner ? "cursor-default" : ""}`}
-            >
-              {cfg.emoji} {cfg.label}
-            </button>
           </div>
           <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.createdAt)}</span>
         </div>
@@ -112,7 +69,7 @@ export function DecisionTimeline({ decisions, isOwner }) {
     <div className="relative space-y-4">
       <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-border to-transparent hidden sm:block" />
       {decisions.map((item) => (
-        <DecisionTimelineItem key={item._id} item={item} isOwner={isOwner} />
+        <DecisionTimelineItem key={item.id} item={item} />
       ))}
     </div>
   );

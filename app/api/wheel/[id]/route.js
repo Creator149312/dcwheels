@@ -1,8 +1,8 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { sessionUser } from "@utils/SessionData";
+import mongoose from "mongoose";
 
 // Strip base64 images from segment data before persisting to DB.
 function sanitizeSegments(data) {
@@ -18,24 +18,28 @@ function sanitizeSegments(data) {
 
 export async function PUT(request, { params }) {
   try {
-    // Auth: only the wheel’s original creator may update it. We compare
-    // the session email against the stored `createdBy` so a logged-in
-    // user can’t hijack another user’s wheel by guessing its id.
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id email");
+    if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
 
     const { id } = params;
     const { title, description, data, wheelData, relatedTopics, tags, type } =
       await request.json();
 
     await connectMongoDB();
-    const existing = await Wheel.findById(id).select("createdBy").lean();
+    const existing = await Wheel.findById(id).select("userId createdBy").lean();
     if (!existing) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
-    if (existing.createdBy !== session.user.email) {
+    const wheelUserId = existing.userId ? String(existing.userId) : null;
+
+    // If the wheel has no userId, backfill it from the legacy createdBy email
+    // when the current session matches that email.
+    if (!wheelUserId && existing.createdBy && existing.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
+      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
+    } else if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -71,18 +75,26 @@ export async function PUT(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id email");
+    if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
     const { id } = params;
     const body = await request.json();
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("createdBy isPublic").lean();
+    const wheel = await Wheel.findById(id).select("userId createdBy isPublic").lean();
     if (!wheel) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (wheel.createdBy !== session.user.email)
+    const wheelUserId = wheel.userId ? String(wheel.userId) : null;
+
+    // If the wheel has no userId, backfill it from the legacy createdBy email
+    // when the current session matches that email.
+    if (!wheelUserId && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
+      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
+    } else if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Only allow toggling isPublic via PATCH — full updates go through PUT.
     if (typeof body.isPublic !== "boolean") {
@@ -98,10 +110,25 @@ export async function PATCH(request, { params }) {
 }
 
 export async function GET(request, { params }) {
-  const { id } = params;
-  await connectMongoDB();
-  // .lean() returns a plain JS object instead of a hydrated Mongoose document.
-  // Safe here because we only serialise to JSON — no mongoose instance methods used.
-  const list = await Wheel.findOne({ _id: id }).lean();
-  return NextResponse.json({ list }, { status: 200 });
+  try {
+    const { id } = params;
+    await connectMongoDB();
+
+    let list = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      list = await Wheel.findById(id).lean();
+    }
+    if (!list) {
+      list = await Wheel.findOne({ slug: id }).lean();
+    }
+
+    if (!list) {
+      return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ list }, { status: 200 });
+  } catch (e) {
+    console.error("GET /api/wheel/[id] failed:", e);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
 }

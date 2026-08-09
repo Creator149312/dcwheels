@@ -150,6 +150,7 @@ const wheelSchema = new Schema(
     // viewCount intentionally omitted — view tracking lives in WheelAnalytics.view_count
     // (bot-filtered, no auth required — a more accurate signal than auth-only visit logs)
     likeCount: { type: Number, default: 0 }, // denormalized from Reaction; kept here for fast index-based sorting
+    commentCount: { type: Number, default: 0, min: 0 }, // denormalized from Comment; kept here for fast feed/page reads
     // SEO & Content fields from legacy Page model
     content: [{ type: Object, default: {} }],
     indexed: { type: Boolean, default: false },
@@ -182,6 +183,15 @@ wheelSchema.index({ slug: 1 }, { sparse: true });
 // SCALING: Compound indexes for high-traffic filtering & sorting
 wheelSchema.index({ userId: 1, isPublic: 1, createdAt: -1 });
 wheelSchema.index({ tags: 1, isPublic: 1, likeCount: -1 });
+
+// Partial compound for chronological tag/topic feeds (used by the universal feed).
+// Sortable from the index; skips deleted/private wheels at the index level.
+// Note: this is intentionally partial ({ isDeleted: false, isPublic: true })
+// so it is smaller and faster than the full compound above.
+wheelSchema.index(
+  { tags: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isPublic: true } }
+);
 
 /**
  * Mongoose Hooks for Tag Count Automation

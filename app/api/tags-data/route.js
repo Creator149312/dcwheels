@@ -9,7 +9,7 @@ export async function GET() {
     await connectMongoDB();
 
     // Primary: serve from Tag collection (canonical slugs, sorted by wheelCount).
-    const tagDocs = await Tag.find({ isPublic: true })
+    const tagDocs = await Tag.find({})
       .sort({ wheelCount: -1 })
       .limit(100)
       .select("slug displayName wheelCount")

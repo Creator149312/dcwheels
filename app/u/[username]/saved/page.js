@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSavedListCached } from "@lib/lists";
-import ListDetailClient from "../../../lists/[listId]/ListDetailClient";
+import ListDetailClient from "../../../lists/[id]/[[...slug]]/ListDetailClient";
 import { Bookmark, ShieldCheck } from "lucide-react";
 
 // ISR: saved list data is cached across requests and busted by revalidateTag

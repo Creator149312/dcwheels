@@ -7,7 +7,9 @@ import dynamic from "next/dynamic";
 // SignInBtn, and Notification. None of it is needed until the user performs
 // an action that requires authentication. Lazy-loading removes all of that
 // from the root bundle on every page in the app.
-const LoginModal = dynamic(() => import("@components/LoginModal"), { ssr: false });
+const LoginModal = dynamic(() => import("../components/LoginModal"), {
+  ssr: false,
+});
 
 const LoginPromptContext = createContext();
 
@@ -25,7 +27,7 @@ export function LoginPromptProvider({ children }) {
   return (
     <LoginPromptContext.Provider value={openLoginPrompt}>
       {children}
-      <LoginModal isOpen={isOpen} onClose={closeLoginPrompt} />
+      {isOpen && <LoginModal isOpen={isOpen} onClose={closeLoginPrompt} />}
     </LoginPromptContext.Provider>
   );
 }

@@ -6,6 +6,7 @@ import LazyToaster from "@components/LazyToaster";
 import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
 import ConditionalFooter from "@components/ConditionalFooter";
+import { StatsBatchProvider } from "@components/providers/StatsBatchProvider";
 
 const GAnalytics = dynamic(() => import("./GAnalytics"), { ssr: false });
 const AdsScriptLoader = dynamic(() => import("@components/ads/AdsScriptLoader"), { ssr: false });
@@ -86,7 +87,9 @@ export default function RootLayout({ children }) {
         >
           <SegmentsProvider>
             <LoginPromptProvider>
-              <LayoutShell>{children}</LayoutShell>
+              <StatsBatchProvider>
+                <LayoutShell>{children}</LayoutShell>
+              </StatsBatchProvider>
             </LoginPromptProvider>
           </SegmentsProvider>
         </ThemeProvider>

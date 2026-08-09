@@ -7,7 +7,7 @@
 
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
-import { getFeedItems } from "@/lib/feedService";
+import { getFeedItemsSafe } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
@@ -15,17 +15,13 @@ import {
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
-  fetchTaggedWheels,
-  fetchMovieExtras,
-  fetchAnimeExtras,
-  fetchAnimeCharacters,
-  fetchGameExtras,
 } from "@lib/topicPage";
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-// Cache for 14 days (bi-weekly) to balance content freshness with Vercel duration costs.
-export const revalidate = 1209600;
+// Topic metadata is stable — 30-day revalidation to reduce Vercel invocation costs.
+// Dynamic sections (feed, votes, tracking status) are fetched fresh per request.
+export const revalidate = 2592000;
 
 /**
  * Shared Topic Fetcher (Cached)
@@ -58,20 +54,25 @@ export default async function GenericTopicPage({ params }) {
 
   const displayTitle = resolveTitle(pageDoc);
 
-  // Slow external and DB fetches are kicked off as Promises (no await)
-  const extrasPromise = 
+  // Slow external and DB fetches are kicked off as Promises (no await).
+  // External fetchers are dynamically imported so only the relevant API
+  // client is loaded for the current content type.
+  const extrasPromise =
     type === "movie" || type === "tv"
-      ? fetchMovieExtras(relatedId)
+      ? import("@lib/topicPage").then((m) => m.fetchMovieExtras(relatedId))
       : type === "anime"
-      ? fetchAnimeExtras(relatedId)
+      ? import("@lib/topicPage").then((m) => m.fetchAnimeExtras(relatedId))
       : type === "game"
-      ? fetchGameExtras(relatedId)
-      : Promise.resolve({ trailerKey: null, streaming: [] });
+      ? import("@lib/topicPage").then((m) => m.fetchGameExtras(relatedId))
+      : null;
 
-  const charactersPromise = type === "anime" ? fetchAnimeCharacters(relatedId) : Promise.resolve([]);
+  const charactersPromise =
+    type === "anime"
+      ? import("@lib/topicPage").then((m) => m.fetchAnimeCharacters(relatedId))
+      : null;
+
   const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
-  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, type);
-  const feedPromise = getFeedItems({ 
+  const feedPromise = getFeedItemsSafe({ 
     type, 
     externalId: String(relatedId),
     limit: 9,
@@ -89,7 +90,6 @@ export default async function GenericTopicPage({ params }) {
         tag={displayTitle}
         extrasPromise={extrasPromise}
         relatedPagesPromise={relatedPagesPromise}
-        taggedWheelsPromise={taggedWheelsPromise}
         charactersPromise={charactersPromise}
         feedPromise={feedPromise}
       />

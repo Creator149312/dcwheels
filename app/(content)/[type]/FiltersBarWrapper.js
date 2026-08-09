@@ -61,7 +61,7 @@ export default function FiltersBarWrapper({ genresList = [], type }) {
       ))}
 
       {/* ── Genre dropdown ──────────────────────────────────────────────── */}
-      {genresList.length > 0 && (
+      {genresList.length > 0 && type !== "character" && (
         <select
           value={currentGenre}
           onChange={(e) => pushParams({ genre: e.target.value })}

@@ -44,7 +44,7 @@ export async function POST(req) {
           tags: [title.toLowerCase().replace(/\s+/g, ""), "seeding"],
           contentRef: {
             type: type,
-            externalId: topicPage.externalId,
+            externalId: String(topicPage.relatedId),
             slug: slug,
             image: topicPage.image || ""
           },

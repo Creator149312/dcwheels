@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@/lib/mongodb";
 import Reaction from "@models/reaction";
-import User from "@models/user";
+import { sessionUserId } from "@/utils/SessionData";
 
 export async function GET(req) {
   try {
@@ -32,9 +32,7 @@ export async function GET(req) {
     }
 
     // Resolve the user id (if any) in parallel with the counts aggregation.
-    const currentUserPromise = session?.user?.email
-      ? User.findOne({ email: session.user.email }).select("_id").lean()
-      : Promise.resolve(null);
+    const currentUserId = await sessionUserId();
 
     // Previously this route did `Reaction.find(...).lean()` to load every
     // reaction doc, then reduced in JS. For a wheel with 10k likes that's
@@ -46,10 +44,7 @@ export async function GET(req) {
       { $group: { _id: "$reactionType", count: { $sum: 1 } } },
     ]);
 
-    const [currentUser, countsRows] = await Promise.all([
-      currentUserPromise,
-      countsPromise,
-    ]);
+    const countsRows = await countsPromise;
 
     const counts = countsRows.reduce((acc, row) => {
       acc[row._id] = row.count;
@@ -58,9 +53,9 @@ export async function GET(req) {
 
     // Separate tiny query — exists? — instead of scanning every reaction.
     let reactedByCurrentUser = false;
-    if (currentUser?._id) {
+    if (currentUserId) {
       const mine = await Reaction.exists({
-        userId: currentUser._id,
+        userId: currentUserId,
         entityType,
         entityId: entityIdCast,
       });

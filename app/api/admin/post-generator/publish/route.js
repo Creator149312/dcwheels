@@ -46,19 +46,35 @@ export async function POST(req) {
       const persona = personas[Math.floor(Math.random() * personas.length)];
       
       // Random date within last 6 months
+      const now = new Date();
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       const randomTimestamp = new Date(sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime()));
+
+      const content = (p.content || "").trim().slice(0, 2000);
+      
+      // AUTO-TAG EXTRACTION:
+      // Scan content for #[tag] patterns and add them to the tags array.
+      // E.g. "I love #haikyu!!" -> adds "haikyu" to tags.
+      let tags = Array.isArray(p.tags) ? p.tags : [];
+      const hashtagRegex = /#(\w+)/g;
+      const matches = content.matchAll(hashtagRegex);
+      for (const match of matches) {
+        const tag = match[1].toLowerCase();
+        if (tag && !tags.includes(tag)) {
+          tags.push(tag);
+        }
+      }
 
       return {
         userId: new mongoose.Types.ObjectId(persona.id),
         authorName: persona.name,
         authorHandle: persona.handle,
         authorImage: null,
-        content: (p.content || "").trim().slice(0, 2000),
+        content,
         type: (Array.isArray(p.pollOptions) && p.pollOptions.length >= 2) ? "poll" : "text",
         image: null,
-        tags: Array.isArray(p.tags) ? p.tags.slice(0, 5) : [],
+        tags: tags.slice(0, 7), // Allow a few more tags if extracted from content
         isPublic: true,
         isDeleted: false,
         isShadowBanned: false,

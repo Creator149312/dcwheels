@@ -37,7 +37,8 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true // Enforces uniqueness for email
+      unique: true, // Enforces uniqueness for email
+      lowercase: true, // Normalizes casing at the Mongoose layer
     },
     name: {
       type: String,

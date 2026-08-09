@@ -18,6 +18,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import User from "@models/user";
 import Page from "@models/page";
+import { slugify } from "@lib/slug";
 import mongoose from "mongoose";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "gauravsingh9314@gmail.com";
@@ -40,8 +41,7 @@ const DEFAULT_WHEEL_DATA = {
   mysteryMode: false,
 };
 
-const cleanSlug = (s) =>
-  s.toLowerCase().trim().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+const cleanSlug = slugify;
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 export async function GET() {

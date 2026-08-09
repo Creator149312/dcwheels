@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
@@ -13,7 +13,7 @@ import { getWheelUrl } from "@utils/UrlHandler";
  * WheelFeedCard — renders a full-width social feed card for a wheel.
  * Mimics the look of PostCard to sit interchangeably in the same stream.
  */
-export default function WheelFeedCard({ wheel }) {
+function WheelFeedCard({ wheel }) {
   const { data: session } = useSession();
   const [isHidden, setIsHidden] = useState(false);
   
@@ -66,10 +66,12 @@ export default function WheelFeedCard({ wheel }) {
         </div>
 
         {/* Action Menu */}
-        <WheelMenu 
-          wheelId={wheel._id || wheel.id} 
+        <WheelMenu
+          wheelId={wheel._id || wheel.id}
           isPublic={wheel.isPublic}
           authorHandle={authorHandle}
+          createdBy={wheel.createdBy || null}
+          userId={wheel.userId || null}
           onDeleted={() => setIsHidden(true)}
         />
       </div>
@@ -133,3 +135,8 @@ export default function WheelFeedCard({ wheel }) {
     </div>
   );
 }
+
+// Memo prevents unnecessary re-renders when InfiniteFeedStream's parent state
+// changes (e.g., scroll/load-more). Ads are rendered outside this component,
+// so they are unaffected. Internal hooks/state still work normally.
+export default memo(WheelFeedCard);

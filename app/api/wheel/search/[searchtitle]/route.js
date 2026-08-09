@@ -50,6 +50,7 @@ export async function GET(request, { params }) {
             {
               $project: {
                 title: 1,
+                slug: 1,
                 segmentCount: { $size: { $ifNull: ["$data", []] } },
                 score: { $meta: "searchScore" },
               },
@@ -68,6 +69,7 @@ export async function GET(request, { params }) {
     const list = results.map((r) => ({
       _id: r._id,
       title: r.title,
+      slug: r.slug,
       score: r.score,
       segmentCount: r.segmentCount,
       data: { length: r.segmentCount },

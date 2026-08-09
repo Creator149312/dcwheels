@@ -14,10 +14,10 @@ export default function TrailerButton({ trailerKey, title, className = "" }) {
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-foreground bg-secondary/80 hover:bg-secondary border border-border/80 rounded-xl transition duration-200 shadow-sm active:scale-95 cursor-pointer ${className}`}
+        className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 md:px-5 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold border border-border bg-muted/50 text-foreground hover:bg-muted active:scale-95 transition-colors duration-150 disabled:opacity-50 shadow-sm ${className}`}
       >
-        <Play size={14} className="fill-current text-foreground" />
-        Watch Trailer
+        <Play size={15} className="fill-current text-foreground" />
+        Trailer
       </button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

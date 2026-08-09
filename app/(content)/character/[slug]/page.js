@@ -6,7 +6,7 @@
 
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
-import { getFeedItems } from "@/lib/feedService";
+import { getFeedItemsSafe } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
@@ -14,7 +14,6 @@ import {
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
-  fetchTaggedWheels,
 } from "@lib/topicPage";
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
@@ -54,8 +53,7 @@ export default async function CharacterPage({ params }) {
 
   // Kicked off as async Promises to support fast loading and Suspense streaming
   const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
-  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "character");
-  const feedPromise = getFeedItems({ 
+  const feedPromise = getFeedItemsSafe({ 
     tag: displayTitle,
     limit: 9,
     docType: "post,wheel"
@@ -72,7 +70,6 @@ export default async function CharacterPage({ params }) {
         tag={displayTitle}
         extrasPromise={Promise.resolve({ trailerKey: null, streaming: [] })}
         relatedPagesPromise={relatedPagesPromise}
-        taggedWheelsPromise={taggedWheelsPromise}
         charactersPromise={Promise.resolve([])}
         feedPromise={feedPromise}
       />

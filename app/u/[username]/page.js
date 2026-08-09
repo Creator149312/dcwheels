@@ -8,7 +8,7 @@ import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { getPublicSpinStoriesForUser } from "@lib/spinStories";
 import { getPostsForUser } from "@lib/posts";
 import { getProfileLists, getProfileWheels, buildDashboardData } from "@lib/dashboard";
-import { getFeedItems } from "@lib/feedService";
+import { getFeedItemsSafe } from "@/lib/feedService";
 import ProfileHeader from "@components/ProfileHeader";
 import ProfileTabs from "@components/ProfileTabs";
 
@@ -102,21 +102,25 @@ export default async function ProfilePage({ params }) {
   const session = await getServerSession(authOptions);
   const isOwner = session?.user?.email === user.email;
 
+  const FEED_PAGE_SIZE = 8;
+
   // 2. Fetch initial slices of data according to ownership permissions
   const [allWheels, listsList, allPosts, storiesList] = await Promise.all([
-    getFeedItems({ userId: String(user._id), docType: "wheel", limit: 13, showPrivate: isOwner }),
+    getFeedItemsSafe({ userId: String(user._id), docType: "wheel", limit: FEED_PAGE_SIZE + 1, showPrivate: isOwner }),
     getProfileLists(String(user._id), !isOwner),
-    getFeedItems({ userId: String(user._id), docType: "post", limit: 11, showPrivate: isOwner }),
+    getFeedItemsSafe({ userId: String(user._id), docType: "post", limit: FEED_PAGE_SIZE + 1, showPrivate: isOwner }),
     getPublicSpinStoriesForUser(String(user._id), 20, isOwner),
   ]);
 
   // Process wheels for pagination
-  const wheels = allWheels.slice(0, 12);
-  const wheelsCursor = allWheels.length > 12 ? allWheels[11].createdAt : null;
+  const wheels = allWheels.slice(0, FEED_PAGE_SIZE);
+  const wheelsNextItem = allWheels.length > FEED_PAGE_SIZE ? allWheels[FEED_PAGE_SIZE] : null;
+  const wheelsCursor = wheelsNextItem ? `${wheelsNextItem.createdAt}|${wheelsNextItem._id || wheelsNextItem.id}` : null;
 
   // Process posts for pagination
-  const posts = allPosts.slice(0, 10);
-  const postsCursor = allPosts.length > 10 ? allPosts[9].createdAt : null;
+  const posts = allPosts.slice(0, FEED_PAGE_SIZE);
+  const postsNextItem = allPosts.length > FEED_PAGE_SIZE ? allPosts[FEED_PAGE_SIZE] : null;
+  const postsCursor = postsNextItem ? `${postsNextItem.createdAt}|${postsNextItem._id || postsNextItem.id}` : null;
 
   // 3. Calculate stats based on ownership
   const stats = isOwner 

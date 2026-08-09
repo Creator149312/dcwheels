@@ -35,11 +35,14 @@ export const prepareData = (
   mysteryMode = false
 ) => {
   const result = [];
-  const colDataLength = colData.length;
+  const safeColData = Array.isArray(colData) && colData.length > 0
+    ? colData
+    : ["#EE4040", "#F0CF50", "#815CD1", "#3DA36E", "#E68C22", "#4185F4"];
+  const colDataLength = safeColData.length;
   for (let i = 0; i < segData.length; i++) {
     const seg = mysteryMode ? "❓" : segData[i].text;
     const colIndex = i % colDataLength;
-    const col = colData[colIndex];
+    const col = safeColData[colIndex];
     // Override-or-fallback colour model:
     //   • if the segment has an explicit `color`, it wins (per-segment override)
     //   • otherwise the wheel’s palette (segColors) drives the slice colour

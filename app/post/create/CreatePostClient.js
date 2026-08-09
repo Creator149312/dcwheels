@@ -6,7 +6,82 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, X, Loader2, ImageIcon, BarChart2, Earth, Lock } from "lucide-react";
 import Link from "next/link";
 import { compressImage } from "@utils/imageCompression";
+import { getListUrl } from "@utils/UrlHandler";
 import Image from "next/image";
+
+function stripHtml(raw) {
+  if (!raw) return "";
+  return raw.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Run up to `limit` async tasks in parallel. Prevents overwhelming Blob
+// with many concurrent uploads while still finishing multiple images quickly.
+async function mapLimit(items, limit, iter) {
+  if (items.length === 0) return [];
+  const results = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= items.length) return;
+      results[idx] = await iter(items[idx], idx);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// Upload a data: URL to Vercel Blob with exponential-backoff retries.
+// `mode` is "post" (480/780/1080 variants) or "poll" (240/480 variants).
+async function uploadImageWithRetry(dataUrl, mode, { retries = 2, onProgress } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      onProgress?.({ status: "uploading", attempt });
+      const res = await fetch("/api/post/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl, mode }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        throw new Error(error || `Image upload failed (${res.status})`);
+      }
+      const result = await res.json();
+      onProgress?.({ status: "done", attempt });
+      return result;
+    } catch (err) {
+      lastError = err;
+      onProgress?.({ status: "error", attempt, error: err.message });
+      if (attempt >= retries) break;
+      // Exponential backoff with jitter: ~500ms, ~1s, ~2s
+      const base = 500 * Math.pow(2, attempt);
+      const jitter = 0.75 + Math.random() * 0.5;
+      await sleep(Math.round(base * jitter));
+    }
+  }
+  throw lastError;
+}
+
+// Collect every image that still needs to be uploaded to Blob.
+function collectPendingUploads({ imagePreview, pollOptions, hasPoll }) {
+  const uploads = [];
+  if (imagePreview && imagePreview.startsWith("data:")) {
+    uploads.push({ type: "main", mode: "post", source: imagePreview });
+  }
+  if (hasPoll) {
+    pollOptions.forEach((opt, idx) => {
+      if (opt.image?.startsWith("data:")) {
+        uploads.push({ type: "poll", mode: "poll", index: idx, source: opt.image });
+      }
+    });
+  }
+  return uploads;
+}
 
 function CreatePostForm() {
   const router = useRouter();
@@ -17,21 +92,38 @@ function CreatePostForm() {
   const cr_slug = searchParams.get("cr_slug");
   const cr_title = searchParams.get("cr_title");
   const cr_image = searchParams.get("cr_image");
+  const cr_entity_type = searchParams.get("cr_entity_type");
+  const cr_entity_id = searchParams.get("cr_entity_id");
+  const cr_entity_slug = searchParams.get("cr_entity_slug");
+  const cr_entity_title = searchParams.get("cr_entity_title");
+  const cr_entity_image = searchParams.get("cr_entity_image");
+  const cr_segments = searchParams.get("cr_segments");
+  const spinResult = searchParams.get("result");
+  const spinImage = searchParams.get("resultImage");
+  const wheelShareTitle = searchParams.get("wheelTitle");
+  const wheelShareId = searchParams.get("wheelId");
   const postId = searchParams.get("postId");
 
   const { data: session, status } = useSession();
   
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
+  const [imageVariants, setImageVariants] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef(null);
   const [hasPoll, setHasPoll] = useState(false);
-  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [pollOptions, setPollOptions] = useState([
+    { text: "", image: "" },
+    { text: "", image: "" },
+  ]);
   const [isPublic, setIsPublic] = useState(true);
+  const [pollImagePreviews, setPollImagePreviews] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
 
   const [ogMeta, setOgMeta] = useState(null);
   const [ogLoading, setOgLoading] = useState(false);
@@ -84,7 +176,7 @@ function CreatePostForm() {
                 title: list.name,
                 description: list.description || `Check out this list: ${list.name}`,
                 image: list.image || null,
-                url: `/lists/${id}`
+                url: getListUrl(list)
               });
             }
           }
@@ -105,10 +197,17 @@ function CreatePostForm() {
             const post = await res.json();
             setText(post.content);
             setImage(post.image || "");
+            setImageVariants(post.imageVariants || null);
             setImagePreview(post.image || "");
             setHasPoll(post.hasPoll || false);
             if (post.hasPoll && post.pollOptions) {
-              setPollOptions(post.pollOptions.map((o) => o.text || ""));
+              setPollOptions(
+                post.pollOptions.map((o) => ({
+                  text: o.text || "",
+                  image: o.image || "",
+                  imageVariants: o.imageVariants || null,
+                }))
+              );
             }
             setIsPublic(post.isPublic !== false);
             setOgMeta(post.ogMeta || null);
@@ -171,11 +270,21 @@ function CreatePostForm() {
     const matches = text.match(urlRegex);
     const firstUrl = matches?.[0];
 
-    if (firstUrl && (!ogMeta || ogMeta.url !== firstUrl)) {
+    // Normalize URLs so e.g. "example.com" and "example.com/" don't cause refetch loops.
+    const normalizeUrl = (url) => {
+      try {
+        return new URL(url).toString();
+      } catch {
+        return url;
+      }
+    };
+    const normalizedFirstUrl = firstUrl ? normalizeUrl(firstUrl) : null;
+
+    if (normalizedFirstUrl && (!ogMeta || normalizeUrl(ogMeta.url) !== normalizedFirstUrl)) {
       const timer = setTimeout(async () => {
         setOgLoading(true);
         try {
-          const res = await fetch(`/api/post/og-preview?url=${encodeURIComponent(firstUrl)}`);
+          const res = await fetch(`/api/post/og-preview?url=${encodeURIComponent(normalizedFirstUrl)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.title) setOgMeta(data);
@@ -187,10 +296,23 @@ function CreatePostForm() {
         }
       }, 800);
       return () => clearTimeout(timer);
-    } else if (!firstUrl) {
+    } else if (!normalizedFirstUrl) {
       setOgMeta(null);
     }
   }, [text, imagePreview, hasPoll, ogMeta]);
+
+  // Pre-fill composer when sharing a wheel spin result.
+  useEffect(() => {
+    if (initialLoadDone && spinResult && !text) {
+      const cleanResult = stripHtml(spinResult);
+      const wheelName = wheelShareTitle || cr_title || "a wheel";
+      setText(`🎉 I spun "${wheelName}" and got: ${cleanResult}`);
+      if (spinImage) {
+        setImage(spinImage);
+        setImagePreview(spinImage);
+      }
+    }
+  }, [initialLoadDone, spinResult, spinImage, wheelShareTitle, cr_title, text]);
 
   useEffect(() => {
     const draft = sessionStorage.getItem("post-draft");
@@ -221,22 +343,81 @@ function CreatePostForm() {
   }, [text, imagePreview]);
 
   const handleAddPollOption = useCallback(() => {
-    if (pollOptions.length < 6) {
-      setPollOptions([...pollOptions, ""]);
-    }
-  }, [pollOptions]);
+    setPollOptions((prev) =>
+      prev.length < 6 ? [...prev, { text: "", image: "" }] : prev
+    );
+  }, []);
 
   const handleRemovePollOption = useCallback((index) => {
-    if (pollOptions.length > 2) {
-      setPollOptions(pollOptions.filter((_, i) => i !== index));
-    }
-  }, [pollOptions]);
+    setPollOptions((prev) =>
+      prev.length > 2 ? prev.filter((_, i) => i !== index) : prev
+    );
+  }, []);
 
   const handlePollOptionChange = useCallback((index, value) => {
-    const updated = [...pollOptions];
-    updated[index] = value;
-    setPollOptions(updated);
-  }, [pollOptions]);
+    setPollOptions((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], text: value };
+      return updated;
+    });
+  }, []);
+
+  const handlePollOptionImageSelect = useCallback(
+    async (index, file) => {
+      if (!file) return;
+      setError("");
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      const maxSizeBytes = 5 * 1024 * 1024;
+
+      if (!allowedTypes.includes(file.type)) {
+        setError("Only JPG, PNG, and WEBP images are allowed for poll options.");
+        return;
+      }
+      if (file.size > maxSizeBytes) {
+        setError("Poll option image must be less than 5MB.");
+        return;
+      }
+
+      try {
+        const compressed = await compressImage(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 800,
+          useWebWorker: true,
+        });
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(compressed);
+        });
+
+        setPollOptions((prev) => {
+          const updated = [...prev];
+          updated[index] = { ...updated[index], image: dataUrl, imageVariants: null };
+          return updated;
+        });
+        setPollImagePreviews((prev) => ({ ...prev, [index]: dataUrl }));
+      } catch (err) {
+        setError("Poll option image preparation failed: " + err.message);
+      }
+    },
+    []
+  );
+
+  const handleRemovePollOptionImage = useCallback((index) => {
+    setPollOptions((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], image: "", imageVariants: null };
+      return updated;
+    });
+    setPollImagePreviews((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  }, []);
 
   const handleImageSelect = useCallback(async (e) => {
     const file = e.target.files?.[0];
@@ -292,6 +473,7 @@ function CreatePostForm() {
 
   const handleRemoveImage = useCallback(() => {
     setImage("");
+    setImageVariants(null);
     setImagePreview("");
     if (imageInputRef.current) imageInputRef.current.value = "";
   }, []);
@@ -327,7 +509,7 @@ function CreatePostForm() {
     }
 
     if (hasPoll) {
-      const activeOptions = pollOptions.filter((o) => o.trim());
+      const activeOptions = pollOptions.filter((o) => o.text?.trim());
       if (activeOptions.length < 2) {
         setError("Poll must have at least 2 options");
         return;
@@ -337,7 +519,7 @@ function CreatePostForm() {
         return;
       }
       for (const opt of activeOptions) {
-        if (opt.length > 65) {
+        if (opt.text.length > 65) {
           setError("Each poll option must be 65 characters or less");
           return;
         }
@@ -345,33 +527,82 @@ function CreatePostForm() {
     }
 
     setLoading(true);
-    try {
-      let finalImageUrl = image;
+    setError("");
+    setUploadProgress(0);
+    setUploadStage("");
 
-      if (imagePreview && imagePreview.startsWith("data:")) {
-        const uploadRes = await fetch("/api/post/upload-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl: imagePreview }),
+    try {
+      let finalImageUrl = image || null;
+      let finalImageVariants = imageVariants || null;
+      let finalPollOptions = [...pollOptions];
+
+      const pending = collectPendingUploads({ imagePreview, pollOptions, hasPoll });
+
+      if (pending.length > 0) {
+        setUploadStage(`Uploading ${pending.length} image${pending.length > 1 ? "s" : ""}...`);
+        let completed = 0;
+
+        await mapLimit(pending, 3, async (item) => {
+          const result = await uploadImageWithRetry(item.source, item.mode, {
+            retries: 2,
+            onProgress: ({ status, attempt }) => {
+              if (status === "uploading" && attempt > 0) {
+                setUploadStage(
+                  `Retrying ${item.type === "main" ? "main" : "poll"} image upload (${attempt}/2)...`
+                );
+              }
+            },
+          });
+
+          completed += 1;
+          setUploadProgress(Math.round((completed / pending.length) * 100));
+
+          if (item.type === "main") {
+            finalImageUrl = result.url;
+            finalImageVariants = result.variants || { sm: result.url, md: result.url, lg: result.url };
+            setImage(finalImageUrl);
+            setImageVariants(finalImageVariants);
+          } else {
+            finalPollOptions[item.index] = {
+              ...finalPollOptions[item.index],
+              image: result.url,
+              imageVariants: result.variants || { sm: result.url, md: result.url },
+            };
+          }
         });
 
-        if (!uploadRes.ok) throw new Error("Image upload failed");
-        const { url } = await uploadRes.json();
-        finalImageUrl = url;
-        setImage(url);
+        setPollOptions(finalPollOptions);
       } else if (!imagePreview) {
         finalImageUrl = null;
+        finalImageVariants = null;
       }
 
-      const contentRefBase = (cr_type && cr_id) ? {
+      // Prefer the wheel we span on as the primary contentRef, but fall back
+      // to an entity segment or any other source passed via query params.
+      const wheelContentRef = (cr_type === "wheel" && cr_id) ? {
+        type: "wheel",
+        externalId: cr_id,
+        slug: cr_slug || "",
+        title: wheelShareTitle || cr_title || "",
+        image: cr_image || null,
+        segmentCount: cr_segments ? parseInt(cr_segments, 10) || 0 : 0,
+      } : null;
+
+      const entityContentRef = (cr_entity_type && cr_entity_id) ? {
+        type: cr_entity_type,
+        externalId: cr_entity_id,
+        slug: cr_entity_slug || "",
+        title: cr_entity_title || "",
+        image: cr_entity_image || null,
+      } : ((cr_type && cr_type !== "wheel" && cr_id) ? {
         type: cr_type,
         externalId: cr_id,
         slug: cr_slug || "",
         title: cr_title || "",
         image: cr_image || null,
-      } : null;
+      } : null);
 
-      // If we detected an internal wheel/list, set it as contentRef for better rendering
+      // If we detected an internal wheel/list from text, let it win.
       const isInternal = ogMeta?.internalId && (ogMeta.type === "wheel" || ogMeta.type === "list");
       const finalContentRef = isInternal ? {
         type: ogMeta.type,
@@ -379,17 +610,23 @@ function CreatePostForm() {
         slug: ogMeta.url,
         title: ogMeta.title,
         image: ogMeta.image,
-      } : contentRefBase;
+      } : (wheelContentRef || entityContentRef || null);
 
       const payload = {
         content: rawText,
         image: finalImageUrl,
+        imageVariants: finalImageVariants,
         contentRef: finalContentRef,
         hasPoll,
         pollOptions: hasPoll
-          ? pollOptions
-              .filter((o) => o.trim())
-              .map((text) => ({ text: text.trim(), voteCount: 0 }))
+          ? finalPollOptions
+              .filter((o) => o.text?.trim())
+              .map((o) => ({
+                text: o.text.trim(),
+                image: o.image || null,
+                imageVariants: o.imageVariants || null,
+                voteCount: 0,
+              }))
           : [],
         tags: extractedTags,
         isPublic,
@@ -590,8 +827,8 @@ function CreatePostForm() {
 
                 {hasPoll && (
                   <div className="rounded-2xl border border-border border-l-4 border-l-primary bg-muted/20 p-4 mt-3 relative group transition-colors focus-within:border-l-primary">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setHasPoll(false)}
                       className="absolute top-3 right-3 text-muted-foreground hover:text-foreground opacity-50 hover:opacity-100 transition"
                     >
@@ -599,32 +836,75 @@ function CreatePostForm() {
                     </button>
                     <div className="space-y-3 pr-6">
                       {pollOptions.map((option, idx) => (
-                        <div key={idx} className="flex gap-2">
+                        <div key={idx} className="flex gap-2 items-start">
                           <input
                             type="text"
-                            value={option}
+                            value={option.text}
                             onChange={(e) => handlePollOptionChange(idx, e.target.value)}
                             placeholder={`Option ${idx + 1}`}
                             maxLength={65}
                             className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
                           />
-                          {pollOptions.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePollOption(idx)}
-                              className="p-2.5 text-muted-foreground hover:bg-muted rounded-xl transition"
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {option.image ? (
+                              <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border shrink-0">
+                                <img
+                                  src={pollImagePreviews[idx] || option.image}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePollOptionImage(idx)}
+                                  className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition"
+                                  aria-label="Remove option image"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <input
+                                  type="file"
+                                  id={`poll-opt-img-${idx}`}
+                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handlePollOptionImageSelect(idx, file);
+                                    e.target.value = "";
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`poll-opt-img-${idx}`}
+                                  className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition cursor-pointer shrink-0"
+                                  title="Add image"
+                                >
+                                  <ImageIcon size={16} />
+                                </label>
+                              </>
+                            )}
+                            {pollOptions.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePollOption(idx)}
+                                className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-muted rounded-lg transition"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
+                    <p className="text-[11px] text-muted-foreground/75 mt-3 px-2">
+                      Add an image to each option to create a visual VS poll.
+                    </p>
                     {pollOptions.length < 6 && (
                       <button
                         type="button"
                         onClick={handleAddPollOption}
-                        className="mt-3 flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition px-2"
+                        className="mt-2 flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition px-2"
                       >
                         <Plus size={16} /> Add Option
                       </button>
@@ -719,6 +999,20 @@ function CreatePostForm() {
               </button>
             </div>
           </div>
+
+          {loading && uploadStage && (
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-[width] duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+                {uploadStage} {uploadProgress}%
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </main>

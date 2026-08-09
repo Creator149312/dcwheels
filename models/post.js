@@ -18,6 +18,17 @@ const pollOptionSchema = new Schema({
     required: true,
     maxlength: 65,
   },
+  image: {
+    type: String,
+    default: null,
+  },
+  // Poll option image variants: sm=240px, md=480px. Legacy fallback to `image`.
+  imageVariants: {
+    sm: { type: String, default: null },
+    md: { type: String, default: null },
+  },
+
+  // Denormalized vote tally for this option. Updated atomically by the vote API.
   voteCount: {
     type: Number,
     default: 0,
@@ -63,9 +74,17 @@ const postSchema = new Schema(
     },
     
     // Optional image/media
+    // Legacy posts only store `image`. New posts store `imageVariants` and keep
+    // `image` pointing to the largest variant for backward compatibility.
     image: {
       type: String,
       default: null,
+    },
+
+    imageVariants: {
+      sm: { type: String, default: null }, // 480px
+      md: { type: String, default: null }, // 780px
+      lg: { type: String, default: null }, // 1080px
     },
     
     // Link to content (anime, movie, game, wheel)
@@ -78,6 +97,10 @@ const postSchema = new Schema(
       slug: String,        // e.g. "1291608-dhurandhar" — full URL slug
       title: String,       // Cached title
       image: String,       // Cached cover image
+      segmentCount: {      // Wheel-only: number of segments for preview cards
+        type: Number,
+        default: 0,
+      },
     },
     
     // OpenGraph Link Preview metadata
@@ -219,6 +242,12 @@ postSchema.index(
 postSchema.index(
   { tags: 1, createdAt: -1 },
   { partialFilterExpression: { isDeleted: false, shadowBanned: false, isPublic: true } }
+);
+
+// Compound for public user/profile feeds that filter by userId + isPublic + sort by recency.
+postSchema.index(
+  { userId: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, shadowBanned: false } }
 );
 
 /**

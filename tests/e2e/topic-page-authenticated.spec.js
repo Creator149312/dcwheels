@@ -23,7 +23,7 @@ test.describe('Topic Page - Authenticated Testing', () => {
     const signInButton = page.locator('button:has-text("Sign in"), button:has-text("Login")').first();
     if (await signInButton.isVisible()) {
       await signInButton.click();
-      // Wait for navigation back to home or dashboard or check for user menu
+      // Wait for navigation back to home or profile or check for user menu
       await page.waitForTimeout(5000);
       
       // Navigate to the target Topic Page

@@ -6,15 +6,29 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Home, Compass, Plus, Search, LayoutGrid, List, User, Moon, Sun, Menu, X, MessageCircle, Disc3, Bookmark } from "lucide-react";
+import {
+  Home,
+  HomeIcon,
+  Compass,
+  Plus,
+  X,
+  List,
+  User,
+  UserIcon,
+  Menu,
+  MessageCircle,
+  Disc3,
+  Bookmark,
+  BookmarkIcon,
+  LayoutGrid,
+} from "lucide-react";
 
 // TagsCarousel has seasonal logic, scroll refs and useMemo — lazy-load so it
 // doesn't block the initial mobile nav chunk.
 const TagsCarousel = dynamic(() => import("@components/TagsCarousel"));
 
-// MobileSearchBar brings debounce + API fetch logic — only needed on interaction.
-const MobileSearchBar = dynamic(() => import("@components/MobileSearchBar"));
+// SearchBar brings debounce + API fetch logic — only needed on interaction.
+const SearchBar = dynamic(() => import("@components/SearchBar"));
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
@@ -23,30 +37,31 @@ const NotificationBell = dynamic(
 
 const SCROLL_THRESHOLD = 10;
 
-function BottomNavItem({ href, icon, label, active, onClick }) {
-  const pathname = usePathname();
-  const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
+function BottomNavItem({ href, icon, activeIcon, label, active, onClick, prefetch = true }) {
+  const Icon = active && activeIcon ? activeIcon : icon;
+  const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors active:scale-95 ${
     active ? "text-primary" : "text-muted-foreground"
   }`;
 
   if (onClick && !href) {
     return (
       <button onClick={onClick} className={cls} aria-label={label}>
-        {icon}
+        <Icon size={18} />
         <span>{label}</span>
       </button>
     );
   }
 
   return (
-    <Link 
-      href={href || "#"} 
+    <Link
+      href={href || "#"}
+      prefetch={prefetch}
       className={cls}
       onClick={(e) => {
         if (onClick) onClick(e);
       }}
     >
-      {icon}
+      <Icon size={18} />
       <span>{label}</span>
     </Link>
   );
@@ -55,7 +70,6 @@ function BottomNavItem({ href, icon, label, active, onClick }) {
 export default function MobileNavChrome({ onToggleSidebar }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { resolvedTheme, setTheme } = useTheme();
 
   const [isVisible, setIsVisible] = useState(true);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
@@ -63,12 +77,10 @@ export default function MobileNavChrome({ onToggleSidebar }) {
   const [mounted, setMounted] = useState(false);
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
-  
+
   const profileUrl = session?.user?.username || session?.user?.name
     ? `/u/${encodeURIComponent((session.user.username || session.user.name).toLowerCase())}`
     : null;
-
-  const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
     const updateVisibility = (currentY) => {
@@ -103,7 +115,9 @@ export default function MobileNavChrome({ onToggleSidebar }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close library sheet when navigating
   useEffect(() => { 
@@ -144,8 +158,8 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                   priority
                   className="h-8 w-8"
                 />
-                  <span className="text-lg font-black tracking-tighter text-foreground uppercase">
-                  Spin<span className="text-blue-600">Papa</span>
+                <span className="text-lg font-black tracking-tighter text-foreground uppercase">
+                  Spin<span className="text-primary">Papa</span>
                 </span>
               </Link>
             </div>
@@ -154,16 +168,9 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               <div className="flex items-center h-10">
                 <NotificationBell />
               </div>
-              <button
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-2 rounded-lg text-muted-foreground hover:bg-muted h-10 w-10 flex items-center justify-center transition-colors"
-                aria-label={"Toggle Theme"}
-              >
-                {mounted ? (isDark ? <Sun size={20} /> : <Moon size={20} />) : <Moon size={20} className="opacity-0" />}
-              </button>
 
               <div className="flex items-center h-10">
-                <MobileSearchBar />
+                <SearchBar />
               </div>
             </div>
           </div>
@@ -172,7 +179,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         {/* /explore renders its own mood chip row; suppress the global tag
             carousel on that route to avoid two stacked chip rows. */}
         {!pathname.startsWith("/explore") && (
-          <div className="h-11 bg-background/95 backdrop-blur-md border-b border-border">
+          <div className="h-9 bg-background/95 backdrop-blur-md border-b border-border">
             <TagsCarousel />
           </div>
         )}
@@ -279,16 +286,17 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         <div className="h-12 px-2 grid grid-cols-5 items-center">
           <BottomNavItem
             href="/"
-            label={"Home"}
-            icon={<Home size={18} />}
+            label="Home"
+            icon={Home}
+            activeIcon={HomeIcon}
             active={pathname === "/"}
             onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
 
           <BottomNavItem
             href="/explore"
-            label={"Explore"}
-            icon={<Compass size={18} />}
+            label="Explore"
+            icon={Compass}
             active={pathname.startsWith("/explore")}
             onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
@@ -298,30 +306,32 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               setLibraryOpen(false);
               setCreateSheetOpen((v) => !v);
             }}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-all ${
               createSheetOpen ? "text-primary scale-110" : "text-muted-foreground hover:text-primary"
             }`}
-            aria-label={"Create"}
+            aria-label={createSheetOpen ? "Close" : "Create"}
           >
-            <div className={`p-1.5 rounded-full transition-colors ${createSheetOpen ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-               <Plus size={20} />
+            <div className={`p-1.5 rounded-full transition-colors ${createSheetOpen ? "bg-primary text-primary-foreground rotate-45" : "bg-muted"}`}>
+              {createSheetOpen ? <X size={20} /> : <Plus size={20} />}
             </div>
-            <span>{"Create"}</span>
+            <span>{createSheetOpen ? "Close" : "Create"}</span>
           </button>
 
           <BottomNavItem
             href={profileUrl ? `${profileUrl}/saved` : "/login"}
-            label={"Saved"}
-            icon={<Bookmark size={18} />}
+            label="Saved"
+            icon={Bookmark}
+            activeIcon={BookmarkIcon}
             active={pathname.endsWith("/saved")}
             onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
 
           <BottomNavItem
             href={profileUrl || "/login"}
-            label={"Profile"}
-            icon={<User size={18} />}
-            active={pathname.startsWith("/u/") || pathname.startsWith("/profile") || pathname.startsWith("/dashboard")}
+            label="Profile"
+            icon={User}
+            activeIcon={UserIcon}
+            active={pathname.startsWith("/u/") || pathname.startsWith("/profile")}
             onClick={() => { setLibraryOpen(false); setCreateSheetOpen(false); }}
           />
         </div>

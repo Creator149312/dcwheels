@@ -132,6 +132,9 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
             entityType="wheel"
             entityId={wheelId}
             session={session}
+            knownCounts={{
+              like: initialMeta?.reactions?.like || 0,
+            }}
             initialStats={
               initialMeta
                 ? {

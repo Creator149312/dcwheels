@@ -42,7 +42,7 @@ export default function TagsPage() {
             </h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            Browse our full collection of spin wheels by category.
+            Discover a world of custom wheels, interactive lists, and community discussions.
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function TagsPage() {
                         {displayName}
                       </h3>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mt-0.5">
-                        {typeof tagObj === 'object' && tagObj.count ? `${tagObj.count} Wheels` : 'Explore Wheels'}
+                        {typeof tagObj === 'object' && tagObj.count ? `${tagObj.count} Items` : 'View Space'}
                       </p>
                     </div>
                     <ChevronRight
@@ -86,6 +86,18 @@ export default function TagsPage() {
                       className="text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0"
                     />
                   </Link>
+                  {/* Ads Row at specific intervals */}
+                  {(index + 1) === 16 && (
+                    <div className="col-span-full my-6 flex justify-center">
+                       <AdsUnit slot="9365287711" />
+                    </div>
+                  )}
+
+                  {(index + 1) === 32 && (
+                    <div className="col-span-full my-6 flex justify-center">
+                       <AdsUnit slot="9365287711" />
+                    </div>
+                  )}
 
                   {/* Inline Native Ad Slot */}
                   {/* {showInlineAd && (

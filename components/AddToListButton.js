@@ -2,89 +2,34 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
-import { Plus, Check, Bookmark, List, X, Loader2 } from "lucide-react";
-
-function getListLabel() {
-  return "Save to List";
-}
-
-// Binary status config: want → done → want
-// Matches major platform patterns (Facebook, Instagram, Spotify)
-const getStatusConfig = (itemType) => {
-  let doneLabel = "Done";
-  if (itemType === "game") doneLabel = "Played";
-  if (itemType === "movie" || itemType === "tv" || itemType === "anime") doneLabel = "Watched";
-  if (itemType === "character") doneLabel = "Favourite";
-
-  return {
-    want: {
-      label: "Saved",
-      icon: <Bookmark size={16} />,
-      next: "done",
-      className: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
-    },
-    done: {
-      label: doneLabel,
-      icon: <Check size={16} />,
-      next: "want",
-      className: "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600",
-    },
-    // BACKWARD COMPAT: Accept legacy "in-progress", map to "done"
-    "in-progress": {
-      label: doneLabel,
-      icon: <Check size={16} />,
-      next: "want",
-      className: "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600",
-    },
-  };
-};
+import { useEntityTracking } from "@components/EntityTrackingProvider";
+import { Plus, Check, Bookmark, List, X, Loader2, ChevronDown } from "lucide-react";
 
 /**
  * AddToListButton
  * ───────────────
- * A hero-friendly CTA that saves any content page item to the user's
- * unified "Saved" collection. After saving, the button transforms into a status
- * selector (Want ↔ Done) without reopening any modal.
+ * IMDb-style save control.
  *
- * Props
- *   type       – content type string ("movie" | "anime" | "game" | …)
- *   entityId   – MongoDB ObjectId string of the TopicPage document
- *   name       – display title (used as the list item label)
- *   slug       – page slug (used to build the link inside the list)
- *   image      – cover URL for the list item thumbnail
+ * - Main click instantly saves to the default "Saved" list.
+ * - Dropdown arrow opens the list picker for custom lists.
+ * - After saving, the button shows "Saved" with a dropdown to add to more lists.
  */
-export default function AddToListButton({ type, entityId, name, slug, image, initialSavedRef = null }) {
-  const STATUS_CONFIG = getStatusConfig(type);
+export default function AddToListButton({ type, entityId, name, slug, image }) {
   const [lists, setLists]                = useState([]);
   const [open, setOpen]                  = useState(false);
   const [creating, setCreating]          = useState(false);
   const [newListName, setNewListName]    = useState("");
   const [savedPopup, setSavedPopup]      = useState({ show: false, listName: "" });
-  // Once the user saves this item we store listId + itemId so status
-  // updates can go straight to PATCH without re-fetching.
-  const [savedRef, setSavedRef]          = useState(initialSavedRef); // { listId, itemId, status }
-  const [statusUpdating, setStatusUpdating] = useState(false);
+  // Shared list-membership state from the topic page provider (optional).
+  const ctx = useEntityTracking();
+  const listData = ctx?.listData;
+  const setListData = ctx?.setListData;
   const [isSavingToList, setIsSavingToList] = useState(null); // stores listId being saved to
+  const [quickSaving, setQuickSaving]    = useState(false);
   const { status: authStatus } = useSession();
   const openLoginPrompt = useLoginPrompt();
 
-  // On mount, check if the authenticated user already has this entity saved.
-  // Uses the new by-entity endpoint so we don't scan all lists client-side.
-  useEffect(() => {
-    if (initialSavedRef) {
-      setSavedRef(initialSavedRef);
-      return;
-    }
-    if (authStatus !== "authenticated" || !entityId) return;
-    fetch(`/api/unifiedlist/by-entity?entityId=${entityId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.found) {
-          setSavedRef({ listId: d.listId, itemId: d.itemId, status: d.status || "want" });
-        }
-      })
-      .catch(() => {}); // silent — degrades to "Add" button
-  }, [authStatus, entityId, initialSavedRef]);
+  const isSaved = !!listData;
 
   // Auto-dismiss the success toast after 3 s
   useEffect(() => {
@@ -111,6 +56,38 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
     image,
   };
 
+  async function quickSaveToDefault() {
+    if (authStatus === "unauthenticated") {
+      openLoginPrompt?.();
+      return;
+    }
+    if (quickSaving || isSaved) return;
+
+    setQuickSaving(true);
+    try {
+      const res = await fetch("/api/unifiedlist/quick-track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entityType: type,
+          entityId,
+          name,
+          slug,
+          image,
+          status: "want",
+        }),
+      });
+      if (!res.ok) throw new Error("Quick save failed");
+      const data = await res.json();
+      setListData?.({ listId: data.listId, itemId: data.itemId });
+      setSavedPopup({ show: true, listName: "Saved" });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setQuickSaving(false);
+    }
+  }
+
   async function saveToList(listId) {
     if (isSavingToList) return;
     const list = lists.find((l) => l.id === listId);
@@ -126,7 +103,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
       // because the server used Array.push before saving.
       const items = data?.list?.items || [];
       const newItem = items[items.length - 1];
-      setSavedRef({ listId, itemId: newItem?._id || null, status: "want" });
+      setListData?.({ listId, itemId: newItem?._id || null });
       setOpen(false);
       setSavedPopup({ show: true, listName: list?.name || "List" });
     } catch (err) {
@@ -155,7 +132,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
       const itemData = await itemRes.json();
       const items = itemData?.list?.items || [];
       const newItemObj = items[items.length - 1];
-      setSavedRef({ listId: newList.id, itemId: newItemObj?._id || null, status: "want" });
+      setListData?.({ listId: newList.id, itemId: newItemObj?._id || null });
       setLists((prev) => [...prev, newList]);
       setNewListName("");
       setCreating(false);
@@ -168,83 +145,59 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
     }
   }
 
-  // Cycle status: want ↔ done (binary system)
-  async function cycleStatus() {
-    if (!savedRef?.itemId || statusUpdating) return;
-    const current = savedRef.status || "want";
-    const next = STATUS_CONFIG[current]?.next || "want";
-    setStatusUpdating(true);
-    setSavedRef((prev) => ({ ...prev, status: next })); // optimistic
-    try {
-      await fetch(`/api/unifiedlist/${savedRef.listId}/items/${savedRef.itemId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
-    } catch {
-      setSavedRef((prev) => ({ ...prev, status: current })); // rollback
-    } finally {
-      setStatusUpdating(false);
-    }
-  }
-
   function closeModal() {
     setOpen(false);
     setCreating(false);
     setNewListName("");
   }
 
-  const label = getListLabel();
-
   return (
     <>
-      {/* ── CTA: status cycle button (already saved) or add button ────── */}
-      {savedRef ? (
-        /* ── Status cycle button ─────────────────────────────────────── */
+      {/* ── Split button: quick-save + list picker ────── */}
+      <div className="inline-flex rounded-full overflow-hidden shadow-sm border border-border w-full">
+        {/* Main quick-save action */}
         <button
-          onClick={cycleStatus}
-          disabled={statusUpdating}
-          title="Click to change your status"
-          className={`w-full sm:w-auto inline-flex items-center justify-center gap-2
-                     px-5 py-2.5 rounded-full text-sm font-semibold
-                     border shadow-sm active:scale-95 transition-colors duration-150
-                     disabled:opacity-60 disabled:cursor-not-allowed
-                     ${STATUS_CONFIG[savedRef.status]?.className || STATUS_CONFIG.want.className}`}
+          onClick={quickSaveToDefault}
+          disabled={isSaved || quickSaving || authStatus === "loading"}
+          className={`
+            inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold
+            transition-colors duration-150 flex-1
+            ${isSaved
+              ? "bg-blue-600/10 text-blue-700 dark:text-blue-400 border-r border-blue-600/20 cursor-default"
+              : "bg-muted/50 text-foreground hover:bg-muted active:scale-[0.98]"
+            }
+          `}
         >
-          <span aria-hidden="true">{STATUS_CONFIG[savedRef.status]?.icon || "✓"}</span>
-          {STATUS_CONFIG[savedRef.status]?.label || "On List"}
+          {isSaved ? (
+            <Check size={16} strokeWidth={3} />
+          ) : (
+            <Bookmark size={16} />
+          )}
+          {isSaved ? "Saved" : quickSaving ? "Saving…" : "Save to List"}
         </button>
-      ) : (
-        /* ── Add-to-list button ──────────────────────────────────────── */
+
+        {/* Dropdown arrow to open custom list picker */}
         <button
           onClick={() => {
-            if (authStatus === "loading") return; // Avoid popup while checking session
+            if (authStatus === "loading") return;
             if (authStatus === "unauthenticated") {
               openLoginPrompt?.();
               return;
             }
             setOpen(true);
           }}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2
-                     px-5 py-2.5 rounded-full
-                     bg-primary hover:bg-primary/90 active:scale-95
-                     text-primary-foreground text-sm font-semibold
-                     transition-colors duration-150"
+          aria-label="Choose list"
+          className={`
+            inline-flex items-center justify-center px-2 transition-colors duration-150
+            ${isSaved
+              ? "bg-blue-600/10 text-blue-700 dark:text-blue-400 hover:bg-blue-600/20"
+              : "bg-muted/50 text-foreground hover:bg-muted border-l border-border"
+            }
+          `}
         >
-          {/* bookmark-plus icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-4 h-4 flex-shrink-0"
-            aria-hidden="true"
-          >
-            <path d="M4 3a2 2 0 0 0-2 2v12.382a.5.5 0 0 0 .776.416L10 13.168l7.224 4.63A.5.5 0 0 0 18 17.382V5a2 2 0 0 0-2-2H4Z" />
-            <path d="M10 7a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1H8a1 1 0 1 1 0-2h1V8a1 1 0 0 1 1-1Z" />
-          </svg>
-          {label}
+          <ChevronDown size={16} />
         </button>
-      )}
+      </div>
 
       {/* ── Success toast ───────────────────────────────────────────────── */}
       {savedPopup.show && (
@@ -274,7 +227,7 @@ export default function AddToListButton({ type, entityId, name, slug, image, ini
             <div className="flex items-center justify-between mb-5">
               <h4 className="text-lg font-black text-foreground flex items-center gap-2">
                 <List size={20} className="text-primary" />
-                {label}
+                Save to List
               </h4>
               <button 
                 onClick={closeModal}

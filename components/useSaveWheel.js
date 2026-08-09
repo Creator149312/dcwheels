@@ -450,11 +450,11 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
             console.error("Preview generation/upload failed:", previewErr);
           }
 
-          if (sessionData?.user?.username) {
-            router.push(`/u/${sessionData.user.username}`);
-          } else {
-            router.push("/dashboard");
-          }
+          router.push(
+            sessionData?.user?.username
+              ? `/u/${sessionData.user.username}`
+              : "/u/me"
+          );
           return true;
         }
       } else {
@@ -503,11 +503,11 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
             console.error("Preview generation/upload failed:", previewErr);
           }
 
-          if (sessionData?.user?.username) {
-            router.push(`/u/${sessionData.user.username}`);
-          } else {
-            router.push("/dashboard");
-          }
+          router.push(
+            sessionData?.user?.username
+              ? `/u/${sessionData.user.username}`
+              : "/u/me"
+          );
           return true;
         }
       }

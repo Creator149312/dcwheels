@@ -1,6 +1,7 @@
 import { cache, Suspense } from "react";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { notFound } from "next/navigation";
+import { sessionUser } from "@utils/SessionData";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getRelatedTopicPages } from "@components/actions/actions";
 import dynamic from "next/dynamic";
@@ -28,6 +29,9 @@ const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), {
 // ISR: revalidate once a week.
 export const revalidate = 604800; // 7 days
 
+const WHEEL_PAGE_PROJECTION =
+  "title description content data wheelData wheelPreview tags relatedTopics slug indexed isPublic userId createdBy createdAt updatedAt authorHandle authorName authorProfileImage likeCount commentCount";
+
 /**
  * React.cache() dedupes the identifier lookup between generateMetadata and the body.
  * This unified function handles both MongoDB ObjectIds and SEO Slugs.
@@ -39,12 +43,16 @@ const getCachedPageDataByIdentifier = cache(async (identifier) => {
 
   // 1. If it's a valid MongoDB ID, try to fetch by ID first
   if (mongoose.Types.ObjectId.isValid(identifier)) {
-    wheel = await Wheel.findById(identifier).lean();
+    wheel = await Wheel.findById(identifier)
+      .select(WHEEL_PAGE_PROJECTION)
+      .lean();
   }
 
   // 2. If not found by ID (or not a valid ID), try to fetch by slug (Admin Slugs / SEO Slugs)
   if (!wheel) {
-    wheel = await Wheel.findOne({ slug: identifier }).lean();
+    wheel = await Wheel.findOne({ slug: identifier })
+      .select(WHEEL_PAGE_PROJECTION)
+      .lean();
   }
 
   if (!wheel) return null;
@@ -76,11 +84,16 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const metaTitle = pageData.isUserWheel 
+  const metaTitle = pageData.isUserWheel
     ? `${pageData.title} Picker Wheel`
     : pageData.title;
 
-  const isIndexed = pageData.wheel.indexed;
+  // De-index ObjectId-based wheel URLs. Only slug-based (SEO/admin) wheels
+  // should appear in search indexes. User-created wheels and any direct _id
+  // links should still work for sharing, but should not be indexed.
+  const requestedId = identifier?.toString() || "";
+  const isIdUrl = mongoose.Types.ObjectId.isValid(requestedId);
+  const isIndexed = pageData.wheel.indexed && !isIdUrl;
 
   const metadata = {
     title: metaTitle,
@@ -163,7 +176,21 @@ export default async function UnifiedWheelPage({ params }) {
     notFound(); 
   }
 
-  const wheelIdStr = pageData.wheel._id.toString();
+  // Privacy check: private wheels are only visible to their owner.
+  // Public (isPublic !== false) and legacy wheels without the flag remain visible.
+  const wheel = pageData.wheel;
+  if (wheel.isPublic === false) {
+    const sessionData = await sessionUser("_id email");
+    const sessionUserId = sessionData?.userId ? String(sessionData.userId) : null;
+    const wheelUserId = wheel.userId ? String(wheel.userId) : null;
+    const ownsByUserId = wheelUserId && sessionUserId && sessionUserId === wheelUserId;
+    const ownsByEmail = !wheelUserId && sessionData?.user?.email && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionData.user.email.toLowerCase();
+    if (!ownsByUserId && !ownsByEmail) {
+      notFound();
+    }
+  }
+
+  const wheelIdStr = wheel._id.toString();
   const resolvedDocs = pageData._relatedTopicDocs || { direct: [], secondary: [] };
   const displayTopics = resolvedDocs.direct || [];
   const sidebarTopics = [...displayTopics, ...(resolvedDocs.secondary || [])];
@@ -195,6 +222,7 @@ export default async function UnifiedWheelPage({ params }) {
           <WheelWithInputContentEditable
             newSegments={ensureArrayOfObjects(pageData.wheel.data)}
             wheelPresetSettings={pageData.wheel.wheelData}
+            wheelTitle={pageData.wheel.title}
             relatedWheelsSlot={<SidebarDiscovery initialTopics={sidebarTopics} isTrending={false} />}
             wheelId={wheelIdStr}
           />
@@ -225,7 +253,11 @@ export default async function UnifiedWheelPage({ params }) {
         />
       </div>
 
-      <UniversalCommentsSection entityId={wheelIdStr} entityType="wheel" />
+      <UniversalCommentsSection
+        entityId={wheelIdStr}
+        entityType="wheel"
+        initialCount={pageData.wheel.commentCount || 0}
+      />
 
       <div className="min-h-[90px]">
         <AdsUnit slot="4694567949" />

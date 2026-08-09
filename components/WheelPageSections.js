@@ -2,7 +2,7 @@ import { Suspense, cache } from "react";
 import dynamic from "next/dynamic";
 import { getWheelMeta } from "@components/actions/actions";
 import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
-import { getFeedItems } from "@lib/feedService";
+import { getFeedItemsSafe } from "@/lib/feedService";
 import WheelInfoActions from "@components/WheelInfoActions";
 import InfiniteFeedStream from "@components/feed/InfiniteFeedStream";
 
@@ -94,15 +94,14 @@ export async function SuspendedHubFeed({ tags = [], currentWheelId = null }) {
   const tagString = tags.join(",");
 
   const limit = 8;
-  const initialItems = await getFeedItems({
+  const initialItems = await getFeedItemsSafe({
     tag: tagString,
     limit: limit + 1, // Fetch one extra to check for more
     docType: "post,wheel"
   });
 
-  const nextCursor = initialItems.length > limit 
-    ? initialItems[limit - 1].createdAt 
-    : null;
+  const nextItem = initialItems.length > limit ? initialItems[limit] : null;
+  const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
   const items = initialItems.slice(0, limit);
 
   if (items.length === 0) return null;

@@ -37,13 +37,13 @@ const CommentSchema = new Schema(
   { timestamps: true }
 );
 
-// For fast lookups of all comments for an entity
-CommentSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
-// The reply-count $lookup in /api/comments uses `parentCommentId` as the
-// foreign field. Without an index this is a collection scan per top-level
-// comment returned (N lookups × full scan). Index makes each $lookup an
-// equality probe on an indexed field.
-CommentSchema.index({ parentCommentId: 1 });
+// Single index covers:
+//   1) Top-level comment listings: { entityType, entityId, parentCommentId: null, createdAt }
+//   2) Reply lookups by parent:    { parentCommentId: <id>, createdAt }
+//   3) Entity-level reverse-chronological feed
+// Replaces the previous separate { entityType, entityId, createdAt } and
+// { parentCommentId } indexes with one compound that serves both paths.
+CommentSchema.index({ entityType: 1, entityId: 1, parentCommentId: 1, createdAt: -1 });
 
 const Comment =
   models.Comment || mongoose.model("Comment", CommentSchema);

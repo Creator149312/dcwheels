@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -9,32 +9,41 @@ import { X, MessageSquare, ListFilter } from "lucide-react";
 
 const CommentsPanel = dynamic(() => import("./comments/CommentsPanel"), { ssr: false });
 
-export default function UniversalCommentsSection({ 
-  entityId, 
-  entityType = "wheel", 
-  visible = true, 
+// Small wrapper that uses useSearchParams. Wrapped in Suspense so parent
+// pages can still be statically generated without a CSR bailout.
+function CommentAutoOpener({ onOpen }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("openComments") === "true") {
+      onOpen(true);
+    }
+  }, [searchParams, onOpen]);
+  return null;
+}
+
+export default function UniversalCommentsSection({
+  entityId,
+  entityType = "wheel",
+  visible = true,
   showTitle = true,
+  initialCount,
   onCountChange,
   className = "px-1 md:px-4",
   isInFeed = false
 }) {
   const openLoginPrompt = useLoginPrompt();
-  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [localCount, setLocalCount] = useState(0);
-
-  // Auto-open if query param is present (Mobile Feed Redirect flow)
-  useEffect(() => {
-    if (searchParams.get("openComments") === "true") {
-      setIsDrawerOpen(true);
-    }
-  }, [searchParams]);
+  const [localCount, setLocalCount] = useState(initialCount ?? 0);
 
   // Handle global triggers (e.g. from a StatsBar elsewhere on the page)
   useEffect(() => {
     const handleTrigger = (event) => {
       if (event.detail?.entityId === entityId) {
+        if (!session) {
+          openLoginPrompt?.();
+          return;
+        }
         setIsDrawerOpen(true);
         // Autofocus the form after a small delay for the drawer animation
         setTimeout(() => {
@@ -44,18 +53,20 @@ export default function UniversalCommentsSection({
     };
     window.addEventListener("comments:open-drawer", handleTrigger);
     return () => window.removeEventListener("comments:open-drawer", handleTrigger);
-  }, [entityId]);
+  }, [entityId, session, openLoginPrompt]);
 
-  // Initial count fetch
+  // Initial count fetch — only when no initialCount is provided.
+  // Posts/wheels/lists now carry a denormalized commentCount, so the feed
+  // or parent page can pass it directly and avoid an extra API call.
   useEffect(() => {
-    if (!entityId) return;
+    if (!entityId || initialCount !== undefined) return;
     fetch(`/api/comments/count?entityType=${entityType}&entityId=${entityId}`)
       .then(res => res.json())
       .then(data => {
         setLocalCount(data.count || 0);
       })
       .catch(err => console.error("Failed to fetch comment count:", err));
-  }, [entityId, entityType]);
+  }, [entityId, entityType, initialCount]);
 
   // Sync with global count if provided
   const handleCountUpdate = (updater) => {
@@ -82,10 +93,19 @@ export default function UniversalCommentsSection({
       ${visible || isDrawerOpen ? "" : "hidden"}
       ${isInFeed ? 'mt-1 sm:mt-2 sm:rounded-xl bg-muted/20 border border-border/20' : ''}
     `}>
+      {/* Auto-open from query param — wrapped in Suspense for static pages */}
+      <Suspense fallback={null}>
+        <CommentAutoOpener onOpen={setIsDrawerOpen} />
+      </Suspense>
+
       {/* Mobile Fake Input Trigger (Only shown on detail pages, not in feed) */}
       {!isDrawerOpen && !isInFeed && (
         <div 
           onClick={() => {
+            if (!session) {
+              openLoginPrompt?.();
+              return;
+            }
             setIsDrawerOpen(true);
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent("comment-form:focus"));

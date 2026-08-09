@@ -6,6 +6,7 @@ import { useFeedCache } from "@/hooks/useFeedCache";
 import PostCard from "@components/PostCard";
 import WheelFeedCard from "@components/WheelFeedCard";
 import ListShelf from "@components/feed/ListShelf";
+import VirtualizedFeed from "@components/feed/VirtualizedFeed";
 import { getFeedItemKey, buildStandardFeed } from "@/utils/feedUtils";
 import dynamic from "next/dynamic";
 
@@ -166,53 +167,57 @@ export default function InfiniteFeedStream({
     );
   }
 
+  const renderItem = (item, index) => {
+    const showRecommendations = index === 2 && relatedPages.length > 0;
+
+    if (item.isAdMarker) {
+      return <AdsUnit slot="4694567949" />;
+    }
+
+    return (
+      <>
+        {showRecommendations && (
+          <div className="mb-4 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5">
+            <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground/60">
+                  Recommended for You
+                </h3>
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground/40">Swipe to browse →</span>
+            </div>
+            <div
+              className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {relatedPages.map((related) => (
+                <RelatedTopicCard key={String(related._id)} related={related} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {item.docType === "post" ? (
+          <PostCard post={item} currentContextId={currentContextId} />
+        ) : item.docType === "wheel" ? (
+          <WheelFeedCard wheel={item} />
+        ) : item.docType === "list" ? (
+          <ListShelf list={item} />
+        ) : null}
+      </>
+    );
+  };
+
   return (
     <div className="flex flex-col space-y-0 sm:space-y-4 sm:mt-4 max-w-3xl border-border">
-      {stableItems.map((item, index) => {
-        const key = getFeedItemKey(item, index);
-        // Inject recommended topics after item index 2 (counting only content items)
-        const showRecommendations = index === 2 && relatedPages.length > 0;
-
-        if (item.isAdMarker) {
-          return (
-            <AdsUnit key={key} slot="4694567949" />
-          );
-        }
-
-        return (
-          <div key={key}>
-            {showRecommendations && (
-              <div className="mb-4 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
-                    <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground/60">
-                      Recommended for You
-                    </h3>
-                  </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground/40">Swipe to browse →</span>
-                </div>
-                <div
-                  className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  {relatedPages.map((related) => (
-                    <RelatedTopicCard key={String(related._id)} related={related} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {item.docType === "post" ? (
-              <PostCard post={item} currentContextId={currentContextId} />
-            ) : item.docType === "wheel" ? (
-              <WheelFeedCard wheel={item} />
-            ) : item.docType === "list" ? (
-              <ListShelf list={item} />
-            ) : null}
-          </div>
-        );
-      })}
+      <VirtualizedFeed
+        items={stableItems}
+        renderItem={renderItem}
+        overscan={2}
+        rootMargin="1200px"
+        minHeight={200}
+      />
 
       {/* Loading States & Sentinel */}
       {(hasMore || loadingMore) && (

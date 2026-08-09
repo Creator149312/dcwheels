@@ -1,10 +1,29 @@
 const { test, expect } = require('@playwright/test');
 
+const TEST_USER = {
+  email: "falcondune99@example.ae",
+  password: "SandStorm$65",
+  handle: "falcondune99",
+};
+
+async function login(page) {
+  await page.goto("/login");
+  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+  // Give the client hydration a moment so the React onSubmit handler is attached.
+  await page.waitForTimeout(1000);
+  await page.fill('input[name="email"]', TEST_USER.email);
+  await page.fill('input[name="password"]', TEST_USER.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(url => url.pathname.includes("/u/"), {
+    timeout: 30000,
+  });
+}
+
 test.describe('Lists - User Interactions & Actions', () => {
 
   test('should display lists in user profile', async ({ page }) => {
     // Navigate to user profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -63,7 +82,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should view individual list details', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -95,7 +114,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should display list name and description', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -119,7 +138,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should display list items', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -152,7 +171,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should show item count in list', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -178,7 +197,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should navigate to add items to list', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -227,7 +246,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should display lists in different contexts', async ({ page }) => {
     // Test 1: Profile lists tab
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
     await page.waitForTimeout(2000);
     
     const listsTab = page.locator('button:has-text("Lists")').first();
@@ -239,15 +258,15 @@ test.describe('Lists - User Interactions & Actions', () => {
     // Verify we can see lists
     expect(page.url()).toContain('/u/');
 
-    // Test 2: Direct lists page
+    // Test 2: Direct lists page redirects to explore discovery
     await page.goto('/lists');
     await page.waitForTimeout(2000);
-    expect(page.url()).toContain('/lists');
+    expect(page.url()).toContain('/explore');
   });
 
   test('should filter or sort lists', async ({ page }) => {
     // Navigate to profile lists
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -285,14 +304,15 @@ test.describe('Lists - User Interactions & Actions', () => {
       await page.waitForTimeout(2000);
     }
 
-    // Verify page is accessible
-    expect(page.url()).toContain('/lists');
+    // Verify page is accessible (redirects to /explore)
+    expect(page.url()).toContain('/explore');
   });
 
   test('should display edit/delete options for own lists', async ({ page }) => {
     // This test would require authentication
+    await login(page);
     // Navigate to profile lists
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -315,7 +335,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should display list visibility (public/private)', async ({ page }) => {
     // Navigate to profile lists
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);
@@ -339,7 +359,7 @@ test.describe('Lists - User Interactions & Actions', () => {
 
   test('should navigate from list back to creator profile', async ({ page }) => {
     // Navigate to profile
-    await page.goto('/u/creators93');
+    await page.goto(`/u/${TEST_USER.handle}`);
 
     // Wait for profile
     await page.waitForTimeout(2000);

@@ -1,25 +1,28 @@
 ﻿import { NextResponse } from "next/server";
-import { getFeedItems } from "@lib/feedService";
+import { getFeedItemsSafe } from "@lib/feedService";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const tag = searchParams.get("tag");
     const limit = parseInt(searchParams.get("limit") || "8", 10);
-    const lastTimestamp = searchParams.get("cursor"); 
+    const cursor = searchParams.get("cursor"); 
 
     if (!tag) {
       return NextResponse.json({ error: "tag is required" }, { status: 400 });
     }
 
-    const allItems = await getFeedItems({ 
+    // Safe wrapper degrades to an empty array on error so the client sees
+    // a clean end-of-feed rather than a 500.
+    const allItems = await getFeedItemsSafe({ 
       tag, 
       limit: limit + 1, 
-      lastTimestamp 
+      cursor 
     });
     
     const items = allItems.slice(0, limit);
-    const nextCursor = allItems.length > limit ? allItems[limit - 1].createdAt : null;
+    const nextItem = allItems.length > limit ? allItems[limit] : null;
+    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
     const res = NextResponse.json({ 
       items, 

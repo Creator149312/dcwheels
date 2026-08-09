@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { sessionUserId } from "@utils/SessionData";
 import { getWheelMeta } from "@components/actions/actions";
 
 /**
@@ -18,8 +17,7 @@ export async function GET(_request, { params }) {
   const { id } = params;
 
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id || null;
+    const userId = await sessionUserId();
 
     const meta = await getWheelMeta(id, userId);
     if (!meta) {

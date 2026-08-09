@@ -3,11 +3,14 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
+import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
 
-export const dynamic = "force-dynamic";
+// GET is public/private depending on list.isPublic. The data itself is
+// tag-busted on mutations via revalidateTag, so we don't force dynamic on GET.
+// PUT/DELETE remain dynamic because they mutate state.
 
 export async function GET(req, { params }) {
   await connectMongoDB();
@@ -18,7 +21,9 @@ export async function GET(req, { params }) {
     // Fetch the list first, then gate access:
     // - Owner always allowed
     // - Non-owners allowed only if list.isPublic === true
-    const list = await UnifiedList.findOne({ _id: id }).lean();
+    const list = await UnifiedList.findOne({ _id: id, isDeleted: { $ne: true } })
+      .select("_id userId name description tags createdAt updatedAt isPublic isSystem items")
+      .lean();
 
     if (!list) {
       return NextResponse.json(
@@ -43,12 +48,8 @@ export async function GET(req, { params }) {
       tags: list.tags || [],
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
-      isPublic: list.isPublic ?? false,
+      isPublic: list.isPublic ?? true,
       isSystem: list.isSystem ?? false,
-      settings: {
-        sortBy: list.settings?.sortBy || "recently-saved",
-        visibility: list.settings?.visibility || "private",
-      },
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,
@@ -64,7 +65,11 @@ export async function GET(req, { params }) {
       })),
     };
 
-    return NextResponse.json({ list: formatted }, { status: 200 });
+    const headers = list.isPublic
+      ? { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" }
+      : { "Cache-Control": "private, no-store" };
+
+    return NextResponse.json({ list: formatted }, { status: 200, headers });
   } catch (err) {
     console.error("GET /api/lists/:id error:", err);
     return NextResponse.json(
@@ -95,7 +100,7 @@ export async function PUT(req, { params }) {
     }
 
     // ✅ 3. Fetch list (must belong to user)
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
     if (!list) {
       return NextResponse.json(
@@ -122,6 +127,13 @@ export async function PUT(req, { params }) {
 
     // ✅ 5. Prevent duplicate list names or using reserved names
     if (!list.isSystem && name && name !== list.name) {
+      if (name.trim().length < 2 || !/[a-z0-9]/i.test(name)) {
+        return NextResponse.json(
+          { error: "List name must be at least 2 characters long and contain alphanumeric characters." },
+          { status: 400 }
+        );
+      }
+
       // Block renaming to reserved system names
       const RESERVED_NAMES = ["Saved", "Favorites", "My Collection"];
       if (RESERVED_NAMES.map(n => n.toLowerCase()).includes(name.trim().toLowerCase())) {
@@ -131,7 +143,7 @@ export async function PUT(req, { params }) {
         );
       }
 
-      const exists = await UnifiedList.findOne({ userId, name }).lean();
+      const exists = await UnifiedList.findOne({ userId, name, isDeleted: { $ne: true } }).lean();
       if (exists) {
         return NextResponse.json(
           { error: "A list with this name already exists" },
@@ -139,6 +151,13 @@ export async function PUT(req, { params }) {
         );
       }
       list.name = name;
+    }
+
+    if (!list.isSystem && description !== undefined && description.length > 300) {
+      return NextResponse.json(
+        { error: "Description must be 300 characters or less." },
+        { status: 400 }
+      );
     }
 
     if (!list.isSystem && description !== undefined) {
@@ -151,9 +170,9 @@ export async function PUT(req, { params }) {
 
     await list.save();
 
-    // Bust ISR cache for both the index and this detail page.
-    revalidatePath("/lists");
+    // Bust ISR cache for this detail page.
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);  // bust unstable_cache entry in lib/lists.js
 
     return NextResponse.json(
@@ -165,10 +184,8 @@ export async function PUT(req, { params }) {
           userId: list.userId,
           description: list.description,
           tags: list.tags,
-          settings: {
-            sortBy: list.settings?.sortBy || "recently-saved",
-            visibility: list.settings?.visibility || "private",
-          },
+          isPublic: list.isPublic ?? false,
+          isSystem: list.isSystem ?? false,
           items: list.items,
         },
       },
@@ -196,7 +213,7 @@ export async function DELETE(req, { params }) {
     }
 
     // ✅ 2. Find list first so we can read item images before deleting
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
     if (!list) {
       return NextResponse.json(
@@ -218,11 +235,12 @@ export async function DELETE(req, { params }) {
       .filter((i) => i.type === "word" && typeof i.wordData === "string" && i.wordData.includes(".blob.vercel-storage.com"))
       .map((i) => i.wordData);
 
-    // ✅ 4. Delete the list
-    await list.deleteOne();
+    // ✅ 4. Soft-delete the list
+    list.isDeleted = true;
+    await list.save();
 
-    revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
 
     // ✅ 5. Best-effort blob cleanup (never blocks the response)
     if (blobUrls.length > 0) {
@@ -254,37 +272,26 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ 2. Parse body — only allow sortBy and visibility updates
+    // ✅ 2. Parse body — allow isPublic toggle only
     const body = await req.json();
-    const { sortBy, visibility } = body;
+    const { isPublic } = body;
 
-    if (!sortBy && !visibility) {
+    if (isPublic === undefined) {
       return NextResponse.json(
-        { error: "Must provide sortBy or visibility" },
+        { error: "Must provide isPublic" },
         { status: 400 }
       );
     }
 
-    // ✅ 3. Validate values
-    const validSortBy = ["recently-saved", "alphabetical", "status", "entity-type"];
-    const validVisibility = ["private", "public"];
-
-    if (sortBy && !validSortBy.includes(sortBy)) {
+    if (typeof isPublic !== "boolean") {
       return NextResponse.json(
-        { error: `Invalid sortBy. Must be one of: ${validSortBy.join(", ")}` },
+        { error: "Invalid isPublic. Must be a boolean." },
         { status: 400 }
       );
     }
 
-    if (visibility && !validVisibility.includes(visibility)) {
-      return NextResponse.json(
-        { error: `Invalid visibility. Must be one of: ${validVisibility.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    // ✅ 4. Find and update list
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    // ✅ 3. Find and update list
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
     if (!list) {
       return NextResponse.json(
@@ -293,29 +300,16 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    // ✅ 5. Update settings
-    if (!list.settings) {
-      list.settings = {};
-    }
-
-    if (sortBy) {
-      list.settings.sortBy = sortBy;
-    }
-
-    if (visibility) {
-      list.settings.visibility = visibility;
-      // For backward compatibility, also update isPublic
-      list.isPublic = visibility === "public";
-    }
+    list.isPublic = isPublic;
 
     await list.save();
 
     // ✅ 6. Revalidate cache
-    revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
 
-    // ✅ 7. Format and return full list object
+    // ✅ 4. Format and return full list object
     const formatted = {
       id: list._id,
       name: list.name,
@@ -324,12 +318,8 @@ export async function PATCH(req, { params }) {
       tags: list.tags || [],
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
-      isPublic: list.isPublic ?? false,
+      isPublic: list.isPublic ?? true,
       isSystem: list.isSystem ?? false,
-      settings: {
-        sortBy: list.settings?.sortBy || "recently-saved",
-        visibility: list.settings?.visibility || "private",
-      },
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
+import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
 import { del } from "@vercel/blob";
@@ -27,7 +28,7 @@ export async function DELETE(req, { params }) {
     }
 
     // ✅ 2. Fetch list (must belong to user)
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
     if (!list) {
       return NextResponse.json(
@@ -54,8 +55,8 @@ export async function DELETE(req, { params }) {
 
     await list.save();
 
-    revalidatePath("/lists");
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
 
     // ✅ 6. Best-effort blob cleanup
@@ -102,7 +103,7 @@ export async function PATCH(req, { params }) {
 
     const body = await req.json();
 
-    const list = await UnifiedList.findOne({ _id: id, userId });
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
     if (!list) {
       return NextResponse.json({ error: "List not found or access denied" }, { status: 404 });
     }
@@ -144,6 +145,7 @@ export async function PATCH(req, { params }) {
     await list.save();
 
     revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
 
     // Best-effort cleanup of replaced image blob

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -8,8 +8,10 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { timeAgo } from "@utils/HelperFunctions";
+import { getListUrl, getWheelUrl } from "@utils/UrlHandler";
 import { Zap, MoreHorizontal } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
+import WheelPreviewCard from "@components/WheelPreviewCard";
 
 /**
  * Helper to render post text with clickable hashtags (Threads/Facebook style)
@@ -64,7 +66,7 @@ const UniversalCommentsSection = dynamic(() => import("@components/UniversalComm
  * PostCard — renders a single post from the feed
  * Handles both statement posts and polls
  */
-export default function PostCard({ post, defaultOpenComments = false, currentContextId = null }) {
+function PostCard({ post, defaultOpenComments = false, currentContextId = null }) {
   const router = useRouter();
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
@@ -105,36 +107,40 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
   return (
     <article className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 transition-colors hover:bg-muted/[0.03]">
       {/* Header: Author + Time */}
-      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
-        <div className="flex items-center gap-2">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">
+      <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-primary">
             {displayName.charAt(0).toUpperCase()}
           </div>
-          <div className="leading-tight">
-            <Link
-              href={`/u/${encodeURIComponent((post.authorHandle || post.authorName || "someone").toLowerCase())}`}
-              className="font-bold text-foreground hover:underline transition text-sm flex items-center gap-1"
-            >
-              <span>{displayName}</span>
+          <div className="leading-tight min-w-0">
+            <div className="flex items-center gap-1.5 text-sm">
+              <Link
+                href={`/u/${encodeURIComponent((post.authorHandle || post.authorName || "someone").toLowerCase())}`}
+                className="font-bold text-foreground hover:underline transition truncate"
+                title={displayName}
+              >
+                {displayName}
+              </Link>
+              <span className="text-[10px] text-muted-foreground/40">•</span>
+              <span className="text-[10px] font-semibold text-muted-foreground/60 whitespace-nowrap">
+                {timeAgo(post.createdAt)}
+              </span>
               {isOwnPost && !post.isPublic && (
-                <span className="flex items-center gap-0.5 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0 rounded-full font-bold ml-1 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                   Private
+                <span className="inline-flex items-center gap-0.5 text-[9px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                  Private
                 </span>
               )}
-            </Link>
-            <p className="text-[10px] font-semibold text-muted-foreground/60">
-              {timeAgo(post.createdAt)}
-            </p>
+            </div>
           </div>
         </div>
 
         {/* Top-right actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* Spin to Decide — only shown for poll posts */}
           {post.hasPoll && post.pollOptions?.length > 0 && (
             <button
               onClick={() => setShowSpinModal(true)}
-              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold tracking-tighter rounded-md border border-border/80 bg-muted/30 text-foreground hover:bg-muted transition"
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-tighter rounded-md border border-border/80 bg-muted/30 text-foreground hover:bg-muted transition"
             >
               <Zap size={11} /> Decide
             </button>
@@ -172,14 +178,14 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
 
       {/* Post Text content (Threads/Facebook style) */}
       <div className="mb-2.5 px-4 sm:px-0">
-        <p className={`text-[13px] leading-relaxed text-foreground whitespace-pre-wrap ${post.hasTruncation && !isExpanded ? "line-clamp-4" : ""}`}>
+        <p className={`text-[15px] sm:text-base leading-relaxed text-foreground whitespace-pre-wrap ${post.hasTruncation && !isExpanded ? "line-clamp-4" : ""}`}>
           {renderContent(post.content)}
         </p>
-        
+
         {post.hasTruncation && !isExpanded && (
           <button
             onClick={() => setIsExpanded(true)}
-            className="text-primary text-[10px] font-black uppercase tracking-tighter hover:underline mt-1 inline-block"
+            className="text-primary text-xs font-black uppercase tracking-tighter hover:underline mt-1 inline-block"
           >
             ...more
           </button>
@@ -190,56 +196,73 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
       {post.image && (
         <div className="mb-3 w-full sm:mx-0 sm:rounded-xl overflow-hidden bg-muted/20 border-y sm:border border-border/40">
           <img
-            src={post.image}
+            src={post.imageVariants?.md || post.imageVariants?.sm || post.image}
+            srcSet={
+              post.imageVariants
+                ? `${post.imageVariants.sm} 480w, ${post.imageVariants.md} 780w, ${post.imageVariants.lg} 1080w`
+                : undefined
+            }
+            sizes="(max-width: 480px) 480px, (max-width: 780px) 780px, 1080px"
             alt="Post attachment"
+            width={1080}
+            height={720}
             className="w-full object-cover max-h-[400px] sm:max-h-[500px]"
             loading="lazy"
+            decoding="async"
           />
+        </div>
+      )}
+
+      {/* Dilemma Viewer (for polls) */}
+      {post.hasPoll && post.pollOptions?.length > 0 && (
+        <div className="mb-5 px-4 sm:px-0">
+          <DilemmaViewer post={post} postId={post._id || post.id} />
         </div>
       )}
 
       {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
       {post.contentRef && String(post.contentRef.externalId) !== String(currentContextId) && (
         <div className="px-4 sm:px-0 mb-4">
-          <Link
-            href={
-              post.contentRef.type === "wheel"
-                ? `/embed/${post.contentRef.externalId}`
-                : post.contentRef.type === "list"
-                ? `/lists/${post.contentRef.externalId}`
-                : `/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`
-            }
-            className="block"
-          >
-            <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-muted/10 hover:bg-muted/20 transition-colors">
-              <div className="flex flex-col sm:flex-row gap-0">
+          {post.contentRef.type === "wheel" ? (
+            <WheelPreviewCard
+              title={post.contentRef.title}
+              segmentCount={post.contentRef.segmentCount}
+              image={post.contentRef.image}
+              slug={post.contentRef.slug}
+              wheelId={post.contentRef.externalId}
+            />
+          ) : (
+            <Link
+              href={
+                post.contentRef.type === "list"
+                  ? getListUrl({ id: post.contentRef.externalId, slug: post.contentRef.slug })
+                  : `/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`
+              }
+              className="block"
+            >
+              <div className="group flex gap-0 overflow-hidden rounded-2xl border border-border/70 bg-muted/10 hover:bg-muted/20 transition-colors">
                 {post.contentRef.image && (
-                  <div className="relative flex-shrink-0 w-full sm:w-28 h-40 sm:h-32 bg-muted overflow-hidden rounded-t-2xl sm:rounded-t-none sm:rounded-l-2xl">
+                  <div className="relative flex-shrink-0 w-28 h-32 bg-muted overflow-hidden rounded-l-2xl">
                     <Image
                       src={post.contentRef.image}
                       alt={post.contentRef.title}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 640px) 100vw, 112px"
+                      sizes="112px"
                     />
                   </div>
                 )}
-                <div className="flex-1 p-4 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex items-center text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-primary/15 text-primary">
-                      {post.contentRef.type}
-                    </span>
-                  </div>
+                <div className="flex-1 p-3 flex flex-col justify-center gap-2 min-w-0">
                   <h4 className="font-semibold text-foreground text-sm line-clamp-2">
                     {post.contentRef.title}
                   </h4>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    {post.contentRef.type === "wheel" ? "Spin to decide" : "See details"}
-                  </p>
+                  <span className="inline-flex items-center self-start text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                    {post.contentRef.type}
+                  </span>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          )}
         </div>
       )}
 
@@ -282,13 +305,6 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
         </div>
       )}
 
-      {/* Dilemma Viewer (for polls) */}
-      {post.hasPoll && post.pollOptions?.length > 0 && (
-        <div className="mb-5 pt-4 border-t border-border/70 px-4 sm:px-0">
-          <DilemmaViewer post={post} postId={post._id || post.id} />
-        </div>
-      )}
-
       {/* Tags */}
       {/* 
         Discovery Optimized: Only show tag pills for tags that are NOT already present in the text body.
@@ -326,8 +342,9 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
               return;
             }
             setShowComments((prev) => !prev);
-          }}
-          initialStats={{
+          }}          knownCounts={{
+            like: post.likeCount || 0,
+          }}          initialStats={{
             // Pre-populate from the denormalized counters already on the post doc.
             // This avoids a countDocuments() DB hit per post card on the feed.
             // StatsBar will only make a lightweight Reaction.findOne() call
@@ -344,6 +361,7 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
         entityId={postId}
         visible={showComments}
         showTitle={false}
+        initialCount={post.commentCount || 0}
         onCountChange={setCommentCount}
         className=""
         isInFeed={!defaultOpenComments}
@@ -360,3 +378,8 @@ export default function PostCard({ post, defaultOpenComments = false, currentCon
     </article>
   );
 }
+
+// Memo prevents unnecessary re-renders when InfiniteFeedStream's parent state
+// changes (e.g., scroll/load-more). Ads are rendered outside this component,
+// so they are unaffected. Internal hooks/state still work normally.
+export default memo(PostCard);

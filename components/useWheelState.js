@@ -77,7 +77,7 @@ function rehydrateSegImages(segData) {
   });
 }
 
-export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp = "basic", wheelId }) {
+export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp = "basic", wheelId, wheelTitle: pageWheelTitle }) {
   const {
     resultList,
     setResultList,
@@ -386,6 +386,9 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       // but the newSegments branch previously left wheelType as "basic").
       if (wheelPresetSettings?.type) setWheelType(wheelPresetSettings.type);
       if (wheelTypeProp && wheelTypeProp !== "basic") setWheelType(wheelTypeProp);
+      // Sync the SegmentsContext title with the loaded wheel so share modals
+      // and decision logs show the real wheel name instead of "New Wheel".
+      if (pageWheelTitle) setWheelTitle(pageWheelTitle);
     }
   }, []);
 

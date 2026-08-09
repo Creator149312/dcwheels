@@ -1,38 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
-import User from "@models/user";
+import User, { RESERVED_USERNAMES } from "@models/user";
 import { sessionUserId } from "@utils/SessionData";
-
-/**
- * Reserved usernames that cannot be claimed by users.
- * Protects system routes, API endpoints, and platform identity.
- */
-const RESERVED_USERNAMES = new Set([
-  // System & Platform
-  "spinpapa", "spinwheel", "admin", "staff", "system", "app",
-  
-  // Auth & Account
-  "auth", "auth0", "account", "accounts", "login", "logout",
-  "signup", "register", "password", "verify", "reset",
-  
-  // Core Routes & Features
-  "api", "dashboard", "home", "feed", "explore", "search",
-  "profile", "settings", "wheel", "wheels", "list", "lists",
-  "post", "posts", "tag", "tags", "ask", "decision",
-  
-  // Support & Help
-  "support", "help", "contact", "feedback", "report",
-  
-  // Common/Abuse Prevention
-  "root", "moderator", "bot", "automation", "test", "demo",
-  "dev", "development", "staging", "production",
-  
-  // Web Standard
-  "www", "mail", "ftp", "smtp", "ssh",
-  
-  // Reserved for Future
-  "team", "community", "organization", "company", "brand"
-]);
 
 /**
  * /api/user/settings — read + update the currently-authenticated user's

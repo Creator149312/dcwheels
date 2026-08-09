@@ -6,6 +6,9 @@ import Comment from "@models/comment";
 import User from "@models/user";
 import Post from "@models/post";
 import Wheel from "@models/wheel";
+import UnifiedList from "@models/unifiedlist";
+import { sessionUserId } from "@/utils/SessionData";
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 // ✅ Edit a comment
 export async function PATCH(req, { params }) {
@@ -22,8 +25,8 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -33,7 +36,7 @@ export async function PATCH(req, { params }) {
     }
 
     // Only the author can edit
-    if (comment.userId.toString() !== user._id.toString()) {
+    if (comment.userId.toString() !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -55,14 +58,21 @@ export async function PATCH(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await connectMongoDB();
+
+    const ip = getIpFromRequest(req);
+    const { limited, retryAfter } = await checkRateLimit(ip, `/api/comments/${params.id}`);
+    if (limited) {
+      return rateLimitResponse(retryAfter);
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = params;
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -72,7 +82,7 @@ export async function DELETE(req, { params }) {
     }
 
     // Only author can delete
-    if (comment.userId.toString() !== user._id.toString()) {
+    if (comment.userId.toString() !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -82,19 +92,24 @@ export async function DELETE(req, { params }) {
 
     await comment.deleteOne();
 
-    // Decrement denormalized count on Post/Wheel
+    // Decrement denormalized count on the parent entity (never below 0)
     try {
       const totalToRemove = 1 + repliesCount;
+      const decrementStage = [
+        {
+          $set: {
+            commentCount: {
+              $max: [{ $subtract: ["$commentCount", totalToRemove] }, 0],
+            },
+          },
+        },
+      ];
       if (comment.entityType === "post") {
-        await Post.updateOne(
-          { _id: comment.entityId },
-          { $inc: { commentCount: -totalToRemove } }
-        );
-      } else if (comment.entityType === "wheel") {
-        await Wheel.updateOne(
-          { _id: comment.entityId },
-          { $inc: { commentCount: -totalToRemove } }
-        );
+        await Post.updateOne({ _id: comment.entityId }, decrementStage);
+      } else if (comment.entityType === "wheel" || comment.entityType === "uwheel") {
+        await Wheel.updateOne({ _id: comment.entityId }, decrementStage);
+      } else if (comment.entityType === "list") {
+        await UnifiedList.updateOne({ _id: comment.entityId }, decrementStage);
       }
     } catch (countErr) {
       console.error("Error decrementing comment count:", countErr);

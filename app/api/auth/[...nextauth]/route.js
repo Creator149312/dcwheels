@@ -7,7 +7,8 @@ import bcrypt from "bcryptjs";
 import { validateEmail, validatePasswordLength } from "@utils/Validator";
 import apiConfig from "@utils/ApiUrlConfig";
 import { isAdminEmail } from "@utils/auth/isAdmin";
-import UnifiedList from "@models/unifiedlist";
+import { ensureSavedListExists } from "@lib/savedList";
+import { checkActionRateLimit, clearActionRateLimit } from "@lib/rateLimit";
 
 const validateForm = async (data) => {
   let err = {};
@@ -66,8 +67,23 @@ export const authOptions = {
 
         if (Object.keys(validationError).length !== 0) return null;
 
+        // Account lockout: block after ~5 user login attempts. The limit is set
+        // to 10 internally because NextAuth v4 may invoke authorize() twice per
+        // form submission, so 10 callback invocations maps to roughly 5 UX attempts.
+        const lockoutKey = `login:${email.toLowerCase().trim()}`;
+        const lockout = await checkActionRateLimit(lockoutKey, 10, 15 * 60 * 1000);
+        if (lockout.limited) {
+          throw new Error(
+            `Too many failed login attempts. Please try again in ${lockout.retryAfter} seconds.`
+          );
+        }
+
         try {
           let userData = await checkLogin(email, password);
+          if (userData) {
+            // Successful login clears the failed-attempt counter.
+            clearActionRateLimit(lockoutKey);
+          }
           return userData;
         } catch (error) {
           return null;
@@ -98,21 +114,28 @@ export const authOptions = {
         token.username = user.username;
         token.role = user.role || (isAdminEmail(user.email) ? "admin" : "user");
       } else if (account?.provider === "google") {
-        // For Google, the user is created in signIn() callback above.
-        // Look up the DB record by email to get the MongoDB _id + role.
-        try {
-          await connectMongoDB();
-          const dbUser = await User.findOne({ email: user.email })
-            .select("_id role username")
-            .lean();
-          if (dbUser) {
-            token.mongoId = dbUser._id.toString();
-            token.username = dbUser.username;
-            token.role =
-              dbUser.role || (isAdminEmail(user.email) ? "admin" : "user");
+        // signIn() already looked up/created the DB record and attached
+        // mongoId + role to the user object, so prefer that. Fallback to
+        // a case-insensitive lookup only if something went wrong.
+        token.mongoId = user.mongoId || token.mongoId;
+        token.username = user.username || token.username;
+        token.role = user.role || token.role;
+
+        if (!token.mongoId) {
+          try {
+            await connectMongoDB();
+            const dbUser = await User.findOne({ email: user.email?.toLowerCase()?.trim() })
+              .select("_id role username")
+              .lean();
+            if (dbUser) {
+              token.mongoId = dbUser._id.toString();
+              token.username = dbUser.username;
+              token.role =
+                dbUser.role || (isAdminEmail(user.email) ? "admin" : "user");
+            }
+          } catch {
+            // Non-fatal — session.user.id will just be undefined; fallback by email will be used
           }
-        } catch {
-          // Non-fatal — session.user.id will just be undefined; fallback by email will be used
         }
       }
 
@@ -138,38 +161,44 @@ export const authOptions = {
     async signIn({ user, account }) {
       if (account.provider === "google") {
         const { name, email } = user;
+        const normalizedEmail = email?.toLowerCase()?.trim();
+        if (!normalizedEmail) return false;
+
         try {
           await connectMongoDB();
-          const userExists = await User.findOne({ email })
-            .select("_id")
-            .lean();
 
-          if (!userExists) {
+          // Case-insensitive lookup so a credentials signup like
+          // "User@Gmail.com" matches Google's "user@gmail.com".
+          let existingUser = await User.findOne({ email: normalizedEmail }).lean();
+
+          if (!existingUser) {
             // Create the user directly instead of round-tripping through
             // /api/user — saves one HTTP hop + cold start during sign-in.
-            const newUser = await User.create({
+            existingUser = await User.create({
               name,
-              email,
+              email: normalizedEmail,
               password: "",
               emailVerified: new Date(),
               authMethod: "google",
-              role: isAdminEmail(email) ? "admin" : "user",
+              role: isAdminEmail(normalizedEmail) ? "admin" : "user",
             });
 
             // Create default "Saved" list for the new user
-            await UnifiedList.create({
-              userId: newUser._id,
-              name: "Saved",
-              description: "Default list for items you've saved.",
-              isSystem: true,
-              systemKey: "SYS_SAVED",
-              settings: { visibility: "public", sortBy: "recently-saved" },
-            });
+            await ensureSavedListExists(existingUser._id);
           }
-          return user;
+
+          // Enrich the in-memory user object so the JWT callback can pick up
+          // the MongoDB _id + role without a second DB round-trip.
+          user.id = existingUser._id.toString();
+          user.mongoId = existingUser._id.toString();
+          user.username = existingUser.username;
+          user.role = existingUser.role || (isAdminEmail(normalizedEmail) ? "admin" : "user");
+          user.email = normalizedEmail;
+
+          return true;
         } catch (error) {
           console.error("Google signIn user upsert failed:", error?.message);
-          return null;
+          return false;
         }
       } else if (account.provider === "credentials") {
         if (user.emailVerified) {

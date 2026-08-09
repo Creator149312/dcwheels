@@ -24,8 +24,8 @@ function validateFeedRequest(req) {
   // Validate limit
   const safeLimit = Math.max(1, Math.min(50, Number(limit) || 8));
 
-  // Validate cursor
-  const safeCursor = cursor && typeof cursor === "string" ? new Date(cursor) : null;
+  // Cursor is an opaque string: "createdAtISO|_id"
+  const safeCursor = cursor && typeof cursor === "string" ? cursor : null;
 
   return {
     type: String(type).trim(),
@@ -49,12 +49,13 @@ async function fetchSingleFeed(feedReq) {
       externalId: externalId || undefined,
       tag: tag || undefined,
       limit: limit + 1, // +1 to determine if there are more
-      lastTimestamp: cursor || undefined,
+      cursor: cursor || undefined,
     });
 
     // Determine if there are more items beyond this batch
     const hasMore = items.length > limit;
-    const nextCursor = hasMore ? items[limit - 1]?.createdAt : null;
+    const nextItem = hasMore ? items[limit] : null;
+    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
     // Return only the requested limit
     return {

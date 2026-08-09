@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getListUrl } from "@utils/UrlHandler";
 
 function ListCarouselItem({ item }) {
   const isEntity = item.type === "entity";
@@ -65,7 +66,7 @@ export default function ListShelf({ list }) {
               {list.authorName}&apos;s List
             </h3>
             <Link 
-              href={`/lists/${list._id || list.id}`}
+              href={getListUrl(list)}
               className="text-sm sm:text-base font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1"
             >
               {list.title}
@@ -74,7 +75,7 @@ export default function ListShelf({ list }) {
         </div>
         
         <Link 
-          href={`/lists/${list._id || list.id}`}
+          href={getListUrl(list)}
           className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5 bg-primary/10 px-2 py-1 rounded-full uppercase tracking-tight"
         >
           View Full List <ChevronRight className="w-3 h-3" />
@@ -91,7 +92,7 @@ export default function ListShelf({ list }) {
         
         {/* End of list CTA */}
         <Link 
-          href={`/lists/${list._id || list.id}`}
+          href={getListUrl(list)}
           className="flex-shrink-0 w-28 sm:w-32 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center p-4 text-center hover:bg-accent/20 transition-colors group"
         >
           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">

@@ -5,6 +5,7 @@ import { authOptions } from "../auth/[...nextauth]/route"; // adjust path if nee
 import { connectMongoDB } from "@/lib/mongodb";
 import Follow from "@/models/follow";
 import User from "@/models/user";
+import { sessionUserId } from "@/utils/SessionData";
 import mongoose from "mongoose";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
@@ -55,17 +56,13 @@ export async function GET(req) {
 
     const followerCount = await Follow.countDocuments(normalised);
 
-    if (!session?.user?.email) {
-      return NextResponse.json({ isFollowing: false, followerCount }, { status: 200 });
-    }
-
-    const user = await User.findOne({ email: session.user.email }).select("_id").lean();
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ isFollowing: false, followerCount }, { status: 200 });
     }
 
     const existingFollow = await Follow.findOne({
-      userId: user._id,
+      userId: userId,
       entityId: normalised.entityId,
       entityType: normalised.entityType,
     }).lean();
@@ -105,17 +102,16 @@ export async function POST(req) {
       );
     }
 
-    // Find user
-    const user = await User.findOne({ email: session.user.email }).select("_id").lean();
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Preserve the old tag-follow cap from /api/user/follow-tag.
     if (normalised.entityType === "tag") {
-      const tagFollowCount = await Follow.countDocuments({ userId: user._id, entityType: "tag" });
+      const tagFollowCount = await Follow.countDocuments({ userId: userId, entityType: "tag" });
       const alreadyFollowingTag = await Follow.exists({
-        userId: user._id,
+        userId: userId,
         entityId: normalised.entityId,
         entityType: "tag",
       });
@@ -126,7 +122,7 @@ export async function POST(req) {
 
     // Check if already following
     const existingFollow = await Follow.findOne({
-      userId: user._id,
+      userId: userId,
       entityId: normalised.entityId,
       entityType: normalised.entityType,
     });
@@ -139,7 +135,7 @@ export async function POST(req) {
     } else {
       // Follow
       await Follow.create({
-        userId: user._id,
+        userId: userId,
         entityId: normalised.entityId,
         entityType: normalised.entityType,
       });

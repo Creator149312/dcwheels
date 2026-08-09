@@ -2,32 +2,20 @@
 /**
  * DoneNudge
  * ─────────
- * When the authenticated user's list status for this entity is "done",
+ * When the authenticated user's entity status is "done",
  * renders a small callout above WorthItVote nudging them to cast their vote.
  * Renders nothing for guests, unauthenticated users, or non-done statuses.
- *
- * Props
- *   entityId — MongoDB ObjectId string of the TopicPage document
  */
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useEntityTracking } from "@components/EntityTrackingProvider";
 
-export default function DoneNudge({ entityId }) {
-  const { status } = useSession();
-  const [show, setShow] = useState(false);
+export default function DoneNudge() {
+  const ctx = useEntityTracking();
+  const statusData = ctx?.statusData;
 
-  useEffect(() => {
-    if (status !== "authenticated" || !entityId) return;
-    fetch(`/api/unifiedlist/by-entity?entityId=${entityId}`)
-      .then((r) => r.json())
-      .then((d) => { if (d.found && d.status === "done") setShow(true); })
-      .catch(() => {}); // silent — nudge is non-critical
-  }, [status, entityId]);
-
-  if (!show) return null;
+  if (statusData?.status !== "done") return null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 mb-3
+    <div className="flex items-center gap-3 px-3 py-2 mb-2
                     bg-green-50 dark:bg-green-900/20
                     border border-green-200 dark:border-green-800/40
                     rounded-xl">

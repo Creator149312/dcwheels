@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 
 export default function RegisterFormAdv() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams?.get("callbackUrl") || "/u/me";
 
   const [formData, setFormData] = useState({
     username: "",
@@ -292,7 +292,7 @@ export default function RegisterFormAdv() {
           Already have an account?{" "}
           <Link
             href={`/login${
-              callbackUrl !== "/dashboard"
+              callbackUrl !== "/dashboard" && callbackUrl !== "/u/me"
                 ? `?callbackUrl=${encodeURIComponent(callbackUrl)}`
                 : ""
             }`}

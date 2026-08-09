@@ -1,14 +1,15 @@
 // app/api/lists/route.js
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import mongoose from "mongoose";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
-import { getServerSession } from "next-auth"; // if using next-auth
 import { sessionUserId } from "@utils/SessionData";
+import { slugify } from "@utils/HelperFunctions";
 
-export const dynamic = "force-dynamic";
-
-//used to get all the lists created by the loggedin user
+// GET returns the logged-in user's lists, paginated. The route is private
+// and session-driven; we keep max-age=0 so mutations are reflected immediately,
+// while still allowing the browser to revalidate efficiently.
 export async function GET(req) {
   await connectMongoDB();
 
@@ -19,55 +20,16 @@ export async function GET(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ Ensure SYS_SAVED list exists (Lazy Creation)
-    // This catches users who registered before this feature or via providers.
-    let savedList = await UnifiedList.findOne({ userId, systemKey: "SYS_SAVED" });
-    
-    if (!savedList) {
-      // Fallback: Check if user has a list named "Saved" already but without the key
-      // Use regex for case-insensitive match to catch "saved" or "SAVED"
-      savedList = await UnifiedList.findOne({ 
-        userId, 
-        name: { $regex: /^saved$/i } 
-      });
-      
-      if (savedList) {
-        // Upgrade legacy list to system list
-        savedList.isSystem = true;
-        savedList.systemKey = "SYS_SAVED";
-        // Standardize the name to "Saved"
-        savedList.name = "Saved";
-        if (!savedList.description) {
-          savedList.description = "Default list for items you've saved.";
-        }
-        await savedList.save();
-      } else {
-        // Create brand new system list
-        try {
-          await UnifiedList.create({
-            userId,
-            name: "Saved",
-            description: "Default list for items you've saved.",
-            isSystem: true,
-            systemKey: "SYS_SAVED",
-            settings: { visibility: "public", sortBy: "recently-saved" },
-          });
-        } catch (e) {
-          if (e.code !== 11000) console.error("Lazy create SYS_SAVED failed:", e);
-        }
-      }
-    }
-
     const { searchParams } = new URL(req.url);
     const slim = searchParams.get("slim") === "1";
 
     if (slim) {
       // Lightweight fetch — only id + name, no items. Used by AddToListButton
       // picker so it doesn't ship full item arrays across the wire.
-      const lists = await UnifiedList.find({ userId })
+      const lists = await UnifiedList.find({ userId, isDeleted: { $ne: true } })
         .select("_id name isSystem systemKey")
         .lean();
-      
+
       // Sort system lists to the top, then by name
       const sorted = lists.sort((a, b) => {
         if (a.isSystem && !b.isSystem) return -1;
@@ -75,37 +37,68 @@ export async function GET(req) {
         return a.name.localeCompare(b.name);
       });
 
-      const formatted = sorted.map((l) => ({ 
-        id: l._id, 
-        name: l.name, 
+      const formatted = sorted.map((l) => ({
+        id: l._id,
+        name: l.name,
         isSystem: l.isSystem,
-        systemKey: l.systemKey 
+        systemKey: l.systemKey
       }));
       return NextResponse.json({ lists: formatted }, { status: 200 });
     }
 
-    // ✅ 2. Fetch all lists for this user
-    const lists = await UnifiedList.find({ userId }).lean();
+    // ✅ 2. Cursor pagination params
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
+    const cursor = searchParams.get("cursor");
 
-    // Sort system lists to the top for the main response as well
-    const sortedLists = lists.sort((a, b) => {
-      if (a.isSystem && !b.isSystem) return -1;
-      if (!a.isSystem && b.isSystem) return 1;
-      return 0;
-    });
+    // ✅ 3. Build cursor match for stable pagination
+    const baseMatch = { userId, isDeleted: { $ne: true } };
+    const sort = { isSystem: -1, updatedAt: -1, _id: -1 };
 
-    // ✅ 3. Format response (optional but clean)
-    const formatted = sortedLists.map((list) => ({
+    let match = baseMatch;
+    if (cursor) {
+      try {
+        const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf8"));
+        const cursorIsSystem = !!decoded.isSystem;
+        const cursorUpdatedAt = new Date(decoded.updatedAt);
+        const cursorId = new mongoose.Types.ObjectId(decoded._id);
+
+        match = {
+          ...baseMatch,
+          $or: [
+            { isSystem: { $lt: cursorIsSystem } },
+            { isSystem: cursorIsSystem, updatedAt: { $lt: cursorUpdatedAt } },
+            {
+              isSystem: cursorIsSystem,
+              updatedAt: cursorUpdatedAt,
+              _id: { $lt: cursorId },
+            },
+          ],
+        };
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid cursor" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ✅ 4. Fetch paginated lists for this user
+    const lists = await UnifiedList.find(match)
+      .sort(sort)
+      .limit(limit + 1)
+      .lean();
+
+    const hasMore = lists.length > limit;
+    const pageLists = hasMore ? lists.slice(0, limit) : lists;
+
+    const formatted = pageLists.map((list) => ({
       id: list._id,
       name: list.name,
       description: list.description,
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
       isSystem: list.isSystem ?? false,
-      settings: {
-        sortBy: list.settings?.sortBy || "recently-saved",
-        visibility: list.settings?.visibility || "private",
-      },
+      isPublic: list.isPublic ?? true,
       items: list.items.map((item) => ({
         type: item.type,
         word: item.word,
@@ -119,7 +112,26 @@ export async function GET(req) {
       })),
     }));
 
-    return NextResponse.json({ lists: formatted }, { status: 200 });
+    const nextCursor = hasMore
+      ? Buffer.from(
+          JSON.stringify({
+            isSystem: pageLists[pageLists.length - 1].isSystem,
+            updatedAt: pageLists[pageLists.length - 1].updatedAt,
+            _id: String(pageLists[pageLists.length - 1]._id),
+          })
+        ).toString("base64")
+      : null;
+
+    return NextResponse.json(
+      { lists: formatted, nextCursor, hasMore },
+      {
+        status: 200,
+        headers: {
+          // User-specific data: browser may cache, but not shared caches
+          "Cache-Control": "private, max-age=0, must-revalidate",
+        },
+      }
+    );
   } catch (err) {
     console.error("GET /api/lists error:", err);
     return NextResponse.json(
@@ -141,7 +153,7 @@ export async function POST(req) {
 
     // ✅ 2. Parse request body
     const body = await req.json();
-    const { name, description = "", tags = [] } = body;
+    const { name, description = "", tags = [], isPublic = true } = body;
 
     if (!name || typeof name !== "string") {
       return NextResponse.json(
@@ -160,6 +172,23 @@ export async function POST(req) {
       );
     }
 
+    if (description && description.length > 300) {
+      return NextResponse.json(
+        { error: "Description must be 300 characters or less." },
+        { status: 400 }
+      );
+    }
+
+    if (tags && Array.isArray(tags)) {
+      const invalidTag = tags.find((t) => typeof t !== "string" || t.length > 30);
+      if (invalidTag !== undefined) {
+        return NextResponse.json(
+          { error: "Each tag must be a string with 30 characters or less." },
+          { status: 400 }
+        );
+      }
+    }
+
     // Reserved system list names cannot be used for custom lists
     const RESERVED_NAMES = ["Saved", "Favorites", "My Collection"];
     if (RESERVED_NAMES.map(n => n.toLowerCase()).includes(name.trim().toLowerCase())) {
@@ -170,7 +199,7 @@ export async function POST(req) {
     }
 
     // ✅ 3. Prevent duplicate list names for the same user
-    const existing = await UnifiedList.findOne({ userId, name }).lean();
+    const existing = await UnifiedList.findOne({ userId, name, isDeleted: { $ne: true } }).lean();
     if (existing) {
       return NextResponse.json(
         { error: "A list with this name already exists" },
@@ -179,12 +208,17 @@ export async function POST(req) {
     }
 
     // ✅ 4. Create the list
+    const baseSlug = slugify(name);
+    const uniqueSlug = `${baseSlug}-${Date.now()}`;
+
     const newList = await UnifiedList.create({
       userId,
       name,
       description,
       tags: Array.isArray(tags) ? tags : [],
       items: [],
+      isPublic: typeof isPublic === "boolean" ? isPublic : true,
+      slug: uniqueSlug,
     });
 
     // ✅ 5. Format response
@@ -195,10 +229,10 @@ export async function POST(req) {
       tags: newList.tags,
       createdAt: newList.createdAt,
       updatedAt: newList.updatedAt,
+      isPublic: newList.isPublic ?? true,
+      isSystem: newList.isSystem ?? false,
       items: [],
     };
-
-    revalidatePath("/lists");
 
     return NextResponse.json({ list: formatted }, { status: 201 });
   } catch (err) {

@@ -8,12 +8,12 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
-    const skip = Math.max(parseInt(searchParams.get("skip") || "0", 10), 0);
+    const cursor = searchParams.get("cursor") || null;
 
-    const lists = await getPublicLists({ limit, skip });
+    const result = await getPublicLists({ limit, cursor });
 
     return NextResponse.json(
-      { lists },
+      result,
       {
         status: 200,
         headers: {

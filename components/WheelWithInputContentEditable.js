@@ -40,6 +40,7 @@ const FireworksConfetti = dynamic(
 const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
+  wheelTitle: pageWheelTitle,
   wheelTypeProp = "basic",
   relatedWheelsSlot,
   wheelId = null,
@@ -70,7 +71,7 @@ const WheelWithInputContentEditable = ({
     handleSpinClick,
     handleStopSpinning,
     saveWheelData,
-  } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId });
+  } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId, wheelTitle: pageWheelTitle });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(isEditMode);

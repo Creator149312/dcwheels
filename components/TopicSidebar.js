@@ -32,9 +32,11 @@ function TopicSidebar({ topics = [], isTrending = false }) {
             {/* Topic Image/Thumbnail - Sleek Compact */}
             <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-white/5 shadow-sm">
               {topic.cover ? (
-                <img 
-                  src={topic.cover} 
+                <img
+                  src={topic.cover}
                   alt={topic.title}
+                  width="44"
+                  height="44"
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

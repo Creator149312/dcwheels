@@ -65,7 +65,7 @@ test.describe('User Registration & Actions Flow', () => {
     expect(testUser.email).toBeTruthy();
   });
 
-  test('should allow registered user to login and access dashboard', async ({ page }) => {
+  test('should allow registered user to login and access profile', async ({ page }) => {
     // This test assumes the user has been registered and verified in a previous test
     // Navigate to login page
     await page.goto('/login');

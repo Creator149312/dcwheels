@@ -19,7 +19,10 @@ const TopicPageSchema = new Schema(
       },
     },
     relatedId: {
-      type: Schema.Types.Mixed, // Number for external APIs, ObjectId for internal pages
+      // External API IDs are numeric; internal/custom pages may use ObjectIds.
+      // We keep Mixed for compatibility, but all callers should coerce to String
+      // when building contentRef / relatedTopics references.
+      type: Schema.Types.Mixed,
       required: true,
     },
     slug: {
@@ -91,15 +94,57 @@ const TopicPageSchema = new Schema(
   { timestamps: true }
 );
 
+// ---------------------------------------------------------------------------
+// Canonical title normalization. Runs before both validation and save so
+// every creation path (TopicPage.create, new TopicPage().save(), etc.) ends
+// up with a populated `title.default`. Existing title variants are preserved;
+// we only fill `title.default` when it's missing. This is safe for live data
+// because it never deletes fields and never overwrites an already-populated
+// default.
+// ---------------------------------------------------------------------------
+function ensureDefaultTitle(doc) {
+  if (doc && doc.title && typeof doc.title === "object") {
+    const t = doc.title;
+    if (!t.default || String(t.default).trim() === "") {
+      t.default =
+        t.english ||
+        t.localized ||
+        t.romaji ||
+        t.original ||
+        t.native ||
+        t.default;
+    }
+  }
+}
+
+TopicPageSchema.pre("validate", function (next) {
+  ensureDefaultTitle(this);
+  next();
+});
+
+TopicPageSchema.pre("save", function (next) {
+  ensureDefaultTitle(this);
+  next();
+});
+
 // Indexes — without these every getOrCreateTopicPage / getRelatedPages query
 // degrades to a full collection scan.
 // 1) Unique compound for the primary lookup `findOne({ type, relatedId })`
 //    called on every page load. `unique` also prevents duplicate topic pages.
 // 2) Multikey on tags for the `getRelatedPages` aggregation `$in` match.
 // 3) Sort index for recency.
+// 4) Text index on the canonical title for local full-text search. We keep
+//    this title-only because description/tags matches tend to dilute result
+//    relevance for a title-first search experience.
+// 5) Sparse index on the canonical title for fast prefix/exact queries.
 TopicPageSchema.index({ type: 1, relatedId: 1 }, { unique: true });
 TopicPageSchema.index({ tags: 1 });
 TopicPageSchema.index({ createdAt: -1 });
+TopicPageSchema.index(
+  { "title.default": "text" },
+  { default_language: "none" }
+);
+TopicPageSchema.index({ "title.default": 1 }, { sparse: true });
 
 const TopicPage =
   models.TopicPage || mongoose.model("TopicPage", TopicPageSchema);

@@ -6,16 +6,23 @@ import Comment from "@models/comment";
 import User from "@models/user";
 import Post from "@models/post";
 import Wheel from "@models/wheel";
+import UnifiedList from "@models/unifiedlist";
+import { sessionUserId } from "@/utils/SessionData";
 import mongoose from "mongoose";
 import { createNotification } from "@/lib/notificationService";
-import { shadowBanUser } from "@lib/shadowBan";
-
-const URL_PATTERN = /https?:\/\/[^\s]+|www\.[^\s]+/i;
+import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 
 // ✅ Create a new comment or reply
 export async function POST(req) {
   try {
     await connectMongoDB();
+
+    const ip = getIpFromRequest(req);
+    const { limited, retryAfter } = await checkRateLimit(ip, "/api/comments");
+    if (limited) {
+      return rateLimitResponse(retryAfter);
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,31 +36,27 @@ export async function POST(req) {
       );
     }
 
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
+    const userId = await sessionUserId();
+    if (!userId) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Link-drop guard: silently shadow-ban and still "succeed" so spambots
-    // don't know they've been caught
-    if (URL_PATTERN.test(text)) {
-      await shadowBanUser(user._id);
-    }
-
     const comment = await Comment.create({
-      userId: user._id,
+      userId,
       entityType,
       entityId,
       text,
       parentCommentId: parentCommentId || null,
     });
 
-    // Update denormalized commentCount on Post or Wheel
+    // Update denormalized commentCount on the parent entity
     try {
       if (entityType === "post") {
         await Post.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
       } else if (entityType === "wheel" || entityType === "uwheel") {
         await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+      } else if (entityType === "list") {
+        await UnifiedList.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
       }
     } catch (countErr) {
       console.error("Error updating comment count:", countErr);
@@ -84,13 +87,16 @@ export async function POST(req) {
             modelStr = "Post";
           }
         } else if (entityType === "wheel" || entityType === "uwheel") {
-          const wheel = await Wheel.findById(entityId).select("createdBy urlEndpoint").lean();
-          if (wheel?.createdBy) {
-            // createdBy usually holds the email -> find the User ObjectId
+          const wheel = await Wheel.findById(entityId).select("userId createdBy urlEndpoint").lean();
+          if (wheel?.userId) {
+            recipientId = wheel.userId;
+            link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
+            modelStr = "Wheel";
+          } else if (wheel?.createdBy) {
+            // Legacy fallback: createdBy stored an email. Avoid for new wheels.
             const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
             if (wheelCreator?._id) {
               recipientId = wheelCreator._id;
-              // Link fallback
               link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
               modelStr = "Wheel";
             }
@@ -98,10 +104,10 @@ export async function POST(req) {
         }
       }
 
-      if (recipientId && String(recipientId) !== String(user._id)) {
+      if (recipientId && String(recipientId) !== String(userId)) {
         await createNotification({
           recipientId,
-          senderId: user._id,
+          senderId: userId,
           type: parentCommentId ? "REPLY" : "COMMENT",
           entityId: comment._id,
           entityModel: modelStr,

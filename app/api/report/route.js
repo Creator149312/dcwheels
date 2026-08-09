@@ -6,11 +6,12 @@ import Report from "@models/report";
 import Post from "@models/post";
 import Comment from "@models/comment";
 import User from "@models/user";
+import { sessionUserId } from "@utils/SessionData";
 import { shadowBanUser } from "@lib/shadowBan";
 
 // Auto-ban threshold: if a single piece of content accumulates this many
 // distinct reports it is shadow-banned immediately without admin review.
-const AUTO_BAN_THRESHOLD = 5;
+const AUTO_BAN_THRESHOLD = 10;
 
 const VALID_REASONS = ["spam", "harassment", "nsfw", "misinformation", "other"];
 
@@ -39,8 +40,8 @@ export async function POST(req) {
       return NextResponse.json({ message: "Invalid reason" }, { status: 400 });
     }
 
-    const reporter = await User.findOne({ email: session.user.email }).select("_id").lean();
-    if (!reporter) {
+    const reporterId = await sessionUserId();
+    if (!reporterId) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
@@ -61,14 +62,14 @@ export async function POST(req) {
     }
 
     // Prevent self-reports
-    if (String(authorId) === String(reporter._id)) {
+    if (String(authorId) === String(reporterId)) {
       return NextResponse.json({ message: "Cannot report your own content" }, { status: 400 });
     }
 
     // Create the report (unique index prevents double-reporting)
     try {
       await Report.create({
-        reporterId: reporter._id,
+        reporterId: reporterId,
         targetType,
         targetId,
         reason,
@@ -120,7 +121,8 @@ export async function GET(req) {
     }
 
     await connectMongoDB();
-    const admin = await User.findOne({ email: session.user.email }).select("role").lean();
+    const userId = await sessionUserId();
+    const admin = userId ? await User.findById(userId).select("role").lean() : null;
     if (admin?.role !== "admin") {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
@@ -157,7 +159,8 @@ export async function PATCH(req) {
     }
 
     await connectMongoDB();
-    const admin = await User.findOne({ email: session.user.email }).select("_id role").lean();
+    const userId = await sessionUserId();
+    const admin = userId ? await User.findById(userId).select("_id role").lean() : null;
     if (admin?.role !== "admin") {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }

@@ -14,6 +14,24 @@ import {
 import FiltersBarWrapper from "./FiltersBarWrapper";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
+import { unstable_cache } from "next/cache";
+
+const VALID_TYPES = ["anime", "movie", "game", "character"];
+
+// Cache the local DB fallback so repeated API failures don't hammer MongoDB.
+const getCachedTopicPageFallback = unstable_cache(
+  async (type, page, limit) => {
+    await connectMongoDB();
+    const skip = (page - 1) * limit;
+    return TopicPage.find({ type })
+      .sort({ wheels: -1, updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+  },
+  ["topic-page-fallback"],
+  { revalidate: 3600, tags: ["topic-page-fallback"] } // 1 hour
+);
 
 // Build a ?query=string that preserves all active filters while overriding
 // specific keys (e.g. to change the page number).
@@ -30,14 +48,13 @@ function buildHref(sp, updates = {}) {
 }
 
 export async function generateMetadata({ params }) {
-  const { type } = params;
+  const { type } = await params;
 
   const typeLabels = {
     anime: "Anime",
     movie: "Movies",
     game: "Games",
     character: "Characters",
-    custom: "Custom Wheels",
   };
 
   const typeDescriptions = {
@@ -48,8 +65,6 @@ export async function generateMetadata({ params }) {
     game: "Discover what's trending in gaming right now, vote on your favourites, and create wheels for your next gaming session.",
     character:
       "Explore iconic characters, celebrate fan favorites, and create wheels to spark fun character matchups.",
-    custom:
-      "Create and explore custom wheels made by the community for any topic imaginable.",
   };
 
   const label = typeLabels[type] || "Content";
@@ -63,16 +78,22 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// Pre-render the main content listing pages at build time.
+export async function generateStaticParams() {
+  return VALID_TYPES.map((type) => ({ type }));
+}
+
 // ---------- Main Page ----------
 export default async function TopicListPage({ params, searchParams }) {
-  const type = params.type;
-  const page = Math.max(1, parseInt(searchParams?.page || "1"));
-  const sort  = searchParams?.sort  || "";
-  const genre = searchParams?.genre || "";
-  const year  = searchParams?.year  || "";
+  const { type } = await params;
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(1, parseInt(resolvedSearchParams?.page || "1"));
+  const sort  = resolvedSearchParams?.sort  || "";
+  const genre = resolvedSearchParams?.genre || "";
 
   let items = [];
   let mobileItems = [];
+  let apiUnavailable = false;
 
   // Sort value → API sort parameter mapping
   const animeSortMap = { trending: "TRENDING_DESC", popular: "POPULARITY_DESC", new: "START_DATE_DESC", top: "SCORE_DESC" };
@@ -81,22 +102,31 @@ export default async function TopicListPage({ params, searchParams }) {
   const charSortMap  = { popular: "FAVOURITES_DESC", new: "ID_DESC" };
 
   if (type === "anime") {
-    items = await fetchAnime({ page, genre, year, sort: animeSortMap[sort] || "TRENDING_DESC" });
+    items = await fetchAnime({ page, genre, sort: animeSortMap[sort] || "TRENDING_DESC" });
   }
 
   if (type === "movie") {
-    items = await fetchMovies({ page, genres: genre, year, sortBy: movieSortMap[sort] || "popularity.desc" });
+    items = await fetchMovies({ page, genres: genre, sortBy: movieSortMap[sort] || "popularity.desc" });
   }
 
   if (type === "game") {
     const ordering = gameSortMap[sort] || "-added";
     const [general, mobile] = await Promise.all([
-      fetchGames({ page, genres: genre, year, page_size: 16, ordering }),
+      fetchGames({ page, genres: genre, page_size: 16, ordering }),
       fetchMobileGames({ page, page_size: 8 }),
     ]);
-    items = general;
-    const seenIds = new Set(general.map((g) => g.id));
-    mobileItems = mobile.filter((g) => !seenIds.has(g.id)).slice(0, 8);
+    // null means the upstream API is down (not simply empty results)
+    const generalUnavailable = general === null;
+    const mobileUnavailable = mobile === null;
+
+    if (generalUnavailable) {
+      items = null;
+      apiUnavailable = true;
+    } else {
+      items = general;
+      const seenIds = new Set(general.map((g) => g.id));
+      mobileItems = mobileUnavailable ? [] : mobile.filter((g) => !seenIds.has(g.id)).slice(0, 8);
+    }
   }
 
   if (type === "character") {
@@ -104,16 +134,16 @@ export default async function TopicListPage({ params, searchParams }) {
   }
 
   // null means the upstream API is down (not simply empty results)
-  let apiUnavailable = items === null;
+  if (items === null) {
+    apiUnavailable = true;
+  }
+
   if (apiUnavailable) {
-    await connectMongoDB();
-    // Fall back to database to keep feeds working during API outages
-    const skip = (page - 1) * 20;
-    const dbItems = await TopicPage.find({ type })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(20)
-      .lean();
+    // Fall back to database to keep feeds working during API outages.
+    // Sort/genre filters are not applied in fallback mode because local
+    // TopicPage documents don't carry the same structured metadata.
+    const fallbackLimit = type === "game" ? 16 : 20;
+    const dbItems = await getCachedTopicPageFallback(type, page, fallbackLimit);
 
     items = dbItems.map((db) => {
       if (type === "anime") {
@@ -160,8 +190,9 @@ export default async function TopicListPage({ params, searchParams }) {
     });
   }
 
-  // Hero: first item on page 1 (skip for characters — portrait art looks awkward in wide hero).
-  const showHero  = page === 1 && items.length > 0 && type !== "character";
+  // Hero: first item on page 1 only when we have enough items to look good.
+  // Skip for characters — portrait art looks awkward in wide hero.
+  const showHero  = page === 1 && items.length >= 6 && type !== "character";
   const heroItem  = showHero ? items[0] : null;
   const gridItems = showHero ? items.slice(1) : items;
 
@@ -239,7 +270,7 @@ export default async function TopicListPage({ params, searchParams }) {
             <div className="mt-10 flex justify-center items-center gap-3">
               {page > 1 && (
                 <a
-                  href={buildHref(searchParams, { page: page - 1 })}
+                  href={buildHref(resolvedSearchParams, { page: page - 1 })}
                   className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
                 >
                   ← Prev
@@ -248,7 +279,7 @@ export default async function TopicListPage({ params, searchParams }) {
               <span className="text-sm text-muted-foreground px-2">Page {page}</span>
               {hasMore && (
                 <a
-                  href={buildHref(searchParams, { page: page + 1 })}
+                  href={buildHref(resolvedSearchParams, { page: page + 1 })}
                   className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
                 >
                   Next →
@@ -266,6 +297,12 @@ export default async function TopicListPage({ params, searchParams }) {
             ) : (
               `No ${type}s found. Try adjusting your filters.`
             )}
+          </div>
+        )}
+
+        {apiUnavailable && items.length > 0 && (
+          <div className="mt-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs font-medium text-center">
+            Showing local results while the external service is down. Filters may not apply.
           </div>
         )}
       </div>

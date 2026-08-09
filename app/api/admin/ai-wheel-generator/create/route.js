@@ -13,6 +13,7 @@ import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import Page from "@models/page";
+import { slugify, normalizeTag } from "@lib/slug";
 
 async function requireAuth() {
   const session = await getServerSession(authOptions);
@@ -20,24 +21,6 @@ async function requireAuth() {
     return { isValid: false, session: null };
   }
   return { isValid: true, session };
-}
-
-function generateSlug(title) {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function cleanTag(t) {
-  return String(t)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 function generateDefaultColors(count) {
@@ -80,7 +63,7 @@ export async function POST(request) {
     await connectMongoDB();
 
     // Generate/validate slug
-    const pageSlug = slug || generateSlug(title);
+    const pageSlug = slug || slugify(title);
 
     // Check if slug already exists
     const slugExists = await Page.findOne({ slug: pageSlug });
@@ -102,7 +85,7 @@ export async function POST(request) {
       data: segments.map((seg) => ({ text: seg.text })),
       createdBy: session.user.email,
       tags: tags
-        .map((t) => cleanTag(t))
+        .map((t) => normalizeTag(t))
         .filter(Boolean)
         .slice(0, 15),
       wheelData: {

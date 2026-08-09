@@ -249,7 +249,7 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
 }
 
 export async function SuspendedTrailer({ extrasPromise, type, displayTitle }) {
-  if (type === "character") return null;
+  if (type === "character" || extrasPromise === null) return null;
   const extras = await extrasPromise;
   const trailerKey = extras?.trailerKey ?? null;
   if (!trailerKey) return null;
@@ -257,6 +257,7 @@ export async function SuspendedTrailer({ extrasPromise, type, displayTitle }) {
 }
 
 export async function SuspendedStreamingMobile({ extrasPromise, affiliateLinks, type }) {
+  if (extrasPromise === null) return null;
   const extras = await extrasPromise;
   const streaming = extras?.streaming ?? [];
   return (
@@ -270,6 +271,7 @@ export async function SuspendedStreamingMobile({ extrasPromise, affiliateLinks, 
 }
 
 export async function SuspendedStreamingDesktop({ extrasPromise, affiliateLinks, type }) {
+  if (extrasPromise === null) return null;
   const extras = await extrasPromise;
   const streaming = extras?.streaming ?? [];
   return (
@@ -283,6 +285,7 @@ export async function SuspendedStreamingDesktop({ extrasPromise, affiliateLinks,
 }
 
 export async function SuspendedCharacters({ charactersPromise }) {
+  if (charactersPromise === null) return null;
   const characters = await charactersPromise;
   if (!characters || characters.length === 0) return null;
   return (
@@ -306,7 +309,8 @@ export async function SuspendedFeedStream({
   ]);
 
   const initialFeed = feedData ? feedData.slice(0, 8) : [];
-  const initialCursor = feedData && feedData.length > 8 ? feedData[7].createdAt : null;
+  const nextItem = feedData && feedData.length > 8 ? feedData[8] : null;
+  const initialCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
   return (
     <InfiniteFeedStream
@@ -315,7 +319,7 @@ export async function SuspendedFeedStream({
       externalId={relatedId}
       tag={tag}
       relatedPages={JSON.parse(JSON.stringify(relatedPages))}
-      initialNextCursor={initialCursor ? JSON.parse(JSON.stringify(initialCursor)) : null}
+      initialNextCursor={initialCursor}
       currentContextId={relatedId}
       docType={docType}
     />

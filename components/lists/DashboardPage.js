@@ -6,10 +6,14 @@ import UnifiedListCreationModal from "./UnifiedListCreationModal";
 import { Button } from "@components/ui/button";
 import EmptyState from "@components/EmptyState";
 import { BookMarked } from "lucide-react";
+import { getListUrl } from "@utils/UrlHandler";
 
 export default function ListDashboardPage() {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: session, status } = useSession();
 
@@ -20,6 +24,27 @@ export default function ListDashboardPage() {
   const handleModalClose = () => {
     setIsModalOpen(false);
   };
+
+  async function loadMore() {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/unifiedlist?cursor=${encodeURIComponent(cursor)}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.lists) {
+        setLists((prev) => [...prev, ...data.lists]);
+        setCursor(data.nextCursor || null);
+        setHasMore(!!data.nextCursor);
+      }
+    } catch (err) {
+      console.error("Failed to load more lists:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const addNewList = async (listData) => {
     const res = await fetch("/api/unifiedlist", {
@@ -67,12 +92,16 @@ export default function ListDashboardPage() {
 
         if (res.ok && data.lists) {
           setLists(data.lists);
+          setCursor(data.nextCursor || null);
+          setHasMore(!!data.nextCursor);
         } else {
           setLists([]);
+          setHasMore(false);
         }
       } catch (err) {
         console.error("Failed to fetch lists:", err);
         setLists([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -137,7 +166,7 @@ export default function ListDashboardPage() {
           return (
             <Link
               key={list.id}
-              href={`/lists/${list.id}`}
+              href={getListUrl(list)}
               className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary/50 transition-colors block"
             >
               {/* Cover */}
@@ -168,6 +197,18 @@ export default function ListDashboardPage() {
           );
         })}
       </div>
+      {hasMore && (
+        <div className="flex justify-center mt-8">
+          <Button
+            variant="outline"
+            onClick={loadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "Loading…" : "Load More"}
+          </Button>
+        </div>
+      )}
+
       <UnifiedListCreationModal
         isOpen={isModalOpen}
         closeModal={handleModalClose}

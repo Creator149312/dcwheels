@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, Edit, Lock, Disc3, BookMarked, Layers, MessageSquare, Plus } from "lucide-react";
+import { getListUrl } from "@utils/UrlHandler";
 import RemoveListBtn from "./RemoveListBtn";
 import CreatePostTeaser from "./CreatePostTeaser";
 import { DecisionTimeline } from "./DecisionTimeline";
@@ -100,7 +101,7 @@ export default function ProfileTabs({
                 <div key={list.id} className="relative group p-4 sm:p-5 border border-border rounded-2xl bg-card hover:shadow-sm transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/lists/${list.id}`} className="font-bold text-foreground text-base sm:text-lg hover:text-primary transition line-clamp-1">
+                      <Link href={getListUrl(list)} className="font-bold text-foreground text-base sm:text-lg hover:text-primary transition line-clamp-1">
                         {list.name}
                       </Link>
                       {isOwner && !list.isPublic && (
@@ -118,12 +119,12 @@ export default function ProfileTabs({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                    <Link href={`/lists/${list.id}`} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-primary transition" title="View List">
+                    <Link href={getListUrl(list)} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-primary transition" title="View List">
                       <Eye size={18} />
                     </Link>
                     {isOwner && !list.isSystem && (
                       <>
-                        <Link href={`/lists/${list.id}`} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-danger transition flex items-center gap-1 text-xs font-semibold" title="Edit List Settings">
+                        <Link href={getListUrl(list)} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-danger transition flex items-center gap-1 text-xs font-semibold" title="Edit List Settings">
                           <Edit size={16} /> Edit
                         </Link>
                         <RemoveListBtn id={list.id} type="unifiedlist" />

@@ -85,9 +85,6 @@ export default function WorthItVote({
   initialRating = { totalScore: 0, count: 0 },
   onDark = false,
 }) {
-  // DEBUG: Log the prop value on mount
-  console.log("🔍 WorthItVote MOUNTED with topicPageId:", topicPageId, "| Type:", typeof topicPageId);
-  
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
   const storageKey = `worthit_${topicPageId}`;
@@ -128,16 +125,13 @@ export default function WorthItVote({
         e.stopPropagation();
       }
       
-      console.log("=== WorthItVote.handleRate called ===", {score, session: !!session, topicPageId});
       if (submitting) return;
       
       if (!session) {
-        console.log("No session - showing login prompt");
         openLoginPrompt("Rate this topic and join the community discussion!");
         return;
       }
 
-      console.log("Session exists, submitting vote", {topicPageId, rating: score});
       setSubmitting(true);
 
       // Optimistic update
@@ -145,13 +139,11 @@ export default function WorthItVote({
       setUserRating(score);
 
       try {
-        console.log("Making fetch request to /api/worthit/vote");
         const res = await fetch("/api/worthit/vote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ topicPageId, rating: score }),
         });
-        console.log("Fetch response status:", res.status, res.statusText);
 
         if (res.ok) {
           const data = await res.json();
@@ -191,158 +183,102 @@ export default function WorthItVote({
   const hasStats = totalVotes >= MIN_VOTES_STATS;
 
   return (
-    <div className="mt-1">
-      {/* ═════════════════════════════════════════════════════════════════
-          SECTION 1: SOCIAL PROOF (Shown FIRST - High-Priority Change)
-          Users see stats BEFORE interaction for maximum trust & conversion
-          ═════════════════════════════════════════════════════════════════ */}
-      {hasStats ? (
-        <div className={`mb-2.5 p-2.5 rounded-lg bg-gradient-to-r ${sentiment.bg} border ${sentiment.border} animate-in fade-in duration-500`}>
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Consensus % with Early Badge */}
-            <div className="flex items-center gap-2">
-              <div className="text-right">
-                <div className={`text-lg font-black leading-none ${sentiment.color} ${sentiment.darkColor}`}>
-                  {worthItPct}%
-                </div>
-                <div className={`text-[9px] font-bold uppercase ${sentiment.color} opacity-70 tracking-tighter whitespace-nowrap`}>
-                  {sentiment.label}
-                </div>
-              </div>
-              
-              {/* Early Consensus Badge - High-Priority Change */}
-              {totalVotes < MIN_VOTES_FOR_EARLY_BADGE && (
-                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/30 animate-pulse">
-                  <span className="w-1 h-1 rounded-full bg-orange-500" />
-                  <span className="text-[9px] font-bold text-orange-600 dark:text-orange-400">
-                    Early
-                  </span>
-                </div>
-              )}
+    <div className="mt-1 space-y-1.5">
+      {/* ── Top Stacked Box: Social Proof & Stats Summary ─────────────── */}
+      <div className="p-2 rounded-xl bg-muted/20 border border-border/40 flex items-center justify-between gap-3">
+        {hasStats ? (
+          <div className="flex items-center gap-3">
+            {/* Consensus % */}
+            <div className="flex flex-col">
+              <span className="text-base font-black text-emerald-500 leading-none">
+                {worthItPct}%
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-500/80 mt-0.5">
+                Worth It
+              </span>
             </div>
 
-            <div className="w-px h-5 bg-border/30" />
+            <div className="h-5 w-px bg-border/40" />
 
-            {/* Right: Average Rating */}
-            <div className="text-right shrink-0">
-              <div className={`text-lg font-black leading-none ${sentiment.color} ${sentiment.darkColor}`}>
-                {avgRating} <span className="text-[10px] opacity-40">/ 5</span>
-              </div>
-              <div className={`text-[9px] font-bold uppercase ${sentiment.color} opacity-70 tracking-tighter`}>
-                Average
-              </div>
-            </div>
-
-            {/* Vote count */}
-            <div className="ml-auto text-right">
-              <div className="text-[10px] font-medium text-muted-foreground">
-                {totalVotes.toLocaleString()}
-              </div>
-              <div className="text-[9px] font-bold uppercase text-muted-foreground/60 tracking-tighter">
-                Votes
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-2.5 p-2 rounded bg-primary/5 border border-primary/10">
-          <p className="text-[10px] text-primary/60 font-medium">
-            Be the first to rate this {type}
-          </p>
-        </div>
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════
-          SECTION 2: RATING INTERACTION (Interactive stars)
-          High-Priority Changes: Semantic labels + Larger tap targets
-          ═════════════════════════════════════════════════════════════════ */}
-      <div>
-        <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${labelCls}`}>
-          {userRating ? (
-            <span className="text-emerald-500">Your Rating</span>
-          ) : (
-            getQuestion(type)
-          )}
-        </p>
-
-        <div className="flex flex-col xs:flex-row xs:items-center gap-2 sm:gap-4 min-h-0 flex-wrap">
-          {/* Stars with larger mobile tap targets - High-Priority Change */}
-          <div className="flex items-center gap-0.5 sm:gap-1.5 flex-shrink-0">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <div key={star} className="flex flex-col items-center gap-1 w-8 sm:w-11">
-                <button
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  onClick={(e) => handleRate(star, e)}
-                  disabled={submitting}
-                  type="button"
-                  className="p-0.5 sm:p-1.5 transition-all duration-200 rounded-lg flex items-center justify-center hover:scale-110 hover:bg-primary/5 active:scale-95 cursor-pointer"
-                  title={`Rate ${star} star${star > 1 ? "s" : ""}: ${getStarLabels(type)[star].text}`}
-                  aria-label={`Rate ${star} out of 5 stars`}
-                >
-                  <Star
-                    size={22}
-                    className={`transition-all duration-300 flex-shrink-0 sm:hidden
-                      ${(hoverRating || userRating) >= star
-                        ? "fill-amber-400 text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                        : "text-muted-foreground/25"
-                      }
-                    `}
-                  />
-                  <Star
-                    size={24}
-                    className={`transition-all duration-300 flex-shrink-0 hidden sm:block
-                      ${(hoverRating || userRating) >= star
-                        ? "fill-amber-400 text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                        : "text-muted-foreground/25"
-                      }
-                    `}
-                  />
-                </button>
-                
-                {/* Semantic labels below stars - High-Priority Change */}
-                <div className="h-3 flex items-center justify-center">
-                  {(hoverRating === star || userRating === star) && (
-                    <span className={`text-[8px] sm:text-[9px] font-bold whitespace-nowrap
-                      ${getStarLabels(type)[star].color} transition-all duration-200
-                    `}>
-                      {getStarLabels(type)[star].text}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Right Section: Rating Display & Loading spinner */}
-          <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
-            {userRating && (
-              <div className="p-1 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shadow-sm animate-in fade-in duration-300">
-                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                  ✓ You rated: {userRating}/5
+            {/* Average Rating */}
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-base font-black text-foreground leading-none">
+                  {avgRating}
                 </span>
+                <span className="text-[10px] text-muted-foreground/60 font-medium">/ 5</span>
               </div>
-            )}
-
-            {/* Loading spinner */}
-            {submitting && (
-              <span className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            )}
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 mt-0.5">
+                Average
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <span className="text-xs text-muted-foreground/70 italic">
+            Be the first to rate this {type}
+          </span>
+        )}
+
+        {/* Total Votes */}
+        {hasStats && (
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-bold text-foreground leading-none">
+              {totalVotes.toLocaleString()}
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-0.5">
+              Votes
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ═════════════════════════════════════════════════════════════════
-          SECTION 3: COLD START STATE (No votes yet)
-          High-Priority Change: Type-specific messaging
-          ═════════════════════════════════════════════════════════════════ */}
-      {!hasStats && totalVotes === 0 && (
-        <div className="mt-3 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20 animate-in fade-in duration-500">
-          <p className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">
-            {getColdStartMessage(type)}
+      {/* ── Bottom Stacked Box: Star Rating Action ──────────────────────── */}
+      <div className="p-2 rounded-xl bg-muted/20 border border-border/40 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {userRating ? (
+              <span className="text-emerald-500 font-extrabold">Your Rating: {userRating}/5</span>
+            ) : hoverRating ? (
+              <span className={getStarLabels(type)[hoverRating]?.color}>
+                {getStarLabels(type)[hoverRating]?.text}
+              </span>
+            ) : (
+              getQuestion(type)
+            )}
           </p>
+
+          {submitting && (
+            <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
-      )}
+
+        {/* Stars (left-aligned, fixed size/gap, never stretched) */}
+        <div className="flex items-center justify-start gap-1 sm:gap-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={(e) => handleRate(star, e)}
+              disabled={submitting}
+              type="button"
+              className="p-1 transition-transform duration-150 hover:scale-110 active:scale-95 cursor-pointer flex-shrink-0"
+              title={`Rate ${star}: ${getStarLabels(type)[star]?.text}`}
+              aria-label={`Rate ${star} out of 5 stars`}
+            >
+              <Star
+                size={22}
+                className={`transition-all duration-200
+                  ${(hoverRating || userRating) >= star
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-muted-foreground/30"
+                  }
+                `}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

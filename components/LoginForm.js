@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import SignInBtn from "@components/SignInBtn";
@@ -16,7 +16,7 @@ import { Button } from "./ui/button";
 export default function LoginForm({ onSuccess, onCancel, embedded = false }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams?.get("callbackUrl") || "/u/me";
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -60,15 +60,32 @@ export default function LoginForm({ onSuccess, onCancel, embedded = false }) {
       });
 
       if (res?.error) {
-        setError("Invalid email or password.");
+        // NextAuth surfaces custom authorize() errors via res.error.
+        // Show lockout messages directly; otherwise fall back to generic credentials error.
+        const normalizedError = res.error.toLowerCase();
+        if (normalizedError.includes("too many") || normalizedError.includes("try again")) {
+          setError(res.error);
+        } else {
+          setError("Invalid email or password.");
+        }
         return;
       }
 
       if (onSuccess) {
         onSuccess();
-      } else {
-        router.replace(callbackUrl);
+        return;
       }
+
+      // Default destination is the user's profile. If a callbackUrl was
+      // explicitly provided (e.g. user tried to access a protected page),
+      // send them there instead.
+      const session = await getSession();
+      const target = callbackUrl && callbackUrl !== "/dashboard" && callbackUrl !== "/u/me"
+        ? callbackUrl
+        : session?.user?.username
+          ? `/u/${session.user.username.toLowerCase()}`
+          : "/u/me";
+      router.replace(target);
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -226,7 +243,7 @@ export default function LoginForm({ onSuccess, onCancel, embedded = false }) {
   if (embedded) return formContent;
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       <div className="w-full max-w-md">
         {/* Brand mark */}
         <div className="text-center mb-6 px-4">

@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
-import User from "@models/user";
+import { sessionUser } from "@utils/SessionData";
 import { shadowBanUser } from "@lib/shadowBan";
-
-// Regex that matches any URL-like token (http://, https://, www.)
-const URL_PATTERN = /https?:\/\/[^\s]+|www\.[^\s]+/i;
 // Posts per minute that triggers a shadow-ban (rate limit)
 const RATE_LIMIT_PER_MINUTE = 10;
 
@@ -17,16 +12,14 @@ const RATE_LIMIT_PER_MINUTE = 10;
  */
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    await connectMongoDB();
+    const sessionData = await sessionUser("_id shadowBanned name username");
+    if (!sessionData) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    await connectMongoDB();
-    const user = await User.findOne({ email: session.user.email })
-      .select("_id shadowBanned name username")
-      .lean();
-    if (!user) {
+    const { userId, user } = sessionData;
+    if (!userId || !user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
@@ -34,6 +27,7 @@ export async function POST(req) {
     const {
       content = "",
       image = null,
+      imageVariants = null,
       contentRef = null,
       hasPoll = false,
       pollOptions = [],
@@ -63,9 +57,6 @@ export async function POST(req) {
 
     // ── 2. Anti-spam checks ────────────────────────────────────────────────────
 
-    // Link-drop guard
-    const containsLink = URL_PATTERN.test(masterText);
-
     // Rate-limit: >10 posts in the last 60 seconds
     const oneMinuteAgo = new Date(Date.now() - 60_000);
     const recentCount = await Post.countDocuments({
@@ -74,9 +65,11 @@ export async function POST(req) {
     });
     const isSpamming = recentCount >= RATE_LIMIT_PER_MINUTE;
 
-    // Shadow-ban logic
-    const shouldShadowBan = containsLink || isSpamming || user.shadowBanned;
-    if (containsLink || isSpamming) {
+    // Shadow-ban logic: link drops are no longer auto-banned; rely on
+    // community reports or admin review instead. Only hard spam patterns
+    // (e.g. flood posting) and existing bans are applied automatically.
+    const shouldShadowBan = isSpamming || user.shadowBanned;
+    if (isSpamming) {
       await shadowBanUser(user._id);
     }
 
@@ -100,6 +93,13 @@ export async function POST(req) {
             { status: 400 }
           );
         }
+        const image = typeof opt === "string" ? null : opt.image || null;
+        if (image && typeof image !== "string") {
+          return NextResponse.json(
+            { message: "Poll option image must be a valid URL" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -110,11 +110,25 @@ export async function POST(req) {
       authorHandle: user.username || null,
       content: masterText,
       image: image || null,
+      imageVariants: imageVariants
+        ? {
+            sm: imageVariants.sm || imageVariants.sm || null,
+            md: imageVariants.md || image || null,
+            lg: imageVariants.lg || image || null,
+          }
+        : null,
       contentRef: contentRef || null,
       hasPoll: !!hasPoll,
       pollOptions: hasPoll
         ? pollOptions.map((opt) => ({
             text: (typeof opt === "string" ? opt : opt.text).trim(),
+            image: typeof opt === "string" ? null : opt.image || null,
+            imageVariants: typeof opt === "string" || !opt.imageVariants
+              ? null
+              : {
+                  sm: opt.imageVariants.sm || opt.image || null,
+                  md: opt.imageVariants.md || opt.image || null,
+                },
             voteCount: 0,
           }))
         : [],

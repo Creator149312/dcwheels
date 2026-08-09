@@ -5,29 +5,28 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookMarked } from "lucide-react";
 import EmptyState from "@components/EmptyState";
+import { getListUrl } from "@utils/UrlHandler";
 
-export default function ListsClient({ initialLists }) {
+export default function ListsClient({ initialLists, initialNextCursor = null, initialHasMore = false }) {
   const searchParams = useSearchParams();
   const isContentMode = searchParams.get("mode") === "content";
   const [lists, setLists] = useState(initialLists);
-  const [skip, setSkip] = useState(20);
+  const [cursor, setCursor] = useState(initialNextCursor);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(initialLists.length === 20);
+  const [hasMore, setHasMore] = useState(initialHasMore);
 
   async function loadMore() {
+    if (!cursor || loading) return;
     setLoading(true);
 
-    const res = await fetch(`/api/unifiedlist/all?limit=20&skip=${skip}`);
+    const res = await fetch(`/api/unifiedlist/all?limit=20&cursor=${encodeURIComponent(cursor)}`);
     const data = await res.json();
 
     const newLists = data.lists || [];
 
     setLists((prev) => [...prev, ...newLists]);
-    setSkip((prev) => prev + 20);
-
-    if (newLists.length < 20) {
-      setHasMore(false);
-    }
+    setCursor(data.nextCursor || null);
+    setHasMore(!!data.nextCursor);
 
     setLoading(false);
   }
@@ -76,7 +75,7 @@ export default function ListsClient({ initialLists }) {
           return (
             <Link
               key={list.id}
-              href={`/lists/${list.id}`}
+              href={getListUrl(list)}
               className="block bg-card border border-border shadow-sm rounded-lg overflow-hidden hover:shadow-md transition"
             >
               {/* ✅ Cover Image */}

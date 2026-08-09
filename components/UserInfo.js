@@ -45,15 +45,23 @@ export default function UserInfo() {
     );
   } else {
     return (
-      <Link href="/login">
-        <Button 
-          className="cursor-pointer font-bold rounded-full px-5" 
-          size="sm" 
-          variant="default"
+      <div className="hidden sm:flex items-center gap-2">
+        <Link
+          href="/login"
+          className="px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
         >
-          Login
-        </Button>
-      </Link>
+          Log In
+        </Link>
+        <Link href="/register">
+          <Button
+            className="cursor-pointer font-bold rounded-full px-5"
+            size="sm"
+            variant="default"
+          >
+            Sign Up
+          </Button>
+        </Link>
+      </div>
     );
   }
 }

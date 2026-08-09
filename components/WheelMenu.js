@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
-export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHandle, onDeleted }) {
+export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHandle, createdBy, userId, onDeleted }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -24,7 +24,16 @@ export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHa
   const router = useRouter();
   const menuRef = useRef(null);
 
-  const isOwnWheel = session?.user?.username === authorHandle || session?.user?.name === authorHandle;
+  // Ownership check: prefer exact userId match, then fall back to handle/email.
+  // userId is the authoritative source; authorHandle/createdBy are only for
+  // display and legacy wheels without userId.
+  const sessionUserId = session?.user?.id ? String(session.user.id) : null;
+  const wheelUserId = userId ? String(userId) : null;
+  const isOwnWheel =
+    (sessionUserId && wheelUserId && sessionUserId === wheelUserId) ||
+    (!wheelUserId && session?.user?.username === authorHandle) ||
+    (!wheelUserId && session?.user?.name === authorHandle) ||
+    (!wheelUserId && !!createdBy && session?.user?.email === createdBy);
 
   // Sync state if prop changes (e.g. from parent feed update)
   useEffect(() => {
@@ -113,6 +122,7 @@ export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHa
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
+        aria-label="Wheel actions"
         className="p-1.5 rounded-full hover:bg-muted transition text-muted-foreground hover:text-foreground"
       >
         <MoreHorizontal size={20} />
@@ -127,6 +137,7 @@ export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHa
               e.stopPropagation();
               toggleVisibility();
             }}
+            aria-label={isPublic ? "Make wheel private" : "Make wheel public"}
             disabled={visibilitySubmitting}
             className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-accent transition disabled:opacity-50"
           >
@@ -152,6 +163,7 @@ export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHa
               e.stopPropagation();
               handleDelete();
             }}
+            aria-label={deleteConfirm ? "Confirm delete wheel" : "Delete wheel"}
             disabled={deleteSubmitting}
             className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-accent transition disabled:opacity-50"
           >

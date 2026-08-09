@@ -58,17 +58,15 @@ const tagSchema = new Schema(
       default: 0,
       min: 0,
     },
-    isPublic: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
   },
   { timestamps: true }
 );
 
 // Text index so admin search works across slug + displayName + aliases.
 tagSchema.index({ slug: "text", displayName: "text", aliases: "text" });
+
+// Directory pages sort by popularity counts.
+tagSchema.index({ wheelCount: -1, askCount: -1, listCount: -1 });
 
 const Tag = models.Tag || mongoose.model("Tag", tagSchema);
 export default Tag;

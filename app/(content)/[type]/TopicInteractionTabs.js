@@ -26,7 +26,6 @@ export default function TopicInteractionTabs({
   contentTitle = "",
   contentCover = null,
   contentTags = [],
-  taggedWheels = [],
   animeCharacters = [],
   initialFeedItems = [],
   initialFeedCursor = null,

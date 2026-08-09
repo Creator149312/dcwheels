@@ -40,10 +40,12 @@ export async function POST(req) {
     const contentType = req.headers.get("content-type") || "";
     let buffer;
     let mime;
+    let mode;
 
     if (contentType.includes("application/json")) {
       const body = await req.json().catch(() => null);
       const dataUrl = body?.dataUrl;
+      mode = body?.mode;
       if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
         return NextResponse.json({ error: "dataUrl is required" }, { status: 400 });
       }
@@ -59,6 +61,7 @@ export async function POST(req) {
     } else {
       const formData = await req.formData();
       const file = formData.get("file");
+      mode = formData.get("mode");
       if (!file || typeof file === "string") {
         return NextResponse.json({ error: "file is required" }, { status: 400 });
       }
@@ -72,23 +75,91 @@ export async function POST(req) {
       mime = file.type;
     }
 
-    // Optimize for feed: Resize to max 1200px width/height and convert to WebP
-    // This allows for much higher quality than the 300x300 segment images.
-    const optimized = await sharp(buffer)
-      .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer();
+    const resolvedMode = mode === "poll" ? "poll" : "post";
+    const baseId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    const blobPath = `posts/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+    // Post mode: generate 480/780/1080 variants for main post images.
+    // Poll mode: generate 240/480 variants for poll option grid images.
+    if (resolvedMode === "poll") {
+      const [smBuffer, mdBuffer] = await Promise.all([
+        sharp(buffer)
+          .resize(240, 240, { fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 75 })
+          .toBuffer(),
+        sharp(buffer)
+          .resize(480, 480, { fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 75 })
+          .toBuffer(),
+      ]);
 
-    const uploaded = await put(blobPath, optimized, {
-      access: "public",
-      addRandomSuffix: false,
-      contentType: "image/webp",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+      const [smBlob, mdBlob] = await Promise.all([
+        put(`posts/${baseId}/poll-sm.webp`, smBuffer, {
+          access: "public",
+          addRandomSuffix: false,
+          contentType: "image/webp",
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        }),
+        put(`posts/${baseId}/poll-md.webp`, mdBuffer, {
+          access: "public",
+          addRandomSuffix: false,
+          contentType: "image/webp",
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        }),
+      ]);
 
-    return NextResponse.json({ url: uploaded.url }, { status: 200 });
+      return NextResponse.json(
+        {
+          url: mdBlob.url,
+          variants: { sm: smBlob.url, md: mdBlob.url },
+        },
+        { status: 200 }
+      );
+    }
+
+    const [smBuffer, mdBuffer, lgBuffer] = await Promise.all([
+      sharp(buffer)
+        .resize(480, 480, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 75 })
+        .toBuffer(),
+      sharp(buffer)
+        .resize(780, 780, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer(),
+      sharp(buffer)
+        .resize(1080, 1080, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer(),
+    ]);
+
+    const [smBlob, mdBlob, lgBlob] = await Promise.all([
+      put(`posts/${baseId}/sm.webp`, smBuffer, {
+        access: "public",
+        addRandomSuffix: false,
+        contentType: "image/webp",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }),
+      put(`posts/${baseId}/md.webp`, mdBuffer, {
+        access: "public",
+        addRandomSuffix: false,
+        contentType: "image/webp",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }),
+      put(`posts/${baseId}/lg.webp`, lgBuffer, {
+        access: "public",
+        addRandomSuffix: false,
+        contentType: "image/webp",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }),
+    ]);
+
+    return NextResponse.json(
+      {
+        url: lgBlob.url,
+        image: lgBlob.url,
+        variants: { sm: smBlob.url, md: mdBlob.url, lg: lgBlob.url },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("POST /api/post/upload-image error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

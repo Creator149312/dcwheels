@@ -8,13 +8,10 @@ import {
   LogOut, 
   Moon, 
   Sun, 
-  Lock, 
   ShieldCheck, 
-  Globe,
   X, 
   KeyRound, 
   User as UserIcon,
-  Check
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -46,10 +43,6 @@ export default function ProfileHeader({
   const [editUsername, setEditUsername] = useState(user.username || "");
   const [editBio, setEditBio] = useState(user.bio || "");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  // Settings: Privacy & Password States
-  const [publicSpins, setPublicSpins] = useState(!!user.publicSpins);
-  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   // Change Password Form State
   const [currentPassword, setCurrentPassword] = useState("");
@@ -114,37 +107,6 @@ export default function ProfileHeader({
       toast.error("Something went wrong, please try again.");
     } finally {
       setIsSavingProfile(false);
-    }
-  }
-
-  // Manage Privacy toggle (Public vs Private Profile / publicSpins)
-  async function handleTogglePrivacy(nextVal) {
-    if (savingPrivacy) return;
-    setPublicSpins(nextVal);
-    setSavingPrivacy(true);
-
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicSpins: nextVal }),
-      });
-
-      if (!res.ok) {
-        setPublicSpins(!nextVal); // Revert on error
-        toast.error("Privacy setting update failed.");
-      } else {
-        toast.success(
-          nextVal
-            ? "Your spin stories are now visible on public wheels"
-            : "Your spin stories are now private"
-        );
-      }
-    } catch {
-      setPublicSpins(!nextVal); // Revert on error
-      toast.error("Something went wrong");
-    } finally {
-      setSavingPrivacy(false);
     }
   }
 
@@ -415,34 +377,6 @@ export default function ProfileHeader({
                     className="px-3.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg border border-border"
                   >
                     {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                  </button>
-                </div>
-
-                {/* Profile Privacy Flag Toggle */}
-                <div className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted/40 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-muted rounded-xl text-foreground">
-                      {publicSpins ? <Globe size={18} /> : <Lock size={18} />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-foreground">Public Spin Stories</p>
-                      <p className="text-xs text-muted-foreground">Share your decisions in spin feeds</p>
-                    </div>
-                  </div>
-                  
-                  {/* Custom Toggle Switch */}
-                  <button
-                    onClick={() => handleTogglePrivacy(!publicSpins)}
-                    disabled={savingPrivacy}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                      publicSpins ? "bg-primary" : "bg-muted"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        publicSpins ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
                   </button>
                 </div>
 

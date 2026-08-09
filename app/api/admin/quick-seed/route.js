@@ -72,7 +72,7 @@ export async function POST(req) {
           tags: [title.toLowerCase().replace(/\s+/g, "")],
           contentRef: {
             type: type,
-            externalId: topicPage.relatedId,
+            externalId: String(topicPage.relatedId),
             slug: slug,
             image: topicPage.cover || "",
             title: topicPage.title?.english || topicPage.title?.romaji || topicPage.title?.default || title

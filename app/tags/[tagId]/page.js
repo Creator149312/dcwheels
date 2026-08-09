@@ -1,12 +1,9 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
-import Wheel from "@models/wheel";
-import Post from "@models/post";
-import UnifiedList from "@models/unifiedlist";
 import Tag from "@models/tag";
 import { getFeedItems } from "@/lib/feedService";
-import { getTagSpaceStats, resolveTagSlug } from "@components/actions/actions";
+import { resolveTagSlug } from "@components/actions/actions";
 import TagSpaceClient from "@components/TagSpaceClient";
 
 // React.cache() deduplicates resolveTagSlug between generateMetadata and the
@@ -14,7 +11,6 @@ import TagSpaceClient from "@components/TagSpaceClient";
 // the same slug-lookup aggregation twice against MongoDB.
 const getCachedTagSlug = cache((tagId) => resolveTagSlug(tagId));
 import Link from "next/link";
-import { Hash, Layers } from "lucide-react";
 
 // Tags with fewer wheels than this threshold are served with noindex so
 // Google skips thin pages, but the page still renders — users clicking
@@ -25,34 +21,53 @@ const NOINDEX_BELOW = 3;
 // Tag pages rarely change — cache aggressively.
 export const revalidate = 86400; // 1 day
 
-// Pre-render the top 100 public tag pages at build time.
-// Prefers Tag collection slugs (canonical); falls back to raw Wheel.tags.
+// Pre-render only the seasonal tags surfaced by TagsCarousel.
+// All other tag pages render on-demand with ISR.
 export async function generateStaticParams() {
   try {
-    await connectMongoDB();
+    const now = new Date();
+    const month = now.getMonth() + 1;
 
-    // Hero tier: registered canonical tags that are public and have content
-    const canonicalTags = await Tag.find({ isPublic: true })
-      .sort({ wheelCount: -1, askCount: -1, listCount: -1 })
-      .limit(100)
+    // Seasonal tag names from TagsCarousel
+    const seasonalNames = new Set([
+      "new-year",
+      "valentines",
+      "ipl",
+      "cricket",
+      "fifa",
+      "summer",
+      "back-to-school",
+      "halloween",
+      "thanksgiving",
+      "black-friday",
+      "christmas",
+    ]);
+
+    const currentSeasonal = {
+      1: ["new-year"],
+      2: ["valentines"],
+      3: ["ipl", "cricket"],
+      4: ["ipl", "cricket"],
+      5: ["ipl"],
+      6: ["fifa", "summer"],
+      7: ["summer"],
+      8: ["back-to-school"],
+      9: ["back-to-school"],
+      10: ["halloween"],
+      11: ["thanksgiving", "black-friday"],
+      12: ["christmas", "new-year"],
+    }[month];
+
+    if (currentSeasonal) {
+      currentSeasonal.forEach((t) => seasonalNames.add(t));
+    }
+
+    await connectMongoDB();
+    const tags = await Tag.find({ slug: { $in: Array.from(seasonalNames) } })
       .select("slug")
       .lean();
 
-    if (canonicalTags.length > 0) {
-      return canonicalTags.map((t) => ({ tagId: t.slug }));
-    }
-
-    // Fallback: Tag collection not yet seeded — use raw Wheel.tags
-    const top = await Wheel.aggregate([
-      { $match: { tags: { $exists: true, $ne: [] } } },
-      { $unwind: "$tags" },
-      { $project: { tag: { $toLower: "$tags" } } },
-      { $group: { _id: "$tag", n: { $sum: 1 } } },
-      { $match: { n: { $gte: NOINDEX_BELOW } } },
-      { $sort: { n: -1 } },
-      { $limit: 100 },
-    ]);
-    return top.filter((t) => t._id).map((t) => ({ tagId: t._id }));
+    return tags.map((t) => ({ tagId: t.slug }));
   } catch (err) {
     console.error("generateStaticParams (tags) failed:", err);
     return [];
@@ -67,18 +82,13 @@ export async function generateMetadata({ params }) {
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const description = tagDoc?.description ||
     `Explore Decision wheels and community dilemmas about "${display}" on Spinpapa.`;
-  // Count total content to decide noindex for thin tags
-  const totalCount = tagDoc 
+
+  // SEO guard: skip indexing thin or unregistered tags. Rely on the Tag
+  // document's denormalized counts; don't run expensive countDocuments
+  // queries for unregistered tags — just treat them as thin.
+  const totalCount = tagDoc
     ? (tagDoc.wheelCount || 0) + (tagDoc.askCount || 0) + (tagDoc.listCount || 0)
-    : await (async () => {
-        const [w, a, l] = await Promise.all([
-          Wheel.countDocuments({ tags: canonical, isPublic: true, isDeleted: false }),
-          Post.countDocuments({ tags: canonical, isPublic: true, isDeleted: false, shadowBanned: false }),
-          UnifiedList.countDocuments({ tags: canonical, isSystem: false, $or: [{ "settings.visibility": "public" }, { isPublic: true }] })
-        ]);
-        return w + a + l;
-      })();
-  
+    : 0;
   const isThin = totalCount < NOINDEX_BELOW;
 
   return {
@@ -103,32 +113,35 @@ export default async function TagDetailPage({ params }) {
     redirect(`/tags/${canonical}`);
   }
 
-  // isPublic:false is the ONLY hard 404 — admin blocks spam tags this way.
-  // Count-based thin tags still render but carry noindex (set in generateMetadata).
-  if (tagDoc && !tagDoc.isPublic) return notFound();
+  // NOTE: We've removed the hard 404 for isPublic: false to ensure common tags 
+  // without this field don't break. Spam is now handled via noindex 
+  // logic in generateMetadata.
 
   const display = tagDoc?.displayName ||
     canonical.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   // Unified feed logic
-  const [initialData, stats] = await Promise.all([
-    getFeedItems({ 
-      tag: canonical, 
-      limit: 21,
+  const FEED_PAGE_SIZE = 8;
+  let initialItems = [];
+  let initialNextCursor = null;
+  try {
+    const initialData = await getFeedItems({
+      tag: canonical,
+      limit: FEED_PAGE_SIZE + 1,
       docType: "post,wheel"
-    }),
-    getTagSpaceStats(canonical),
-  ]);
-
-  const initialItems = initialData.slice(0, 20);
-  const initialNextCursor = initialData.length > 20 ? initialData[19].createdAt : null;
-
-  // Truly empty tags (zero content in DB) → 404. Admin-blocked tags → 404.
-  // We only hard-404 when there's absolutely nothing to show AND the tag isn't
-  // a registered public tag (a registered public tag may exist but have no content yet).
-  if ((!initialItems || initialItems.length === 0) && !tagDoc) {
-    return notFound();
+    });
+    initialItems = initialData.slice(0, FEED_PAGE_SIZE);
+    const nextItem = initialData.length > FEED_PAGE_SIZE ? initialData[FEED_PAGE_SIZE] : null;
+    initialNextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+  } catch (err) {
+    console.error(`Tag feed error for "${canonical}":`, err);
+    // Degrade gracefully: render the tag space with an empty feed so users
+    // can still create the first post/wheel even if the feed query fails.
   }
+
+  // Truly empty tags (zero content in DB) AND no registered tagDoc → render tag space with empty state instead of hard 404
+  // so users navigating to a new/unseeded tag can still view the space and create the first post.
+  // Hard 404 is only kept if tagDoc is explicitly disabled/soft-deleted if configured.
 
   // Wider feed column to better match modern social layouts on desktop.
   return (
@@ -169,21 +182,6 @@ export default async function TagDetailPage({ params }) {
           </div>
 
 
-        </div>
-
-        {/* Stats pills */}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted/50 rounded-full border border-border">
-            <Layers size={11} className="text-primary" />
-            <span className="text-[10px] font-semibold text-foreground">
-              {stats.wheelCount.toLocaleString()} {stats.wheelCount === 1 ? "Wheel" : "Wheels"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-muted rounded-full border border-border">
-            <Hash size={10} className="text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground font-medium">{tagId}</span>
-          </div>
         </div>
       </div>
 

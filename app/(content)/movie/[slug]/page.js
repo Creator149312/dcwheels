@@ -11,7 +11,7 @@ import { cache } from "react";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import { slugify } from "@utils/HelperFunctions";
-import { getFeedItems } from "@/lib/feedService";
+import { getFeedItemsSafe } from "@/lib/feedService";
 import {
   extractId,
   resolveTitle,
@@ -19,15 +19,15 @@ import {
   buildPageMetadata,
   buildAffiliateLinks,
   getRelatedPages,
-  fetchTaggedWheels,
   rewriteAndPersist,
   fetchMovieExtras,
 } from "@lib/topicPage";
 import TopicPageContentWrapper from "@components/TopicPageContentWrapper";
 import TopicPageLayout from "@app/(content)/_shared/TopicPageLayout";
 
-// Cache for 14 days (bi-weekly) to balance content freshness with Vercel duration costs.
-export const revalidate = 1209600;
+// Topic metadata is stable — 30-day revalidation to reduce Vercel invocation costs.
+// Dynamic sections (feed, votes, tracking status) are fetched fresh per request.
+export const revalidate = 2592000;
 
 // React.cache() deduplicates between generateMetadata and the page body.
 const getCachedMoviePage = cache(async (relatedId) => {
@@ -64,8 +64,7 @@ export default async function MoviePage({ params }) {
   // Slow external and DB fetches are kicked off as Promises (no await)
   const extrasPromise = fetchMovieExtras(relatedId);
   const relatedPagesPromise = getRelatedPages(pageDoc.tags || [], pageDoc._id);
-  const taggedWheelsPromise = fetchTaggedWheels(pageDoc.tags || [], pageDoc.relatedId, "movie");
-  const feedPromise = getFeedItems({ 
+  const feedPromise = getFeedItemsSafe({ 
     type: "movie", 
     externalId: String(relatedId),
     limit: 9,
@@ -83,7 +82,6 @@ export default async function MoviePage({ params }) {
         tag={displayTitle}
         extrasPromise={extrasPromise}
         relatedPagesPromise={relatedPagesPromise}
-        taggedWheelsPromise={taggedWheelsPromise}
         charactersPromise={Promise.resolve([])} // Cast carousel disabled for movies for now
         feedPromise={feedPromise}
       />

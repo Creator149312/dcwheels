@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import { getFeedItems } from "@lib/feedService";
+import { getFeedItemsSafe } from "@lib/feedService";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
@@ -9,7 +9,7 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "8", 10);
-    const lastTimestamp = searchParams.get("cursor"); 
+    const cursor = searchParams.get("cursor"); 
     const type = searchParams.get("type"); 
     const externalId = searchParams.get("externalId"); 
     const tag = searchParams.get("tag"); 
@@ -28,23 +28,25 @@ export async function GET(req) {
       }
     }
 
-    // Request limit+1 to know if there are more items
-    const allItems = await getFeedItems({ 
+    // Request limit+1 to know if there are more items. Safe wrapper degrades
+    // to an empty array on error instead of returning a 500 to the client.
+    const allItems = await getFeedItemsSafe({ 
       type, 
       externalId, 
       tag, 
       userId, 
       docType, 
       limit: limit + 1, 
-      lastTimestamp,
+      cursor,
       showPrivate
     });
     
     // Return only the first 'limit' items to client
     const items = allItems.slice(0, limit);
     
-    // Set cursor to (limit+1)th item if it exists
-    const nextCursor = allItems.length > limit ? allItems[limit - 1].createdAt : null;
+    // Set cursor to the (limit+1)th item if it exists, so the next page starts AFTER the last displayed item
+    const nextItem = allItems.length > limit ? allItems[limit] : null;
+    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
     const res = NextResponse.json({ 
       items, 

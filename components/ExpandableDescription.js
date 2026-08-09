@@ -8,14 +8,14 @@ export default function ExpandableDescription({ description }) {
   // If description is short, just show it
   if (!description || description.length < 300) {
     return (
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4 mb-5">
+      <p className="text-sm text-muted-foreground leading-relaxed mt-3 mb-4">
         {description}
       </p>
     );
   }
 
   return (
-    <div className="mt-4 mb-5">
+    <div className="mt-3 mb-4">
       <p className={`text-sm text-muted-foreground leading-relaxed transition-all duration-300 ${!isExpanded ? "line-clamp-4" : ""}`}>
         {description}
       </p>

@@ -183,6 +183,50 @@ const WinnerPopup = ({
     }
   };
 
+  // Share the spin result as a community Post. Reuses the existing Post
+  // creation flow — no DecisionLog coupling, no new backend surface.
+  const shareAsPost = () => {
+    if (status !== "authenticated") {
+      openLoginPrompt?.();
+      return;
+    }
+
+    const winnerText = winner?.text || String(winner);
+    const winnerImage = winner?.image || "";
+    const entityType = winner?.entityType || winner?.payload?.entityType || "";
+    const entityId   = winner?.entityId   != null ? String(winner.entityId)   : (winner?.payload?.entityId != null ? String(winner.payload.entityId) : "");
+    const entitySlug = winner?.slug       || winner?.payload?.slug            || "";
+
+    const params = new URLSearchParams();
+    params.set("result", winnerText);
+    if (winnerImage) params.set("resultImage", winnerImage);
+    // Ensure we always pass the actual wheel title, never a fallback.
+    params.set("wheelTitle", wheelTitle || "");
+    if (wheelId) {
+      params.set("wheelId", wheelId);
+      // Always attach the source wheel as a contentRef so the post links back.
+      const wheelSlug = wheelData?.slug || "";
+      params.set("cr_type", "wheel");
+      params.set("cr_id", wheelId);
+      params.set("cr_slug", wheelSlug);
+      params.set("cr_title", wheelTitle || "");
+      params.set("cr_image", wheelData?.wheelPreview || winnerImage || "");
+      // Include segment count so the preview card can show "N Segments".
+      const segmentCount = Array.isArray(segData) ? segData.length : 0;
+      params.set("cr_segments", String(segmentCount));
+    }
+    // If the winning segment itself is an entity, include that too.
+    if (entityType) {
+      params.set("cr_entity_type", entityType);
+      params.set("cr_entity_id", entityId);
+      params.set("cr_entity_slug", entitySlug);
+      params.set("cr_entity_title", winnerText);
+      params.set("cr_entity_image", winnerImage);
+    }
+
+    router.push(`/post/create?${params.toString()}`);
+  };
+
   const removeWinner = (removeAll) => {
     const updatedSegData = segData.filter((element, index) =>
       removeAll
@@ -356,21 +400,43 @@ const WinnerPopup = ({
                             </svg>
                           </button>
                         )}
+
+                        {/* Share as community Post */}
+                        <button
+                          onClick={shareAsPost}
+                          className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-90 flex-shrink-0"
+                          title="Share to community feed"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                          </svg>
+                        </button>
                       </div>
 
-                      {/* Optimized Entity Hub Actions */}
-                      {winner?.type === "entity" && (winner?.payload?.entityId || winner?.payload?.slug) && (
-                        <div className={`grid ${ (winner?.payload?.entityId && winner?.payload?.slug) ? "grid-cols-2" : "grid-cols-1"} gap-2.5 items-center`}>
-                          {winner?.payload?.entityId && (
+                      {/* Entity Hub Actions — only for media/content winners */}
+                      {winner?.type === "entity" && (
+                        winner?.payload?.entityId ||
+                        winner?.payload?.slug ||
+                        winner?.entityId ||
+                        winner?.slug
+                      ) && (
+                        <div className={`grid ${
+                          (winner?.payload?.entityId || winner?.entityId) &&
+                          (winner?.payload?.slug || winner?.slug)
+                            ? "grid-cols-2"
+                            : "grid-cols-1"
+                        } gap-2.5 items-center`}>
+                          {(winner?.payload?.entityId || winner?.entityId) && (
                             <AddToListButton
-                              type={winner.payload.entityType || winner.entityType}
-                              entityId={winner.payload.entityId || winner.entityId}
+                              type={winner.payload?.entityType || winner.entityType}
+                              entityId={winner.payload?.entityId || winner.entityId}
                               name={winner.text}
-                              slug={winner.payload.slug || winner.slug}
+                              slug={winner.payload?.slug || winner.slug}
                               image={winner.image}
                             />
                           )}
-                          {winner?.payload?.slug && (
+                          {(winner?.payload?.slug || winner?.slug) && (
                             <button
                               onClick={() => {
                                 const et = winner.payload?.entityType || winner.entityType || "";

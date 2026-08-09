@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import PostVote from "@models/postVote";
-import User from "@models/user";
+import { sessionUser } from "@utils/SessionData";
 
 /**
  * POST /api/post/[id]/vote
@@ -13,10 +11,15 @@ import User from "@models/user";
 export async function POST(req, { params }) {
   try {
     const { id } = params;
-    const session = await getServerSession(authOptions);
+    const sessionData = await sessionUser("_id");
 
-    if (!session?.user?.email) {
+    if (!sessionData) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { userId } = sessionData;
+    if (!userId) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     const body = await req.json();
@@ -28,12 +31,6 @@ export async function POST(req, { params }) {
 
     await connectMongoDB();
 
-    // Get user
-    const user = await User.findOne({ email: session.user.email }).select("_id").lean();
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
-
     // Get post
     const post = await Post.findById(id);
     if (!post) {
@@ -44,29 +41,32 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: "This post doesn't have a poll" }, { status: 400 });
     }
 
-    // Check if user already voted
-    const existing = await PostVote.findOne({ postId: id, userId: user._id });
-    if (existing) {
-      return NextResponse.json({ message: "You already voted on this poll" }, { status: 409 });
+    // Record the vote first; the unique index on { postId, userId } prevents
+    // duplicate votes even under concurrency.
+    try {
+      await PostVote.create({
+        postId: id,
+        userId: userId,
+        optionId,
+      });
+    } catch (err) {
+      if (err?.code === 11000) {
+        return NextResponse.json({ message: "You already voted on this poll" }, { status: 409 });
+      }
+      throw err;
     }
 
-    // Find the option and increment vote count
-    const option = post.pollOptions.id(optionId);
-    if (!option) {
+    // Atomically increment the option vote count to avoid race conditions.
+    const voteUpdate = await Post.updateOne(
+      { _id: id, "pollOptions._id": optionId },
+      { $inc: { "pollOptions.$.voteCount": 1 } }
+    );
+
+    if (voteUpdate.modifiedCount === 0) {
+      // Roll back the vote record if the option didn't exist.
+      await PostVote.deleteOne({ postId: id, userId });
       return NextResponse.json({ message: "Option not found" }, { status: 404 });
     }
-
-    option.voteCount = (option.voteCount || 0) + 1;
-
-    // Record the vote
-    await PostVote.create({
-      postId: id,
-      userId: user._id,
-      optionId,
-    });
-
-    // Save post with updated vote count
-    await post.save();
 
     // Return updated options
     const updated = await Post.findById(id).select("pollOptions").lean();
@@ -76,6 +76,7 @@ export async function POST(req, { params }) {
       options: updated.pollOptions.map((opt) => ({
         id: String(opt._id),
         text: opt.text,
+        image: opt.image || null,
         voteCount: opt.voteCount,
       })),
     });

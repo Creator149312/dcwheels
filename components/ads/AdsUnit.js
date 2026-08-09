@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const AdsUnitInner = ({ slot }) => {
+const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }) => {
   const insRef = useRef(null);
 
   useEffect(() => {
@@ -55,7 +55,9 @@ const AdsUnitInner = ({ slot }) => {
   }, [slot]);
 
   return (
-    <div className="w-full bg-muted/5 text-center py-3 sm:py-4 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40">
+    <div
+      className={`w-full bg-muted/5 text-center py-3 sm:py-4 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40 ${className}`}
+    >
       {/* <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 mb-">
         Advertisement
       </div> */}
@@ -65,11 +67,11 @@ const AdsUnitInner = ({ slot }) => {
           className="w-full"
           style={{
             display: "block",
-            minHeight: "250px",
+            minHeight: `${minHeight}px`,
           }}
           data-ad-client="ca-pub-6746947892342481"
           data-ad-slot={slot}
-          data-ad-format="auto"
+          data-ad-format={format}
           data-full-width-responsive="true"
         />
       </div>
@@ -77,7 +79,15 @@ const AdsUnitInner = ({ slot }) => {
   );
 };
 
-export default function AdsUnit({ slot }) {
+export default function AdsUnit({ slot, format, minHeight, className }) {
   const pathname = usePathname();
-  return <AdsUnitInner key={`${pathname}-${slot}`} slot={slot} />;
+  return (
+    <AdsUnitInner
+      key={`${pathname}-${slot}`}
+      slot={slot}
+      format={format}
+      minHeight={minHeight}
+      className={className}
+    />
+  );
 }

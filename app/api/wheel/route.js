@@ -1,10 +1,9 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
-import User from "@models/user";
 import { validateListDescription, validateListTitle } from "@utils/Validator";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { sessionUser } from "@utils/SessionData";
+import { revalidateTag } from "next/cache";
 import mongoose from "mongoose";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
 
@@ -28,13 +27,18 @@ export async function POST(request) {
     // Auth: only logged-in users can create wheels. `createdBy` is derived
     // server-side from the session — we ignore any value the client sent
     // so a malicious request can't impersonate another user.
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id name username email");
+    if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const createdBy = session.user.email;
-    const authorName = session.user.name;
-    const authorHandle = session.user.username;
+    const { userId, user: sessionUserDoc } = sessionData;
+    const createdBy = sessionUserDoc.email;
+    const authorName = sessionUserDoc.name;
+    const authorHandle = sessionUserDoc.username;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ error: "Invalid session: missing user id" }, { status: 401 });
+    }
 
     const { title, description, data, wheelData, relatedTopics, tags, type } =
       await request.json();
@@ -46,41 +50,45 @@ export async function POST(request) {
 
     if (error.length === 0) {
       await connectMongoDB();
-      
-      // Get userId from session (mongoId is set during auth callback)
-      let userId = null;
-      if (session.user.id && mongoose.Types.ObjectId.isValid(session.user.id)) {
-        userId = new mongoose.Types.ObjectId(session.user.id);
-      } else if (createdBy) {
-        // Fallback: lookup user by email
-        const user = await User.findOne({ email: createdBy }).select("_id").lean();
-        if (user) userId = user._id;
+
+      try {
+        const creationData = await Wheel.create({
+          title,
+          description,
+          data: sanitizeSegments(data),
+          createdBy,
+          userId: new mongoose.Types.ObjectId(userId),
+          authorName,
+          authorHandle,
+          wheelData,
+          ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
+          relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
+          // Tags are lowercased + trimmed by the schema setter; we still
+          // filter out non-strings and empties here as a defensive layer
+          // against malformed client payloads.
+          tags: Array.isArray(tags)
+            ? tags.filter((t) => typeof t === "string" && t.trim().length > 0)
+            : [],
+        });
+
+        revalidateTag(`wheel-${creationData._id}`);
+
+        return NextResponse.json({
+          message: "Wheel Created Successfully",
+          creationID: creationData._id,
+        });
+      } catch (e) {
+        // Duplicate title for the same creator → friendly 409 instead of 500.
+        if (e?.code === 11000 || e?.message?.includes("E11000")) {
+          return NextResponse.json(
+            { error: "You already have a wheel with this title. Please use a different name." },
+            { status: 409 }
+          );
+        }
+        throw e;
       }
-      
-      const creationData = await Wheel.create({
-        title,
-        description,
-        data: sanitizeSegments(data),
-        createdBy,
-        ...(userId ? { userId } : {}),
-        authorName,
-        authorHandle,
-        wheelData,
-        ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
-        relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
-        // Tags are lowercased + trimmed by the schema setter; we still
-        // filter out non-strings and empties here as a defensive layer
-        // against malformed client payloads.
-        tags: Array.isArray(tags)
-          ? tags.filter((t) => typeof t === "string" && t.trim().length > 0)
-          : [],
-      });
-      return NextResponse.json({
-        message: "Wheel Created Successfully",
-        creationID: creationData._id,
-      });
     } else {
-      return NextResponse.json({ error });
+      return NextResponse.json({ error }, { status: 400 });
     }
   } catch (e) {
     console.error("POST /api/wheel failed:", e);
@@ -94,7 +102,11 @@ export async function POST(request) {
 //get all the lists
 export async function GET() {
   await connectMongoDB();
-  const lists = await Wheel.find();
+  const lists = await Wheel.find()
+    .select("_id title slug description wheelPreview createdBy authorName authorHandle tags isPublic likeCount createdAt updatedAt")
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
   return NextResponse.json({ lists }, { status: 200 });
 }
 
@@ -112,10 +124,11 @@ export async function GET() {
 // `createdBy` so other users (and anonymous callers) get a 403.
 export async function DELETE(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const sessionData = await sessionUser("_id email");
+    if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
 
     const id = request.nextUrl.searchParams.get("id");
     if (!id) {
@@ -123,11 +136,17 @@ export async function DELETE(request) {
     }
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("createdBy wheelPreview data").lean();
+    const wheel = await Wheel.findById(id).select("userId createdBy wheelPreview data").lean();
     if (!wheel) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
-    if (wheel.createdBy !== session.user.email) {
+    const wheelUserId = wheel.userId ? String(wheel.userId) : null;
+
+    // If the wheel has no userId, backfill it from the legacy createdBy email
+    // when the current session matches that email.
+    if (!wheelUserId && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
+      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
+    } else if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

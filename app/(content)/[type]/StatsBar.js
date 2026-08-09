@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { MessageCircle } from "lucide-react";
 import ReactionButton from "@components/ReactionButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import SharePopup from "@components/SharePopup";
 import { getContentStats } from "@components/actions/actions";
+import { useStatsBatch } from "@components/providers/StatsBatchProvider";
 
 export default function StatsBar({
   entityType,
@@ -24,35 +25,111 @@ export default function StatsBar({
   commentCount,
   shareUrl,
   initialStats = null,
+  knownCounts = null,
+  useBatch = true,
 }) {
   const openLoginPrompt = useLoginPrompt();
+  const batch = useStatsBatch();
   // Prefer the prop for backward-compat; fall back to the client hook so the
   // component works on CDN-cached static pages where no server session exists.
   const { data: hookSession } = useSession();
   const session = sessionProp ?? hookSession;
-  const [stats, setStats] = useState(initialStats);
-  const [loading, setLoading] = useState(!initialStats);
+  const [stats, setStats] = useState(
+    initialStats || {
+      reactions: { like: knownCounts?.like ?? 0 },
+      reactedByUser: { like: false },
+      followCount: 0,
+      isFollowing: false,
+      saveCount: 0,
+    }
+  );
+  const [loading, setLoading] = useState(
+    !initialStats && (!!show?.save || !!show?.follow || (session?.user && !!show?.like))
+  );
+  const resolvedForUserRef = useRef(false);
+  const showRef = useRef(show);
+  const knownCountsRef = useRef(knownCounts);
+  showRef.current = show;
+  knownCountsRef.current = knownCounts;
 
   useEffect(() => {
     if (!entityId) return;
+    const hasUser = !!session?.user;
+
+    // Once we have resolved viewer state for a logged-in user, don't re-run.
+    // If we previously resolved as a guest and the user just logged in, we
+    // must re-run to fetch their actual reaction state.
+    if (resolvedForUserRef.current && hasUser) return;
     let ignore = false;
 
     const userId = session?.user?.id;
     const userEmail = session?.user?.email;
+    const showCfg = showRef.current;
 
-    getContentStats({
-      entityType,
-      entityId,
-      show,
-      userId,
-      userEmail,
-    })
-      .then((result) => { if (!ignore) setStats(result); })
-      .catch(() => {})
-      .finally(() => { if (!ignore) setLoading(false); });
+    async function resolveStats() {
+      // Guest users don't need any viewer-state network call.
+      if (!hasUser) {
+        if (!ignore) setLoading(false);
+        return;
+      }
+
+      // Try the batched viewer-state provider first.
+      if (useBatch && batch) {
+        const key = `${entityType}:${entityId}`;
+        const cached = batch.getCached(key);
+        if (cached) {
+          setStats((prev) => ({
+            ...prev,
+            reactedByUser: { like: showCfg?.like ? cached.like || false : prev?.reactedByUser?.like },
+            isFollowing: showCfg?.follow ? cached.follow || false : prev?.isFollowing,
+          }));
+          if (!ignore) setLoading(false);
+          resolvedForUserRef.current = true;
+          return;
+        }
+
+        try {
+          const result = await batch.register(key);
+          if (!ignore && result) {
+            setStats((prev) => ({
+              ...prev,
+              reactedByUser: { like: showCfg?.like ? result.like || false : prev?.reactedByUser?.like },
+              isFollowing: showCfg?.follow ? result.follow || false : prev?.isFollowing,
+            }));
+          }
+          if (!ignore) setLoading(false);
+          resolvedForUserRef.current = true;
+          return;
+        } catch (err) {
+          console.error("[StatsBar] batch register failed:", err);
+          // Fall through to per-card fetch.
+        }
+      }
+
+      // Fallback / single-card path. We already have denormalized counts from
+      // the feed model, so this only queries user-specific state.
+      try {
+        const result = await getContentStats({
+          entityType,
+          entityId,
+          show: showCfg,
+          userId,
+          userEmail,
+          knownCounts: knownCountsRef.current,
+        });
+        if (!ignore) setStats(result);
+      } catch {
+        // leave existing/pre-populated stats
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+      resolvedForUserRef.current = true;
+    }
+
+    resolveStats();
 
     return () => { ignore = true; };
-  }, [entityType, entityId, session?.user, show]);
+  }, [entityType, entityId, session?.user?.id, session?.user?.email, useBatch, batch]);
 
   if (!entityId) return null;
 
