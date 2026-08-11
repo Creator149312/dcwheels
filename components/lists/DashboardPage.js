@@ -56,16 +56,13 @@ export default function ListDashboardPage() {
     const data = await res.json();
 
     if (data.error) {
-      console.log(data.error);
+      // no-op
     } else if (data.list) {
-      console.log("List created successfully");
       if (status === "authenticated" && session?.user?.username) {
         window.location.href = `/u/${session.user.username}`;
       } else {
         location.reload();
       }
-    } else {
-      console.log("Unexpected Error Occurred!");
     }
   };
 

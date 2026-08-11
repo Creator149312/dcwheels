@@ -23,29 +23,23 @@ const validateForm = async (data) => {
 };
 
 const checkLogin = async (email, password) => {
-  console.log('CHECKLOGIN START:', { email });
   await connectMongoDB();
   const user = await User.findOne({ email: email.toLowerCase() });
-  console.log('USER FOUND:', !!user);
 
   if (!user) {
     return null;
   }
 
-  console.log('USER VERIFIED (RAW):', user.emailVerified);
   if (user.emailVerified) {
     const passwordsMatch = await bcrypt.compare(password, user.password);
-    console.log('PASSWORDS MATCH:', passwordsMatch);
     if (!passwordsMatch) {
       return null;
     }
 
     return user;
   }
-  else { 
-    console.log('USER NOT VERIFIED (CHECKING BOOL):', !!user.emailVerified);
-    return null; 
-  }
+
+  return null;
 };
 
 export const authOptions = {

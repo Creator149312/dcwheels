@@ -35,11 +35,9 @@ const AccountEmailVerificationByToken = () => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem(sessionKey, "pending");
     }
-    console.log("Starting verification for token:", token);
 
     try {
       const data = await verifyUserEmailbyToken(token);
-      console.log("Verification response:", data);
 
       if (data.success) {
         if (typeof window !== "undefined") {
@@ -53,16 +51,13 @@ const AccountEmailVerificationByToken = () => {
         setError(data.error || "Email verification failed.");
       }
     } catch (err) {
-      console.error("Verification Error:", err);
       setError(`An error occurred: ${err.message || "Unknown error"}`);
     } finally {
-      console.log("Setting isLoading to false");
       setIsLoading(false);
     }
   }, [token, hasStarted]);
 
   useEffect(() => {
-    console.log("Effect running, hasStarted:", hasStarted, "token:", !!token);
     if (!hasStarted && token) {
       verifyEmail();
     }

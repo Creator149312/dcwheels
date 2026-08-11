@@ -47,17 +47,10 @@ export async function POST(req) {
         return NextResponse.json({ error: "Unsupported image type" }, { status: 400 });
       }
 
-      const originalSize = parsed.buffer.length;
       const compressed = await sharp(parsed.buffer)
         .resize(300, 300, { fit: "inside", withoutEnlargement: true })
         .webp({ quality: 75 })
         .toBuffer();
-
-      console.log(
-        `[upload-segment-image:dataurl] original=${(originalSize / 1024).toFixed(1)}KB ` +
-        `compressed=${(compressed.length / 1024).toFixed(1)}KB ` +
-        `ratio=${((1 - compressed.length / originalSize) * 100).toFixed(0)}%`
-      );
 
       const blobPath = `segment-images/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
       const uploaded = await put(blobPath, compressed, {
@@ -86,7 +79,6 @@ export async function POST(req) {
       return NextResponse.json({ error: "Image exceeds 2 MB limit" }, { status: 400 });
     }
 
-    const originalSize = file.size;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Server-side: resize to max 300px (wheel segments are small) and convert to WebP
@@ -94,12 +86,6 @@ export async function POST(req) {
       .resize(300, 300, { fit: "inside", withoutEnlargement: true })
       .webp({ quality: 75 })
       .toBuffer();
-
-    console.log(
-      `[upload-segment-image] original=${(originalSize / 1024).toFixed(1)}KB ` +
-      `compressed=${(compressed.length / 1024).toFixed(1)}KB ` +
-      `ratio=${((1 - compressed.length / originalSize) * 100).toFixed(0)}%`
-    );
 
     const blobPath = `segment-images/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
 
