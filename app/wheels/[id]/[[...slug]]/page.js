@@ -41,16 +41,22 @@ const getCachedPageDataByIdentifier = cache(async (identifier) => {
   await connectMongoDB();
 
   let wheel = null;
+  const isObjectId = mongoose.Types.ObjectId.isValid(identifier);
 
-  // 1. If it's a valid MongoDB ID, try to fetch by ID first
-  if (mongoose.Types.ObjectId.isValid(identifier)) {
+  if (isObjectId) {
+    // ID-based URL (user wheels): try ID first, then slug fallback.
     wheel = await Wheel.findById(identifier)
       .select(WHEEL_PAGE_PROJECTION)
       .lean();
-  }
-
-  // 2. If not found by ID (or not a valid ID), try to fetch by slug (Admin Slugs / SEO Slugs)
-  if (!wheel) {
+    if (!wheel) {
+      wheel = await Wheel.findOne({ slug: identifier })
+        .select(WHEEL_PAGE_PROJECTION)
+        .lean();
+    }
+  } else {
+    // Slug-based URL (SEO pages): query by slug directly and skip the
+    // wasted ObjectId lookup. This saves one DB round-trip for every
+    // indexed wheel page and improves TTFB for the crawlable URL surface.
     wheel = await Wheel.findOne({ slug: identifier })
       .select(WHEEL_PAGE_PROJECTION)
       .lean();

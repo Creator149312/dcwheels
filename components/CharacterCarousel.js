@@ -48,6 +48,7 @@ export default function CharacterCarousel({ characters = [] }) {
                       fill
                       className="object-cover group-hover/card:scale-110 transition-transform duration-500"
                       sizes="(max-width: 640px) 96px, 112px"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 font-bold text-xl uppercase">

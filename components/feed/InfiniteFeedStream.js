@@ -80,7 +80,7 @@ export default function InfiniteFeedStream({
     endpoint: '/api/feed',
     initialItems,
     initialNextCursor,
-    rootMargin: '1000px' // High-performance pre-fetching (1000px before reaching bottom)
+    rootMargin: '500px' // Pre-fetch next page before reaching bottom without over-fetching
   });
 
   // Keep a stable, layout-frozen copy of all displayed feed items with hydration-safe initial items
@@ -215,7 +215,7 @@ export default function InfiniteFeedStream({
         items={stableItems}
         renderItem={renderItem}
         overscan={2}
-        rootMargin="1200px"
+        rootMargin="500px"
         minHeight={200}
       />
 

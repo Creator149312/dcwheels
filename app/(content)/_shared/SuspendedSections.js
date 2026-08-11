@@ -45,12 +45,16 @@ export function StreamingSkeletonDesktop() {
 export function CharactersSkeleton() {
   return (
     <div className="mb-10">
-      <div className="h-5 w-36 bg-muted/60 animate-pulse rounded mb-4" />
-      <div className="flex gap-4 overflow-x-hidden">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-5 w-36 bg-muted/60 animate-pulse rounded" />
+        <div className="h-3 w-16 bg-muted/60 animate-pulse rounded" />
+      </div>
+      <div className="flex gap-4 overflow-x-hidden pb-4">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 min-w-[70px]">
-            <div className="w-14 h-14 bg-muted/60 animate-pulse rounded-full" />
-            <div className="h-3 w-12 bg-muted/60 animate-pulse rounded" />
+          <div key={i} className="flex flex-col gap-2 min-w-[96px] sm:min-w-[112px]">
+            <div className="w-24 h-32 sm:w-28 sm:h-36 bg-muted/60 animate-pulse rounded-xl" />
+            <div className="h-3 w-20 bg-muted/60 animate-pulse rounded self-center sm:self-start" />
+            <div className="h-2.5 w-12 bg-muted/60 animate-pulse rounded self-center sm:self-start" />
           </div>
         ))}
       </div>
@@ -60,23 +64,29 @@ export function CharactersSkeleton() {
 
 export function FeedSkeleton() {
   return (
-    <div className="space-y-6 w-full max-w-3xl">
+    <div className="w-full max-w-3xl">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="p-4 rounded-xl bg-card border border-border/50 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-muted/60 animate-pulse" />
-            <div className="space-y-1.5 flex-1">
-              <div className="h-4 w-24 bg-muted/60 animate-pulse rounded" />
-              <div className="h-3 w-16 bg-muted/60 animate-pulse rounded" />
+        <div
+          key={i}
+          className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 sm:mb-0"
+        >
+          <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted/60 animate-pulse" />
+              <div className="space-y-1.5 flex-1">
+                <div className="h-4 w-24 bg-muted/60 animate-pulse rounded" />
+                <div className="h-3 w-16 bg-muted/60 animate-pulse rounded" />
+              </div>
             </div>
+            <div className="h-8 w-8 rounded-full bg-muted/60 animate-pulse" />
           </div>
-          <div className="space-y-2 pt-2">
+          <div className="mb-2.5 px-4 sm:px-0 space-y-2">
             <div className="h-4 w-full bg-muted/60 animate-pulse rounded" />
             <div className="h-4 w-5/6 bg-muted/60 animate-pulse rounded" />
           </div>
-          <div className="h-36 w-full bg-muted/50 animate-pulse rounded-xl" />
-          <div className="flex justify-between items-center pt-2">
-            <div className="h-4 w-16 bg-muted/60 animate-pulse rounded" />
+          <div className="mb-3 w-full sm:mx-0 aspect-video sm:aspect-[21/9] bg-muted/50 animate-pulse border-y sm:border sm:rounded-2xl" />
+          <div className="flex justify-between items-center pt-2 px-4 sm:px-0">
+            <div className="h-4 w-28 bg-muted/60 animate-pulse rounded" />
             <div className="h-4 w-16 bg-muted/60 animate-pulse rounded" />
           </div>
         </div>
