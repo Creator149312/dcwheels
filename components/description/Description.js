@@ -65,7 +65,7 @@ export default function Description({
 
   return (
     <div
-      className="bg-muted px-3 py-2 sm:py-2.5 rounded-xl mb-2 sm:mb-4 border border-border/20 transition-all hover:bg-muted/60 cursor-pointer group relative overflow-hidden"
+      className="bg-muted px-3 py-2 sm:py-2.5 rounded-xl mb-1 sm:mb-2 border border-border/20 transition-all hover:bg-muted/60 cursor-pointer group relative overflow-hidden"
       onClick={() => needsToggle && setExpanded(!expanded)}
     >
       <div

@@ -212,7 +212,7 @@ export default async function UnifiedWheelPage({ params }) {
   const sidebarTopics = [...displayTopics, ...(resolvedDocs.secondary || [])];
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col max-w-7xl mx-auto w-full">
       <ViewTracker wheelId={wheelIdStr} />
       
       <script
@@ -277,16 +277,18 @@ export default async function UnifiedWheelPage({ params }) {
         className="px-3 md:px-4"
       />
 
-      <div className="min-h-[90px] mt-2 sm:mt-4">
+      <div className="min-h-[90px] mt-1 sm:mt-2 px-3 sm:px-4">
         <AdsUnit slot="4694567949" />
       </div>
 
-      <Suspense fallback={<HubFeedSkeleton />}>
-        <SuspendedHubFeed
-          tags={pageData.wheel.tags}
-          currentWheelId={wheelIdStr}
-        />
-      </Suspense>
+      <div className="flex justify-center px-0 sm:px-4">
+        <Suspense fallback={<HubFeedSkeleton />}>
+          <SuspendedHubFeed
+            tags={pageData.wheel.tags}
+            currentWheelId={wheelIdStr}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 }

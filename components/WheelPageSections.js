@@ -33,7 +33,7 @@ export function StatsFeedSkeleton() {
 
 export function HubFeedSkeleton() {
   return (
-    <div className="w-full px-4 space-y-6 mt-12 pb-20">
+    <div className="w-full max-w-3xl mx-auto px-4 space-y-6 mt-12 pb-20">
       <div className="flex items-center gap-2 mb-6">
         <div className="w-1.5 h-6 bg-primary rounded-full" />
         <div className="h-6 w-48 bg-muted animate-pulse rounded" />
@@ -135,7 +135,7 @@ export async function SuspendedHubFeed({ tags = [], currentWheelId = null }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="w-full px-0 sm:px-4 text-left mt-6 md:mt-12 pb-20 border-t border-border/10 pt-6 md:pt-12 bg-card/5">
+    <div className="w-full max-w-3xl px-0 sm:px-4 text-left mt-4 md:mt-8 pb-20 border-t border-border/10 pt-4 md:pt-8 bg-card/5">
       <InfiniteFeedStream
         tag={tagString || undefined}
         initialItems={items}
