@@ -80,12 +80,14 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
 
         {/* Center: Search (Desktop Only) */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-4 lg:mx-8">
-          <SearchBar />
+        <div className="hidden md:flex flex-1 justify-center px-4 lg:px-8">
+          <div className="w-full max-w-xl">
+            <SearchBar />
+          </div>
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-1 md:gap-4">
+        <div className="flex items-center gap-1 md:gap-4 w-[200px] lg:w-[260px] justify-end">
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-0.5">
             {/* Create Dropdown — click/toggle */}

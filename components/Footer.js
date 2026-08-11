@@ -7,7 +7,7 @@ export default function Footer() {
 
 
   return (
-    <footer className="w-full pl-14 mt-auto border-t border-border bg-background transition-colors">
+    <footer className="w-full min-h-[120px] pl-0 md:pl-14 mt-auto border-t border-border bg-background transition-colors flex-shrink-0">
       <div className="max-w-[1600px] mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm text-muted-foreground">
           <div className="font-medium order-2 md:order-1">

@@ -53,7 +53,10 @@ export default function VirtualizedFeed({
   renderItem,
   overscan = 1,
   rootMargin = null,
-  minHeight = 180,
+  minHeight = 420,
+  // Always render the first N items as real content to avoid placeholder swaps
+  // in the initial viewport, which are the biggest source of CLS on topic/wheel pages.
+  initialRenderCount = 3,
 }) {
   const { visible, register, measure, getHeight } = useViewportCull({
     itemCount: items.length,
@@ -69,8 +72,11 @@ export default function VirtualizedFeed({
         const isVisible = visible.has(index);
         const height = getHeight(index);
 
+        // Always render the first items immediately; no placeholder → real swap.
+        const isInitial = index < initialRenderCount;
+
         // Render the item itself plus immediate neighbours for smooth scrolling.
-        const shouldRender = isVisible || visible.has(index - 1) || visible.has(index + 1);
+        const shouldRender = isInitial || isVisible || visible.has(index - 1) || visible.has(index + 1);
         const paddedRender =
           shouldRender ||
           (overscan > 0 && (visible.has(index - overscan) || visible.has(index + overscan)));

@@ -1,4 +1,5 @@
 "use server";
+import { unstable_cache } from "next/cache";
 import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
 import { connectMongoDB } from "@lib/mongodb";
@@ -40,7 +41,6 @@ import UnifiedList from "@models/unifiedlist";
 import { ensureSavedListExists } from "@lib/savedList";
 import {
   fetchAnime,
-  fetchGames,
   fetchMovies,
 } from "../../app/(content)/[type]/TopicPagesHelperFunctions";
 import { slugify } from "@utils/HelperFunctions";
@@ -1385,17 +1385,17 @@ export async function getRelatedTopicPages(relatedTopics) {
  * Tries external APIs first, then falls back to the local TopicPage collection
  * so the sidebar never stays empty when APIs are down.
  */
-export async function getTrendingTopicPages(limit = 9) {
+const _getTrendingTopicPagesUncached = async (limit = 9) => {
+
   const countPerType = Math.ceil(limit / 3);
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
   try {
     const perType = 12;
 
-    const [moviesRes, animeRes, gamesRes] = await Promise.allSettled([
+    const [moviesRes, animeRes] = await Promise.allSettled([
       fetchMovies({ page: 1 }),
       fetchAnime({ page: 1, perPage: perType }),
-      fetchGames({ page: 1, page_size: perType }),
     ]);
 
     const movies = (
@@ -1404,11 +1404,8 @@ export async function getTrendingTopicPages(limit = 9) {
     const anime = (
       animeRes.status === "fulfilled" ? animeRes.value || [] : []
     ).slice(0, 10);
-    const games = (
-      gamesRes.status === "fulfilled" ? gamesRes.value || [] : []
-    ).slice(0, 10);
 
-    const hasApiData = movies.length > 0 || anime.length > 0 || games.length > 0;
+    const hasApiData = movies.length > 0 || anime.length > 0;
     if (hasApiData) {
       const formattedMovies = shuffle(movies)
         .slice(0, countPerType)
@@ -1436,17 +1433,7 @@ export async function getTrendingTopicPages(limit = 9) {
           };
         });
 
-      const formattedGames = shuffle(games)
-        .slice(0, countPerType)
-        .map((g) => ({
-          title: g.name,
-          slug: `${g.id}-${g.slug}`,
-          type: "game",
-          cover: g.background_image,
-          id: g.id,
-        }));
-
-      return [...formattedMovies, ...formattedAnime, ...formattedGames].slice(0, limit);
+      return [...formattedMovies, ...formattedAnime].slice(0, limit);
     }
   } catch (err) {
     console.error("[getTrendingTopicPages] external API fetch failed:", err);
@@ -1472,4 +1459,11 @@ export async function getTrendingTopicPages(limit = 9) {
   }
 
   return [];
+};
+
+const _getCachedTrendingTopicPages = unstable_cache(_getTrendingTopicPagesUncached, ["trending-topic-pages"], { revalidate: 86400, tags: ["trending-topic-pages"] });
+
+export async function getTrendingTopicPages(limit = 9) {
+  return _getCachedTrendingTopicPages(limit);
 }
+

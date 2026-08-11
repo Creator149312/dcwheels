@@ -216,7 +216,7 @@ export default function InfiniteFeedStream({
         renderItem={renderItem}
         overscan={2}
         rootMargin="500px"
-        minHeight={200}
+        minHeight={420}
       />
 
       {/* Loading States & Sentinel */}

@@ -14,10 +14,17 @@ export default function UserInfo() {
     setIsMounted(true);
   }, []);
 
-  // Keep the first client render identical to SSR output to avoid hydration mismatches.
+  // Stable placeholder sized identically to both logged-in and logged-out states
+  // so the navbar right-actions width never changes after auth resolves.
+  const avatarSkeleton = (
+    <div className="h-9 w-9 sm:w-10 sm:h-10 rounded-full bg-muted animate-pulse" aria-hidden="true" />
+  );
+
   if (!isMounted || status === "loading") {
     return (
-      <div className="h-9 w-9 sm:w-10 sm:h-10 rounded-full bg-muted animate-pulse" aria-hidden="true" />
+      <div className="hidden sm:flex items-center gap-2">
+        {avatarSkeleton}
+      </div>
     );
   }
 

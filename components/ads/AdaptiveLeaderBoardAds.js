@@ -67,7 +67,7 @@ function AdSlot({ slot, width, minHeight, className }) {
 
 function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
   return (
-    <div className="w-full my-2">
+    <div className="w-full my-2 min-h-[50px] sm:min-h-[120px]">
       {/* Mobile Slot: Hidden on desktop via sm:hidden. 
           AdSlot will only 'activate' if this container is visible. */}
       <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-muted/30">
@@ -77,7 +77,7 @@ function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
       {/* Desktop Slot: Hidden on mobile via hidden sm:flex. 
           AdSlot will stay 'dormant' on mobile devices. */}
       <div className="hidden sm:flex w-full bg-muted/30 border border-dashed border-border rounded-2xl items-center justify-center overflow-hidden min-h-[120px]">
-        <div className="w-full max-w-[728px] bg-card rounded-xl border border-gray-100 border-border flex items-center justify-center shadow-sm mx-auto overflow-hidden">
+        <div className="w-full max-w-[728px] h-[90px] bg-card rounded-xl border border-gray-100 border-border flex items-center justify-center shadow-sm mx-auto overflow-hidden">
           <AdSlot slot={desktopSlot} width={728} minHeight={90} />
         </div>
       </div>

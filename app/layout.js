@@ -77,7 +77,7 @@ export default function RootLayout({ children }) {
           content="1e5650bff903e1c4a1134b724128da29"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
+      <body className="min-h-screen bg-background text-foreground font-sans antialiased flex flex-col">
         <LazyToaster />
         <ThemeProvider
           attribute="class"
