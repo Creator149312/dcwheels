@@ -343,7 +343,7 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 
-const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel", iconSize = 20, triggerClassName, triggerVariant = "default" }) => {
+const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 20, triggerClassName, triggerVariant = "default" }) => {
 
   const {
     handleWheelSettingsChange,
@@ -351,7 +351,6 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
     MAX_OPTIONS_ON_WHEEL,
     MAX_SPIN_TIME,
     FONT_SIZE,
-    setSegData,
   } = useContext(SegmentsContext);
   const [isOpen, setIsOpen] = useState(false);
   const currentTheme = { name: "Current", colors: wheelData.segColors };
@@ -490,16 +489,11 @@ const SettingsAdv = ({ advOptions, showLabel = false, label = "Customize Wheel",
     setCenterText(wheelData?.centerText || "");
     setCenterImage(wheelData?.centerImage || "");
 
-    if (advOptions) {
-      setSegData((prevSegData) =>
-        prevSegData.map((segment, index) => ({
-          text: segment.text,
-          weight: segment.weight,
-          visible: segment.visible,
-          color: wheelData.segColors[index % wheelData.segColors.length],
-        }))
-      );
-    }
+    // NOTE: We intentionally do NOT seed per-segment colors here.
+    // The wheel renderer falls back to wheelData.segColors when a segment
+    // has no explicit color, so theme changes apply automatically. Setting
+    // color on every segment here bloats storage and, worse, strips
+    // entity/image/quiz payload and other fields when advanced mode is on.
   }, [wheelData]);
 
   return (

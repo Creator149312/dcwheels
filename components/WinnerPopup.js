@@ -39,6 +39,7 @@ const WinnerPopup = ({
   setShowCelebration,
   mustSpin,
   wheelId,
+  wheelPreview,
 }) => {
   let [open, setOpen] = useState(false);
   const { html, wheelData, wheelTitle } = useContext(SegmentsContext);
@@ -205,15 +206,14 @@ const WinnerPopup = ({
     if (wheelId) {
       params.set("wheelId", wheelId);
       // Always attach the source wheel as a contentRef so the post links back.
+      // Use the same compact shape as anime/game/movie contentRefs:
+      // type + externalId + slug + title + image. No segment count.
       const wheelSlug = wheelData?.slug || "";
       params.set("cr_type", "wheel");
       params.set("cr_id", wheelId);
       params.set("cr_slug", wheelSlug);
       params.set("cr_title", wheelTitle || "");
-      params.set("cr_image", wheelData?.wheelPreview || winnerImage || "");
-      // Include segment count so the preview card can show "N Segments".
-      const segmentCount = Array.isArray(segData) ? segData.length : 0;
-      params.set("cr_segments", String(segmentCount));
+      params.set("cr_image", wheelPreview || wheelData?.wheelPreview || winnerImage || "");
     }
     // If the winning segment itself is an entity, include that too.
     if (entityType) {
@@ -239,6 +239,24 @@ const WinnerPopup = ({
     setOpen(false);
     setShowCelebration(false);
   };
+
+  const MAX_POPUP_TEXT_LEN = 100;
+  const MAX_MESSAGE_LEN = 60;
+
+  function formatWinnerText(winner) {
+    if (!winner) return "";
+    const raw = typeof winner === "string" ? winner : winner.text || "";
+    const text = raw.replace(/<[^>]+>/g, "").trim();
+    if (text.length <= MAX_POPUP_TEXT_LEN) return text;
+    return text.slice(0, MAX_POPUP_TEXT_LEN - 1).trimEnd() + "…";
+  }
+
+  function formatMessage(message) {
+    if (!message) return "The wheel has spoken";
+    const text = String(message).trim();
+    if (text.length <= MAX_MESSAGE_LEN) return text;
+    return text.slice(0, MAX_MESSAGE_LEN - 1).trimEnd() + "…";
+  }
 
   const setImgMaxWidth = (temphtml) => {
     if (typeof document === "undefined" || !temphtml) return temphtml;
@@ -277,10 +295,11 @@ const WinnerPopup = ({
             }}
           >
             <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm p-5">
-              {/* Close button — top right */}
+              {/* Close button — top right with a generous hit area so
+                  users don't have to hit the tiny icon pixel-perfectly. */}
               <button
                 onClick={closePopup}
-                className="absolute top-3 right-3 p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="absolute top-1 right-1 z-20 p-3 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Close"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -290,30 +309,31 @@ const WinnerPopup = ({
               </button>
 
               {/* Winner Display */}
-              <div className="text-center mb-6">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-3 opacity-50" style={{ color: winnerColor }}>
-                  The wheel has spoken
+              <div className="text-center mb-6 min-w-0">
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.2em] mb-3 opacity-50 truncate px-1"
+                  style={{ color: winnerColor }}
+                  title={wheelData?.customPopupDisplayMessage || "The wheel has spoken"}
+                >
+                  {formatMessage(wheelData?.customPopupDisplayMessage || "The wheel has spoken")}
                 </p>
 
-                {winner?.image && (
-                  <div className="relative group mx-auto mb-4 w-fit">
-                    <img
-                      src={winner.image}
-                      alt={winner.text}
-                      className="relative max-w-[180px] max-h-[180px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-white dark:border-gray-800 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                )}
                 {winner?.type === "quiz" && winner?.question ? (
                   <MCQQuestion questionData={winner.question} />
                 ) : (
-                  <div className="px-4">
-                    <h2 
-                      className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tight drop-shadow-sm"
-                      dangerouslySetInnerHTML={{
-                        __html: setImgMaxWidth(winner),
-                      }}
-                    />
+                  <div className="flex flex-col items-center gap-3 px-2 sm:px-4 min-w-0">
+                    {winner?.image && (
+                      <div className="relative group w-fit max-w-full">
+                        <img
+                          src={winner.image}
+                          alt=""
+                          className="max-w-[140px] max-h-[140px] sm:max-w-[180px] sm:max-h-[180px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-white dark:border-gray-800 transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tight drop-shadow-sm break-words w-full">
+                      {formatWinnerText(winner)}
+                    </h2>
                   </div>
                 )}
               </div>
@@ -401,17 +421,20 @@ const WinnerPopup = ({
                           </button>
                         )}
 
-                        {/* Share as community Post */}
-                        <button
-                          onClick={shareAsPost}
-                          className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-90 flex-shrink-0"
-                          title="Share to community feed"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                          </svg>
-                        </button>
+                        {/* Share as community Post — only when the wheel
+                            has been saved and has a wheelId to link back to. */}
+                        {wheelId && (
+                          <button
+                            onClick={shareAsPost}
+                            className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-90 flex-shrink-0"
+                            title="Share to community feed"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
 
                       {/* Entity Hub Actions — only for media/content winners */}
@@ -437,20 +460,21 @@ const WinnerPopup = ({
                             />
                           )}
                           {(winner?.payload?.slug || winner?.slug) && (
-                            <button
-                              onClick={() => {
-                                const et = winner.payload?.entityType || winner.entityType || "";
-                                const sl = winner.payload?.slug || winner.slug || "";
-                                const wid = winner.payload?.wheelId || winner.wheelId || "";
-                                window.location.href = getEntityUrl(et, sl, wid);
-                              }}
+                            <a
+                              href={getEntityUrl(
+                                winner.payload?.entityType || winner.entityType || "",
+                                winner.payload?.slug || winner.slug || "",
+                                winner.payload?.wheelId || winner.wheelId || ""
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
                               </svg>
                               Explore
-                            </button>
+                            </a>
                           )}
                         </div>
                       )}

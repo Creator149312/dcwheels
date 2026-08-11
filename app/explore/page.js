@@ -27,7 +27,7 @@ import TrendingSection from "./TrendingSection";
 import EntitySection from "./EntitySection";
 import GridSection from "./GridSection";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const metadata = {
   title: "Explore Wheels — Trending, Moods & Categories | SpinPapa",

@@ -47,11 +47,17 @@ export async function GET(request) {
     // Primary: query Tag collection for canonical slugs and display names.
     // This uses the registered aliases so "scary-m" surfaces "horror-movies".
     const tagDocs = await Tag.find({
-      isPublic: true,
-      $or: [
-        { slug: prefix },
-        { displayName: new RegExp(escapeRegex(q), "i") },
-        { aliases: prefix },
+      // Treat tags without an explicit isPublic flag as public (the schema
+      // default is undefined), so newly-synced tags are searchable immediately.
+      $and: [
+        { $or: [{ isPublic: true }, { isPublic: { $exists: false } }] },
+        {
+          $or: [
+            { slug: prefix },
+            { displayName: new RegExp(escapeRegex(q), "i") },
+            { aliases: prefix },
+          ],
+        },
       ],
     })
       .sort({ wheelCount: -1 })

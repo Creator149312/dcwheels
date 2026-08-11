@@ -91,7 +91,7 @@ export default function UniversalCommentsSection({
     <div id="comments-section" className={`
       w-full text-left sm:pt-1 pb-1 border-t border-border/10 bg-muted/5 
       ${visible || isDrawerOpen ? "" : "hidden"}
-      ${isInFeed ? 'mt-1 sm:mt-2 sm:rounded-xl bg-muted/20 border border-border/20' : ''}
+      ${isInFeed ? 'mt-1 sm:mt-2 sm:rounded-xl bg-muted/20 border border-border/20' : 'mt-0'}
     `}>
       {/* Auto-open from query param — wrapped in Suspense for static pages */}
       <Suspense fallback={null}>

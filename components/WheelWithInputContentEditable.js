@@ -41,6 +41,7 @@ const WheelWithInputContentEditable = ({
   newSegments,
   wheelPresetSettings,
   wheelTitle: pageWheelTitle,
+  wheelPreview: pageWheelPreview,
   wheelTypeProp = "basic",
   relatedWheelsSlot,
   wheelId = null,
@@ -141,6 +142,7 @@ const WheelWithInputContentEditable = ({
               setShowCelebration={setShowCelebration}
               mustSpin={mustSpin}
               wheelId={wheelId}
+              wheelPreview={pageWheelPreview}
             />
           )}
 

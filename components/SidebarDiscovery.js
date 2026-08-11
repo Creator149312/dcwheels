@@ -12,7 +12,7 @@ export default function SidebarDiscovery({ initialTopics = [], isTrending = fals
   useEffect(() => {
     // Only fetch fallback on desktop (lg: matchMedia)
     const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
-    
+
     async function loadFallback() {
       if (isDesktop && topics.length === 0 && !loading) {
         setLoading(true);
@@ -31,7 +31,7 @@ export default function SidebarDiscovery({ initialTopics = [], isTrending = fals
     }
 
     loadFallback();
-  }, [topics.length]);
+  }, [topics.length, loading]);
 
   // If we have nothing to show and aren't loading, stay hidden
   if (topics.length === 0 && !loading) return null;

@@ -44,10 +44,12 @@ export default function LayoutShell({ children }) {
         <main className="max-w-[1600px] mx-auto px-0 sm:px-4 lg:px-8 py-1">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 xl:col-span-9">
-              <AdaptiveLeaderBoardAds
-                desktopSlot={"2668822790"}
-                mobileSlot={"8451962089"}
-              />
+              <div className="mb-1 md:mb-0">
+                <AdaptiveLeaderBoardAds
+                  desktopSlot={"2668822790"}
+                  mobileSlot={"8451962089"}
+                />
+              </div>
               {children}
             </div>
 

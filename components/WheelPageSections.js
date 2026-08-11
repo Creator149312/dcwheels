@@ -84,21 +84,49 @@ export async function SuspendedStatsFeed({ wheelId }) {
 }
 
 /**
- * SuspendedHubFeed — brings the specific hub feed directly underneath the fold.
- * Fetches content related to the wheel's tags.
+ * SuspendedHubFeed — brings a unified hub feed directly underneath the fold.
+ *
+ * Strategy:
+ *   1. Prefer content related to the wheel's tags.
+ *   2. If the wheel has no tags or the tag query returns nothing, fall back
+ *      to trending public wheels so user-created wheels still have a feed.
+ *   3. Exclude the current wheel from the results.
  */
 export async function SuspendedHubFeed({ tags = [], currentWheelId = null }) {
-  if (!tags || tags.length === 0) return null;
-
-  // Convert array to comma-separated string for the unified feed fetcher
-  const tagString = tags.join(",");
-
   const limit = 8;
-  const initialItems = await getFeedItemsSafe({
-    tag: tagString,
-    limit: limit + 1, // Fetch one extra to check for more
-    docType: "post,wheel"
-  });
+  const tagString = tags && tags.length > 0 ? tags.join(",") : "";
+
+  let initialItems = [];
+
+  if (tagString) {
+    initialItems = await getFeedItemsSafe({
+      tag: tagString,
+      limit: limit + 2, // extra for cursor probe + current-wheel exclusion
+      docType: "post,wheel",
+    });
+  }
+
+  // Fallback for user-created wheels with no tags or sparse tag results.
+  if (initialItems.length < 3) {
+    const trending = await getFeedItemsSafe({
+      limit: limit + 2,
+      docType: "wheel",
+    });
+    // Merge without duplicates (tag results take priority).
+    const seen = new Set(initialItems.map((i) => String(i._id || i.id)));
+    for (const item of trending) {
+      const id = String(item._id || item.id);
+      if (!seen.has(id)) {
+        seen.add(id);
+        initialItems.push(item);
+      }
+    }
+  }
+
+  // Exclude the current wheel from its own feed.
+  initialItems = initialItems.filter(
+    (item) => String(item._id || item.id) !== String(currentWheelId)
+  );
 
   const nextItem = initialItems.length > limit ? initialItems[limit] : null;
   const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
@@ -108,21 +136,12 @@ export async function SuspendedHubFeed({ tags = [], currentWheelId = null }) {
 
   return (
     <div className="w-full px-0 sm:px-4 text-left mt-6 md:mt-12 pb-20 border-t border-border/10 pt-6 md:pt-12 bg-card/5">
-      {/* <div className="px-3 sm:px-0 flex items-center gap-2 mb-4 group">
-        <span className="w-1.5 h-5 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.3)]" />
-        <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-foreground">
-          Explore the Hub
-        </h2>
-        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold text-muted-foreground ml-2 opacity-50">
-          RELATED CONTENT
-        </span>
-      </div> */}
-      
       <InfiniteFeedStream
-        tag={tagString}
+        tag={tagString || undefined}
         initialItems={items}
         initialNextCursor={nextCursor}
         docType="post,wheel"
+        currentContextId={currentWheelId}
       />
     </div>
   );

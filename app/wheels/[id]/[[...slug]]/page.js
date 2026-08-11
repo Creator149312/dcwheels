@@ -13,6 +13,7 @@ import SidebarDiscovery from "@components/SidebarDiscovery";
 import { getWheelUrl } from "@utils/UrlHandler";
 import { connectMongoDB } from "@/lib/mongodb";
 import Wheel from "@models/wheel";
+import WheelAnalytics from "@models/wheelAnalytics";
 import mongoose from "mongoose";
 import {
   SuspendedInfoActions,
@@ -131,33 +132,42 @@ export async function generateMetadata({ params }) {
 export async function generateStaticParams() {
   try {
     await connectMongoDB();
-    
-    // Fetch both popular indexed wheels (by slug) and a set of popular wheels by ID
-    const wheels = await Wheel.find({ indexed: true })
-      .sort({ likeCount: -1, createdAt: -1 })
-      .limit(300)
-      .select("slug _id")
-      .lean();
-    
-    const params = [];
-    
-    wheels.forEach(wheel => {
-      // Add Slug entry if it exists
-      if (wheel.slug) {
-        params.push({
-          id: wheel.slug,
-          slug: []
-        });
-      }
-      
-      // Add ID entry
-      params.push({
-        id: wheel._id.toString(),
-        slug: []
-      });
-    });
 
-    return params;
+    // Only pre-render slug-based indexed wheels that have real traffic.
+    // ID-based URLs (user wheels) are intentionally noindex and can be
+    // server-rendered on demand. Sorting by total engagement (views +
+    // spins) surfaces the wheels most likely to be searched/shared.
+    const wheels = await Wheel.find({
+      indexed: true,
+      slug: { $exists: true, $ne: null, $type: "string" },
+    })
+      .select("slug")
+      .lean();
+
+    const wheelIds = wheels.map((w) => w._id);
+    const analytics = await WheelAnalytics.find({
+      wheel: { $in: wheelIds },
+    })
+      .select("wheel view_count spin_count")
+      .lean();
+
+    const scoreByWheel = new Map(
+      analytics.map((a) => [
+        String(a.wheel),
+        (a.view_count || 0) + (a.spin_count || 0),
+      ])
+    );
+
+    return wheels
+      .filter((wheel) => wheel.slug && wheel.slug.trim().length > 0)
+      .map((wheel) => ({
+        id: wheel.slug.trim(),
+        slug: [],
+        score: scoreByWheel.get(String(wheel._id)) || 0,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 500)
+      .map(({ id, slug }) => ({ id, slug }));
   } catch (err) {
     console.error("generateStaticParams (/wheels/[id]/[[...slug]]) failed:", err);
     return [];
@@ -223,6 +233,7 @@ export default async function UnifiedWheelPage({ params }) {
             newSegments={ensureArrayOfObjects(pageData.wheel.data)}
             wheelPresetSettings={pageData.wheel.wheelData}
             wheelTitle={pageData.wheel.title}
+            wheelPreview={pageData.wheel.wheelPreview}
             relatedWheelsSlot={<SidebarDiscovery initialTopics={sidebarTopics} isTrending={false} />}
             wheelId={wheelIdStr}
           />
@@ -257,16 +268,17 @@ export default async function UnifiedWheelPage({ params }) {
         entityId={wheelIdStr}
         entityType="wheel"
         initialCount={pageData.wheel.commentCount || 0}
+        className="px-3 md:px-4"
       />
 
-      <div className="min-h-[90px]">
+      <div className="min-h-[90px] mt-2 sm:mt-4">
         <AdsUnit slot="4694567949" />
       </div>
 
       <Suspense fallback={<HubFeedSkeleton />}>
-        <SuspendedHubFeed 
-          tags={pageData.wheel.tags} 
-          currentWheelId={wheelIdStr} 
+        <SuspendedHubFeed
+          tags={pageData.wheel.tags}
+          currentWheelId={wheelIdStr}
         />
       </Suspense>
     </div>

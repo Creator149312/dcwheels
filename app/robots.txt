@@ -39,6 +39,7 @@ Allow: /character/sitemap.xml
 Allow: /anime/sitemap.xml
 Allow: /movie/sitemap.xml
 Allow: /game/sitemap.xml
+Allow: /wheels/sitemap.xml
 
 # Industry standard sitemap declaration (Replace with your actual domain)
 Sitemap: https://spinpapa.com/sitemap.xml
@@ -46,3 +47,4 @@ Sitemap: https://spinpapa.com/character/sitemap.xml
 Sitemap: https://spinpapa.com/anime/sitemap.xml
 Sitemap: https://spinpapa.com/movie/sitemap.xml
 Sitemap: https://spinpapa.com/game/sitemap.xml
+Sitemap: https://spinpapa.com/wheels/sitemap.xml

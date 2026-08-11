@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext, useCallback, useEffect } from "react";
+import { useState, useContext, useCallback, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { Button } from "@/components/ui/button";
@@ -65,11 +65,14 @@ export default function SaveWheelBtn({ segmentsData }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [showUpdateDropdown, setShowUpdateDropdown] = useState(false);
   const urlTopic = useUrlTopic();
+  const defaultsAppliedRef = useRef(false);
 
-  // Initialize title/description with defaults if they're empty
-  // and we have a topic to work with.
+  // Initialize title/description with defaults once when the dialog opens.
+  // We gate this with a ref so clearing the input while editing doesn't
+  // snap the value back to the default.
   useEffect(() => {
-    if (showDataDialog && !selectedWheel) {
+    if (showDataDialog && !selectedWheel && !defaultsAppliedRef.current) {
+      defaultsAppliedRef.current = true;
       if (!title) {
         if (urlTopic) {
           const suggested = `${urlTopic.id.charAt(0).toUpperCase() + urlTopic.id.slice(1).replace(/-/g, ' ')} Wheel`;
@@ -83,6 +86,14 @@ export default function SaveWheelBtn({ segmentsData }) {
       }
     }
   }, [showDataDialog, selectedWheel, urlTopic, title, description]);
+
+  // Reset the defaults gate when the dialog closes so the next open
+  // gets a fresh application of defaults.
+  useEffect(() => {
+    if (!showDataDialog) {
+      defaultsAppliedRef.current = false;
+    }
+  }, [showDataDialog]);
 
   // Suggested tags based on topic
   const suggestedTags = urlTopic ? TOPIC_TAG_MAP[urlTopic.type] || [] : [];
@@ -113,6 +124,8 @@ export default function SaveWheelBtn({ segmentsData }) {
     if (!showDataDialog) {
       setShowUpdateDropdown(false);
       setSelectedWheel(null);
+      // Title/description are intentionally left as-is so a user who
+      // reopens the modal to tweak something doesn't lose their edits.
     }
   }, [showDataDialog]);
 

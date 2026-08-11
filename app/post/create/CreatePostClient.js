@@ -97,7 +97,7 @@ function CreatePostForm() {
   const cr_entity_slug = searchParams.get("cr_entity_slug");
   const cr_entity_title = searchParams.get("cr_entity_title");
   const cr_entity_image = searchParams.get("cr_entity_image");
-  const cr_segments = searchParams.get("cr_segments");
+
   const spinResult = searchParams.get("result");
   const spinImage = searchParams.get("resultImage");
   const wheelShareTitle = searchParams.get("wheelTitle");
@@ -585,7 +585,6 @@ function CreatePostForm() {
         slug: cr_slug || "",
         title: wheelShareTitle || cr_title || "",
         image: cr_image || null,
-        segmentCount: cr_segments ? parseInt(cr_segments, 10) || 0 : 0,
       } : null;
 
       const entityContentRef = (cr_entity_type && cr_entity_id) ? {

@@ -12,6 +12,7 @@ export default async function sitemap() {
   const lists = await UnifiedList.find({
     isPublic: true,
     isDeleted: { $ne: true },
+    isSystem: { $ne: true },
   })
     .select("_id updatedAt")
     .limit(1000)

@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 
 const MAX_TAGS = 8;
 const DEBOUNCE_MS = 250;
+const MIN_QUERY_LEN = 1;
 
 function normalise(s) {
   return (typeof s === "string" ? s : "").trim().toLowerCase();
@@ -31,6 +32,7 @@ export default function TagInput({ value, onChange, placeholder }) {
   const [suggestions, setSuggestions] = useState([]);
   const [highlight, setHighlight] = useState(-1);
   const [open, setOpen] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const debounceRef = useRef(null);
   const abortRef = useRef(null);
   const inputRef = useRef(null);
@@ -40,10 +42,11 @@ export default function TagInput({ value, onChange, placeholder }) {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = input.trim();
-    if (q.length === 0) {
+    if (q.length < MIN_QUERY_LEN) {
       setSuggestions([]);
       setOpen(false);
       setHighlight(-1);
+      setFetchError(false);
       return;
     }
 
@@ -56,11 +59,19 @@ export default function TagInput({ value, onChange, placeholder }) {
           `/api/tags/autocomplete?q=${encodeURIComponent(q)}`,
           { signal: ctrl.signal }
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          // 404/500 from the autocomplete endpoint shouldn't block the
+          // user from typing a free-form tag.
+          setFetchError(true);
+          setSuggestions([]);
+          setOpen(false);
+          return;
+        }
         const json = await res.json();
         const filtered = (json.tags || []).filter(
           (t) => !tags.includes(normalise(t.name))
         );
+        setFetchError(false);
         setSuggestions(filtered);
         setOpen(filtered.length > 0);
         setHighlight(filtered.length > 0 ? 0 : -1);
@@ -68,12 +79,14 @@ export default function TagInput({ value, onChange, placeholder }) {
         if (err.name !== "AbortError") {
           // Swallow network errors — the user can still press Enter to
           // add a free-form tag.
+          setFetchError(true);
         }
       }
     }, DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input, tags.join("|")]);
@@ -190,7 +203,7 @@ export default function TagInput({ value, onChange, placeholder }) {
             >
               <span>{s.name}</span>
               <span className="text-xs text-muted-foreground">
-                {s.count.toLocaleString()} wheel{s.count === 1 ? "" : "s"}
+                {(s.count ?? 0).toLocaleString()} wheel{(s.count ?? 0) === 1 ? "" : "s"}
               </span>
             </button>
           ))}
@@ -199,6 +212,11 @@ export default function TagInput({ value, onChange, placeholder }) {
 
       <p className="text-xs text-muted-foreground mt-1.5">
         Press Enter or comma to add a tag. {tags.length}/{MAX_TAGS} used.
+        {fetchError && (
+          <span className="ml-1 text-amber-600 dark:text-amber-400">
+            Suggestions unavailable — you can still type your own tag.
+          </span>
+        )}
       </p>
     </div>
   );

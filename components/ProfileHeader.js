@@ -151,7 +151,7 @@ export default function ProfileHeader({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full px-4 sm:px-0">
       {/* ── Main Threads-style Profile Header Layout ──────────────────────── */}
       <div className="flex flex-col gap-5 pb-6 border-b border-border/80">
         
@@ -219,8 +219,8 @@ export default function ProfileHeader({
 
       {/* ── Edit Profile Modal (Instagram/Threads Style Drawer) ───────────────── */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
-          <div 
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
+          <div
             className="w-full max-w-md bg-card border border-border rounded-3xl shadow-xl overflow-hidden animate-scale-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -254,7 +254,7 @@ export default function ProfileHeader({
                 </div>
               </div>
 
-              {/* Username Handle */}
+              {/* Username Handle — shown for reference but locked for now. */}
               <div>
                 <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-1.5">
                   Username Handle
@@ -264,15 +264,14 @@ export default function ProfileHeader({
                   <input
                     type="text"
                     value={editUsername}
-                    onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
-                    required
-                    maxLength={40}
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition font-bold"
+                    readOnly
+                    disabled
+                    className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-border bg-muted/70 text-sm text-muted-foreground font-bold cursor-not-allowed"
                     placeholder="username"
                   />
                 </div>
                 <p className="mt-1.5 text-[10px] text-muted-foreground/80 leading-tight">
-                  Your unique profile handle (3-40 chars). Must start and end with a letter or number. Dots, hyphens, and underscores allowed in the middle.
+                  Username changes are temporarily disabled.
                 </p>
               </div>
 
@@ -320,8 +319,8 @@ export default function ProfileHeader({
 
       {/* ── Settings Drawer / Popover Modal ───────────────────────────────── */}
       {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
-          <div 
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
+          <div
             className="w-full max-w-md bg-card border border-border rounded-3xl shadow-xl overflow-hidden animate-scale-up"
             onClick={(e) => e.stopPropagation()}
           >

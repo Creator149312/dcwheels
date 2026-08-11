@@ -54,3 +54,31 @@ export async function GET(req) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+// DELETE read notifications for the authenticated user.
+// This keeps unread notifications untouched and only removes ones already seen.
+export async function DELETE(req) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectMongoDB();
+
+    const userId = await sessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { deletedCount } = await Notification.deleteMany({
+      recipient: userId,
+      isRead: true,
+    });
+
+    return NextResponse.json({ success: true, deletedCount });
+  } catch (error) {
+    console.error("Error deleting read notifications:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}

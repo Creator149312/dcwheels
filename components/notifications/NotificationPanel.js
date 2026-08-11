@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, Heart, MessageSquare, Reply, UserPlus, Bell } from "lucide-react";
+import { Check, Heart, MessageSquare, Reply, UserPlus, Bell, Trash2, X } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
 const ICONS = {
@@ -36,15 +36,22 @@ export default function NotificationDropdown({ onClose }) {
     return () => (mounted = false);
   }, []);
 
-  // Close dropdown on outside click
+  // Close on outside click and Escape key
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) {
         onClose();
       }
     };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [onClose]);
 
   const markAllAsRead = async () => {
@@ -53,6 +60,19 @@ export default function NotificationDropdown({ onClose }) {
       setData((prev) => ({
         unreadCount: 0,
         notifications: prev.notifications.map((n) => ({ ...n, isRead: true })),
+      }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const clearRead = async () => {
+    try {
+      const res = await fetch("/api/notifications", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to clear read notifications");
+      setData((prev) => ({
+        ...prev,
+        notifications: prev.notifications.filter((n) => !n.isRead),
       }));
     } catch (e) {
       console.error(e);
@@ -77,13 +97,16 @@ export default function NotificationDropdown({ onClose }) {
     onClose();
   };
 
-  return (
+  const readCount = data.notifications.filter((n) => n.isRead).length;
+
+  const panel = (
     <div
       ref={panelRef}
-      className="absolute top-10 right-0 w-80 sm:w-96 bg-popover border border-border shadow-xl rounded-xl flex flex-col z-[100] max-h-[80vh] overflow-hidden"
+      className="fixed inset-x-0 top-[calc(3.5rem+env(safe-area-inset-top))] bottom-0 z-[100] sm:absolute sm:top-10 sm:bottom-auto sm:right-0 sm:left-auto sm:w-96 sm:max-h-[80vh] bg-popover border-t sm:border border-border shadow-xl sm:rounded-xl flex flex-col overflow-hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 bg-card gap-3">
         <h3 className="font-bold text-foreground flex items-center gap-2">
           Notifications
           {data.unreadCount > 0 && (
@@ -92,15 +115,35 @@ export default function NotificationDropdown({ onClose }) {
             </span>
           )}
         </h3>
-        {data.unreadCount > 0 && (
+        <div className="flex items-center gap-2">
+          {data.unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              className="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
+            >
+              <Check size={14} />
+              <span className="hidden sm:inline">Mark all read</span>
+              <span className="sm:hidden">Read all</span>
+            </button>
+          )}
+          {readCount > 0 && (
+            <button
+              onClick={clearRead}
+              className="text-xs text-muted-foreground hover:text-destructive font-semibold flex items-center gap-1"
+              title="Clear read notifications"
+            >
+              <Trash2 size={14} />
+              <span className="hidden sm:inline">Clear read</span>
+            </button>
+          )}
           <button
-            onClick={markAllAsRead}
-            className="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
+            onClick={onClose}
+            className="sm:hidden p-1 rounded-full text-muted-foreground hover:bg-muted"
+            aria-label="Close notifications"
           >
-            <Check size={14} />
-            Mark all read
+            <X size={16} />
           </button>
-        )}
+        </div>
       </div>
 
       {/* Body */}
@@ -166,4 +209,7 @@ export default function NotificationDropdown({ onClose }) {
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(panel, document.body);
 }

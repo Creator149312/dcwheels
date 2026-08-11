@@ -9,7 +9,10 @@ export async function GET() {
     await connectMongoDB();
 
     // Primary: serve from Tag collection (canonical slugs, sorted by wheelCount).
-    const tagDocs = await Tag.find({})
+    // Tags without an explicit isPublic flag are treated as public.
+    const tagDocs = await Tag.find({
+      $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
+    })
       .sort({ wheelCount: -1 })
       .limit(100)
       .select("slug displayName wheelCount")

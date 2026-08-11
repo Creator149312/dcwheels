@@ -210,7 +210,7 @@ export default function InfiniteFeedStream({
   };
 
   return (
-    <div className="flex flex-col space-y-0 sm:space-y-4 sm:mt-4 max-w-3xl border-border">
+    <div className="flex flex-col space-y-0 sm:space-y-6 sm:mt-6 max-w-3xl border-border">
       <VirtualizedFeed
         items={stableItems}
         renderItem={renderItem}

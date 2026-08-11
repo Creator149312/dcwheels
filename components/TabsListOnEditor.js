@@ -50,7 +50,6 @@ const TabsListOnEditor = ({
             {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
           <SettingsAdv
-            advOptions={advOptions}
             showLabel={false}
             iconSize={18}
             triggerVariant="ghost"

@@ -2,7 +2,6 @@
 
 import { memo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -11,7 +10,7 @@ import { timeAgo } from "@utils/HelperFunctions";
 import { getListUrl, getWheelUrl } from "@utils/UrlHandler";
 import { Zap, MoreHorizontal } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
-import WheelPreviewCard from "@components/WheelPreviewCard";
+import ContentRefCard from "@components/ContentRefCard";
 
 /**
  * Helper to render post text with clickable hashtags (Threads/Facebook style)
@@ -105,7 +104,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
   });
 
   return (
-    <article className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 transition-colors hover:bg-muted/[0.03]">
+    <article className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 transition-colors hover:bg-muted/[0.03] sm:mb-0">
       {/* Header: Author + Time */}
       <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -223,46 +222,18 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
       {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
       {post.contentRef && String(post.contentRef.externalId) !== String(currentContextId) && (
         <div className="px-4 sm:px-0 mb-4">
-          {post.contentRef.type === "wheel" ? (
-            <WheelPreviewCard
-              title={post.contentRef.title}
-              segmentCount={post.contentRef.segmentCount}
-              image={post.contentRef.image}
-              slug={post.contentRef.slug}
-              wheelId={post.contentRef.externalId}
-            />
-          ) : (
-            <Link
-              href={
-                post.contentRef.type === "list"
+          <ContentRefCard
+            href={
+              post.contentRef.type === "wheel"
+                ? getWheelUrl({ _id: post.contentRef.externalId, slug: post.contentRef.slug })
+                : post.contentRef.type === "list"
                   ? getListUrl({ id: post.contentRef.externalId, slug: post.contentRef.slug })
                   : `/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`
-              }
-              className="block"
-            >
-              <div className="group flex gap-0 overflow-hidden rounded-2xl border border-border/70 bg-muted/10 hover:bg-muted/20 transition-colors">
-                {post.contentRef.image && (
-                  <div className="relative flex-shrink-0 w-28 h-32 bg-muted overflow-hidden rounded-l-2xl">
-                    <Image
-                      src={post.contentRef.image}
-                      alt={post.contentRef.title}
-                      fill
-                      className="object-cover"
-                      sizes="112px"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 p-3 flex flex-col justify-center gap-2 min-w-0">
-                  <h4 className="font-semibold text-foreground text-sm line-clamp-2">
-                    {post.contentRef.title}
-                  </h4>
-                  <span className="inline-flex items-center self-start text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                    {post.contentRef.type}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )}
+            }
+            image={post.contentRef.image}
+            title={post.contentRef.title}
+            type={post.contentRef.type}
+          />
         </div>
       )}
 

@@ -138,7 +138,7 @@ export default async function ProfilePage({ params }) {
   });
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8 sm:px-6">
+    <main className="max-w-3xl mx-auto px-0 py-8 sm:px-6">
       
       {/* ── Modern Instagram/Threads-style Header & Settings Panel ── */}
       <ProfileHeader

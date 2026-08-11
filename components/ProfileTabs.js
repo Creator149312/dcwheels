@@ -37,7 +37,7 @@ export default function ProfileTabs({
   return (
     <div className="mt-6">
       {/* ── Tab Bar Navigation ──────────────────────── */}
-      <div className="flex justify-between sm:justify-start sm:gap-2 border-b border-border mb-6 w-full">
+      <div className="flex justify-between sm:justify-start sm:gap-2 border-b border-border mb-6 w-full px-4 sm:px-0">
         {tabList.map((tab) => (
           <button
             key={tab.id}
@@ -56,30 +56,30 @@ export default function ProfileTabs({
 
       <div className="space-y-4">
         {activeTab === "posts" && (
-          <div className="space-y-4">
-            {isOwner && <CreatePostTeaser className="mb-6" />}
-            <InfiniteFeedStream 
-              userId={userId} 
-              docType="post" 
-              initialItems={posts} 
+          <div>
+            {isOwner && <CreatePostTeaser className="mb-6 mx-4 sm:mx-0" />}
+            <InfiniteFeedStream
+              userId={userId}
+              docType="post"
+              initialItems={posts}
               initialNextCursor={postsCursor}
             />
           </div>
         )}
 
         {activeTab === "wheels" && (
-          <div className="space-y-4">
+          <div>
             {isOwner && (
-              <Link href="/wheels/create" className="group flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary mb-2">
+              <Link href="/wheels/create" className="group flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary mb-2 mx-4 sm:mx-0">
                 <Plus size={18} />
                 <span className="font-bold text-sm">Create New Wheel</span>
               </Link>
             )}
-            
-            <InfiniteFeedStream 
-              userId={userId} 
-              docType="wheel" 
-              initialItems={wheels} 
+
+            <InfiniteFeedStream
+              userId={userId}
+              docType="wheel"
+              initialItems={wheels}
               initialNextCursor={wheelsCursor}
             />
           </div>

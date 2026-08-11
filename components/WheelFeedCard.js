@@ -16,6 +16,11 @@ import { getWheelUrl } from "@utils/UrlHandler";
 function WheelFeedCard({ wheel }) {
   const { data: session } = useSession();
   const [isHidden, setIsHidden] = useState(false);
+  const [imgSrc, setImgSrc] = useState(() => {
+    const full = wheel.wheelPreview || null;
+    if (!full) return null;
+    return full.endsWith(".webp") ? full.replace(".webp", "-thumb.webp") : full;
+  });
   
   // UNIFIED ROUTING: Prefer slug (official/indexed) -> fallback to ID (user/fresh).
   const wheelUrl = getWheelUrl(wheel);
@@ -30,9 +35,6 @@ function WheelFeedCard({ wheel }) {
   const isOwner = session?.user?.username === authorHandle || session?.user?.name === authorNameRaw;
 
   const firstLetter = authorName.charAt(0).toUpperCase();
-  const thumbSrc = wheel.wheelPreview
-    ? wheel.wheelPreview.replace('.webp', '-thumb.webp')
-    : null;
 
   // If the card is hidden (e.g. deleted by owner), don't render it at all.
   // We don't show an "Undo" button here because deletion requires multiple
@@ -40,7 +42,7 @@ function WheelFeedCard({ wheel }) {
   if (isHidden) return null;
 
   return (
-    <div className="border-b border-border/40 bg-card py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition hover:bg-muted/[0.04]">
+    <div className="border-b border-border/40 bg-card py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition hover:bg-muted/[0.04] sm:mb-0">
       {/* Header: Author + Time + Menu */}
       <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
         <div className="flex items-center gap-2">
@@ -94,13 +96,22 @@ function WheelFeedCard({ wheel }) {
         <Link href={wheelUrl} className="block group relative w-full sm:mx-0 sm:w-full aspect-video sm:aspect-[21/9] bg-muted/20 sm:rounded-2xl overflow-hidden border-y sm:border border-border/40 transition isolate">
           {/* Wheel Graphic */}
           <div className="absolute inset-0 flex items-center justify-center py-4 bg-background/50 backdrop-blur-[2px] group-hover:bg-background/20 transition-colors z-0">
-            {thumbSrc ? (
+            {imgSrc ? (
               <Image
-                src={thumbSrc}
+                src={imgSrc}
                 alt={wheel.title}
                 width={300}
                 height={300}
                 className="h-full w-auto object-contain drop-shadow-2xl group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+                onError={() => {
+                  if (imgSrc !== wheel.wheelPreview && wheel.wheelPreview) {
+                    // Thumb failed; try the full preview next.
+                    setImgSrc(wheel.wheelPreview);
+                  } else {
+                    // Full preview also failed; show letter fallback.
+                    setImgSrc(null);
+                  }
+                }}
               />
             ) : (
              <span className="text-muted/40 text-7xl font-black group-hover:scale-105 transition-transform">

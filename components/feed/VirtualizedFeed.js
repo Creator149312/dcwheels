@@ -27,6 +27,7 @@ const RenderedRow = memo(function RenderedRow({ item, index, renderItem, measure
         register(index, node);
         measure(index, node);
       }}
+      className="mb-0 sm:mb-5"
     >
       {renderItem(item, index)}
     </div>
@@ -41,7 +42,7 @@ const PlaceholderRow = memo(function PlaceholderRow({ index, height, register, i
       data-vc-index={index}
       ref={(node) => register(index, node)}
       style={{ height, minHeight: height }}
-      className="w-full"
+      className="w-full mb-0 sm:mb-5"
       aria-hidden="true"
     />
   );
