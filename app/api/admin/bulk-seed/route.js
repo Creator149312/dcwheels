@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import Post from "@/models/Post";
+import Post from "@/models/post";
 import TopicPage from "@/models/topicpage";
 import { generateAIPost } from "@/scripts/ai-generation-helper"; // We'll need to make sure this is accessible
 
