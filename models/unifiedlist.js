@@ -190,7 +190,7 @@ ListSchema.pre("save", async function (next) {
 
 ListSchema.post("save", async function () {
   try {
-    const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+    const { updateTagCounts } = await import("../lib/tagUpdateHelper.js");
 
     const wasLive = this._oldState
       ? !this._oldState.isSystem && this._oldState.isPublic
@@ -219,7 +219,7 @@ ListSchema.post("remove", async function () {
   try {
     const isLive = !this.isSystem && this.isPublic === true;
     if (isLive) {
-      const { updateTagCounts } = await import("../lib/tagUpdateHelper");
+      const { updateTagCounts } = await import("../lib/tagUpdateHelper.js");
       await updateTagCounts(this.tags, -1, "listCount");
     }
   } catch (err) {

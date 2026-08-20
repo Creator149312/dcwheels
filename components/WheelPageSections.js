@@ -51,7 +51,7 @@ export function HubFeedSkeleton() {
 // Async Server Components
 // ---------------------------------------------------------------------------
 
-export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, createdAt, createdBy, authorHandle }) {
+export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, createdAt, authorHandle }) {
   const initialMeta = await getCachedWheelMeta(wheelId);
   return (
     <WheelInfoActions
@@ -60,7 +60,6 @@ export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityTyp
       wheelEntityType={wheelEntityType}
       wheelSlug={wheelSlug}
       createdAt={createdAt}
-      createdBy={createdBy}
       authorHandle={authorHandle}
       initialMeta={initialMeta}
     />

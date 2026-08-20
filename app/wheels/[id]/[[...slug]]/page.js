@@ -200,8 +200,7 @@ export default async function UnifiedWheelPage({ params }) {
     const sessionUserId = sessionData?.userId ? String(sessionData.userId) : null;
     const wheelUserId = wheel.userId ? String(wheel.userId) : null;
     const ownsByUserId = wheelUserId && sessionUserId && sessionUserId === wheelUserId;
-    const ownsByEmail = !wheelUserId && sessionData?.user?.email && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionData.user.email.toLowerCase();
-    if (!ownsByUserId && !ownsByEmail) {
+    if (!ownsByUserId) {
       notFound();
     }
   }
@@ -255,7 +254,6 @@ export default async function UnifiedWheelPage({ params }) {
           wheelEntityType="wheel"
           wheelSlug={pageData.wheel.slug || urlSlugSuffix} 
           createdAt={pageData.wheel.createdAt}
-          createdBy={pageData.wheel.createdBy}
           authorHandle={pageData.wheel.authorHandle}
         />
       </Suspense>

@@ -56,20 +56,18 @@ export async function POST(req, { params }) {
       throw err;
     }
 
-    // Atomically increment the option vote count to avoid race conditions.
-    const voteUpdate = await Post.updateOne(
+    // Atomically increment option voteCount and return updated pollOptions in a single round-trip.
+    const updated = await Post.findOneAndUpdate(
       { _id: id, "pollOptions._id": optionId },
-      { $inc: { "pollOptions.$.voteCount": 1 } }
+      { $inc: { "pollOptions.$.voteCount": 1 } },
+      { new: true, select: "pollOptions", lean: true }
     );
 
-    if (voteUpdate.modifiedCount === 0) {
+    if (!updated) {
       // Roll back the vote record if the option didn't exist.
       await PostVote.deleteOne({ postId: id, userId });
       return NextResponse.json({ message: "Option not found" }, { status: 404 });
     }
-
-    // Return updated options
-    const updated = await Post.findById(id).select("pollOptions").lean();
 
     return NextResponse.json({
       message: "Vote recorded",

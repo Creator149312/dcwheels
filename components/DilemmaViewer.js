@@ -217,6 +217,21 @@ export default function DilemmaViewer({ post, postId }) {
         </div>
       )}
 
+      {/* ── Unvoted Poll Status Bar (Total engagement proof) ──────────────── */}
+      {!revealBars && (
+        <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground/80 px-1 pt-0.5">
+          <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px] sm:text-[11px] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/70 inline-block animate-pulse" />
+            {totalVotes > 0
+              ? `${totalVotes.toLocaleString()} ${totalVotes === 1 ? "vote" : "votes"} in poll`
+              : "0 votes in poll"}
+          </span>
+          <span className="text-[10px] sm:text-[11px] text-muted-foreground/60 font-medium">
+            Vote to see results
+          </span>
+        </div>
+      )}
+
       {/* ── Confirmed vote feedback ───────────────────────────────────────── */}
       {voted && (
         <p className="text-center text-xs text-muted-foreground pt-1">

@@ -54,8 +54,9 @@ function AdSlot({ slot, width, minHeight, className }) {
       style={{
         display: "block",
         width: "100%",
-        minWidth: `${width}px`,
+        maxWidth: `${width}px`,
         minHeight: `${minHeight}px`,
+        height: `${minHeight}px`,
       }}
       data-ad-client="ca-pub-6746947892342481"
       data-ad-slot={slot}
@@ -67,17 +68,17 @@ function AdSlot({ slot, width, minHeight, className }) {
 
 function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
   return (
-    <div className="w-full my-2 min-h-[50px] sm:min-h-[120px]">
-      {/* Mobile Slot: Hidden on desktop via sm:hidden. 
-          AdSlot will only 'activate' if this container is visible. */}
-      <div className="flex justify-center overflow-hidden sm:hidden min-h-[50px] bg-muted/30">
-        <AdSlot slot={mobileSlot} width={320} minHeight={50} />
+    <div className="w-full my-0.5">
+      {/* Mobile Slot (< sm): 320x100 Large Mobile Banner for higher viewability & eCPM */}
+      <div className="flex sm:hidden justify-center items-center overflow-hidden h-[100px] min-h-[100px] max-h-[100px] bg-muted/20 border border-border/40 rounded-xl">
+        <div className="w-full max-w-[320px] h-[100px] flex items-center justify-center overflow-hidden">
+          <AdSlot slot={mobileSlot} width={320} minHeight={100} />
+        </div>
       </div>
 
-      {/* Desktop Slot: Hidden on mobile via hidden sm:flex. 
-          AdSlot will stay 'dormant' on mobile devices. */}
-      <div className="hidden sm:flex w-full bg-muted/30 border border-dashed border-border rounded-2xl items-center justify-center overflow-hidden min-h-[120px]">
-        <div className="w-full max-w-[728px] h-[90px] bg-card rounded-xl border border-gray-100 border-border flex items-center justify-center shadow-sm mx-auto overflow-hidden">
+      {/* Tablet & Desktop Slot (>= sm): 728x90 Leaderboard */}
+      <div className="hidden sm:flex w-full bg-muted/20 border border-border/40 rounded-xl items-center justify-center overflow-hidden h-[90px] min-h-[90px] max-h-[90px]">
+        <div className="w-full max-w-[728px] h-[90px] flex items-center justify-center overflow-hidden">
           <AdSlot slot={desktopSlot} width={728} minHeight={90} />
         </div>
       </div>

@@ -7,6 +7,8 @@ import { Plus, X, Loader2, ImageIcon, BarChart2, Earth, Lock } from "lucide-reac
 import Link from "next/link";
 import { compressImage } from "@utils/imageCompression";
 import { getListUrl } from "@utils/UrlHandler";
+import { normalizeTag } from "@lib/slug";
+import TagInput from "@components/TagInput";
 import Image from "next/image";
 
 function stripHtml(raw) {
@@ -118,6 +120,7 @@ function CreatePostForm() {
     { text: "", image: "" },
   ]);
   const [isPublic, setIsPublic] = useState(true);
+  const [explicitTags, setExplicitTags] = useState([]);
   const [pollImagePreviews, setPollImagePreviews] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -210,6 +213,9 @@ function CreatePostForm() {
               );
             }
             setIsPublic(post.isPublic !== false);
+            if (Array.isArray(post.tags)) {
+              setExplicitTags(post.tags);
+            }
             setOgMeta(post.ogMeta || null);
           } else {
             setError("Could not load post to edit");
@@ -498,11 +504,11 @@ function CreatePostForm() {
       return;
     }
 
-    const extractedTags = [];
+    const extractedTags = [...explicitTags];
     const tagRegex = /#([a-zA-Z0-9-_]+)/g;
     let match;
     while ((match = tagRegex.exec(rawText)) !== null) {
-      const matchedTag = match[1].toLowerCase().trim().replace(/_/g, "-");
+      const matchedTag = normalizeTag(match[1]);
       if (matchedTag && !extractedTags.includes(matchedTag)) {
         extractedTags.push(matchedTag);
       }
@@ -756,6 +762,14 @@ function CreatePostForm() {
                 className="w-full text-base sm:text-lg placeholder:text-muted-foreground/60 bg-transparent border-none focus:outline-none focus:ring-0 resize-none overflow-hidden text-foreground leading-relaxed transition-all"
                 style={{ minHeight: "120px" }}
               />
+
+              <div className="mt-3">
+                <TagInput
+                  value={explicitTags}
+                  onChange={setExplicitTags}
+                  placeholder="Add tags (e.g. movies, gaming)..."
+                />
+              </div>
 
               {tagTrayVisible && (
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

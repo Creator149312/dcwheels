@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Film, Gamepad2, Wind, User } from "lucide-react";
+import { Home, Film, Gamepad2, Wind, User, Disc3, BookMarked } from "lucide-react";
 
 const NAV_SECTIONS = [
   {
@@ -16,74 +16,75 @@ const NAV_SECTIONS = [
       { href: "/character", label: "Characters", icon: User },
     ],
   },
+  {
+    label: "FORMATS",
+    items: [
+      { href: "/wheels", label: "Wheels", icon: Disc3 },
+      { href: "/lists", label: "Lists", icon: BookMarked },
+    ],
+  },
 ];
 
 export default function LeftSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
-  const isActive = (path) => pathname === path;
 
-  const classHelpers = useMemo(() => ({
-    itemClass: (item) =>
-      isActive(item.href)
-        ? "bg-primary/10 text-primary"
-        : item.highlight
-        ? "text-purple-500 hover:bg-muted"
-        : "text-muted-foreground hover:bg-muted",
-    drawerItemClass: (item) =>
-      isActive(item.href)
-        ? "bg-primary/10 text-primary font-bold"
-        : item.highlight
-        ? "text-purple-600 dark:text-purple-400 font-semibold hover:bg-muted"
-        : "text-muted-foreground hover:bg-muted",
-  }), [isActive]);
+  const isItemActive = (href) => {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
+  };
 
   return (
     <>
-      {/* 1. Desktop Rail (compact icon-only, always visible) */}
-      <aside className="hidden md:flex flex-col fixed top-12 left-0 h-[calc(100vh-3rem)] w-16 bg-background border-r border-border z-30 overflow-y-auto">
+      {/* 1. Desktop Rail (compact icon-only, always visible on md+) */}
+      <aside className="hidden md:flex flex-col fixed top-[52px] left-0 h-[calc(100vh-52px)] w-16 bg-background border-r border-border z-30 overflow-y-auto">
         {NAV_SECTIONS.map((section, si) => (
           <div key={section.label}>
-            {/* Thin divider between sections (skip before first) */}
-            {si > 0 && (
-              <div className="mx-3 my-1 border-t border-border" />
-            )}
+            {/* Thin divider between sections */}
+            {si > 0 && <div className="mx-3 my-1 border-t border-border" />}
             <ul className="flex flex-col items-center space-y-0.5 pt-1 pb-1">
-              {section.items.map((item) => (
-                <li key={item.href} className="w-full px-1.5">
-                  <Link
-                    href={item.href}
-                    className={`flex flex-col items-center justify-center py-2 rounded-xl transition-colors ${classHelpers.itemClass(item)}`}
-                  >
-                    <item.icon size={18} />
-                    <span className="text-[9px] mt-1 font-bold leading-tight text-center">
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {section.items.map((item) => {
+                const active = isItemActive(item.href);
+                return (
+                  <li key={item.href} className="w-full px-1.5">
+                    <Link
+                      href={item.href}
+                      className={`flex flex-col items-center justify-center py-2 rounded-xl transition-colors ${
+                        active
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon size={18} />
+                      <span className="text-[9px] mt-1 font-bold leading-tight text-center">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
       </aside>
 
-      {/* 2. Global Backdrop */}
+      {/* 2. Desktop-Only Backdrop & Expanded Drawer (Hidden on Mobile) */}
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
+        className={`hidden md:block fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
           isOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
         }`}
         onClick={onClose}
       />
 
-      {/* 3. Expanded Drawer (mobile + hamburger on desktop) */}
+      {/* 3. Desktop Expanded Drawer (Hamburger Triggered) */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transition-transform duration-300 ease-in-out shadow-md flex flex-col ${
+        className={`hidden md:flex fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transition-transform duration-300 ease-in-out shadow-md flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Drawer header */}
-          <div className="h-14 flex items-center px-5 border-b border-border shrink-0">
-            <span className="font-black text-foreground text-base uppercase tracking-tight">
-            Spin<span className="text-blue-600">Papa</span>
+        <div className="h-14 flex items-center px-5 border-b border-border shrink-0">
+          <span className="font-black text-foreground text-base uppercase tracking-tight">
+            Spin<span className="text-primary">Papa</span>
           </span>
         </div>
 
@@ -95,18 +96,25 @@ export default function LeftSidebar({ isOpen, onClose }) {
                 {section.label}
               </p>
               <ul className="space-y-0.5">
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={onClose}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm ${classHelpers.drawerItemClass(item)}`}
-                    >
-                      <item.icon size={17} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                ))}
+                {section.items.map((item) => {
+                  const active = isItemActive(item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm ${
+                          active
+                            ? "bg-primary/10 text-primary font-bold"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <item.icon size={17} />
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

@@ -1,11 +1,14 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 /**
  * useQuizState
  *
  * Manages all quiz session state independently from the base useWheelState.
  * Tracks score, which segments have been answered, and quiz completion.
+ *
+ * Session persistence: Optionally accepts a wheelId string to persist
+ * in-progress quiz score and answered questions in sessionStorage across tab reloads.
  *
  * Segment quiz schema expected:
  * {
@@ -17,11 +20,55 @@ import { useState, useCallback } from "react";
  *   visible?: boolean,
  * }
  */
-export function useQuizState() {
-  // Set of segment indices that have already been answered this session
-  const [answeredIndices, setAnsweredIndices] = useState(new Set());
-  const [score, setScore] = useState(0);
+export function useQuizState(wheelId = null) {
+  const sessionKey = wheelId ? `SpinpapaQuizState_${wheelId}` : null;
+
+  // Initialize from sessionStorage if available
+  const [answeredIndices, setAnsweredIndices] = useState(() => {
+    if (!sessionKey || typeof window === "undefined") return new Set();
+    try {
+      const saved = sessionStorage.getItem(sessionKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.answeredIndices)) {
+          return new Set(parsed.answeredIndices);
+        }
+      }
+    } catch {}
+    return new Set();
+  });
+
+  const [score, setScore] = useState(() => {
+    if (!sessionKey || typeof window === "undefined") return 0;
+    try {
+      const saved = sessionStorage.getItem(sessionKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.score === "number") return parsed.score;
+      }
+    } catch {}
+    return 0;
+  });
+
   const [lastResult, setLastResult] = useState(null); // { correct: bool, selectedIndex: number }
+
+  // Persist score & answered indices when they change
+  useEffect(() => {
+    if (!sessionKey || typeof window === "undefined") return;
+    try {
+      if (answeredIndices.size > 0) {
+        sessionStorage.setItem(
+          sessionKey,
+          JSON.stringify({
+            score,
+            answeredIndices: Array.from(answeredIndices),
+          })
+        );
+      } else {
+        sessionStorage.removeItem(sessionKey);
+      }
+    } catch {}
+  }, [sessionKey, score, answeredIndices]);
 
   /**
    * Returns whether the question at `index` has already been answered.

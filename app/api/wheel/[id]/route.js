@@ -2,6 +2,8 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { NextResponse } from "next/server";
 import { sessionUser } from "@utils/SessionData";
+import { validateQuizSegments } from "@utils/Validator";
+import { revalidateTag, revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 
 // Strip base64 images from segment data before persisting to DB.
@@ -22,25 +24,45 @@ export async function PUT(request, { params }) {
     if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
+    const { userId: sessionUserId } = sessionData;
 
     const { id } = params;
-    const { title, description, data, wheelData, relatedTopics, tags, type } =
+    const { title, description, data, wheelData, relatedTopics, tags, type, updatedAt } =
       await request.json();
 
     await connectMongoDB();
-    const existing = await Wheel.findById(id).select("userId createdBy").lean();
+    const existing = await Wheel.findById(id).select("userId updatedAt wheelType").lean();
     if (!existing) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
     const wheelUserId = existing.userId ? String(existing.userId) : null;
 
-    // If the wheel has no userId, backfill it from the legacy createdBy email
-    // when the current session matches that email.
-    if (!wheelUserId && existing.createdBy && existing.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
-      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
-    } else if (wheelUserId !== String(sessionUserId)) {
+    if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Optimistic locking check: if client sent an updatedAt timestamp, verify
+    // the wheel has not been updated by another tab or session in the meantime.
+    if (updatedAt && existing.updatedAt) {
+      const clientTime = new Date(updatedAt).getTime();
+      const serverTime = new Date(existing.updatedAt).getTime();
+      if (!isNaN(clientTime) && !isNaN(serverTime) && serverTime > clientTime) {
+        return NextResponse.json(
+          {
+            error:
+              "This wheel was updated in another session or tab. Please reload to see the latest version before saving.",
+            conflict: true,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    if (type === "quiz" || existing.wheelType === "quiz") {
+      const quizErr = validateQuizSegments(data);
+      if (quizErr) {
+        return NextResponse.json({ error: quizErr }, { status: 400 });
+      }
     }
 
     // Only patch relatedTopics / tags when the client actually sent them.
@@ -62,8 +84,20 @@ export async function PUT(request, { params }) {
       );
     }
 
-    await Wheel.findByIdAndUpdate(id, update);
-    return NextResponse.json({ message: "Wheel updated" }, { status: 200 });
+    const updatedWheel = await Wheel.findByIdAndUpdate(id, update, { new: true }).lean();
+
+    // Invalidate Next.js cache so deleted segments or title changes take effect immediately
+    try {
+      revalidateTag(`wheel-${id}`);
+      if (updatedWheel?.slug) {
+        revalidatePath(`/wheels/${updatedWheel.slug}`);
+      }
+      revalidatePath(`/wheels/${id}`);
+    } catch (cacheErr) {
+      console.warn("Revalidation error after wheel update:", cacheErr);
+    }
+
+    return NextResponse.json({ message: "Wheel updated", updatedAt: updatedWheel?.updatedAt }, { status: 200 });
   } catch (e) {
     console.error("PUT /api/wheel/[id] failed:", e);
     return NextResponse.json(
@@ -79,20 +113,16 @@ export async function PATCH(request, { params }) {
     if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
+    const { userId: sessionUserId } = sessionData;
     const { id } = params;
     const body = await request.json();
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("userId createdBy isPublic").lean();
+    const wheel = await Wheel.findById(id).select("userId isPublic").lean();
     if (!wheel) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const wheelUserId = wheel.userId ? String(wheel.userId) : null;
 
-    // If the wheel has no userId, backfill it from the legacy createdBy email
-    // when the current session matches that email.
-    if (!wheelUserId && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
-      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
-    } else if (wheelUserId !== String(sessionUserId)) {
+    if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

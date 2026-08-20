@@ -165,10 +165,10 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
     );
   }
 
-  // Desktop Style (Vertical Stack inside cards)
+  // Desktop Style (Vertical Stack inside cards with bounded height & custom scrollbar)
   return (
-    <div className="bg-muted/30 rounded-xl p-3 border border-border/40">
-      <div className="flex items-center justify-between mb-2">
+    <div className="bg-muted/30 rounded-xl p-3 border border-border/40 max-h-[320px] flex flex-col">
+      <div className="flex items-center justify-between mb-2 shrink-0">
         <p className="text-sm font-semibold text-foreground">
           {type === "game" ? "Available on" : "Where to watch"}
         </p>
@@ -186,7 +186,7 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
         </svg>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1 overflow-y-auto pr-1 flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30">
         {streaming.map((provider, i) => (
           <a
             key={`stream-${i}`}

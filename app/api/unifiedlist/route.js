@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@utils/SessionData";
-import { slugify } from "@utils/HelperFunctions";
+import { createImmutableGlobalSlug } from "@utils/UrlHandler";
 
 // GET returns the logged-in user's lists, paginated. The route is private
 // and session-driven; we keep max-age=0 so mutations are reflected immediately,
@@ -207,18 +207,21 @@ export async function POST(req) {
       );
     }
 
-    // ✅ 4. Create the list
-    const baseSlug = slugify(name);
-    const uniqueSlug = `${baseSlug}-${Date.now()}`;
+    // ✅ 4. Create the list with a global, transliterated slug
+    // The full URL is /lists/[slug]-[id]; because the id is unique, the full
+    // URL is guaranteed unique even when multiple lists share the same name.
+    const idForSlug = new mongoose.Types.ObjectId().toString();
+    const slug = await createImmutableGlobalSlug({ title: name, id: idForSlug });
 
     const newList = await UnifiedList.create({
+      _id: idForSlug,
       userId,
       name,
       description,
       tags: Array.isArray(tags) ? tags : [],
       items: [],
       isPublic: typeof isPublic === "boolean" ? isPublic : true,
-      slug: uniqueSlug,
+      slug,
     });
 
     // ✅ 5. Format response

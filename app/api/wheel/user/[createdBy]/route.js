@@ -2,6 +2,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { NextResponse } from "next/server";
 import { sessionUser } from "@utils/SessionData";
+import mongoose from "mongoose";
 
 // Note: A previous PUT handler here referenced an undefined `List` model
 // and had no auth — it would have 500'd on first call. Removed entirely
@@ -17,12 +18,8 @@ export async function GET(request) {
 
   await connectMongoDB();
 
-  // Modern wheels store userId; legacy rows may only have createdBy (email).
-  // Include the user's email-matched legacy wheels so the dashboard doesn't
-  // appear empty during migration.
-  const query = sessionUserDoc?.email
-    ? { $or: [{ userId }, { createdBy: sessionUserDoc.email }] }
-    : { userId };
+  // Query indexed by userId
+  const query = { userId: new mongoose.Types.ObjectId(userId) };
 
   const lists = await Wheel.find(query)
     .select("_id title description data createdAt wheelPreview tags")

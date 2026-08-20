@@ -8,6 +8,7 @@ import {
   CheckCircle2, XCircle, Loader2,
 } from "lucide-react";
 import { getWheelUrl } from "@utils/UrlHandler";
+import { validateQuizSegments } from "@utils/Validator";
 
 const ADMIN_EMAIL = "gauravsingh9314@gmail.com";
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -253,9 +254,62 @@ export default function AdminQuizWheelsPage() {
   const removeSegment = (idx) =>
     setSegments((prev) => prev.filter((_, i) => i !== idx));
 
+  // ── Auto-save draft in localStorage ──────────────────────────────────────
+  const DRAFT_KEY = "SpinpapaAdminQuizDraft";
+
+  // Load draft on mount when form is shown
+  useEffect(() => {
+    if (!showForm || typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.title && !title) setTitle(draft.title);
+        if (draft.description && !description) setDescription(draft.description);
+        if (draft.tags && !tags) setTags(draft.tags);
+        if (Array.isArray(draft.segments) && draft.segments.length > 0 && segments.length === 1 && !segments[0].text && !segments[0].question) {
+          setSegments(draft.segments);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load quiz draft:", e);
+    }
+  }, [showForm]);
+
+  // Persist draft on changes
+  useEffect(() => {
+    if (!showForm || typeof window === "undefined") return;
+    try {
+      const hasContent = title.trim() || description.trim() || segments.some(s => s.question?.trim() || s.text?.trim());
+      if (hasContent) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, description, tags, segments }));
+      }
+    } catch (e) {
+      console.warn("Failed to save quiz draft:", e);
+    }
+  }, [showForm, title, description, tags, segments]);
+
+  const clearDraft = () => {
+    try {
+      if (typeof window !== "undefined") localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  };
+
   // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     setSaveError("");
+
+    if (!title.trim()) {
+      setSaveError("Title is required.");
+      return;
+    }
+
+    const quizErr = validateQuizSegments(segments);
+    if (quizErr) {
+      setSaveError(quizErr);
+      return;
+    }
+
     const tagArr = tags
       .split(",")
       .map((t) => t.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""))
@@ -272,6 +326,7 @@ export default function AdminQuizWheelsPage() {
       if (!res.ok) throw new Error(data.error ?? "Save failed");
 
       setSavedSlug(data.slug);
+      clearDraft();
       // Reset form
       setTitle(""); setDescription(""); setSlug(""); setSlugManual(false);
       setTags(""); setSegments([blankSegment()]); setShowForm(false);

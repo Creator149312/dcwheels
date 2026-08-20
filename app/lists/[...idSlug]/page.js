@@ -1,102 +1,36 @@
-import { notFound, permanentRedirect } from "next/navigation";
+import { permanentRedirect, notFound } from "next/navigation";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { getListByIdCached } from "@lib/lists";
-import ListDetailClient from "../[id]/[[...slug]]/ListDetailClient";
 import { getListUrl } from "@utils/UrlHandler";
 
-// ISR: list data is cached across requests and busted by revalidateTag
-// whenever a mutation API route runs. Public lists remain cacheable; private
-// lists trigger a server-side ownership check which makes that request dynamic.
-export const revalidate = 604800; // 7 days — tag-busted instantly on mutations
+/**
+ * Legacy list URL redirect handler.
+ *
+ * Redirects older multi-segment URL formats to the canonical
+ * /lists/[slug]-[id] format:
+ *   - /lists/[id]/[slug]          → /lists/[slug]-[id]
+ *   - /lists/[id]/[slug]/extra    → /lists/[slug]-[id]
+ *
+ * Single-segment legacy URLs (/lists/[id] and /lists/[id]-[slug])
+ * are handled directly by the canonical /lists/[slugId] route.
+ */
+export default async function LegacyListRedirectPage({ params }) {
+  const { idSlug } = await params;
 
-function parseListIdSlug(idSlug) {
   if (!Array.isArray(idSlug) || idSlug.length === 0) {
-    return { id: null, rawPath: "", malformed: true };
+    notFound();
   }
 
   const first = idSlug[0] || "";
 
-  // Current format: /lists/[id]-[slug]
-  const idx = first.indexOf("-");
-  if (idx !== -1) {
-    const id = first.slice(0, idx);
-    return { id, rawPath: `/lists/${first}`, malformed: false };
-  }
-
-  // No slug: /lists/[id]
-  return { id: first, rawPath: `/lists/${first}`, malformed: false };
-}
-
-export async function generateMetadata({ params }) {
-  const { idSlug } = await params;
-  const { id, malformed } = parseListIdSlug(idSlug);
-
-  if (malformed || !id || !mongoose.Types.ObjectId.isValid(id)) {
-    return {
-      title: "List Not Found",
-      description: "The requested list does not exist.",
-      robots: "noindex",
-    };
-  }
-
-  const list = await getListByIdCached(id);
-
-  if (!list || list.isDeleted) {
-    return {
-      title: "List Not Found",
-      description: "The requested list does not exist.",
-      robots: "noindex",
-    };
-  }
-
-  const isPublic = list.isPublic ?? true;
-
-  // Privacy check: private lists are only visible to their owner.
-  if (!isPublic && !list.isSystem) {
-    const session = await getServerSession(authOptions);
-    const sessionUserId = session?.user?.id ? String(session.user.id) : null;
-    const listUserId = list.userId ? String(list.userId) : null;
-    if (!sessionUserId || !listUserId || sessionUserId !== listUserId) {
-      return {
-        title: "List Not Found",
-        description: "The requested list does not exist.",
-        robots: "noindex",
-      };
-    }
-  }
-
-  const title = list.name ? `${list.name} — List` : "User List";
-  const description =
-    list.description?.trim()?.length > 0
-      ? list.description
-      : `Explore the list "${list.name}"`;
-
-  const isIndexed = list.indexed && isPublic && !list.isSystem;
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `https://www.spinpapa.com${getListUrl(list)}`,
-    },
-    robots: {
-      index: !!isIndexed,
-      follow: true,
-    },
-  };
-}
-
-export default async function ListDetailPage({ params }) {
-  const { idSlug } = await params;
-  const { id, rawPath, malformed } = parseListIdSlug(idSlug);
-
-  if (malformed || !id || !mongoose.Types.ObjectId.isValid(id)) {
+  // Multi-segment legacy format: /lists/[id]/[slug]/...
+  if (!mongoose.Types.ObjectId.isValid(first)) {
     notFound();
   }
 
-  const list = await getListByIdCached(id);
+  const list = await getListByIdCached(first);
 
   if (!list || list.isDeleted) {
     notFound();
@@ -114,19 +48,5 @@ export default async function ListDetailPage({ params }) {
     }
   }
 
-  const canonicalUrl = getListUrl(list);
-
-  // Redirect /lists/[id] to the canonical slug URL when the list has a slug.
-  // Wrong or missing slugs are ignored; the authoritative lookup key is the id.
-  if (list.slug && rawPath !== canonicalUrl) {
-    permanentRedirect(canonicalUrl);
-  }
-
-  return (
-    <ListDetailClient
-      initialList={list}
-      listId={id}
-      listOwnerId={list.userId}
-    />
-  );
+  permanentRedirect(getListUrl(list));
 }

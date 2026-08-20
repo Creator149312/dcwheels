@@ -15,6 +15,7 @@ export default function QuizCard({
   segmentIndex,  // its index in segData — used as the answer key
   totalSegments, // segData.length — for progress calculation
   quizState,     // { score, totalAnswered, isAnswered, submitAnswer, resetQuiz }
+  setSegData,    // updater to mark correct segments hidden
   onClose,       // called when user dismisses the card
   onReset,       // called when user wants to restart the whole quiz
 }) {
@@ -44,6 +45,13 @@ export default function QuizCard({
     const res = submitAnswer(segmentIndex, optionIndex, segment.correctIndex);
     setSelectedIndex(optionIndex);
     setResult(res);
+
+    // Auto-delete / hide segment from active wheel data on correct answer
+    if (res?.correct && typeof setSegData === "function") {
+      setSegData((prev) =>
+        prev.map((s, idx) => (idx === segmentIndex ? { ...s, visible: false } : s))
+      );
+    }
   };
 
   const handleClose = () => {
@@ -203,16 +211,7 @@ export default function QuizCard({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/40 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw size={12} />
-            Reset Quiz
-          </Button>
+        <div className="flex items-center justify-end px-6 py-4 border-t bg-muted/40 gap-2">
           <Button size="sm" onClick={handleClose}>
             {isFinished ? "Done" : result ? "Next Question →" : "Close"}
           </Button>

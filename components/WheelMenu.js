@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
-export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHandle, createdBy, userId, onDeleted }) {
+export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHandle, userId, onDeleted }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -24,16 +24,13 @@ export default function WheelMenu({ wheelId, isPublic: initialIsPublic, authorHa
   const router = useRouter();
   const menuRef = useRef(null);
 
-  // Ownership check: prefer exact userId match, then fall back to handle/email.
-  // userId is the authoritative source; authorHandle/createdBy are only for
-  // display and legacy wheels without userId.
+  // Ownership check: exact userId match, or handle match
   const sessionUserId = session?.user?.id ? String(session.user.id) : null;
   const wheelUserId = userId ? String(userId) : null;
   const isOwnWheel =
     (sessionUserId && wheelUserId && sessionUserId === wheelUserId) ||
     (!wheelUserId && session?.user?.username === authorHandle) ||
-    (!wheelUserId && session?.user?.name === authorHandle) ||
-    (!wheelUserId && !!createdBy && session?.user?.email === createdBy);
+    (!wheelUserId && session?.user?.name === authorHandle);
 
   // Sync state if prop changes (e.g. from parent feed update)
   useEffect(() => {

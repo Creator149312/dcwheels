@@ -161,7 +161,7 @@ export default async function TopicPageLayout({
       </div>
 
       {/* ── Desktop hero (sm+) - 12 Column Grid Layout ─────────────────── */}
-      <div className="hidden sm:block max-w-7xl mx-auto px-4 pt-2 pb-3">
+      <div className="hidden sm:block max-w-7xl mx-auto px-2 pt-2 pb-2">
         <div className="grid grid-cols-12 gap-5">
 
           {/* Left: Poster - 3 columns */}
@@ -234,7 +234,7 @@ export default async function TopicPageLayout({
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-2 sm:pt-4 pb-5">
+      <div className="max-w-7xl mx-auto px-0 sm:px-2 pt-2 sm:pt-4 pb-5">
         {/* ── Characters & Cast Carousel ──────────────────────────────────── */}
         {finalCharactersPromise !== null && (
           <Suspense fallback={<CharactersSkeleton />}>

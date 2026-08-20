@@ -85,29 +85,93 @@ const WheelWithInputContentEditable = ({
     }
   }, [isEditMode]);
 
-  // Theater mode: fullscreen the wheel container only
+  // Theater mode: fullscreen the wheel container only (with iOS/Safari vendor fallbacks)
   const handleToggleFullScreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+    const doc = typeof document !== "undefined" ? document : null;
+    if (!doc) return;
+
+    const fsEl =
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement;
+
+    if (fsEl) {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => setIsFullScreen(false));
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
       setIsFullScreen(false);
     } else if (wheelContainerRef.current) {
-      wheelContainerRef.current
-        .requestFullscreen()
-        .then(() => setIsFullScreen(true))
-        .catch(() => setIsFullScreen((prev) => !prev));
+      const el = wheelContainerRef.current;
+      const requestFs =
+        el.requestFullscreen ||
+        el.webkitRequestFullscreen ||
+        el.mozRequestFullScreen ||
+        el.msRequestFullscreen;
+
+      if (requestFs) {
+        try {
+          const promise = requestFs.call(el);
+          if (promise && typeof promise.then === "function") {
+            promise
+              .then(() => setIsFullScreen(true))
+              .catch(() => setIsFullScreen(true)); // Fallback to CSS theater mode if browser denies native FS
+          } else {
+            setIsFullScreen(true);
+          }
+        } catch {
+          setIsFullScreen(true); // Pseudo-fullscreen fallback
+        }
+      } else {
+        setIsFullScreen((prev) => !prev); // Pseudo-fullscreen for iOS Safari / WebViews
+      }
     } else {
       setIsFullScreen((prev) => !prev);
     }
   };
 
-  // Sync fullscreen state when user presses Escape
+  // Sync fullscreen state when user presses Escape or enters/exits native fullscreen
   useEffect(() => {
     const onFsChange = () => {
-      if (!document.fullscreenElement) setIsFullScreen(false);
+      const doc = document;
+      const isFs = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullScreen(isFs);
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 100);
     };
+
     document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("mozfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("mozfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
   }, []);
+
+  // Force roulette canvas re-measurement whenever fullscreen toggles
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [isFullScreen]);
 
   return (
     <>
@@ -116,7 +180,7 @@ const WheelWithInputContentEditable = ({
           ref={wheelContainerRef}
           className={`bg-card border shadow-sm flex flex-col items-center text-card-foreground lg:mb-0 lg:col-span-7 xl:col-span-5 mx-auto transition-all duration-300 ease-in-out ${
             isFullScreen
-              ? "fixed inset-0 z-50 bg-black rounded-none border-none shadow-none"
+              ? "fixed inset-0 z-50 bg-slate-950 text-white rounded-none border-none shadow-none justify-between p-3 sm:p-6"
               : "relative w-full rounded-2xl overflow-hidden"
           }`}
         >
@@ -124,8 +188,9 @@ const WheelWithInputContentEditable = ({
             <QuizCard
               segment={winner}
               segmentIndex={prizeNumber}
-              totalSegments={segData.filter((s) => s.visible !== false).length}
+              totalSegments={(segData || []).filter((s) => s?.visible !== false).length}
               quizState={quizState}
+              setSegData={setSegData}
               onClose={() => setWinner(null)}
               onReset={() => {
                 quizState.resetQuiz();
@@ -151,39 +216,41 @@ const WheelWithInputContentEditable = ({
           {/* Wheel */}
           <div
             onClick={handleSpinClick}
-            className={`relative flex items-center justify-center w-full overflow-hidden ${
-              isFullScreen ? "flex-1" : "min-h-[300px] sm:min-h-[30rem]"
+            className={`relative flex items-center justify-center overflow-hidden ${
+              isFullScreen
+                ? "flex-1 w-full h-full max-h-[85vh] max-w-[85vh] aspect-square mx-auto my-auto"
+                : "w-full min-h-[280px] sm:min-h-[27rem]"
             }`}
           >
-            {data.length > 0 && (
+            {Array.isArray(data) && data.length > 0 && (
             <Wheel
+              key={isFullScreen ? "fullscreen-wheel" : "normal-wheel"}
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber >= 0 ? prizeNumber : 0}
               data={(() => {
+                const maxOpts = wheelData?.maxNumberOfOptions || 100;
                 const slice = data.slice(
                   0,
-                  data.length < wheelData.maxNumberOfOptions
-                    ? data.length
-                    : wheelData.maxNumberOfOptions
+                  data.length < maxOpts ? data.length : maxOpts
                 );
                 if (wheelType !== "quiz" || quizState.answeredIndices.size === 0)
                   return slice;
                 return slice.map((seg, i) =>
                   quizState.answeredIndices.has(i)
-                    ? { ...seg, style: { ...seg.style, backgroundColor: "#6b7280" } }
+                    ? { ...seg, style: { ...seg?.style, backgroundColor: "#6b7280" } }
                     : seg
                 );
               })()}
-              textDistance={Math.min(60 + 0.5 * segData.length, 72)}
+              textDistance={Math.min(60 + 0.5 * (segData?.length || 0), 72)}
               radiusLineWidth={0}
               outerBorderWidth={0}
               outerBorderColor="white"
               onStopSpinning={handleStopSpinning}
-              innerRadius={wheelData.innerRadius}
+              innerRadius={wheelData?.innerRadius ?? 0}
               innerBorderWidth={4}
               innerBorderColor="white"
               fontWeight="normal"
-              spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
+              spinDuration={(wheelData?.spinDuration || 5) / (MAX_SPIN_TIME || 5)}
               fontSize={segTxtfontSize}
               pointerProps={{
                 src: "/smallredpointer.png",
@@ -204,8 +271,8 @@ const WheelWithInputContentEditable = ({
                 style={{
                   width: `${wheelData.innerRadius}%`, // Scales perfectly within the inner radius hole
                   aspectRatio: "1 / 1", // Forces it to stay a perfect circle
-                  maxWidth: "150px", // Safety limits just in case
-                  maxHeight: "150px",
+                  maxWidth: isFullScreen ? "260px" : "150px", // Expands with larger wheel in fullscreen
+                  maxHeight: isFullScreen ? "260px" : "150px",
                 }}
               >
                 {wheelData.centerImage ? (

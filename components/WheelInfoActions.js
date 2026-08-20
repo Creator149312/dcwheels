@@ -41,7 +41,7 @@ function formatCount(n) {
  *   authorHandle — Creator username for profile link routing
  *   initialMeta — server-fetched meta: analytics, reactions, commentCount
  */
-export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, createdBy, authorHandle, initialMeta = null }) {
+export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, authorHandle, initialMeta = null }) {
   const openLoginPrompt = useLoginPrompt();
   const { data: session } = useSession();
 
@@ -52,9 +52,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
   const [commentCount, setCommentCount] = useState(initialMeta?.commentCount || 0);
   const [showEmbed, setShowEmbed] = useState(false);
 
-  // Use authorHandle as preferred display name, or sanitize email from createdBy
-  const displayCreator =
-    authorHandle || (createdBy && createdBy.includes("@") ? createdBy.split("@")[0] : createdBy);
+  const displayCreator = authorHandle || "Community";
 
   useEffect(() => {
     let ignore = false;

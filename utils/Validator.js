@@ -109,3 +109,66 @@ export const validateObjectID = (id) => {
   const objectIdRegex = /^[0-9a-fA-F]{24}$/;
   return objectIdRegex.test(id);
 };
+
+export const validateQuizSegments = (segments) => {
+  if (!Array.isArray(segments) || segments.length === 0) {
+    return "Quiz wheel must have at least one question segment.";
+  }
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (!seg || typeof seg !== "object") {
+      return `Question ${i + 1}: Invalid question segment object.`;
+    }
+
+    const questionText = typeof seg.question === "string" ? seg.question.trim() : "";
+    if (!questionText) {
+      return `Question ${i + 1}: Question text is required.`;
+    }
+
+    const options = Array.isArray(seg.options) ? seg.options : [];
+    const filledOptions = options.filter(
+      (o) => typeof o === "string" && o.trim().length > 0
+    );
+
+    if (filledOptions.length < 2) {
+      return `Question ${i + 1}: At least 2 answer options are required.`;
+    }
+
+    if (
+      typeof seg.correctIndex !== "number" ||
+      !Number.isInteger(seg.correctIndex) ||
+      seg.correctIndex < 0 ||
+      seg.correctIndex >= options.length
+    ) {
+      return `Question ${i + 1}: Correct answer selection is invalid.`;
+    }
+  }
+
+  return "";
+};
+
+export const validateWheel = ({ title, description, wheelType, segData }) => {
+  if (!title || typeof title !== "string" || !title.trim()) {
+    return "Wheel title is required!";
+  }
+  if (!description || typeof description !== "string" || !description.trim()) {
+    return "Wheel description is required!";
+  }
+  if (!Array.isArray(segData) || segData.length === 0) {
+    return "Wheel data is required and must contain at least 1 option.";
+  }
+
+  const titleErr = validateListTitle(title);
+  if (titleErr) return titleErr;
+
+  const descErr = validateListDescription(description);
+  if (descErr) return descErr;
+
+  if (wheelType === "quiz") {
+    const quizErr = validateQuizSegments(segData);
+    if (quizErr) return quizErr;
+  }
+
+  return "";
+};

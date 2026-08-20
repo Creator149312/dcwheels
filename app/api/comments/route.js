@@ -87,19 +87,11 @@ export async function POST(req) {
             modelStr = "Post";
           }
         } else if (entityType === "wheel" || entityType === "uwheel") {
-          const wheel = await Wheel.findById(entityId).select("userId createdBy urlEndpoint").lean();
+          const wheel = await Wheel.findById(entityId).select("userId urlEndpoint").lean();
           if (wheel?.userId) {
             recipientId = wheel.userId;
             link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
             modelStr = "Wheel";
-          } else if (wheel?.createdBy) {
-            // Legacy fallback: createdBy stored an email. Avoid for new wheels.
-            const wheelCreator = await User.findOne({ email: wheel.createdBy }).select("_id").lean();
-            if (wheelCreator?._id) {
-              recipientId = wheelCreator._id;
-              link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
-              modelStr = "Wheel";
-            }
           }
         }
       }

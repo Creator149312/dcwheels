@@ -1,90 +1,148 @@
 "use client";
-import { Button } from "@components/ui/button";
-import React, { useEffect, useState } from "react";
-import { isImageElement } from "@utils/HelperFunctions";
+
+import { useEffect, useState } from "react";
+import { CheckCircle2, XCircle } from "lucide-react";
+
+const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"];
+
+function stripHtml(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, "").trim();
+}
 
 const MCQQuestion = ({ questionData }) => {
-  const [answered, setAnswered] = useState(false); // To track if the question is answered
-  const [answerResult, setAnswerResult] = useState(null); // To store the answer result (correct/incorrect)
+  const [answered, setAnswered] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(false);
 
-  // Reset the state when the questionData changes
+  // Reset local state when question changes
   useEffect(() => {
     setAnswered(false);
-    setAnswerResult(null);
+    setSelectedIdx(null);
+    setIsCorrect(false);
   }, [questionData]);
 
-  // Function to handle answer click
-  const handleAnswer = (answer) => {
-    if (answered) return; // Prevent answering again if already answered
+  if (!questionData || !Array.isArray(questionData.options) || questionData.options.length === 0) {
+    return null;
+  }
 
-    let isCorrect = false;
-    const { isValid, src } = isImageElement(answer);
+  const cleanTitle = stripHtml(questionData.title);
+  const options = questionData.options;
 
-    if (isValid) {
-      isCorrect = src === questionData.answer;
-    } else {
-      isCorrect = answer === questionData.answer; // Check if the selected answer is correct
+  const handleAnswer = (idx, option) => {
+    if (answered) return;
+
+    const optionText = typeof option === "string" ? option : option?.text || "";
+    const answerText = typeof questionData.answer === "string" ? questionData.answer : questionData.answer?.text || "";
+
+    const correct =
+      optionText.trim().toLowerCase() === answerText.trim().toLowerCase() ||
+      idx === questionData.correctIndex;
+
+    setSelectedIdx(idx);
+    setIsCorrect(correct);
+    setAnswered(true);
+  };
+
+  const getOptionStyle = (idx) => {
+    if (!answered) {
+      return "border-border bg-card hover:border-primary/60 hover:bg-primary/5 text-foreground active:scale-[0.99]";
     }
-    // Return the result based on the answer
-    const result = {
-      correct: isCorrect,
-    };
+    const optionText = typeof options[idx] === "string" ? options[idx] : options[idx]?.text || "";
+    const answerText = typeof questionData.answer === "string" ? questionData.answer : questionData.answer?.text || "";
+    const isThisCorrect =
+      optionText.trim().toLowerCase() === answerText.trim().toLowerCase() ||
+      idx === questionData.correctIndex;
 
-    setAnswered(true); // Mark the question as answered
-    setAnswerResult(result); // Set the result of the answer
+    if (isThisCorrect) {
+      return "border-green-500/80 bg-green-500/10 text-green-700 dark:text-green-300 font-bold";
+    }
+    if (idx === selectedIdx && !isCorrect) {
+      return "border-red-500/80 bg-red-500/10 text-red-700 dark:text-red-300 font-bold";
+    }
+    return "border-border bg-card opacity-50";
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-background h-2/3">
+    <div className="w-full text-left space-y-4">
       {/* Question Title */}
-      <div className="mb-4 h-1/3">
-        <p
-          className="text-lg text-foreground"
-          dangerouslySetInnerHTML={{ __html: questionData.title }}
-        ></p>
-      </div>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          {questionData.options.map((option, index) => (
-            <div key={index} className="flex items-center justify-center">
-              <button
-                className="button w-full h-full relative overflow-hidden p-4 transform transition-transform duration-150 ease-out rounded-lg bg-muted text-foreground hover:-translate-y-1 active:translate-y-0.5"
-                onClick={() => handleAnswer(option)}
-                disabled={answered}
-              >
-                {/* Option Content */}
-                <span
-                  className={`answer-choice text-center flex items-center justify-center ${
-                    option.isImage ? "w-full h-full" : ""
-                  }`}
-                  dangerouslySetInnerHTML={{ __html: option }}
-                >
-                  {option.isImage && (
-                    <img
-                      src={option} // Assuming option is an image URL
-                      alt={`Option ${index + 1}`}
-                      className="object-contain w-full h-full"
-                    />
-                  )}
-                </span>
-              </button>
-            </div>
-          ))}
-        </div>
+      <div>
+        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/80 block mb-1">
+          Quiz Question
+        </span>
+        <h3 className="text-base sm:text-lg font-bold text-foreground leading-snug break-words">
+          {cleanTitle}
+        </h3>
       </div>
 
-      {/* Result after answering */}
-      {answered && answerResult && (
-        <div className="mt-6 text-center">
-          {answerResult.correct ? (
-            <div className="text-green-500">
-              <p className="text-xl">🎉 Correct Answer! 🎉</p>
-            </div>
+      {/* Options List */}
+      <div className="space-y-2">
+        {options.map((option, idx) => {
+          const text = typeof option === "string" ? option : option?.text || "";
+          const isImage = typeof option === "string" && (option.startsWith("http") || option.startsWith("data:"));
+
+          return (
+            <button
+              key={idx}
+              disabled={answered}
+              onClick={() => handleAnswer(idx, option)}
+              className={`flex items-center gap-3 w-full p-3 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer disabled:cursor-default ${getOptionStyle(idx)}`}
+            >
+              {/* Option Letter Badge */}
+              <span className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-[11px] font-bold">
+                {OPTION_LABELS[idx] || idx + 1}
+              </span>
+
+              {/* Option Text or Image */}
+              {isImage ? (
+                <img
+                  src={option}
+                  alt={`Option ${OPTION_LABELS[idx]}`}
+                  className="max-h-16 w-auto rounded object-contain"
+                />
+              ) : (
+                <span className="flex-1 break-words line-clamp-2">{stripHtml(text)}</span>
+              )}
+
+              {/* Status Indicator Icon */}
+              {answered && (
+                <span className="shrink-0 ml-auto">
+                  {((typeof text === "string" && text.trim().toLowerCase() === (questionData.answer || "").trim().toLowerCase()) || idx === questionData.correctIndex) ? (
+                    <CheckCircle2 size={16} className="text-green-500" />
+                  ) : idx === selectedIdx ? (
+                    <XCircle size={16} className="text-red-500" />
+                  ) : null}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Answer Result Banner */}
+      {answered && (
+        <div
+          className={`flex items-center gap-2 p-3 rounded-xl text-xs sm:text-sm font-bold animate-in fade-in duration-200 ${
+            isCorrect
+              ? "bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-300"
+              : "bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300"
+          }`}
+        >
+          {isCorrect ? (
+            <>
+              <CheckCircle2 size={16} className="shrink-0 text-green-500" />
+              <span>Correct Answer! Great job 🎉</span>
+            </>
           ) : (
-            <div className="text-red-500">
-              <p className="text-xl">😢 Incorrect Answer 😢</p>
-              <p className="text-lg">Better luck next time!</p>
-            </div>
+            <>
+              <XCircle size={16} className="shrink-0 text-red-500" />
+              <span>
+                Incorrect. Correct answer:{" "}
+                <strong className="underline font-extrabold">
+                  {stripHtml(typeof questionData.answer === "string" ? questionData.answer : options[questionData.correctIndex] || "")}
+                </strong>
+              </span>
+            </>
           )}
         </div>
       )}

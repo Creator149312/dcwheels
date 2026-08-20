@@ -117,8 +117,8 @@ export default function TagsCarousel() {
   };
 
   return (
-    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden sm:mt-1">
-      <div className="w-full relative flex items-center py-1.5">
+    <div className="relative w-full bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-900 select-none overflow-hidden sm:mt-0">
+      <div className="w-full relative flex items-center py-0.5">
         {/* Left Arrow */}
         {arrows.left && (
           <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pointer-events-none">
@@ -136,11 +136,11 @@ export default function TagsCarousel() {
         <div
           ref={scrollRef}
           style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
-          className="flex overflow-x-auto gap-1.5 mt-1 px-3 md:px-6 [&::-webkit-scrollbar]:hidden"
+          className="flex overflow-x-auto gap-1.5 px-3 md:px-6 [&::-webkit-scrollbar]:hidden"
         >
           <Link
             href="/tags"
-            className="whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 flex-shrink-0"
+            className="whitespace-nowrap px-3 md:px-3.5 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 flex-shrink-0"
           >
             All
           </Link>
@@ -149,7 +149,7 @@ export default function TagsCarousel() {
             <Link
               key={`${tag.name}-${i}`}
               href={`/tags/${tag.name}`}
-              className={`whitespace-nowrap px-3 md:px-4 py-1.5 text-xs font-semibold rounded-full transition-all flex-shrink-0 ${getTagColor(tag.type)}`}
+              className={`whitespace-nowrap px-3 md:px-3.5 py-1 text-xs font-semibold rounded-full transition-all flex-shrink-0 ${getTagColor(tag.type)}`}
             >
               {tag.type === "seasonal" && "🔥 "}
               {tag.label}

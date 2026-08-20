@@ -1,10 +1,6 @@
 ﻿"use client";
 
 import { useState } from "react";
-// ReactionButton + CommentsPanel commented out — reinstating once there's
-// enough community activity to make likes/comments valuable.
-// import ReactionButton from "@components/ReactionButton";
-// import CommentsPanel from "@components/comments/CommentsPanel";
 
 export default function QuestionCard({
   data,

@@ -98,34 +98,35 @@ export default function ProfileTabs({
               <p className="text-sm text-muted-foreground text-center py-12">No lists on display yet</p>
             ) : (
               (isOwner ? filteredLists : publicListsFiltered).map((list) => (
-                <div key={list.id} className="relative group p-4 sm:p-5 border border-border rounded-2xl bg-card hover:shadow-sm transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
+                <div key={list.id} className="relative group p-4 sm:p-5 border border-border rounded-2xl bg-card hover:border-border/80 hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link href={getListUrl(list)} className="font-bold text-foreground text-base sm:text-lg hover:text-primary transition line-clamp-1">
                         {list.name}
                       </Link>
                       {isOwner && !list.isPublic && (
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-850/50">
-                          <Lock size={11} />
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/60 shrink-0">
+                          <Lock size={10} />
                           Private
                         </span>
                       )}
                     </div>
-                    {list.description && <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{list.description}</p>}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground/80 mt-1">
+                    {list.description && <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">{list.description}</p>}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground/80 pt-0.5">
                       <span className="font-semibold text-foreground">{list.itemCount} items saved</span>
                       <span>•</span>
                       <span>Updated {new Date(list.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                    <Link href={getListUrl(list)} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-primary transition" title="View List">
-                      <Eye size={18} />
+
+                  <div className="flex items-center justify-end gap-1.5 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
+                    <Link href={getListUrl(list)} className="p-2 border border-border/60 hover:border-border rounded-xl text-muted-foreground hover:text-primary hover:bg-muted/60 transition" title="View List">
+                      <Eye size={17} />
                     </Link>
                     {isOwner && !list.isSystem && (
                       <>
-                        <Link href={getListUrl(list)} className="p-2 border border-border rounded-xl text-muted-foreground hover:text-danger transition flex items-center gap-1 text-xs font-semibold" title="Edit List Settings">
-                          <Edit size={16} /> Edit
+                        <Link href={getListUrl(list)} className="px-3 py-2 border border-border/60 hover:border-border rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition flex items-center gap-1.5 text-xs font-semibold" title="Edit List Settings">
+                          <Edit size={14} /> <span>Edit</span>
                         </Link>
                         <RemoveListBtn id={list.id} type="unifiedlist" />
                       </>

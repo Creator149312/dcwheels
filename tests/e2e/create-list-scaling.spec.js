@@ -29,9 +29,9 @@ test.describe('List Creation and SEO Routing', () => {
         // 4. Submit
         await page.click('button[type="submit"]');
 
-        // 5. Verify Redirection to SEO URL pattern /[id]/[slug]
-        // The URL should be like /lists/6a.../final-scaling-test-...
-        await page.waitForURL(/\/lists\/[a-f\d]{24}\/final-scaling-test-.*/, { timeout: 15000 });
+        // 5. Verify Redirection to SEO URL pattern /[slug]-[id]
+        // The URL should be like /lists/final-scaling-test-...-6a...
+        await page.waitForURL(/\/lists\/final-scaling-test-.+-[a-f\d]{24}/, { timeout: 15000 });
         
         const currentUrl = page.url();
         console.log('List Created at URL:', currentUrl);

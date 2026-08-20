@@ -443,7 +443,10 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
 
   // Handle options size change
   const onMaxOptionsChange = (e) => {
-    setMaxOptions(parseInt(e.target.value));
+    let val = parseInt(e.target.value, 10);
+    if (isNaN(val)) val = 1;
+    val = Math.max(1, Math.min(200, val));
+    setMaxOptions(val);
   };
 
   const onFontSizeChange = (e) => {

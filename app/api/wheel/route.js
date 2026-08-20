@@ -1,6 +1,6 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
-import { validateListDescription, validateListTitle } from "@utils/Validator";
+import { validateListDescription, validateListTitle, validateQuizSegments } from "@utils/Validator";
 import { NextResponse } from "next/server";
 import { sessionUser } from "@utils/SessionData";
 import { revalidateTag } from "next/cache";
@@ -32,9 +32,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const { userId, user: sessionUserDoc } = sessionData;
-    const createdBy = sessionUserDoc.email;
-    const authorName = sessionUserDoc.name;
-    const authorHandle = sessionUserDoc.username;
+    const authorName = sessionUserDoc.name || "Community";
+    const authorHandle = sessionUserDoc.username || null;
 
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: "Invalid session: missing user id" }, { status: 401 });
@@ -48,6 +47,11 @@ export async function POST(request) {
     if (vlt.length !== 0) error = vlt;
     if (vld.length !== 0) error = vld;
 
+    if (type === "quiz") {
+      const quizErr = validateQuizSegments(data);
+      if (quizErr) error = quizErr;
+    }
+
     if (error.length === 0) {
       await connectMongoDB();
 
@@ -56,7 +60,6 @@ export async function POST(request) {
           title,
           description,
           data: sanitizeSegments(data),
-          createdBy,
           userId: new mongoose.Types.ObjectId(userId),
           authorName,
           authorHandle,
@@ -103,32 +106,22 @@ export async function POST(request) {
 export async function GET() {
   await connectMongoDB();
   const lists = await Wheel.find()
-    .select("_id title slug description wheelPreview createdBy authorName authorHandle tags isPublic likeCount createdAt updatedAt")
+    .select("_id title slug description wheelPreview authorName authorHandle tags isPublic likeCount createdAt updatedAt")
     .sort({ createdAt: -1 })
     .limit(500)
     .lean();
   return NextResponse.json({ lists }, { status: 200 });
 }
 
-//   //get all the lists created by a user
-// export async function GET(request) {
-//   const {createdBy} =  await request.json();
-//   console.log("CreatedBy = " + request);
-//   await connectMongoDB();
-//   const lists = await List.find({ createdBy: createdBy });
-//   return NextResponse.json({ lists }, {status: 200});
-// }
-
 // to delete a particular Wheel using it's Wheel ID. Only the wheel’s
-// creator can delete — enforced via session email match against
-// `createdBy` so other users (and anonymous callers) get a 403.
+// creator can delete — enforced via session userId match.
 export async function DELETE(request) {
   try {
     const sessionData = await sessionUser("_id email");
     if (!sessionData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { userId: sessionUserId, user: sessionUserDoc } = sessionData;
+    const { userId: sessionUserId } = sessionData;
 
     const id = request.nextUrl.searchParams.get("id");
     if (!id) {
@@ -136,17 +129,18 @@ export async function DELETE(request) {
     }
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("userId createdBy wheelPreview data").lean();
+    const wheel = await Wheel.findById(id).select("userId wheelPreview data isDeleted").lean();
     if (!wheel) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
+
+    if (wheel.isDeleted) {
+      return NextResponse.json({ message: "Already deleted" }, { status: 410 });
+    }
+
     const wheelUserId = wheel.userId ? String(wheel.userId) : null;
 
-    // If the wheel has no userId, backfill it from the legacy createdBy email
-    // when the current session matches that email.
-    if (!wheelUserId && wheel.createdBy && wheel.createdBy.toLowerCase() === sessionUserDoc.email?.toLowerCase()) {
-      await Wheel.findByIdAndUpdate(id, { userId: new mongoose.Types.ObjectId(sessionUserId) });
-    } else if (wheelUserId !== String(sessionUserId)) {
+    if (wheelUserId !== String(sessionUserId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -156,7 +150,6 @@ export async function DELETE(request) {
     // 1. Wheel Preview (and its thumbnail)
     if (wheel.wheelPreview) {
       assetsToDelete.push(wheel.wheelPreview);
-      // If it's a .webp, we also generated a -thumb.webp
       if (wheel.wheelPreview.endsWith('.webp')) {
         assetsToDelete.push(wheel.wheelPreview.replace('.webp', '-thumb.webp'));
       }
@@ -171,7 +164,8 @@ export async function DELETE(request) {
       });
     }
 
-    await Wheel.findByIdAndDelete(id);
+    // Soft-delete: update isDeleted = true & isPublic = false
+    await Wheel.updateOne({ _id: id }, { $set: { isDeleted: true, isPublic: false } });
 
     // Best-effort cleanup (backgrounded)
     if (assetsToDelete.length > 0) {

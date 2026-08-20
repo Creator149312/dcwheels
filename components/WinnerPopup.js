@@ -318,8 +318,17 @@ const WinnerPopup = ({
                   {formatMessage(wheelData?.customPopupDisplayMessage || "The wheel has spoken")}
                 </p>
 
-                {winner?.type === "quiz" && winner?.question ? (
-                  <MCQQuestion questionData={winner.question} />
+                {winner?.type === "quiz" ? (
+                  <MCQQuestion
+                    questionData={{
+                      title: winner.question || winner.text || "",
+                      options: winner.options || winner.payload?.options || [],
+                      answer:
+                        (winner.options || winner.payload?.options || [])[
+                          winner.correctIndex ?? winner.payload?.correctIndex ?? 0
+                        ] || "",
+                    }}
+                  />
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-2 sm:px-4 min-w-0">
                     {winner?.image && (

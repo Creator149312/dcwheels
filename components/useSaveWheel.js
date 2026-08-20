@@ -7,8 +7,7 @@ import toast from "react-hot-toast";
 import apiConfig from "@utils/ApiUrlConfig";
 import {
   sanitizeInputForDB,
-  validateListDescription,
-  validateListTitle,
+  validateWheel,
 } from "@utils/Validator";
 
 // --- WHEEL PREVIEW CANVAS DRAWING HELPERS ---
@@ -262,11 +261,12 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
   const [savedWheels, setSavedWheels] = useState([]);
 
   const fetchSavedWheels = async () => {
-    if (createdBy !== undefined) {
+    const target = sessionData?.user?.id || createdBy;
+    if (target !== undefined) {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/wheel/user/${encodeURIComponent(createdBy)}`,
+          `/api/wheel/user/${encodeURIComponent(target)}`,
           { cache: "no-store" }
         );
 
@@ -296,14 +296,18 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
     e.preventDefault();
     setIsSaving(true);
 
-    if (!title || !description || !segData) {
-      setError("Title, description and Data are required.");
+    const validationErr = validateWheel({
+      title,
+      description,
+      wheelType: wheelType || "basic",
+      segData,
+    });
+
+    if (validationErr) {
+      setError(validationErr);
       setIsSaving(false);
       return false;
     }
-
-    let vlt = validateListTitle(title);
-    let vld = validateListDescription(description);
 
     const { id, type, tag } = getQueryParams();
 
@@ -352,41 +356,6 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           .filter((t) => t.length > 0)
       : undefined;
 
-    if (vlt.length !== 0) {
-      setError(vlt);
-      setIsSaving(false);
-      return false;
-    }
-
-    if (vld.length !== 0) {
-      setError(vld);
-      setIsSaving(false);
-      return false;
-    }
-
-    // Quiz-specific segment validation
-    if (wheelType === "quiz" && Array.isArray(segData)) {
-      for (let i = 0; i < segData.length; i++) {
-        const seg = segData[i];
-        if (!seg.question?.trim()) {
-          setError(`Question ${i + 1}: Question text is required.`);
-          setIsSaving(false);
-          return false;
-        }
-        const filledOptions = (seg.options || []).filter((o) => o?.trim());
-        if (filledOptions.length < 2) {
-          setError(`Question ${i + 1}: At least 2 answer options are required.`);
-          setIsSaving(false);
-          return false;
-        }
-        if (seg.correctIndex == null || seg.correctIndex >= (seg.options || []).length) {
-          setError(`Question ${i + 1}: Correct answer selection is invalid.`);
-          setIsSaving(false);
-          return false;
-        }
-      }
-    }
-
     try {
       const titleToStore = sanitizeInputForDB(title);
       const descriptionToStore = sanitizeInputForDB(description);
@@ -412,6 +381,7 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           data,
           wheelData: wheelDataToStore,
           type: wheelType || "basic",
+          updatedAt: selectedWheel.updatedAt || undefined,
         };
 
         if (relatedTopics) body.relatedTopics = relatedTopics;
@@ -425,11 +395,26 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
 
         const resObj = await res.json();
 
+        if (res.status === 409 || resObj?.conflict) {
+          const conflictMsg =
+            resObj?.error ||
+            "This wheel was updated in another tab or device. Please refresh before saving.";
+          setError(conflictMsg);
+          toast.error(conflictMsg);
+          setIsSaving(false);
+          return false;
+        }
+
         if (resObj?.error) {
-          setError("Failed to update the wheel");
-          toast.error("Failed to Update Wheel");
+          setError(resObj.error || "Failed to update the wheel");
+          toast.error(resObj.error || "Failed to Update Wheel");
+          setIsSaving(false);
           return false;
         } else {
+          // Keep local selectedWheel.updatedAt in sync with the new server timestamp
+          if (resObj?.updatedAt) {
+            selectedWheel.updatedAt = resObj.updatedAt;
+          }
           // Generate and upload wheel preview back-to-back with saving
           try {
             const canvas = document.createElement("canvas");

@@ -8,11 +8,12 @@ import sharp from "sharp";
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-
-  if (!email) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const userId = session.user.id || session.user._id;
+  const userEmail = session.user.email;
 
   await connectMongoDB();
 
@@ -29,13 +30,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
 
-    const wheel = await Wheel.findById(wheelId).select("_id title createdBy");
+    const wheel = await Wheel.findById(wheelId).select("_id title userId createdBy");
     if (!wheel) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
 
-    // Ensure the current user owns this wheel
-    if (wheel.createdBy !== email) {
+    // Ensure the current user owns this wheel (checking userId or fallback createdBy email)
+    const isOwnerByUserId = userId && wheel.userId && String(wheel.userId) === String(userId);
+    const isOwnerByEmail = userEmail && wheel.createdBy && wheel.createdBy.toLowerCase() === userEmail.toLowerCase();
+
+    if (!isOwnerByUserId && !isOwnerByEmail) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

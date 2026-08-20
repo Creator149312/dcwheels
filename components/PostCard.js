@@ -11,6 +11,7 @@ import { getListUrl, getWheelUrl } from "@utils/UrlHandler";
 import { Zap, MoreHorizontal } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import ContentRefCard from "@components/ContentRefCard";
+import DilemmaViewer from "@components/DilemmaViewer";
 
 /**
  * Helper to render post text with clickable hashtags (Threads/Facebook style)
@@ -48,11 +49,6 @@ const PostMenu = dynamic(() => import("@components/PostMenu"), { ssr: false });
 
 // Lazy load QuickSpinModal — only needed for poll posts
 const QuickSpinModal = dynamic(() => import("@components/QuickSpinModal"), {
-  ssr: false,
-});
-
-// Lazy load DilemmaViewer — only needed when post has a poll
-const DilemmaViewer = dynamic(() => import("@components/DilemmaViewer"), {
   ssr: false,
 });
 

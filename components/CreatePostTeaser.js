@@ -45,38 +45,28 @@ function CreatePostTeaser({ defaultTag = "", className = "", contentRef = null }
     : "?";
 
   return (
-    <div className={`bg-card p-3 sm:rounded-2xl shadow-sm sm:px-4 sm:py-3 ${className}`}>
+    <div className={`bg-card p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-border/50 shadow-xs ${className}`}>
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Avatar */}
-        <div className="flex flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 items-center justify-center text-xs sm:text-sm font-black text-primary">
+        <div className="flex flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 items-center justify-center text-xs font-black text-primary">
           {avatarInitial}
         </div>
 
-        {/* Input Trigger — high-contrast, branded shell so it pops */}
+        {/* Input Trigger — spacious, subtle input shell */}
         <Link
           href={createUrl}
           onClick={handleInputClick}
           className="flex-1 min-w-0"
         >
-          <div className="group relative rounded-full px-4 py-2 sm:py-2.5 bg-background transition-all duration-200">
-            {/* Gradient ring draws the eye without adding layout size */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/40 via-pink-500/30 to-primary/40 p-[1.5px]" aria-hidden="true" />
-            <div className="absolute inset-[1.5px] rounded-full bg-background" aria-hidden="true" />
-            <span className="relative block text-[11px] sm:text-sm font-semibold text-foreground/80 group-hover:text-foreground truncate">
+          <div className="group relative rounded-2xl px-4 py-2 sm:py-2.5 bg-background/80 hover:bg-background border border-border/60 hover:border-primary/40 transition-all duration-200 shadow-2xs">
+            <span className="block text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-foreground truncate">
               What&apos;s on your mind{firstName ? `, ${firstName}` : ""}?
             </span>
           </div>
         </Link>
 
         {/* Quick Action Icons */}
-        <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground">
-          <QuickIconLink
-            href={createUrl}
-            onClick={handleInputClick}
-            icon={ImageIcon}
-            colorClass="text-emerald-500"
-            label="Image/Video"
-          />
+        <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
           <QuickIconLink
             href={pollUrl}
             onClick={handleInputClick}

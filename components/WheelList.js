@@ -10,7 +10,7 @@ import SharePopup from "./SharePopup";
 import EmptyState from "./EmptyState";
 import { Layers } from "lucide-react";
 
-export default function WordLists({ createdBy }) {
+export default function WordLists({ createdBy, userId }) {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,8 +19,9 @@ export default function WordLists({ createdBy }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const target = userId ? userId : createdBy;
         const response = await fetch(
-          `${apiConfig.apiUrl}/wheel/user/${createdBy}`,
+          `${apiConfig.apiUrl}/wheel/user/${encodeURIComponent(target)}`,
           // Allow Next's data layer to cache identical user-wheel-list payloads
           // for 30s. The save flow already optimistically updates the local
           // list, so brief staleness on cross-tab views is acceptable.
@@ -40,8 +41,8 @@ export default function WordLists({ createdBy }) {
       }
     };
 
-    if (createdBy !== undefined) fetchData();
-  }, [createdBy]);
+    if (userId || createdBy !== undefined) fetchData();
+  }, [userId, createdBy]);
 
   return (
     <div>

@@ -51,7 +51,7 @@ const Navbar = ({ onToggleSidebar }) => {
   }, []);
 
   return (
-    <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
+    <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-[52px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
       <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-3 md:px-6">
 
         {/* Left: Sidebar Toggle & Logo */}

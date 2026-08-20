@@ -2,14 +2,13 @@ import mongoose from "mongoose";
 const { Schema, models } = mongoose;
 
 /**
- * title : used to display title at the tab of browser and to display heading in page
- * description: used to set description of page it is usually of length less than 125 words
- * data : is it the list data that is displayed in spinwheel and editor
- * createdBy : is the person who created the list
- * wheelData : is the wheel settings like theme of wheel, spin duration, number of segments to show on wheel etc.
- * content: is used to display content related to wheel in the page
- * category: is used to associate a category for a wheel
- * editorData: is data used to display editor with proper settings
+ * title       : used to display title at the tab of browser and heading in page
+ * description : short description of the wheel (<= 500 characters)
+ * data        : array of segment objects (words, images, or quiz questions)
+ * userId      : ObjectId ref to User model
+ * wheelData   : wheel display settings (theme, spin duration, max options, etc.)
+ * authorHandle: handle/username of the author
+ * authorName  : display name of the author
  */
 
 const wheelSchema = new Schema(
@@ -35,16 +34,11 @@ const wheelSchema = new Schema(
         message: "A wheel cannot have more than 200 segments to ensure performance.",
       },
     }, // Array of wordDataObjects
-    createdBy: {
-      type: String,
-      required: true,
-    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       index: true,
-      sparse: true,
-      // Required for new wheels; existing wheels backfilled via migration script
+      required: true,
     },
     authorHandle: {
       type: String,
@@ -71,7 +65,21 @@ const wheelSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    wheelData: { type: Object, default: {} },
+    wheelData: {
+      type: Object,
+      default: {},
+      validate: {
+        validator: function (v) {
+          if (!v || typeof v !== "object") return true;
+          if (v.maxNumberOfOptions !== undefined && v.maxNumberOfOptions !== null) {
+            const num = Number(v.maxNumberOfOptions);
+            return !isNaN(num) && num >= 1 && num <= 200;
+          }
+          return true;
+        },
+        message: "maxNumberOfOptions must be an integer between 1 and 200.",
+      },
+    },
     // Tags are lowercased + trimmed on save so that:
     //   1) equal-match queries can fully use the `tags: 1` index
     //      (case-insensitive regex can't).
@@ -160,7 +168,7 @@ const wheelSchema = new Schema(
   }
 );
 
-wheelSchema.index({ title: 1, createdBy: 1 }, { unique: true }); // Existing unique index, to keep a check on datastorage
+wheelSchema.index({ title: 1, userId: 1 }, { unique: true }); // Checked per user via userId B-tree index
 
 // New indexes for performance improvements 
 wheelSchema.index({ tags: 1 }); // speeds up $match on tags 
