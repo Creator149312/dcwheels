@@ -79,7 +79,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
       setMissingMeta();
     }
 
-    // Optimistic spin counter — no fetch, just increment locally.
+    // Optimistic spin & view counters — no fetch, just increment locally.
     const onSpinCounted = (event) => {
       if (event?.detail?.wheelId !== wheelId) return;
       setEngagement((prev) => ({
@@ -88,14 +88,24 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
       }));
     };
 
+    const onViewCounted = (event) => {
+      if (event?.detail?.wheelId !== wheelId) return;
+      setEngagement((prev) => ({
+        ...prev,
+        view_count: (prev.view_count || 0) + 1,
+      }));
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("wheel:spin-counted", onSpinCounted);
+      window.addEventListener("wheel:view-counted", onViewCounted);
     }
 
     return () => {
       ignore = true;
       if (typeof window !== "undefined") {
         window.removeEventListener("wheel:spin-counted", onSpinCounted);
+        window.removeEventListener("wheel:view-counted", onViewCounted);
       }
     };
   }, [wheelId, initialMeta]);

@@ -19,19 +19,16 @@ export function getWheelUrl(wheel) {
 
 /**
  * Unified URL Generator for Lists
- * Pattern: /lists/[slug]-[id]
- * The slug is generated once from the list name and never changes.
- * ID is the authoritative lookup key; slug is decorative + SEO.
- *
- * The stored slug already includes the id (Option B), so we use it directly.
+ * Pattern: /lists/[slug]
+ * Uses the list slug entry from the DB (with ID fallback if no slug exists).
  */
 export function getListUrl(list) {
   if (!list) return "#";
-  const id = list._id?.toString?.() || list.id?.toString?.();
-  if (!id) return "#";
-
   const slug = list.slug || "";
-  return slug ? `/lists/${slug}` : `/lists/${id}`;
+  if (slug) return `/lists/${slug}`;
+
+  const id = list._id?.toString?.() || list.id?.toString?.();
+  return id ? `/lists/${id}` : "#";
 }
 
 /**

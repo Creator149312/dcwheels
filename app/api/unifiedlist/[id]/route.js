@@ -43,6 +43,7 @@ export async function GET(req, { params }) {
     const formatted = {
       id: list._id,
       name: list.name,
+      slug: list.slug || "",
       userId: list.userId,
       description: list.description,
       tags: list.tags || [],
@@ -174,6 +175,9 @@ export async function PUT(req, { params }) {
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);  // bust unstable_cache entry in lib/lists.js
+    if (list.userId) {
+      revalidateTag(`profile-${list.userId}`);
+    }
 
     return NextResponse.json(
       {
@@ -241,6 +245,10 @@ export async function DELETE(req, { params }) {
 
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
+    revalidateTag(`list-${id}`);
+    if (list.userId) {
+      revalidateTag(`profile-${list.userId}`);
+    }
 
     // ✅ 5. Best-effort blob cleanup (never blocks the response)
     if (blobUrls.length > 0) {
@@ -308,11 +316,15 @@ export async function PATCH(req, { params }) {
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
+    if (list.userId) {
+      revalidateTag(`profile-${list.userId}`);
+    }
 
     // ✅ 4. Format and return full list object
     const formatted = {
       id: list._id,
       name: list.name,
+      slug: list.slug || "",
       userId: list.userId,
       description: list.description,
       tags: list.tags || [],

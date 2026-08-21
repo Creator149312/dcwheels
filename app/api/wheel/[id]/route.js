@@ -89,6 +89,9 @@ export async function PUT(request, { params }) {
     // Invalidate Next.js cache so deleted segments or title changes take effect immediately
     try {
       revalidateTag(`wheel-${id}`);
+      if (updatedWheel?.userId) {
+        revalidateTag(`profile-${updatedWheel.userId}`);
+      }
       if (updatedWheel?.slug) {
         revalidatePath(`/wheels/${updatedWheel.slug}`);
       }

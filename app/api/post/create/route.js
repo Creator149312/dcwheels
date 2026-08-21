@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import { sessionUser } from "@utils/SessionData";
@@ -143,6 +144,8 @@ export async function POST(req) {
     });
 
     await post.save();
+
+    revalidateTag(`profile-${user._id}`);
 
     return NextResponse.json({
       id: String(post._id),

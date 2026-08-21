@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import PostVote from "@models/postVote";
@@ -166,6 +167,8 @@ export async function PATCH(req, { params }) {
 
     await Post.updateOne({ _id: id }, { $set: updateData });
 
+    revalidateTag(`profile-${post.userId}`);
+
     return NextResponse.json({ message: "Post updated", id });
   } catch (err) {
     console.error("PATCH /api/post/[id] error:", err);
@@ -200,6 +203,8 @@ export async function DELETE(req, { params }) {
     }
 
     await Post.updateOne({ _id: id }, { $set: { isDeleted: true, isPublic: false } });
+
+    revalidateTag(`profile-${post.userId}`);
 
     // Clean up orphaned poll votes — no value keeping them after deletion
     if (post.hasPoll) {

@@ -41,9 +41,15 @@ export default function ViewTracker({ wheelId }) {
       body: JSON.stringify({ wheelId, sampleN: SAMPLE_RATE }),
       signal: controller.signal,
       keepalive: true,
-    }).catch(() => {
-      // Silent — analytics failure must not surface to the user.
-    });
+    })
+      .then((res) => {
+        if (res.ok) {
+          window.dispatchEvent(new CustomEvent("wheel:view-counted", { detail: { wheelId } }));
+        }
+      })
+      .catch(() => {
+        // Silent — analytics failure must not surface to the user.
+      });
 
     return () => controller.abort();
   }, [wheelId]);

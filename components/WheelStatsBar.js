@@ -122,7 +122,7 @@ export default function WheelStatsBar({ wheelId, initialStats = null }) {
       refresh();
     }
 
-    // Optimistic update on every spin — no network call. Keeps DB read
+    // Optimistic update on every spin/view — no network call. Keeps DB read
     // pressure flat regardless of how many spins the user does.
     const onSpinCounted = (event) => {
       const eventWheelId = event?.detail?.wheelId;
@@ -131,14 +131,24 @@ export default function WheelStatsBar({ wheelId, initialStats = null }) {
       setStats((prev) => applyLocalSpin(prev, segmentLabel));
     };
 
+    const onViewCounted = (event) => {
+      if (event?.detail?.wheelId !== wheelId) return;
+      setStats((prev) => ({
+        ...prev,
+        view_count: (prev.view_count || 0) + 1,
+      }));
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("wheel:spin-counted", onSpinCounted);
+      window.addEventListener("wheel:view-counted", onViewCounted);
     }
 
     return () => {
       ignore = true;
       if (typeof window !== "undefined") {
         window.removeEventListener("wheel:spin-counted", onSpinCounted);
+        window.removeEventListener("wheel:view-counted", onViewCounted);
       }
     };
   }, [wheelId, initialStats]);

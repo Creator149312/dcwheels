@@ -228,6 +228,7 @@ export async function POST(req) {
     const formatted = {
       id: newList._id,
       name: newList.name,
+      slug: newList.slug,
       description: newList.description,
       tags: newList.tags,
       createdAt: newList.createdAt,

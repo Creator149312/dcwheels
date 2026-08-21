@@ -75,6 +75,9 @@ export async function POST(request) {
         });
 
         revalidateTag(`wheel-${creationData._id}`);
+        if (userId) {
+          revalidateTag(`profile-${userId}`);
+        }
 
         return NextResponse.json({
           message: "Wheel Created Successfully",
@@ -166,6 +169,10 @@ export async function DELETE(request) {
 
     // Soft-delete: update isDeleted = true & isPublic = false
     await Wheel.updateOne({ _id: id }, { $set: { isDeleted: true, isPublic: false } });
+
+    if (wheel.userId) {
+      revalidateTag(`profile-${wheel.userId}`);
+    }
 
     // Best-effort cleanup (backgrounded)
     if (assetsToDelete.length > 0) {

@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { getListByIdCached } from "@lib/lists";
 import ListDetailClient from "./ListDetailClient";
-import { getListUrl, parseListSlugId } from "@utils/UrlHandler";
+import { getListUrl } from "@utils/UrlHandler";
 
 // ISR: list data is cached across requests and busted by revalidateTag
 // whenever a mutation API route runs. Public lists remain cacheable; private
@@ -13,17 +13,7 @@ export const revalidate = 604800; // 7 days — tag-busted instantly on mutation
 
 export async function generateMetadata({ params }) {
   const { slugId } = await params;
-  const { id, malformed } = parseListSlugId(slugId);
-
-  if (malformed || !id || !mongoose.Types.ObjectId.isValid(id)) {
-    return {
-      title: "List Not Found",
-      description: "The requested list does not exist.",
-      robots: "noindex",
-    };
-  }
-
-  const list = await getListByIdCached(id);
+  const list = await getListByIdCached(slugId);
 
   if (!list || list.isDeleted) {
     return {
@@ -49,7 +39,7 @@ export async function generateMetadata({ params }) {
     }
   }
 
-  const title = list.name ? `${list.name} — List` : "User List";
+  const title = list.name ? `${list.name}` : "User List";
   const description =
     list.description?.trim()?.length > 0
       ? list.description
@@ -72,13 +62,7 @@ export async function generateMetadata({ params }) {
 
 export default async function ListDetailPage({ params }) {
   const { slugId } = await params;
-  const { id, malformed } = parseListSlugId(slugId);
-
-  if (malformed || !id || !mongoose.Types.ObjectId.isValid(id)) {
-    notFound();
-  }
-
-  const list = await getListByIdCached(id);
+  const list = await getListByIdCached(slugId);
 
   if (!list || list.isDeleted) {
     notFound();
@@ -99,16 +83,15 @@ export default async function ListDetailPage({ params }) {
   const canonicalUrl = getListUrl(list);
   const rawPath = `/lists/${slugId}`;
 
-  // If the list has a slug, redirect id-only or wrong-slug URLs to canonical.
-  // The authoritative lookup key is always the id.
-  if (list.slug && rawPath !== canonicalUrl) {
+  // If list has a different canonical URL, redirect to it.
+  if (canonicalUrl !== "#" && rawPath !== canonicalUrl) {
     permanentRedirect(canonicalUrl);
   }
 
   return (
     <ListDetailClient
       initialList={list}
-      listId={id}
+      listId={list.id}
       listOwnerId={list.userId}
     />
   );
