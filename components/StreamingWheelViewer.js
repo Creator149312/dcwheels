@@ -138,7 +138,6 @@ export default function StreamingWheelViewer({
                 scale: "60%",
               },
             }}
-            backgroundColors={data.map((d) => d.option?.color ?? d.style?.backgroundColor ?? "#6366f1")}
           />
         )}
       </div>

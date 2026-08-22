@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectMongoDB } from "@/lib/mongodb";
 import Post from "@/models/post";
 import TopicPage from "@/models/topicpage";
 import { generateAIPost } from "@/scripts/ai-generation-helper"; // We'll need to make sure this is accessible
@@ -17,7 +17,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Slug and type are required" }, { status: 400 });
     }
 
-    await connectToDatabase();
+    await connectMongoDB();
 
     // 2. Fetch Topic Metadata
     const topicPage = await TopicPage.findOne({ slug, type });
