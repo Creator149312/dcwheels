@@ -274,9 +274,12 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     }
   };
 
-  // Safely convert remote image URIs into local base64 Data URLs with crossOrigin support.
-  // This completely eliminates HTML5 canvas cross-origin taint, broken drawImage state, and
-  // browser-specific hardware acceleration black-screen bugs across Chrome, Edge, Safari, and Firefox.
+  // Pre-validate image URIs without forcing CORS headers.
+  // External image CDNs (like TMDB) do not send CORS headers for canvas export,
+  // but can be safely drawn directly onto the canvas by react-custom-roulette.
+  // We test loading the image with a plain Image element:
+  // - If it successfully loads (200 OK), we mark it as valid (safeUrl: uri).
+  // - If it fails or 404s, we mark it as invalid (safeUrl: null) to gracefully fall back to text.
   const [safeImageDataUris, setSafeImageDataUris] = useState(() => ({}));
 
   useEffect(() => {
@@ -287,38 +290,25 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
 
     for (const seg of segData) {
       const uri = seg?.image || (typeof seg?.text === "string" && /src="([^"]+)"/.exec(seg.text)?.[1]);
-      if (uri && typeof uri === "string" && !uri.startsWith("data:") && !(uri in safeImageDataUris)) {
+      if (uri && typeof uri === "string" && !(uri in safeImageDataUris)) {
+        if (uri.startsWith("data:")) {
+          // Data URLs are already local and always valid
+          setSafeImageDataUris((prev) => ({ ...prev, [uri]: uri }));
+          continue;
+        }
+
         pendingLoads.push(
           new Promise((resolve) => {
             const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = uri;
             img.onload = () => {
-              try {
-                const cvs = document.createElement("canvas");
-                cvs.width = img.naturalWidth || 300;
-                cvs.height = img.naturalHeight || 300;
-                const ctx = cvs.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-                const dataUrl = cvs.toDataURL("image/webp", 0.85);
-                resolve({ uri, safeUrl: dataUrl });
-              } catch {
-                // If canvas toDataURL fails or taints, try direct fetch blob
-                fetch(uri)
-                  .then((res) => {
-                    if (!res.ok) throw new Error("HTTP 404");
-                    return res.blob();
-                  })
-                  .then((blob) => new Promise((resBlob) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resBlob({ uri, safeUrl: reader.result });
-                    reader.onerror = () => resBlob({ uri, safeUrl: null });
-                    reader.readAsDataURL(blob);
-                  }))
-                  .catch(() => resolve({ uri, safeUrl: null }));
+              if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                resolve({ uri, safeUrl: uri });
+              } else {
+                resolve({ uri, safeUrl: null });
               }
             };
             img.onerror = () => resolve({ uri, safeUrl: null });
+            img.src = uri;
           })
         );
       }
@@ -332,7 +322,7 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
           let changed = false;
           results.forEach(({ uri, safeUrl }) => {
             if (updated[uri] !== safeUrl) {
-              updated[uri] = safeUrl; // Data URL if valid, or null if broken/404
+              updated[uri] = safeUrl; // URI if valid, or null if broken/404
               changed = true;
             }
           });

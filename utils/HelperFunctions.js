@@ -77,7 +77,7 @@ export const prepareData = (
 
       if (resolvedImgUri && rawSeg.visible !== false) {
         result.push({
-          option: seg,
+          option: "",
           style: { backgroundColor: sliceColor },
           image: {
             uri: resolvedImgUri,
@@ -112,7 +112,7 @@ export const prepareData = (
 
       if (resolvedImgUri) {
         result.push({
-          option: seg,
+          option: "",
           style: { backgroundColor: sliceColor },
           image: {
             uri: resolvedImgUri,
