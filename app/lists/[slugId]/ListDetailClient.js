@@ -211,7 +211,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
           });
         }
         return i.word
-          ? createSegment(i.word, { image: i.wordData || null })
+          ? createSegment(i.word, {
+              type: i.wordData?.startsWith("data:image") || i.wordData?.startsWith("http") ? "image" : "basic",
+              image: i.wordData?.startsWith("data:image") || i.wordData?.startsWith("http") ? i.wordData : null,
+            })
           : null;
       })
       .filter(Boolean);

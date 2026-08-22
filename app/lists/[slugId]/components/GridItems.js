@@ -39,6 +39,41 @@ export default function GridItems({
             : `/${item.entityType}/${item.slug}`
           : null;
 
+        const initialLetter = ((isWord ? item.word : item.name) || "?").charAt(0).toUpperCase();
+
+        const renderPosterContent = (imgSrc, altText) => {
+          if (!imgSrc) {
+            return (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                <span className="text-muted-foreground text-2xl font-black uppercase select-none">
+                  {initialLetter}
+                </span>
+              </div>
+            );
+          }
+
+          return (
+            <img
+              src={imgSrc}
+              alt={altText}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onError={(e) => {
+                // If remote image 404s or fails to load, replace with clean monogram fallback frame
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  e.currentTarget.remove();
+                  const fallbackDiv = document.createElement("div");
+                  fallbackDiv.className =
+                    "w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50";
+                  fallbackDiv.innerHTML = `<span class="text-muted-foreground text-2xl font-black uppercase select-none">${initialLetter}</span>`;
+                  parent.appendChild(fallbackDiv);
+                }
+              }}
+            />
+          );
+        };
+
         // ── Editing mode card ─────────────
         if (isEditing) {
           return (
@@ -116,21 +151,7 @@ export default function GridItems({
             {/* Poster Aspect Ratio 3:4 (standard movie/anime card ratio across app) */}
             {href ? (
               <a href={href} className="relative w-full aspect-[3/4] bg-muted overflow-hidden block">
-                {thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumbnail}
-                    alt={isWord ? item.word : item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                    <span className="text-muted-foreground text-2xl font-black uppercase select-none">
-                      {(isWord ? item.word : item.name)?.charAt(0) ?? "?"}
-                    </span>
-                  </div>
-                )}
+                {renderPosterContent(thumbnail, isWord ? item.word : item.name)}
 
                 {/* Media Type Badge */}
                 {isEntity && item.entityType && (
@@ -141,21 +162,7 @@ export default function GridItems({
               </a>
             ) : (
               <div className="relative w-full aspect-[3/4] bg-muted overflow-hidden">
-                {thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumbnail}
-                    alt={isWord ? item.word : item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                    <span className="text-muted-foreground text-2xl font-black uppercase select-none">
-                      {(isWord ? item.word : item.name)?.charAt(0) ?? "?"}
-                    </span>
-                  </div>
-                )}
+                {renderPosterContent(thumbnail, isWord ? item.word : item.name)}
 
                 {/* Media Type Badge */}
                 {isEntity && item.entityType && (

@@ -115,6 +115,8 @@ export default function ListItems({
               ? item.wordData
               : null;
 
+            const initialLetter = ((isWord ? item.word : item.name) || "?").charAt(0).toUpperCase();
+
             // ── Editing mode: expand into a mini-form card ─────────────
             if (isEditing) {
               return (
@@ -188,13 +190,28 @@ export default function ListItems({
                 className="group flex items-center justify-between bg-card hover:bg-muted/40 border border-border/60 shadow-sm rounded-xl p-2.5 sm:p-3 transition-all"
               >
                 {/* Thumbnail */}
-                <div className="w-12 h-16 sm:w-14 sm:h-20 bg-muted flex items-center justify-center rounded-lg mr-3 overflow-hidden shrink-0 border border-border/40 shadow-xs">
+                <div className="w-12 h-16 sm:w-14 sm:h-20 bg-muted flex items-center justify-center rounded-lg mr-3 overflow-hidden shrink-0 border border-border/40 shadow-xs relative">
                   {thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={thumbnail} alt={isWord ? item.word : item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img
+                      src={thumbnail}
+                      alt={isWord ? item.word : item.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          e.currentTarget.remove();
+                          const fallbackSpan = document.createElement("span");
+                          fallbackSpan.className =
+                            "text-muted-foreground text-base sm:text-lg font-black uppercase select-none";
+                          fallbackSpan.innerText = initialLetter;
+                          parent.appendChild(fallbackSpan);
+                        }
+                      }}
+                    />
                   ) : (
                     <span className="text-muted-foreground text-base sm:text-lg font-black uppercase select-none">
-                      {(isWord ? item.word : item.name)?.charAt(0) ?? "?"}
+                      {initialLetter}
                     </span>
                   )}
                 </div>

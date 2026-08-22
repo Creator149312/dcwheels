@@ -172,16 +172,21 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
 
   // Function to pick a random element based on weights
   const pickRandomWinner = () => {
-    const totalWeight = data.reduce(
-      (sum, element) => sum + parseInt(element.optionSize),
-      0
-    );
+    if (!Array.isArray(data) || data.length === 0) return 0;
+    const totalWeight = data.reduce((sum, element) => {
+      const w = Number(element?.optionSize);
+      return sum + (Number.isFinite(w) && w > 0 ? w : 1);
+    }, 0);
+    if (totalWeight <= 0) return 0;
     const randomValue = Math.floor(Math.random() * totalWeight);
     let cumulativeWeight = 0;
     for (let i = 0; i < data.length; i++) {
-      cumulativeWeight += parseInt(data[i].optionSize);
+      const w = Number(data[i]?.optionSize);
+      const safeW = Number.isFinite(w) && w > 0 ? w : 1;
+      cumulativeWeight += safeW;
       if (randomValue < cumulativeWeight) return i;
     }
+    return 0;
   };
 
   const handleSpinClick = () => {
@@ -269,6 +274,78 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     }
   };
 
+  // Safely convert remote image URIs into local base64 Data URLs with crossOrigin support.
+  // This completely eliminates HTML5 canvas cross-origin taint, broken drawImage state, and
+  // browser-specific hardware acceleration black-screen bugs across Chrome, Edge, Safari, and Firefox.
+  const [safeImageDataUris, setSafeImageDataUris] = useState(() => ({}));
+
+  useEffect(() => {
+    if (!Array.isArray(segData)) return;
+
+    let isMounted = true;
+    const pendingLoads = [];
+
+    for (const seg of segData) {
+      const uri = seg?.image || (typeof seg?.text === "string" && /src="([^"]+)"/.exec(seg.text)?.[1]);
+      if (uri && typeof uri === "string" && !uri.startsWith("data:") && !(uri in safeImageDataUris)) {
+        pendingLoads.push(
+          new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = uri;
+            img.onload = () => {
+              try {
+                const cvs = document.createElement("canvas");
+                cvs.width = img.naturalWidth || 300;
+                cvs.height = img.naturalHeight || 300;
+                const ctx = cvs.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const dataUrl = cvs.toDataURL("image/webp", 0.85);
+                resolve({ uri, safeUrl: dataUrl });
+              } catch {
+                // If canvas toDataURL fails or taints, try direct fetch blob
+                fetch(uri)
+                  .then((res) => {
+                    if (!res.ok) throw new Error("HTTP 404");
+                    return res.blob();
+                  })
+                  .then((blob) => new Promise((resBlob) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resBlob({ uri, safeUrl: reader.result });
+                    reader.onerror = () => resBlob({ uri, safeUrl: null });
+                    reader.readAsDataURL(blob);
+                  }))
+                  .catch(() => resolve({ uri, safeUrl: null }));
+              }
+            };
+            img.onerror = () => resolve({ uri, safeUrl: null });
+          })
+        );
+      }
+    }
+
+    if (pendingLoads.length > 0) {
+      Promise.all(pendingLoads).then((results) => {
+        if (!isMounted) return;
+        setSafeImageDataUris((prev) => {
+          const updated = { ...prev };
+          let changed = false;
+          results.forEach(({ uri, safeUrl }) => {
+            if (updated[uri] !== safeUrl) {
+              updated[uri] = safeUrl; // Data URL if valid, or null if broken/404
+              changed = true;
+            }
+          });
+          return changed ? updated : prev;
+        });
+      });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [segData]);
+
   // Memoize the expensive transform — only recompute when real inputs change.
   // Identity is stable across unrelated re-renders so downstream <Wheel> doesn't
   // get a new array reference every time something unrelated re-renders.
@@ -278,9 +355,10 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       wheelData.segColors,
       maxlengthOfSegmentText,
       advancedOptions,
-      wheelData.mysteryMode
+      wheelData.mysteryMode,
+      safeImageDataUris
     ),
-    [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, advancedOptions]
+    [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, advancedOptions, safeImageDataUris]
   );
 
   // Wheel update vs localStorage save have very different latency budgets:
@@ -360,7 +438,8 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
           localWheelData.segColors,
           initialMaxLength,
           advancedOptions,
-          localWheelData.mysteryMode
+          localWheelData.mysteryMode,
+          safeImageDataUris
         )
       );
       html.current = segmentsToHTMLTxt(localSegData);
@@ -373,10 +452,11 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       setData(
         prepareData(
           newSegments,
-          wheelData.segColors,
-          maxlengthOfSegmentText,
+          wheelPresetSettings?.segColors || wheelData.segColors,
+          initialMaxLength,
           advancedOptions,
-          wheelData.mysteryMode
+          wheelPresetSettings?.mysteryMode ?? wheelData.mysteryMode,
+          safeImageDataUris
         )
       );
       html.current = segmentsToHTMLTxt(newSegments);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 
@@ -9,10 +10,22 @@ const WheelEditorFull = dynamic(() => import("./WheelEditorFull"), {
 });
 
 export default function WheelEditorModal({ isOpen, onClose, mustSpin, currentPath }) {
+  // Prevent body scrolling behind the modal when open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Full-screen modal container */}
       <div className="absolute inset-0 bg-background flex flex-col">
         {/* Header with close button */}
@@ -20,7 +33,7 @@ export default function WheelEditorModal({ isOpen, onClose, mustSpin, currentPat
           <h2 className="font-bold text-lg">Edit Wheel</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+            className="p-1.5 hover:bg-secondary rounded-lg transition-colors text-foreground"
             aria-label="Close editor"
           >
             <X size={24} />
@@ -28,7 +41,7 @@ export default function WheelEditorModal({ isOpen, onClose, mustSpin, currentPat
         </div>
 
         {/* Editor content - strict height bounds for internal scrolling */}
-        <div className="flex-1 min-h-0 flex flex-col p-2 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col p-2 overflow-y-auto">
           <WheelEditorFull mustSpin={mustSpin} currentPath={currentPath} inModal={true} />
         </div>
       </div>

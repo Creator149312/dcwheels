@@ -100,7 +100,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
   });
 
   return (
-    <article className="border-b border-border/40 bg-background/50 py-4 sm:border sm:rounded-2xl sm:px-5 sm:py-6 transition-colors hover:bg-muted/[0.03] sm:mb-0">
+    <article className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 sm:border sm:border-border/60 sm:rounded-2xl sm:px-5 sm:py-6 transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0">
       {/* Header: Author + Time */}
       <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">

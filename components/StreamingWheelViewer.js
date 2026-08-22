@@ -125,6 +125,10 @@ export default function StreamingWheelViewer({
             fontWeight="normal"
             spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
             fontSize={segTxtfontSize}
+            backgroundColors={data.map(
+              (d) => d?.style?.backgroundColor || "#EE4040"
+            )}
+            textColors={["#000000"]}
             pointerProps={{
               src: "/smallredpointer.png",
               style: {

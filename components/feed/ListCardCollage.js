@@ -56,9 +56,9 @@ function ListCardCollage({ list }) {
   const previewItems = (list.items || []).slice(0, 5);
 
   return (
-    <article className="border-b border-border/40 bg-background/50 py-4 transition-colors hover:bg-muted/[0.03] sm:mb-0 sm:rounded-2xl sm:border sm:px-5 sm:py-5">
+    <article className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs px-4 py-4 sm:px-5 sm:py-5 transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0 sm:rounded-2xl sm:border sm:border-border/60">
       {/* Header: User */}
-      <div className="mb-3 flex items-center gap-2 px-4 sm:px-0">
+      <div className="mb-3 flex items-center gap-2">
         <Link href={`/u/${encodeURIComponent(authorName.toLowerCase())}`}>
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-primary/10 bg-gradient-to-tr from-primary/10 to-primary/5 text-[11px] font-bold text-primary">
             {authorName.charAt(0).toUpperCase()}
@@ -76,7 +76,7 @@ function ListCardCollage({ list }) {
       </div>
 
       {/* Collage overlap */}
-      <Link href={url} className="group/card block px-4 sm:px-0 mb-3">
+      <Link href={url} className="group/card block mb-3">
         <div className="flex items-center pl-2">
           {previewItems.map((item, idx) => (
             <Poster key={item._id || idx} item={item} index={idx} total={previewItems.length} />
@@ -85,7 +85,7 @@ function ListCardCollage({ list }) {
       </Link>
 
       {/* Title */}
-      <div className="px-4 sm:px-0">
+      <div>
         <Link href={url}>
           <h3 className="text-base font-black leading-tight text-foreground hover:text-primary sm:text-lg line-clamp-2">
             {list.name || list.title || "Untitled List"}

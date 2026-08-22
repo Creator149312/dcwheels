@@ -75,8 +75,15 @@ const WheelWithInputContentEditable = ({
   } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId, wheelTitle: pageWheelTitle });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(isEditMode);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const wheelContainerRef = useRef(null);
+
+  // Auto-open editor modal on mobile ONLY when explicitly requested via ?edit=true parameter
+  useEffect(() => {
+    if (isEditMode) {
+      setIsEditorOpen(true);
+    }
+  }, [isEditMode]);
 
   // Auto-open editor modal on mobile if edit=true is present
   useEffect(() => {
@@ -252,6 +259,10 @@ const WheelWithInputContentEditable = ({
               fontWeight="normal"
               spinDuration={(wheelData?.spinDuration || 5) / (MAX_SPIN_TIME || 5)}
               fontSize={segTxtfontSize}
+              backgroundColors={data.map(
+                (d) => d?.style?.backgroundColor || "#EE4040"
+              )}
+              textColors={["#000000"]}
               pointerProps={{
                 src: "/smallredpointer.png",
                 style: {

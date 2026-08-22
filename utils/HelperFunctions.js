@@ -32,85 +32,101 @@ export const prepareData = (
   colData,
   maxlengthOfSegmentText,
   advOptions,
-  mysteryMode = false
+  mysteryMode = false,
+  safeImageDataUris = {}
 ) => {
   const result = [];
+  if (!Array.isArray(segData) || segData.length === 0) {
+    return [
+      {
+        option: "Options",
+        style: { backgroundColor: "#EE4040" },
+        optionSize: 1,
+      },
+    ];
+  }
+
   const safeColData = Array.isArray(colData) && colData.length > 0
     ? colData
     : ["#EE4040", "#F0CF50", "#815CD1", "#3DA36E", "#E68C22", "#4185F4"];
   const colDataLength = safeColData.length;
+  const maxLen = Math.max(1, Number(maxlengthOfSegmentText) || 14);
+
   for (let i = 0; i < segData.length; i++) {
-    const seg = mysteryMode ? "❓" : segData[i].text;
+    const rawSeg = segData[i];
+    if (!rawSeg) continue;
+
+    const rawText = typeof rawSeg.text === "string" ? rawSeg.text : "";
+    const displaySegText = rawText || "Option " + (i + 1);
+    const seg = mysteryMode ? "❓" : displaySegText;
     const colIndex = i % colDataLength;
     const col = safeColData[colIndex];
-    // Override-or-fallback colour model:
-    //   • if the segment has an explicit `color`, it wins (per-segment override)
-    //   • otherwise the wheel’s palette (segColors) drives the slice colour
-    // Same rule for both Basic and Advanced editor modes — theme changes
-    // therefore flow through to every uncustomised segment automatically.
-    const sliceColor = segData[i].color || col;
+    const sliceColor = rawSeg.color || col;
+    const weightVal = Number(rawSeg.weight);
+    const safeWeight = Number.isFinite(weightVal) && weightVal > 0 ? weightVal : 1;
 
     if (advOptions) {
-      // Advanced mode previously only checked seg.text for embedded <img>,
-      // which made uploads via SegmentListEditor (which set seg.image instead)
-      // disappear from the wheel after toggling to Advanced. Mirror the basic
-      // branch and prefer seg.image when present.
-      const advImgUri = segData[i].image
-        ? segData[i].image
-        : seg.includes("<img")
+      const advImgUri = rawSeg.image
+        ? rawSeg.image
+        : typeof seg === "string" && seg.includes("<img")
         ? /src="([^"]+)"/.exec(seg)?.[1]
         : null;
-      if (advImgUri) {
-        if (segData[i].visible !== false) {
-          result.push({
-            option: seg,
-            style: { backgroundColor: sliceColor },
-            image: {
-              uri: advImgUri,
-              sizeMultiplier: getImageSizeMultiplierValue(segData.length),
-              landscape: segData[i].imageLandscape || false,
-            },
-            optionSize: Number(segData[i].weight),
-          });
-        }
+      const resolvedImgUri = advImgUri
+        ? (advImgUri in safeImageDataUris ? safeImageDataUris[advImgUri] : advImgUri)
+        : null;
+
+      if (resolvedImgUri && rawSeg.visible !== false) {
+        result.push({
+          option: seg,
+          style: { backgroundColor: sliceColor },
+          image: {
+            uri: resolvedImgUri,
+            sizeMultiplier: getImageSizeMultiplierValue(segData.length),
+            landscape: rawSeg.imageLandscape || false,
+          },
+          optionSize: safeWeight,
+        });
       } else {
-        if (segData[i].visible !== false) {
+        if (rawSeg.visible !== false) {
           result.push({
             option:
-              seg.length > maxlengthOfSegmentText
-                ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
-                : seg.substring(0, maxlengthOfSegmentText),
+              seg.length > maxLen
+                ? seg.substring(0, maxLen - 2) + ".."
+                : seg.substring(0, maxLen),
             style: { backgroundColor: sliceColor },
-            optionSize: Number(segData[i].weight),
+            optionSize: safeWeight,
           });
         }
       }
     } else {
       const imgUri = mysteryMode
         ? null
-        : segData[i].image
-        ? segData[i].image
-        : seg.includes("<img")
+        : rawSeg.image
+        ? rawSeg.image
+        : typeof seg === "string" && seg.includes("<img")
         ? /src="([^"]+)"/.exec(seg)?.[1]
         : null;
+      const resolvedImgUri = imgUri
+        ? (imgUri in safeImageDataUris ? safeImageDataUris[imgUri] : imgUri)
+        : null;
 
-      if (imgUri) {
+      if (resolvedImgUri) {
         result.push({
           option: seg,
           style: { backgroundColor: sliceColor },
           image: {
-            uri: imgUri,
+            uri: resolvedImgUri,
             sizeMultiplier: getImageSizeMultiplierValue(segData.length),
-            landscape: segData[i].imageLandscape || false,
+            landscape: rawSeg.imageLandscape || false,
           },
           optionSize: 1,
         });
       } else {
         result.push({
           option:
-            seg.length > maxlengthOfSegmentText
-              ? seg.substring(0, maxlengthOfSegmentText - 2) + ".."
-              : seg.substring(0, maxlengthOfSegmentText),
+            seg.length > maxLen
+              ? seg.substring(0, maxLen - 2) + ".."
+              : seg.substring(0, maxLen),
           style: { backgroundColor: sliceColor },
           optionSize: 1,
         });
@@ -190,12 +206,12 @@ export const getWheelData = () => {
 };
 
 export const calculateMaxLengthOfText = (segData) => {
-  return Math.min(
-    segData.reduce((acc, segment) => {
-      return segment.text.length > acc.length ? segment.text : acc;
-    }, "").length,
-    14
-  );
+  if (!Array.isArray(segData) || segData.length === 0) return 1;
+  const maxLen = segData.reduce((max, segment) => {
+    const textLen = typeof segment?.text === "string" ? segment.text.length : 0;
+    return textLen > max ? textLen : max;
+  }, 0);
+  return Math.max(1, Math.min(maxLen, 14));
 };
 
 export const segmentsToHTMLTxt = (segmentsData) => {
@@ -205,31 +221,12 @@ export const segmentsToHTMLTxt = (segmentsData) => {
 };
 
 export const calculateFontSizeOfText = (maxlengthOfSegmentText, segData) => {
-  let factor = 0.1;
-  // let calculatedFontSize = Math.min(
-  //   (16 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
-  //   36
-  // );
+  const safeSegLen = Array.isArray(segData) ? segData.length : 0;
+  const safeMaxLen = Math.max(1, Number(maxlengthOfSegmentText) || 1);
+  const denominator = Math.pow(safeMaxLen, 1.3) + Math.pow(Math.max(1, safeSegLen), 0.7);
 
-  // let calculatedFontSize = Math.min(
-  //   (26 * Math.PI * Math.PI) / Math.max(segData.length, maxlengthOfSegmentText),
-  //   38
-  // );
-  // return calculatedFontSize;
-
-  // return (36 * (101 - segData.length) * (17 - maxlengthOfSegmentText)) / (100 * 15);
-  // return 60 * Math.PI / Math.max(maxlengthOfSegmentText, segData.length);
-  // let txtSize = Math.min(
-  //   (40 * Math.PI * Math.PI) / (1.8 * maxlengthOfSegmentText + segData.length),
-  //   40
-  // );
-
-  let txtSize = Math.min(
-    (40 * Math.PI * Math.PI) /
-      (Math.pow(maxlengthOfSegmentText, 1.3) + Math.pow(segData.length, 0.7)),
-    40
-  );
-  return txtSize;
+  let txtSize = Math.min((40 * Math.PI * Math.PI) / denominator, 40);
+  return Number.isFinite(txtSize) && txtSize > 0 ? txtSize : 14;
 };
 
 /**

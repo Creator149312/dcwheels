@@ -56,7 +56,7 @@ const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }
 
   return (
     <div
-      className={`w-full bg-muted/5 text-center py-3 sm:py-4 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40 ${className}`}
+      className={`w-full bg-muted/5 text-center py-0 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40 ${className}`}
       style={{ minHeight: `${minHeight}px` }}
     >
       {/* <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 mb-">

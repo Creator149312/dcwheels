@@ -68,7 +68,7 @@ function AdSlot({ slot, width, minHeight, className }) {
 
 function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
   return (
-    <div className="w-full my-0.5">
+    <div className="w-full my-0 py-0">
       {/* Mobile Slot (< sm): 320x100 Large Mobile Banner for higher viewability & eCPM */}
       <div className="flex sm:hidden justify-center items-center overflow-hidden h-[100px] min-h-[100px] max-h-[100px] bg-muted/20 border border-border/40 rounded-xl">
         <div className="w-full max-w-[320px] h-[100px] flex items-center justify-center overflow-hidden">

@@ -42,7 +42,7 @@ function WheelFeedCard({ wheel }) {
   if (isHidden) return null;
 
   return (
-    <div className="border-b border-border/40 bg-card py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition hover:bg-muted/[0.04] sm:mb-0">
+    <div className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0 sm:border sm:border-border/60">
       {/* Header: Author + Time + Menu */}
       <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
         <div className="flex items-center gap-2">
