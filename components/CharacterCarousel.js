@@ -1,17 +1,54 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { slugify } from "@utils/HelperFunctions";
 
 /**
- * CharacterCarousel — horizontal scroll for cast/characters.
+ * CharacterCarousel — horizontal scroll for cast/characters with desktop arrow controls.
  */
 export default function CharacterCarousel({ characters = [] }) {
+  const scrollRef = useRef(null);
+  const [arrows, setArrows] = useState({ left: false, right: true });
+
+  const updateArrows = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setArrows({
+      left: scrollLeft > 10,
+      right: scrollLeft < scrollWidth - clientWidth - 10,
+    });
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const timer = setTimeout(updateArrows, 100);
+    window.addEventListener("resize", updateArrows);
+    const scrollEl = scrollRef.current;
+    scrollEl?.addEventListener("scroll", updateArrows);
+
+    return () => {
+      window.removeEventListener("resize", updateArrows);
+      scrollEl?.removeEventListener("scroll", updateArrows);
+      clearTimeout(timer);
+    };
+  }, [characters]);
+
+  const scroll = (direction) => {
+    if (!scrollRef.current) return;
+    const scrollAmount = scrollRef.current.clientWidth * 0.7;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
   if (!characters || characters.length === 0) return null;
 
   return (
-    <div className="w-full">
+    <div className="w-full relative group/cast">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold flex items-center gap-2">
           <span className="w-1.5 h-6 bg-primary rounded-full" />
@@ -22,8 +59,23 @@ export default function CharacterCarousel({ characters = [] }) {
         </span>
       </div>
 
-      <div className="relative group">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x transition-all scroll-smooth">
+      <div className="relative">
+        {/* Left Arrow Button */}
+        {arrows.left && (
+          <button
+            onClick={() => scroll("left")}
+            className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-sm hidden md:flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            aria-label="Scroll Left"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x transition-all scroll-smooth"
+          style={{ scrollbarWidth: "none" }}
+        >
           {characters.map((char, index) => {
             const charId = char.id || char.externalId;
             const charName = char.name?.full || char.name || "Unknown";
@@ -63,7 +115,7 @@ export default function CharacterCarousel({ characters = [] }) {
                     {charName}
                   </p>
                   {role && (
-                    <p className="text-[10px] text-muted-foreground line-clamp-1 uppercase tracking-tight font-medium mt-0.5">
+                    <p className="text-xs text-muted-foreground line-clamp-1 uppercase tracking-wider font-medium mt-0.5">
                       {role}
                     </p>
                   )}
@@ -75,6 +127,17 @@ export default function CharacterCarousel({ characters = [] }) {
           {/* Filler to allow scrolling past last item */}
           <div className="flex-shrink-0 w-4" />
         </div>
+
+        {/* Right Arrow Button */}
+        {arrows.right && (
+          <button
+            onClick={() => scroll("right")}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-sm hidden md:flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            aria-label="Scroll Right"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
         
         {/* Simple visual indicator for touch users */}
         <div className="absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none opacity-60 sm:hidden" />

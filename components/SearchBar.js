@@ -195,14 +195,14 @@ export default function SearchBar() {
                       </div>
                       <div className='flex flex-col min-w-0'>
                         <span className='text-sm font-bold truncate text-foreground group-hover:text-primary transition-colors'>{s.title}</span>
-                        <span className='text-[10px] text-muted-foreground uppercase tracking-tight font-semibold'>{TYPE_LABEL[s.type] || s.type}</span>
+                        <span className='text-xs text-muted-foreground uppercase tracking-wider font-semibold'>{TYPE_LABEL[s.type] || s.type}</span>
                       </div>
                     </button>
                   );
                 })
               ) : !query && isFocused && recentSearches.length > 0 && (
                 <>
-                  <div className='px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2'><History size={12} />Recent Searches</div>
+                  <div className='px-4 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2'><History size={12} />Recent Searches</div>
                   {recentSearches.map((s, i) => (
                     <button key={s} onClick={() => handleSubmit(s)} className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors rounded-xl mb-1 last:mb-0 group ${highlightIndex === i ? 'bg-muted' : 'hover:bg-muted'}`}>
                       <Clock size={14} className='text-muted-foreground' /><span className='text-sm font-medium flex-1'>{s}</span>
@@ -252,7 +252,7 @@ export default function SearchBar() {
                     })
                   ) : !query && recentSearches.length > 0 && (
                     <>
-                      <div className='px-5 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2'><History size={12} />Recent Searches</div>
+                      <div className='px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2'><History size={12} />Recent Searches</div>
                       {recentSearches.map((s, i) => (
                         <button key={s} onClick={() => handleSubmit(s)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-colors mb-1 last:mb-0 ${highlightIndex === i ? 'bg-muted' : 'active:bg-muted'}`}>
                           <Clock size={16} className='text-muted-foreground flex-shrink-0' /><span className='text-sm font-medium text-foreground'>{s}</span>

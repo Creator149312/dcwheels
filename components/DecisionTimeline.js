@@ -20,7 +20,7 @@ export function DecisionTimelineItem({ item }) {
         {/* Card header */}
         <div className="flex items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1 bg-primary/10 text-primary">
+            <span className="inline-flex items-center gap-1 text-xs font-bold rounded-full px-2.5 py-1 bg-primary/10 text-primary">
               🎯 Spin Result
             </span>
           </div>

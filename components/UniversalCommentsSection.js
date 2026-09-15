@@ -117,12 +117,12 @@ export default function UniversalCommentsSection({
             {session?.user?.image ? (
               <img src={session.user.image} alt="" className="w-full h-full object-cover" />
             ) : (
-               <div className="w-full h-full flex items-center justify-center text-[11px] font-bold text-muted-foreground">
+               <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
                  {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "?"}
                </div>
             )}
           </div>
-          <div className="flex-1 bg-muted/30 rounded-full px-4 py-1.5 border border-border/40 text-muted-foreground text-[13px]">
+          <div className="flex-1 bg-muted/30 rounded-full px-4 py-1.5 border border-border/40 text-muted-foreground text-sm">
             {localCount > 0 ? `View all ${localCount} comments...` : "Add a comment..."}
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function UniversalCommentsSection({
 
         {/* Header - Ultra Minimal */}
         <div className={`flex items-center gap-4 py-1.5 md:py-2.5 ${className} shrink-0`}>
-           <h3 className="text-[14px] md:text-[15px] font-black text-foreground uppercase tracking-tight">
+           <h3 className="text-sm md:text-base font-black text-foreground uppercase tracking-tight">
             {localCount.toLocaleString()} {localCount === 1 ? 'Comment' : 'Comments'}
           </h3>
 

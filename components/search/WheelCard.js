@@ -16,10 +16,10 @@ export default function WheelCard({ item }) {
               <Layers size={18} className="md:w-5 md:h-5 lg:w-6 lg:h-6" />
             </div>
             <div className="truncate">
-              <h2 className="text-sm md:text-lg lg:text-xl font-bold text-foreground truncate mb-0.5 md:mb-1">
+              <h2 className="text-base md:text-lg lg:text-xl font-bold text-foreground truncate mb-0.5 md:mb-1">
                 {item.title}
               </h2>
-              <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-wider">
+              <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary uppercase tracking-wider">
                 {segmentCount} Segment{segmentCount !== 1 ? "s" : ""}
               </span>
             </div>

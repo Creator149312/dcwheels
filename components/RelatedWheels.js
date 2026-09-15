@@ -9,7 +9,7 @@ export default function RelatedWheels({ relatedWheels }) {
       {/* Sleek Minimalist Header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <Zap className="text-blue-500" size={14} />
-        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+        <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
           Up Next
         </h4>
         <div className="flex-1 h-[1px] bg-border ml-2" />
@@ -28,7 +28,7 @@ export default function RelatedWheels({ relatedWheels }) {
               <Disc3 className="w-5 h-5 text-muted-foreground group-hover:text-primary-foreground transition-colors" />
             </div>
             <div className="flex flex-col min-w-0 leading-tight">
-              <span className="font-bold text-xs line-clamp-2 text-foreground group-hover:text-primary">
+              <span className="font-bold text-xs sm:text-sm line-clamp-2 text-foreground group-hover:text-primary">
                 {wheel.title}
               </span>
             </div>

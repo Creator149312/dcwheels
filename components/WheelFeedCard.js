@@ -42,28 +42,32 @@ function WheelFeedCard({ wheel }) {
   if (isHidden) return null;
 
   return (
-    <div className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 sm:py-6 sm:px-5 sm:rounded-2xl transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0 sm:border sm:border-border/60">
+    <div className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 sm:border sm:border-border/60 sm:rounded-2xl sm:px-5 sm:py-6 transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0">
       {/* Header: Author + Time + Menu */}
-      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
-        <div className="flex items-center gap-2">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">
+      <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary">
             {firstLetter}
           </div>
-          <div className="leading-tight">
-            <Link
-              href={`/u/${encodeURIComponent(authorHandle.toLowerCase())}`}
-              className="font-bold text-foreground hover:underline transition text-sm flex items-center gap-1"
-            >
-              <span>{authorName}</span>
+          <div className="leading-tight min-w-0">
+            <div className="flex items-center gap-1.5 text-sm">
+              <Link
+                href={`/u/${encodeURIComponent(authorHandle.toLowerCase())}`}
+                className="font-bold text-foreground hover:underline transition truncate"
+                title={authorName}
+              >
+                {authorName}
+              </Link>
+              <span className="text-xs text-muted-foreground/40">•</span>
+              <span className="text-xs font-semibold text-muted-foreground/60 whitespace-nowrap">
+                {timeAgo(wheel.createdAt)}
+              </span>
               {isOwner && !wheel.isPublic && (
-                <span className="flex items-center gap-0.5 text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-1 py-0 rounded-full font-bold ml-1 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                   Private
+                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                  Private
                 </span>
               )}
-            </Link>
-            <p className="text-[10px] font-semibold text-muted-foreground/60">
-              {timeAgo(wheel.createdAt)}
-            </p>
+            </div>
           </div>
         </div>
 
@@ -77,65 +81,73 @@ function WheelFeedCard({ wheel }) {
         />
       </div>
 
-      {/* Title */}
-      <h3 className="font-bold text-foreground mb-1.5 text-base sm:text-lg leading-tight px-4 sm:px-0">
-        <Link href={wheelUrl} className="hover:text-primary transition">
-          {wheel.title}
-        </Link>
-      </h3>
+      {/* Sleek Compact Media Badge with Large Wheel Graphic */}
+      <Link
+        href={wheelUrl}
+        className="group flex flex-row items-center gap-3.5 sm:gap-5 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/30 hover:bg-muted/60 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-2xs hover:shadow-xs mx-0 sm:mx-0"
+      >
+        {/* Large Wheel Image Container */}
+        <div className="relative flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 rounded-lg sm:rounded-xl bg-background/90 border border-border/50 overflow-hidden flex items-center justify-center p-1.5 shadow-inner">
+          {imgSrc ? (
+            <Image
+              src={imgSrc}
+              alt={wheel.title}
+              width={160}
+              height={160}
+              className="w-full h-full object-contain drop-shadow-md group-hover:rotate-12 group-hover:scale-105 transition-transform duration-500 ease-out"
+              onError={() => {
+                if (imgSrc !== wheel.wheelPreview && wheel.wheelPreview) {
+                  setImgSrc(wheel.wheelPreview);
+                } else {
+                  setImgSrc(null);
+                }
+              }}
+            />
+          ) : (
+            <span className="text-3xl sm:text-4xl font-black text-muted-foreground/30 group-hover:scale-110 transition-transform">
+              {wheel.title?.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
 
-      {/* Content (Description) */}
-      {wheel.description && (
-        <p className="text-[13px] text-foreground/70 mb-3 whitespace-pre-wrap line-clamp-2 leading-snug px-4 sm:px-0">
-          {wheel.description}
-        </p>
-      )}
-
-      <div className="mb-1 px-0 sm:px-0">
-        <Link href={wheelUrl} className="block group relative w-full sm:mx-0 sm:w-full aspect-video sm:aspect-[21/9] bg-muted/20 sm:rounded-2xl overflow-hidden border-y sm:border border-border/40 transition isolate">
-          {/* Wheel Graphic */}
-          <div className="absolute inset-0 flex items-center justify-center py-4 bg-background/50 backdrop-blur-[2px] group-hover:bg-background/20 transition-colors z-0">
-            {imgSrc ? (
-              <Image
-                src={imgSrc}
-                alt={wheel.title}
-                width={300}
-                height={300}
-                className="h-full w-auto object-contain drop-shadow-2xl group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-                onError={() => {
-                  if (imgSrc !== wheel.wheelPreview && wheel.wheelPreview) {
-                    // Thumb failed; try the full preview next.
-                    setImgSrc(wheel.wheelPreview);
-                  } else {
-                    // Full preview also failed; show letter fallback.
-                    setImgSrc(null);
-                  }
-                }}
-              />
+        {/* Info Column */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
+          <div>
+            <h3 className="font-bold text-foreground text-base sm:text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
+              {wheel.title}
+            </h3>
+            {wheel.description ? (
+              <p className="text-sm sm:text-[15px] text-muted-foreground line-clamp-2 leading-relaxed mt-1">
+                {wheel.description}
+              </p>
             ) : (
-             <span className="text-muted/40 text-7xl font-black group-hover:scale-105 transition-transform">
-                {wheel.title?.charAt(0).toUpperCase()}
-             </span>
+              <p className="text-xs sm:text-sm text-muted-foreground/60 italic mt-1">
+                Tap to spin this custom wheel
+              </p>
             )}
           </div>
-          
-          {/* Play CTA Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-             <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-md font-black text-xs uppercase tracking-wider group-hover:bg-primary transition-colors group-active:scale-95 duration-100">
-               <Play size={14} fill="currentColor" /> Spin Wheel
-             </div>
+
+          {/* Bottom Action Row */}
+          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border/30">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Interactive Wheel
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-2xs group-hover:bg-primary/90 group-active:scale-95 transition-all">
+              <Play size={11} fill="currentColor" /> Spin
+            </span>
           </div>
-        </Link>
-      </div>
+        </div>
+      </Link>
 
       {/* Tags */}
       {wheel.tags && wheel.tags.length > 0 && (
-        <div className="mb-1 flex flex-wrap gap-2 px-4 sm:px-0 mt-3">
+        <div className="flex flex-wrap gap-1.5 px-4 sm:px-0 mt-3">
           {wheel.tags.slice(0, 3).map((tag) => (
             <Link
               key={tag}
               href={`/tags/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary/20 transition"
+              className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 transition"
             >
               #{tag}
             </Link>

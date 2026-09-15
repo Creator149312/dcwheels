@@ -36,17 +36,17 @@ export default function SearchResultCard({
         )}
 
         {badge && badge !== "0.0" && (
-          <div className="absolute top-1.5 left-1.5 md:top-2 md:left-2 bg-black/70 backdrop-blur-md text-yellow-400 text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-md md:rounded-lg flex items-center gap-0.5 shadow-lg border border-white/10">
-            <BadgeIcon size={9} className={`md:w-[10px] md:h-[10px] ${badgeType === "heart" ? "text-pink-400" : ""}`} fill="currentColor" /> {badge}
+          <div className="absolute top-1.5 left-1.5 md:top-2 md:left-2 bg-black/70 backdrop-blur-md text-yellow-400 text-xs font-black px-1.5 py-0.5 rounded-md md:rounded-lg flex items-center gap-0.5 shadow-lg border border-white/10">
+            <BadgeIcon size={10} className={`${badgeType === "heart" ? "text-pink-400" : ""}`} fill="currentColor" /> {badge}
           </div>
         )}
       </div>
 
-      <p className="text-xs md:text-sm font-bold text-foreground group-hover:text-primary transition-colors px-0.5 line-clamp-2 leading-tight">
+      <p className="text-sm md:text-base font-bold text-foreground group-hover:text-primary transition-colors px-0.5 line-clamp-2 leading-tight">
         {title}
       </p>
       {subtitle && (
-        <p className="text-[9px] md:text-[10px] text-muted-foreground mt-0.5 font-medium px-0.5 line-clamp-1">
+        <p className="text-xs text-muted-foreground mt-0.5 font-medium px-0.5 line-clamp-1">
           {subtitle}
         </p>
       )}

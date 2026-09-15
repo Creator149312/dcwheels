@@ -46,7 +46,12 @@ export async function GET(req) {
     
     // Set cursor to the (limit+1)th item if it exists, so the next page starts AFTER the last displayed item
     const nextItem = allItems.length > limit ? allItems[limit] : null;
-    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+    const currentListOffset = cursor ? (parseInt(cursor.split("|")[2], 10) || 0) : 0;
+    const hasListInPage = items.some(i => i.docType === "list" || i._docType === "list");
+    const nextListOffset = currentListOffset + (hasListInPage ? 1 : 0);
+    const nextCursor = nextItem
+      ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${nextListOffset}`
+      : null;
 
     const res = NextResponse.json({ 
       items, 

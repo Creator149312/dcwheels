@@ -30,7 +30,7 @@ export default async function ListsPage() {
     : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-0 py-2 sm:py-6">
+    <main className="mx-auto max-w-2xl px-0 py-2 sm:py-6">
       <div className="px-4 sm:px-0 mb-4">
         <h1 className="text-xl sm:text-2xl font-black">Discover Lists</h1>
         <p className="text-sm text-muted-foreground">

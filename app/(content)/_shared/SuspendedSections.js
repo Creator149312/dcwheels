@@ -64,7 +64,7 @@ export function CharactersSkeleton() {
 
 export function FeedSkeleton() {
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full max-w-2xl">
       {[...Array(3)].map((_, i) => (
         <div
           key={i}

@@ -270,7 +270,7 @@ export default function ProfileHeader({
                     placeholder="username"
                   />
                 </div>
-                <p className="mt-1.5 text-[10px] text-muted-foreground/80 leading-tight">
+                <p className="mt-1.5 text-xs text-muted-foreground/80 leading-tight">
                   Username changes are temporarily disabled.
                 </p>
               </div>
@@ -281,7 +281,7 @@ export default function ProfileHeader({
                   <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest">
                     Bio
                   </label>
-                  <span className="text-[10px] font-bold text-muted-foreground/70">
+                  <span className="text-xs font-bold text-muted-foreground/70">
                     {editBio.length}/160
                   </span>
                 </div>

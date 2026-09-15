@@ -117,17 +117,17 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
         <div className="flex items-center gap-2">
           {authorHandle ? (
             <Link href={`/u/${encodeURIComponent(authorHandle)}`} className="hover:opacity-80 transition flex-shrink-0">
-              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground">
                 {displayCreator ? displayCreator.charAt(0).toUpperCase() : ""}
               </div>
             </Link>
           ) : (
-            <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0">
+            <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground flex-shrink-0">
               {displayCreator ? displayCreator.charAt(0).toUpperCase() : ""}
             </div>
           )}
           
-          <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] font-medium text-muted-foreground whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
             <span>{formatCount(engagement.view_count)} views</span>
             <span className="opacity-40">•</span>
             <span>{formatCount(engagement.spin_count)} spins</span>

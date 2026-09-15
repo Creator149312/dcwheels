@@ -8,7 +8,6 @@ import Link from "next/link";
 import { compressImage } from "@utils/imageCompression";
 import { getListUrl } from "@utils/UrlHandler";
 import { normalizeTag } from "@lib/slug";
-import TagInput from "@components/TagInput";
 import Image from "next/image";
 
 function stripHtml(raw) {
@@ -756,23 +755,15 @@ function CreatePostForm() {
                     setTagQuery("");
                   }
                 }}
-                placeholder="What's on your mind? Type #tag to add spaces..."
+                placeholder="What's on your mind? Type #tag to add topics..."
                 maxLength={600}
                 rows={4}
                 className="w-full text-base sm:text-lg placeholder:text-muted-foreground/60 bg-transparent border-none focus:outline-none focus:ring-0 resize-none overflow-hidden text-foreground leading-relaxed transition-all"
                 style={{ minHeight: "120px" }}
               />
 
-              <div className="mt-3">
-                <TagInput
-                  value={explicitTags}
-                  onChange={setExplicitTags}
-                  placeholder="Add tags (e.g. movies, gaming)..."
-                />
-              </div>
-
               {tagTrayVisible && (
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex gap-2 overflow-x-auto my-2 pb-1 scrollbar-hide">
                   {tagSuggestions.map((tag) => (
                     <button
                       key={tag.name}

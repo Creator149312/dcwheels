@@ -25,12 +25,12 @@ export default function RelatedTopicLinks({ topics = [] }) {
               />
             ) : (
               <div className="w-5 h-5 rounded-sm bg-muted flex items-center justify-center">
-                <span className="text-[6px] font-bold text-muted-foreground">TP</span>
+                <span className="text-[10px] font-bold text-muted-foreground">TP</span>
               </div>
             )}
             
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] font-black text-foreground truncate group-hover:text-primary transition-colors leading-none">
+              <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors leading-none">
                 {topic.title}
               </span>
             </div>

@@ -31,10 +31,10 @@ const ListCarouselItem = memo(function ListCarouselItem({ item }) {
         )}
       </div>
       <div className="p-2 flex flex-col justify-between flex-1 min-w-0">
-        <p className="text-[10px] sm:text-[11px] font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase">
+        <p className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase">
           {title}
         </p>
-        <p className="text-[8px] sm:text-[9px] text-muted-foreground uppercase font-bold tracking-wider mt-1">
+        <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mt-1">
           {item.entityType || item.type}
         </p>
       </div>
@@ -71,7 +71,7 @@ function ListShelf({ list }) {
       <div className="flex items-center justify-between gap-2 mb-3 px-2 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">
           <Link href={`/u/${encodeURIComponent(authorName.toLowerCase())}`}>
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-primary/10 bg-gradient-to-tr from-primary/10 to-primary/5 text-[11px] font-bold text-primary">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-primary/10 bg-gradient-to-tr from-primary/10 to-primary/5 text-xs font-bold text-primary">
               {authorName.charAt(0).toUpperCase()}
             </div>
           </Link>
@@ -82,15 +82,15 @@ function ListShelf({ list }) {
             >
               {authorName}
             </Link>
-            <span className="text-[10px] text-muted-foreground/40">•</span>
-            <span className="whitespace-nowrap text-[10px] font-semibold text-muted-foreground/60">
+            <span className="text-xs text-muted-foreground/40">•</span>
+            <span className="whitespace-nowrap text-xs font-semibold text-muted-foreground/60">
               {timeAgo(list.createdAt)}
             </span>
           </div>
         </div>
         <Link
           href={getListUrl(list)}
-          className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5 bg-primary/10 px-2 py-1 rounded-full uppercase tracking-tight flex-shrink-0"
+          className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5 bg-primary/10 px-2.5 py-1 rounded-full uppercase tracking-tight flex-shrink-0"
         >
           View Full List <ChevronRight className="w-3 h-3" />
         </Link>
@@ -99,12 +99,12 @@ function ListShelf({ list }) {
       {/* Title + description */}
       <div className="mb-3 px-2 sm:px-0">
         <Link href={getListUrl(list)}>
-          <h3 className="text-base font-black leading-tight text-foreground hover:text-primary sm:text-lg line-clamp-2">
+          <h3 className="text-lg sm:text-xl font-bold leading-tight text-foreground hover:text-primary line-clamp-2">
             {list.name || list.title || "Untitled List"}
           </h3>
         </Link>
         {list.description && (
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+          <p className="mt-1 text-sm sm:text-[15px] text-muted-foreground line-clamp-2 leading-relaxed">
             {list.description}
           </p>
         )}
@@ -122,7 +122,7 @@ function ListShelf({ list }) {
           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">See all {totalItems} items</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase">See all {totalItems} items</p>
         </Link>
       </div>
 

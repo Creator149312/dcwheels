@@ -55,11 +55,11 @@ export default function QuestionCard({
     <div className="flex flex-col bg-card border border-border rounded-2xl overflow-hidden">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-start justify-between gap-2 mb-3">
-          <p className="text-sm font-semibold text-foreground leading-snug">
+          <p className="text-base font-bold text-foreground leading-snug">
             {state.text}
           </p>
           {totalVotes > 0 && (
-            <span className="flex-shrink-0 text-[11px] text-muted-foreground mt-0.5">
+            <span className="flex-shrink-0 text-xs text-muted-foreground mt-0.5">
               {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
             </span>
           )}

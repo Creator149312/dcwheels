@@ -145,7 +145,7 @@ export default async function TagDetailPage({ params }) {
 
   // Wider feed column to better match modern social layouts on desktop.
   return (
-    <div className="max-w-3xl mx-auto px-0 md:px-0 py-3 md:py-6 pb-20 min-h-screen">
+    <div className="max-w-2xl mx-auto px-0 md:px-0 py-3 md:py-6 pb-20 min-h-screen">
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <div className="px-4 md:px-0 pb-3 mb-1">

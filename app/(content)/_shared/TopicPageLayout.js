@@ -252,7 +252,7 @@ export default async function TopicPageLayout({
 
         {/* Centered Single-Column Feed */}
         <div className="flex justify-center">
-          <div className="w-full max-w-3xl space-y-5">
+          <div className="w-full max-w-2xl space-y-5">
             <CreatePostTeaser
               defaultTag={displayTitle}
               className="mb-5"

@@ -3,19 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import {
-  PlusCircle,
-  ChevronDown,
-  Compass,
-  List,
-  Disc3,
-  PanelLeft,
-  MessageCircle,
-  Bookmark,
-} from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { getWheelUrl } from "@utils/UrlHandler";
+import { PanelLeft } from "lucide-react";
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
@@ -32,24 +20,6 @@ const SearchBar = dynamic(
 );
 
 const Navbar = ({ onToggleSidebar }) => {
-  const { data: session } = useSession();
-  const username = session?.user?.username || session?.user?.name;
-  const savedUrl = username ? `/u/${encodeURIComponent(username.toLowerCase())}/saved` : null;
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const createRef = useRef(null);
-
-  // Close Create dropdown on click outside
-  useEffect(() => {
-    function handleClick(e) {
-      if (createRef.current && !createRef.current.contains(e.target)) {
-        setCreateOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
   return (
     <nav className="hidden md:block fixed top-0 left-0 right-0 z-[60] h-[52px] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border transition-colors duration-300">
       <div className="h-full max-w-[1800px] mx-auto flex items-center justify-between px-3 md:px-6">
@@ -86,81 +56,10 @@ const Navbar = ({ onToggleSidebar }) => {
           </div>
         </div>
 
-        {/* Right Side Actions */}
-        <div className="flex items-center gap-1 md:gap-4 w-[200px] lg:w-[260px] justify-end">
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {/* Create Dropdown — click/toggle */}
-            <div className="relative" ref={createRef}>
-              <button
-                onClick={() => setCreateOpen((v) => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                aria-expanded={createOpen}
-                aria-haspopup="menu"
-              >
-                <PlusCircle size={18} />
-                <span>Create</span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 opacity-70 ${
-                    createOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {createOpen && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-popover border border-border shadow-md rounded-xl p-1.5 flex flex-col z-[70]">
-                  <Link
-                    href="/post/create"
-                    onClick={() => setCreateOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-                  >
-                    <MessageCircle size={16} /> Post
-                  </Link>
-                  <Link
-                    href={getWheelUrl({ _id: "create" })}
-                    onClick={() => setCreateOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-                  >
-                    <Disc3 size={16} /> Wheel
-                  </Link>
-                  <Link
-                    href="/lists/create"
-                    onClick={() => setCreateOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-                  >
-                    <List size={16} /> List
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <Link
-              href="/explore"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-            >
-              <Compass size={18} />
-              <span>Explore</span>
-            </Link>
-
-            {savedUrl && (
-              <Link
-                href={savedUrl}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-              >
-                <Bookmark size={18} />
-                <span>Saved</span>
-              </Link>
-            )}
-          </div>
-
-          <div className="hidden md:block h-6 w-[1px] bg-border mx-1" />
-
-          {/* User Section */}
-          <div className="flex items-center gap-2 md:gap-3 relative z-[80]">
-            <NotificationBell />
-            <UserInfo />
-          </div>
+        {/* Right Side Actions: Notifications & User Auth */}
+        <div className="flex items-center gap-2 md:gap-3 justify-end relative z-[80]">
+          <NotificationBell />
+          <UserInfo />
         </div>
       </div>
     </nav>

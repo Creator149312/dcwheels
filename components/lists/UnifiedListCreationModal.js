@@ -111,7 +111,7 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
               placeholder="e.g. anime, movies, horror"
               className="w-full p-2.5 border border-border rounded-lg bg-muted text-foreground focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
             />
-            <p className="text-[10px] text-muted-foreground mt-1.5 opacity-70">
+            <p className="text-xs text-muted-foreground mt-1.5 opacity-80">
               Tags help others discover your public lists.
             </p>
           </div>

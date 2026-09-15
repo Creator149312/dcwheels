@@ -17,7 +17,7 @@ function TopicSidebar({ topics = [], isTrending = false }) {
         ) : (
           <Sparkles className="w-3.5 h-3.5 text-blue-500" />
         )}
-        <h2 className="text-[11px] font-black uppercase tracking-widest text-foreground/60">
+        <h2 className="text-xs font-black uppercase tracking-wider text-foreground/60">
           {isTrending ? "Trending Now" : "Related Topics"}
         </h2>
       </div>
@@ -43,17 +43,17 @@ function TopicSidebar({ topics = [], isTrending = false }) {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-transparent">
-                  <span className="text-[8px] font-black text-primary/20 uppercase">Topic</span>
+                  <span className="text-[10px] font-black text-primary/20 uppercase">Topic</span>
                 </div>
               )}
             </div>
 
             {/* Content - Ultra Sleek */}
             <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[13px] font-bold text-foreground/90 group-hover:text-primary transition-colors leading-tight truncate tracking-tight">
+              <span className="text-sm font-bold text-foreground/90 group-hover:text-primary transition-colors leading-tight truncate tracking-tight">
                 {topic.title}
               </span>
-              <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.1em] mt-0.5">
+              <span className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-[0.05em] mt-0.5">
                 {topic.type}
               </span>
             </div>
@@ -64,7 +64,7 @@ function TopicSidebar({ topics = [], isTrending = false }) {
       </div>
 
       <div className="p-3 bg-muted/10 border-t border-border/10">
-        <p className="text-[9px] text-muted-foreground/40 font-bold uppercase tracking-widest text-center">
+        <p className="text-xs text-muted-foreground/50 font-bold uppercase tracking-wider text-center">
             {isTrending ? "Popular Hubs" : "Explore More"}
         </p>
       </div>

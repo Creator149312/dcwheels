@@ -76,7 +76,7 @@ export default function Description({
         }}
       >
         {/* YouTube-style Metadata Row */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-bold text-foreground/90 mb-2 leading-tight">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm font-bold text-foreground/90 mb-2 leading-tight">
           {/* Inline tags next to metadata (YouTube mobile style) */}
           {tags.length > 0 && !expanded && (
             <div className="flex flex-wrap gap-1.5 ml-1">
@@ -103,7 +103,7 @@ export default function Description({
               <a
                 key={tag}
                 href={`/tags/${encodeURIComponent(tag)}`}
-                className="text-[11px] font-bold text-primary hover:underline transition-colors px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full"
+                className="text-xs font-bold text-primary hover:underline transition-colors px-2.5 py-0.5 bg-primary/5 border border-primary/10 rounded-full"
                 onClick={(e) => e.stopPropagation()}
               >
                 #{tag}
@@ -112,7 +112,7 @@ export default function Description({
           </div>
         )}
 
-        <div className="text-[13px] sm:text-[14px] text-foreground/90 leading-snug whitespace-pre-wrap pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="text-sm sm:text-base text-foreground/90 leading-relaxed whitespace-pre-wrap pointer-events-auto" onClick={(e) => e.stopPropagation()}>
           {!pageData ? (
             <p className="mb-1">
               {wordsList?.description}
@@ -121,7 +121,7 @@ export default function Description({
             pageData.content.map((item, i) => {
               if (item.type === "paragraph")
                 return (
-                  <p key={i} className="mb-3 text-[13px] sm:text-sm text-foreground/90">
+                  <p key={i} className="mb-3 text-sm sm:text-base text-foreground/90">
                     {item.text}
                   </p>
                 );
@@ -141,7 +141,7 @@ export default function Description({
                       }}
                     />
                     {(item.caption) && (
-                      <figcaption className="mt-1 text-[10px] text-center text-muted-foreground">
+                      <figcaption className="mt-1 text-xs text-center text-muted-foreground">
                         {item.caption}
                       </figcaption>
                     )}
@@ -155,7 +155,7 @@ export default function Description({
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-block mb-3 text-[13px]"
+                    className="text-primary hover:underline inline-block mb-3 text-sm sm:text-base"
                   >
                     {item.text}
                   </a>
@@ -177,14 +177,14 @@ export default function Description({
         {/* 2. Words List Bullet Section */}
         {wordsList?.data && wordsList.data.length > 0 && (
           <div className="mt-2 pt-2 border-t border-border/20">
-            <h4 className="text-[11px] font-black text-foreground/70 mb-2 uppercase tracking-tight">
+            <h4 className="text-xs font-black text-foreground/70 mb-2 uppercase tracking-tight">
               List Items:
             </h4>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
               {wordsList.data.map((item, index) => {
                 const { label, imgSrc } = parseSegmentItem(item);
                 return (
-                  <li key={index} className="flex items-center gap-2 text-[12px] text-muted-foreground font-medium leading-tight">
+                  <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground font-medium leading-tight">
                     {imgSrc && (
                       <img
                         src={imgSrc}
@@ -209,7 +209,7 @@ export default function Description({
       {/* Modern Overlay Fade for "More" */}
       {!expanded && needsToggle && (
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-muted via-muted/90 to-transparent flex items-end justify-center pb-0.5">
-          <span className="text-[10px] font-black uppercase tracking-tighter text-primary/80 group-hover:text-primary transition-colors">
+          <span className="text-xs font-black uppercase tracking-tighter text-primary/80 group-hover:text-primary transition-colors">
             ...more
           </span>
         </div>
@@ -221,7 +221,7 @@ export default function Description({
             e.stopPropagation();
             setExpanded(false);
           }}
-          className="mt-2 text-primary/60 hover:text-primary text-[10px] font-black uppercase tracking-tighter transition-colors"
+          className="mt-2 text-primary/60 hover:text-primary text-xs font-black uppercase tracking-tighter transition-colors"
         >
           See less
         </button>

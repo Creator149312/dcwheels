@@ -23,10 +23,6 @@ import {
   LayoutGrid,
 } from "lucide-react";
 
-// TagsCarousel has seasonal logic, scroll refs and useMemo — lazy-load so it
-// doesn't block the initial mobile nav chunk.
-const TagsCarousel = dynamic(() => import("@components/TagsCarousel"));
-
 // SearchBar brings debounce + API fetch logic — only needed on interaction.
 const SearchBar = dynamic(() => import("@components/SearchBar"));
 
@@ -39,14 +35,14 @@ const SCROLL_THRESHOLD = 10;
 
 function BottomNavItem({ href, icon, activeIcon, label, active, onClick, prefetch = true }) {
   const Icon = active && activeIcon ? activeIcon : icon;
-  const cls = `flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors active:scale-95 ${
+  const cls = `flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition-colors active:scale-95 ${
     active ? "text-primary" : "text-muted-foreground"
   }`;
 
   if (onClick && !href) {
     return (
       <button onClick={onClick} className={cls} aria-label={label}>
-        <Icon size={18} />
+        <Icon size={20} />
         <span>{label}</span>
       </button>
     );
@@ -61,7 +57,7 @@ function BottomNavItem({ href, icon, activeIcon, label, active, onClick, prefetc
         if (onClick) onClick(e);
       }}
     >
-      <Icon size={18} />
+      <Icon size={20} />
       <span>{label}</span>
     </Link>
   );
@@ -167,14 +163,6 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             </div>
           </div>
         </div>
-
-        {/* /explore renders its own mood chip row; suppress the global tag
-            carousel on that route to avoid two stacked chip rows. */}
-        {!pathname.startsWith("/explore") && (
-          <div className="h-9 bg-background/95 backdrop-blur-md border-b border-border">
-            <TagsCarousel />
-          </div>
-        )}
       </div>
 
       {/* ── Library sub-sheet ──────────────────────────────────────────── */}
@@ -298,7 +286,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               setLibraryOpen(false);
               setCreateSheetOpen((v) => !v);
             }}
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-all ${
+            className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition-all ${
               createSheetOpen ? "text-primary scale-110" : "text-muted-foreground hover:text-primary"
             }`}
             aria-label={createSheetOpen ? "Close" : "Create"}

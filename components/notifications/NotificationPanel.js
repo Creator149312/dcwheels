@@ -193,7 +193,7 @@ export default function NotificationDropdown({ onClose }) {
                   <p className="text-sm text-foreground leading-snug break-words">
                     {notif.message}
                   </p>
-                  <p className="text-[11px] text-muted-foreground font-medium mt-1">
+                  <p className="text-xs text-muted-foreground font-medium mt-1">
                     {timeAgo(notif.createdAt)}
                   </p>
                 </div>

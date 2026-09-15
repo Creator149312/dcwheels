@@ -159,7 +159,7 @@ export default function ListItems({
                     />
                   </div>
 
-                  <p className="text-[11px] text-muted-foreground pl-0.5">
+                  <p className="text-xs text-muted-foreground pl-0.5">
                     {editingImgPreview ? "Tap the thumbnail to replace the image." : "Tap the thumbnail to add a cover image."}
                   </p>
 
@@ -225,16 +225,16 @@ export default function ListItems({
                           (item.entityType === "wheel" || item.entityType === "uwheel") ? getWheelUrl({ _id: item.entityId, slug: item.slug }) :
                           `/${item.entityType}/${item.slug}`
                         }
-                        className="font-bold text-xs sm:text-sm hover:underline text-foreground truncate block"
+                        className="font-bold text-base sm:text-lg hover:underline text-foreground truncate block"
                       >
                         {item.name}
                       </a>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                         {item.entityType}
                       </span>
                     </>
                   ) : (
-                    <p className="font-bold text-xs sm:text-sm text-foreground truncate">
+                    <p className="font-bold text-base sm:text-lg text-foreground truncate">
                       {item.word}
                     </p>
                   )}

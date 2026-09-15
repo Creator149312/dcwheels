@@ -253,12 +253,12 @@ export default function SaveWheelBtn({ segmentsData }) {
                   )}
                 </select>
                 {wheelsLoading && (
-                  <p className="text-[10px] text-muted-foreground animate-pulse">
+                  <p className="text-xs text-muted-foreground animate-pulse">
                     Connecting to database, please wait...
                   </p>
                 )}
                 {!wheelsLoading && savedWheels.length === 0 && createdBy && (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     You don&apos;t have any saved wheels yet.
                   </p>
                 )}
@@ -297,7 +297,7 @@ export default function SaveWheelBtn({ segmentsData }) {
                 <Label htmlFor="description" className="text-sm font-medium">
                   Description
                 </Label>
-                <span className={`text-[10px] ${description.length >= 500 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <span className={`text-xs ${description.length >= 500 ? 'text-destructive' : 'text-muted-foreground'}`}>
                   {description.length}/500
                 </span>
               </div>
@@ -317,7 +317,7 @@ export default function SaveWheelBtn({ segmentsData }) {
               
               {suggestedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  <span className="text-[10px] text-muted-foreground mr-1 self-center">Suggestions:</span>
+                  <span className="text-xs text-muted-foreground mr-1 self-center">Suggestions:</span>
                   {suggestedTags.map(tag => (
                     <button
                       key={tag}
@@ -327,7 +327,7 @@ export default function SaveWheelBtn({ segmentsData }) {
                           handleTagsChange([...selectedTags, tag]);
                         }
                       }}
-                      className="text-[10px] bg-secondary/50 hover:bg-secondary px-2 py-0.5 rounded-full transition-colors"
+                      className="text-xs bg-secondary/80 hover:bg-secondary px-2.5 py-1 rounded-full transition-colors font-medium"
                     >
                       +{tag}
                     </button>

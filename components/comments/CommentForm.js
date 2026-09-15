@@ -50,7 +50,7 @@ export default function CommentForm({
               className="w-full h-full object-cover" 
             />
           ) : (
-             <div className="w-full h-full flex items-center justify-center text-[12px] font-bold text-muted-foreground">
+             <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
                {isLoggedIn && currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "?"}
              </div>
           )}
@@ -81,7 +81,7 @@ export default function CommentForm({
               autoFocus={autoFocus}
               disabled={loading}
               className={`
-                w-full resize-none bg-transparent py-0.5 text-[13px] md:text-[14px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none outline-none
+                w-full resize-none bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none outline-none
                 border-b ${focused ? 'border-primary border-b-2' : 'border-border/40'}
                 transition-all duration-200
               `}
@@ -97,7 +97,7 @@ export default function CommentForm({
                     setText("");
                     setFocused(false);
                   }}
-                  className="px-3 py-1 rounded-full text-[11px] md:text-[12px] font-bold text-foreground hover:bg-muted/80 transition-colors"
+                  className="px-3 py-1 rounded-full text-xs font-bold text-foreground hover:bg-muted/80 transition-colors"
                 >
                   Cancel
                 </button>
@@ -105,7 +105,7 @@ export default function CommentForm({
                   type="submit"
                   disabled={!text.trim() || loading}
                   className={`
-                    px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold transition-all
+                    px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all
                     ${!text.trim() || loading 
                       ? "bg-muted text-muted-foreground/50 cursor-not-allowed" 
                       : "bg-[#3ea6ff] hover:bg-[#65b8ff] text-black"}

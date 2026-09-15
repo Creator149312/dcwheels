@@ -48,7 +48,7 @@ export default function CommentItem({
     <div className="group animate-in fade-in slide-in-from-bottom-1 duration-300 py-2.5 first:pt-0 last:border-0 border-b border-border/10">
       <div className="flex items-start gap-2.5">
         {/* Avatar */}
-        <div className="h-7 w-7 md:h-8 md:w-8 flex-shrink-0 rounded-full bg-muted border border-border/40 flex items-center justify-center text-[10px] font-black text-foreground/80 overflow-hidden">
+        <div className="h-7 w-7 md:h-8 md:w-8 flex-shrink-0 rounded-full bg-muted border border-border/40 flex items-center justify-center text-xs font-black text-foreground/80 overflow-hidden">
           {comment.userId?.image || comment.userId?.avatar ? (
             <img 
               src={comment.userId.image || comment.userId.avatar} 
@@ -64,10 +64,10 @@ export default function CommentItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between h-5">
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[12px] md:text-[13px] text-foreground">
+              <span className="font-bold text-xs md:text-sm text-foreground">
                 {username}
               </span>
-              <span className="text-[10px] text-muted-foreground/40">
+              <span className="text-xs text-muted-foreground/50">
                 {timeAgo(comment.createdAt)}
               </span>
             </div>
@@ -133,7 +133,7 @@ export default function CommentItem({
               />
             </div>
           ) : (
-            <div className="mt-0.5 text-[13px] md:text-[14px] text-foreground leading-relaxed break-words">
+            <div className="mt-0.5 text-sm text-foreground leading-relaxed break-words">
               {comment.text}
             </div>
           )}
@@ -142,7 +142,7 @@ export default function CommentItem({
             {/* Reply action */}
             {comment.parentCommentId == null && (
               <button
-                className="text-[11px] md:text-[12px] font-bold text-muted-foreground/80 hover:text-primary transition-colors"
+                className="text-xs font-bold text-muted-foreground/80 hover:text-primary transition-colors"
                 onClick={() => setIsReplying(!isReplying)}
               >
                 Reply
@@ -171,7 +171,7 @@ export default function CommentItem({
           {replyCount > 0 && comment.parentCommentId == null && (
             <button
               onClick={handleToggleReplies}
-              className="mt-2.5 flex items-center gap-1.5 text-[11px] md:text-[12px] font-bold text-primary hover:bg-primary/5 px-2 py-0.5 -ml-1 rounded-full transition-colors w-fit"
+              className="mt-2.5 flex items-center gap-1.5 text-xs font-bold text-primary hover:bg-primary/5 px-2 py-0.5 -ml-1 rounded-full transition-colors w-fit"
             >
               <ChevronIcon open={expanded} />
               {replyCount} {replyCount === 1 ? "Reply" : "Replies"}

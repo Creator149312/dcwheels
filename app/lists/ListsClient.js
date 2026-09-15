@@ -96,11 +96,11 @@ export default function ListsClient({ initialLists, initialNextCursor = null, in
 
               {/* ✅ Text Content */}
               <div className="p-3 md:p-4 bg-card group-hover:bg-muted/30 transition-colors">
-                <h3 className="text-sm md:text-base font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                   {list.name}
                 </h3>
 
-                <p className="text-xs font-semibold text-muted-foreground mt-1.5 uppercase tracking-widest">
+                <p className="text-xs sm:text-sm font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider">
                   {list.itemCount ?? list.items?.length ?? 0} item{(list.itemCount ?? list.items?.length) !== 1 ? 's' : ''}
                 </p>
               </div>

@@ -103,21 +103,21 @@ function WheelCard({ data }) {
   const href = getWheelUrl(data);
   return (
     <div className="space-y-2">
-      <p className="text-sm text-foreground">
+      <p className="text-base text-foreground">
         Published a new wheel:{" "}
         <Link href={href} className="font-semibold text-green-700 dark:text-green-300 hover:underline">
           {data.title}
         </Link>
       </p>
       {data.description && (
-        <p className="text-xs text-muted-foreground line-clamp-2">{data.description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{data.description}</p>
       )}
       {data.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {data.tags.slice(0, 4).map((tag) => (
             <span
               key={tag}
-              className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5"
+              className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5"
             >
               {tag}
             </span>
@@ -179,12 +179,12 @@ function PostCard({ data }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-foreground line-clamp-2">
+      <p className="text-base font-semibold text-foreground line-clamp-2">
         {data.title}
       </p>
 
       {data.content && (
-        <p className="text-sm text-muted-foreground line-clamp-2">
+        <p className="text-base text-muted-foreground line-clamp-2">
           {data.content}
         </p>
       )}
@@ -212,7 +212,7 @@ function PostCard({ data }) {
           {data.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5"
+              className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5"
             >
               #{tag}
             </span>

@@ -155,7 +155,7 @@ export default function GridItems({
 
                 {/* Media Type Badge */}
                 {isEntity && item.entityType && (
-                  <span className="absolute top-2 left-2 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs tracking-wider">
+                  <span className="absolute top-2 left-2 text-xs font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs tracking-wider">
                     {item.entityType}
                   </span>
                 )}
@@ -166,7 +166,7 @@ export default function GridItems({
 
                 {/* Media Type Badge */}
                 {isEntity && item.entityType && (
-                  <span className="absolute top-2 left-2 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs tracking-wider">
+                  <span className="absolute top-2 left-2 text-xs font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs tracking-wider">
                     {item.entityType}
                   </span>
                 )}
@@ -200,12 +200,12 @@ export default function GridItems({
               {href ? (
                 <a
                   href={href}
-                  className="font-bold text-[11px] sm:text-xs text-foreground hover:text-primary line-clamp-2 transition-colors leading-tight"
+                  className="font-bold text-sm sm:text-base text-foreground hover:text-primary line-clamp-2 transition-colors leading-tight"
                 >
                   {item.name}
                 </a>
               ) : (
-                <p className="font-bold text-[11px] sm:text-xs text-foreground line-clamp-2 leading-tight">
+                <p className="font-bold text-sm sm:text-base text-foreground line-clamp-2 leading-tight">
                   {item.word}
                 </p>
               )}

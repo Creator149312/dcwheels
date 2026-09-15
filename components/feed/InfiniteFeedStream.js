@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useFeedCache } from "@/hooks/useFeedCache";
 import PostCard from "@components/PostCard";
@@ -49,6 +49,98 @@ function RelatedTopicCard({ related }) {
         </p>
       </div>
     </a>
+  );
+}
+
+function RelatedTopicCarousel({ title = "Recommended for You", relatedPages = [] }) {
+  const scrollRef = useRef(null);
+  const [arrows, setArrows] = useState({ left: false, right: true });
+
+  const updateArrows = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setArrows({
+      left: scrollLeft > 10,
+      right: scrollLeft < scrollWidth - clientWidth - 10,
+    });
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const timer = setTimeout(updateArrows, 100);
+    window.addEventListener("resize", updateArrows);
+    const scrollEl = scrollRef.current;
+    scrollEl?.addEventListener("scroll", updateArrows);
+
+    return () => {
+      window.removeEventListener("resize", updateArrows);
+      scrollEl?.removeEventListener("scroll", updateArrows);
+      clearTimeout(timer);
+    };
+  }, [relatedPages]);
+
+  const scroll = (direction) => {
+    if (!scrollRef.current) return;
+    const scrollAmount = scrollRef.current.clientWidth * 0.7;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  if (!relatedPages || relatedPages.length === 0) return null;
+
+  return (
+    <div className="relative group/carousel my-2 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            {title}
+          </h3>
+        </div>
+        <span className="text-[11px] font-semibold text-muted-foreground/50 sm:hidden">
+          Swipe →
+        </span>
+      </div>
+
+      <div className="relative">
+        {/* Left Arrow Button */}
+        {arrows.left && (
+          <button
+            onClick={() => scroll("left")}
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-sm hidden md:flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            aria-label="Scroll Left"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+
+        {/* Scrollable Container */}
+        <div
+          ref={scrollRef}
+          className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 px-4 sm:px-0 scroll-smooth snap-x [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {relatedPages.slice(0, 10).map((related) => (
+            <div key={String(related._id)} className="snap-start flex-shrink-0">
+              <RelatedTopicCard related={related} />
+            </div>
+          ))}
+        </div>
+
+        {/* Right Arrow Button */}
+        {arrows.right && (
+          <button
+            onClick={() => scroll("right")}
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-card/90 border border-border shadow-md backdrop-blur-sm hidden md:flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            aria-label="Scroll Right"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -132,25 +224,7 @@ export default function InfiniteFeedStream({
       <div className="w-full">
         {/* Soft hint with the Carousel if feed is empty */}
         {relatedPages.length > 0 && (
-          <div className="my-2 bg-muted/20 border border-border/40 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-muted-foreground">
-                  You Might Also Like
-                </h3>
-              </div>
-              <span className="text-[10px] font-semibold text-muted-foreground/50">Swipe to browse →</span>
-            </div>
-            <div
-              className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {relatedPages.map((related) => (
-                <RelatedTopicCard key={String(related._id)} related={related} />
-              ))}
-            </div>
-          </div>
+          <RelatedTopicCarousel title="You Might Also Like" relatedPages={relatedPages} />
         )}
 
         <div className="rounded-xl border border-border bg-muted/30 p-12 text-center text-muted-foreground mt-4">
@@ -177,25 +251,7 @@ export default function InfiniteFeedStream({
     return (
       <>
         {showRecommendations && (
-          <div className="mb-4 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5">
-            <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1 h-3.5 rounded-full bg-primary inline-block" />
-                <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground/60">
-                  Recommended for You
-                </h3>
-              </div>
-              <span className="text-[10px] font-semibold text-muted-foreground/40">Swipe to browse →</span>
-            </div>
-            <div
-              className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {relatedPages.map((related) => (
-                <RelatedTopicCard key={String(related._id)} related={related} />
-              ))}
-            </div>
-          </div>
+          <RelatedTopicCarousel title="Recommended for You" relatedPages={relatedPages} />
         )}
 
         {item.docType === "post" ? (
@@ -210,7 +266,7 @@ export default function InfiniteFeedStream({
   };
 
   return (
-    <div className="flex flex-col space-y-0 sm:space-y-6 sm:mt-6 max-w-3xl border-border">
+    <div className="flex flex-col space-y-0 sm:space-y-6 sm:mt-6 max-w-2xl border-border">
       <VirtualizedFeed
         items={stableItems}
         renderItem={renderItem}

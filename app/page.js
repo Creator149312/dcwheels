@@ -15,7 +15,10 @@ export default async function Home() {
   const allItems = await getFeedItemsSafe({ limit: FEED_PAGE_SIZE + 1 });
   const items = allItems.slice(0, FEED_PAGE_SIZE);
   const nextItem = allItems.length > FEED_PAGE_SIZE ? allItems[FEED_PAGE_SIZE] : null;
-  const initialNextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+  const hasList = items.some(i => i.docType === "list" || i._docType === "list");
+  const initialNextCursor = nextItem
+    ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`
+    : null;
 
   return (
     <HomePageContent 

@@ -42,7 +42,7 @@ export default function ProfileTabs({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-6 py-3 border-b-2 text-xs sm:text-sm font-bold transition whitespace-nowrap -mb-px ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-6 py-3 border-b-2 text-sm font-bold transition whitespace-nowrap -mb-px ${
               activeTab === tab.id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -101,18 +101,18 @@ export default function ProfileTabs({
                 <div key={list.id} className="relative group p-4 sm:p-5 border border-border rounded-2xl bg-card hover:border-border/80 hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={getListUrl(list)} className="font-bold text-foreground text-base sm:text-lg hover:text-primary transition line-clamp-1">
+                      <Link href={getListUrl(list)} className="font-bold text-foreground text-lg sm:text-xl hover:text-primary transition line-clamp-1">
                         {list.name}
                       </Link>
                       {isOwner && !list.isPublic && (
-                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/60 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/60 shrink-0">
                           <Lock size={10} />
                           Private
                         </span>
                       )}
                     </div>
-                    {list.description && <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">{list.description}</p>}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground/80 pt-0.5">
+                    {list.description && <p className="text-sm sm:text-base text-muted-foreground line-clamp-2 leading-relaxed">{list.description}</p>}
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground/80 pt-0.5">
                       <span className="font-semibold text-foreground">{list.itemCount} items saved</span>
                       <span>•</span>
                       <span>Updated {new Date(list.updatedAt).toLocaleDateString()}</span>

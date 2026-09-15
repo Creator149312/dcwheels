@@ -38,7 +38,7 @@ function ListPostCard({ list }) {
       <div className="mb-3 flex items-center justify-between gap-2 px-4 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">
           <Link href={`/u/${encodeURIComponent(authorName.toLowerCase())}`}>
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-primary/10 bg-gradient-to-tr from-primary/10 to-primary/5 text-[11px] font-bold text-primary">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-primary/10 bg-gradient-to-tr from-primary/10 to-primary/5 text-xs font-bold text-primary">
               {authorName.charAt(0).toUpperCase()}
             </div>
           </Link>
@@ -50,8 +50,8 @@ function ListPostCard({ list }) {
               >
                 @{authorName}
               </Link>
-              <span className="text-[10px] text-muted-foreground/40">•</span>
-              <span className="whitespace-nowrap text-[10px] font-semibold text-muted-foreground/60">
+              <span className="text-xs text-muted-foreground/40">•</span>
+              <span className="whitespace-nowrap text-xs font-semibold text-muted-foreground/60">
                 {timeAgo(list.createdAt)}
               </span>
             </div>
@@ -65,7 +65,7 @@ function ListPostCard({ list }) {
           <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
             <Layers className="h-3 w-3" />
           </span>
-          <h3 className="text-base font-black leading-tight text-foreground group-hover/title:text-primary sm:text-lg line-clamp-2">
+          <h3 className="text-lg font-black leading-tight text-foreground group-hover/title:text-primary sm:text-xl line-clamp-2">
             {list.name || list.title || "Untitled List"}
           </h3>
         </Link>
@@ -115,7 +115,7 @@ function ListPostCard({ list }) {
               })}
             </div>
             {/* List badge */}
-            <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+            <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
               <Layers className="h-3 w-3" />
               {itemCount} item{itemCount !== 1 ? "s" : ""}
             </div>

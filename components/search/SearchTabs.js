@@ -25,7 +25,7 @@ export default function SearchTabs({ rawTitle, activeType, counts }) {
             href={href}
             prefetch={true}
             scroll={false}
-            className={`group relative flex-shrink-0 px-2 sm:px-2.5 md:px-4 py-2 md:py-2.5 text-[11px] sm:text-xs md:text-sm font-semibold transition-colors min-h-[40px] flex items-center gap-1 touch-manipulation whitespace-nowrap
+            className={`group relative flex-shrink-0 px-2 sm:px-2.5 md:px-4 py-2 md:py-2.5 text-xs sm:text-sm md:text-base font-semibold transition-colors min-h-[40px] flex items-center gap-1 touch-manipulation whitespace-nowrap
               ${isActive
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -35,7 +35,7 @@ export default function SearchTabs({ rawTitle, activeType, counts }) {
             <span className="hidden md:inline">{tab.icon}</span>
             <span>{tab.label}</span>
             {count > 0 && (
-              <span className={`ml-0.5 text-[9px] md:text-xs px-1 py-0.5 rounded-full font-bold
+              <span className={`ml-0.5 text-xs md:text-xs px-1.5 py-0.5 rounded-full font-bold
                 ${isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                 {count}
               </span>

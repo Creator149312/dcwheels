@@ -104,7 +104,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
       {/* Header: Author + Time */}
       <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-primary">
+          <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary">
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="leading-tight min-w-0">
@@ -116,12 +116,12 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
               >
                 {displayName}
               </Link>
-              <span className="text-[10px] text-muted-foreground/40">•</span>
-              <span className="text-[10px] font-semibold text-muted-foreground/60 whitespace-nowrap">
+              <span className="text-xs text-muted-foreground/40">•</span>
+              <span className="text-xs font-semibold text-muted-foreground/60 whitespace-nowrap">
                 {timeAgo(post.createdAt)}
               </span>
               {isOwnPost && !post.isPublic && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
                   Private
                 </span>
               )}
@@ -135,9 +135,9 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
           {post.hasPoll && post.pollOptions?.length > 0 && (
             <button
               onClick={() => setShowSpinModal(true)}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-tighter rounded-md border border-border/80 bg-muted/30 text-foreground hover:bg-muted transition"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold tracking-tight rounded-md border border-border/80 bg-muted/30 text-foreground hover:bg-muted transition"
             >
-              <Zap size={11} /> Decide
+              <Zap size={12} /> Decide
             </button>
           )}
 
@@ -216,7 +216,12 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
       )}
 
       {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
-      {post.contentRef && String(post.contentRef.externalId) !== String(currentContextId) && (
+      {post.contentRef && (
+        !currentContextId || (
+          String(post.contentRef.externalId) !== String(currentContextId) &&
+          (!post.contentRef.slug || String(post.contentRef.slug) !== String(currentContextId))
+        )
+      ) && (
         <div className="px-4 sm:px-0 mb-4">
           <ContentRefCard
             href={
@@ -254,15 +259,15 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
               </div>
             )}
             <div className="p-3 sm:p-4 flex flex-col justify-center min-w-0">
-              <h4 className="font-bold text-[14px] sm:text-[15px] text-foreground leading-tight line-clamp-2 transition-colors group-hover:text-primary">
+              <h4 className="font-bold text-sm sm:text-base text-foreground leading-tight line-clamp-2 transition-colors group-hover:text-primary">
                 {post.ogMeta.title}
               </h4>
               {post.ogMeta.description && (
-                <p className="text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">
                   {post.ogMeta.description}
                 </p>
               )}
-              <div className="flex items-center gap-1.5 mt-3 text-[10px] text-muted-foreground/80 uppercase tracking-wider font-bold">
+              <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground/80 uppercase tracking-wider font-bold">
                 <span className="truncate">{new URL(post.ogMeta.url).hostname.replace('www.', '')}</span>
                 <span className="opacity-40">/</span>
                 <span className="text-primary italic">External Link</span>
@@ -283,7 +288,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
             <Link
               key={tag}
               href={`/tags/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all border border-border/40"
+              className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-1 bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all border border-border/40"
             >
               #{tag}
             </Link>

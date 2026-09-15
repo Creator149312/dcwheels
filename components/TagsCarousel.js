@@ -22,31 +22,13 @@ const SEASONAL = {
 
 // Core static tags in priority order
 const CORE_TAGS = [
-  "Games",
-  "Sports",
-  "Weather",
-  "Movies",
-  "Fashion",
-  "Shopping",
   "Characters",
-  "Anime",
   "Education",
   "Vocabulary",
-  "Music",
   "Travel",
   "Multiplayer",
   "Cities",
-  "Challenge",
-  "Cooking",
-  "Food",
-  "Fitness",
-  "Family",
-  "Relationships",
-  "Phonics",
-  "Lifestyle",
-  "Math",
-  "Science",
-  "Finance",
+  "Challenge"
 ];
 
 const getTagColor = (type) => {
@@ -140,7 +122,7 @@ export default function TagsCarousel() {
         >
           <Link
             href="/tags"
-            className="whitespace-nowrap px-3 md:px-3.5 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 flex-shrink-0"
+            className="whitespace-nowrap px-3.5 md:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 flex-shrink-0"
           >
             All
           </Link>
@@ -149,7 +131,7 @@ export default function TagsCarousel() {
             <Link
               key={`${tag.name}-${i}`}
               href={`/tags/${tag.name}`}
-              className={`whitespace-nowrap px-3 md:px-3.5 py-1 text-xs font-semibold rounded-full transition-all flex-shrink-0 ${getTagColor(tag.type)}`}
+              className={`whitespace-nowrap px-3.5 md:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all flex-shrink-0 ${getTagColor(tag.type)}`}
             >
               {tag.type === "seasonal" && "🔥 "}
               {tag.label}

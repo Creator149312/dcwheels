@@ -193,7 +193,7 @@ export default function WorthItVote({
               <span className="text-base font-black text-emerald-500 leading-none">
                 {worthItPct}%
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-500/80 mt-0.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-500/80 mt-0.5">
                 Worth It
               </span>
             </div>
@@ -206,9 +206,9 @@ export default function WorthItVote({
                 <span className="text-base font-black text-foreground leading-none">
                   {avgRating}
                 </span>
-                <span className="text-[10px] text-muted-foreground/60 font-medium">/ 5</span>
+                <span className="text-xs text-muted-foreground/60 font-medium">/ 5</span>
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 mt-0.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 mt-0.5">
                 Average
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function WorthItVote({
             <span className="text-sm font-bold text-foreground leading-none">
               {totalVotes.toLocaleString()}
             </span>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-0.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/60 mt-0.5">
               Votes
             </span>
           </div>
@@ -235,7 +235,7 @@ export default function WorthItVote({
       {/* ── Bottom Stacked Box: Star Rating Action ──────────────────────── */}
       <div className="p-2 rounded-xl bg-muted/20 border border-border/40 flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {userRating ? (
               <span className="text-emerald-500 font-extrabold">Your Rating: {userRating}/5</span>
             ) : hoverRating ? (

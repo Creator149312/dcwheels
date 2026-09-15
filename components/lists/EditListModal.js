@@ -119,7 +119,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
                 onChange={(e) => setTagInput(e.target.value)}
                 placeholder="e.g. watchlist, favorites, 2024"
               />
-              <p className="text-[10px] text-muted-foreground mt-1.5 opacity-70">
+              <p className="text-xs text-muted-foreground mt-1.5 opacity-80">
                 Tags help others discover your public lists in Tag Spaces.
               </p>
             </div>

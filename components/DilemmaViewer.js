@@ -77,35 +77,50 @@ export default function DilemmaViewer({ post, postId }) {
   };
 
   const pickedOption = post.pollOptions.find((o) => o._id === optimisticPick);
-
-  const hasImageOptions = post.pollOptions.some((o) => o.image);
+  const isTwoOptions = post.pollOptions.length === 2;
 
   return (
     <div className="space-y-3">
-      {/* ── Image-grid poll ──────────────────────────────────────────────── */}
-      {hasImageOptions && (
-        <div className={`relative grid gap-2 ${post.pollOptions.length <= 4 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
-          {post.pollOptions.length === 2 && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-background border-2 border-primary/20 shadow-lg flex items-center justify-center text-[11px] sm:text-xs font-black tracking-wider text-primary pointer-events-none">
-              VS
-            </div>
-          )}
-          {post.pollOptions.map((option, idx) => {
-            const count = displayCounts[option._id] || 0;
-            const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+      {/* ── Unified Poll Options Grid ──────────────────────────────────────── */}
+      <div
+        className={`relative grid gap-2.5 ${
+          post.pollOptions.length === 2
+            ? "grid-cols-2"
+            : post.pollOptions.length <= 4
+            ? "grid-cols-2"
+            : "grid-cols-2 sm:grid-cols-3"
+        }`}
+      >
+        {/* Central "VS" badge for 2-option comparisons */}
+        {isTwoOptions && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-card border-2 border-primary/30 shadow-lg flex items-center justify-center text-xs sm:text-sm font-black tracking-wider text-primary pointer-events-none ring-4 ring-background">
+            VS
+          </div>
+        )}
 
-            return (
-              <button
-                key={`${postId}-${option._id ?? idx}`}
-                onClick={() => handleVote(option._id)}
-                disabled={revealBars || loading}
-                className={`relative w-full overflow-hidden rounded-xl border border-border bg-muted transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/10
-                  ${option.image ? "aspect-square" : "aspect-[4/3]"}
-                  ${!revealBars ? "hover:border-primary/60 hover:shadow-md active:scale-[0.99]" : "cursor-default"}
-                  disabled:cursor-not-allowed
-                `}
-              >
-                {option.image ? (
+        {post.pollOptions.map((option, idx) => {
+          const count = displayCounts[option._id] || 0;
+          const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+          const hasImage = !!option.image;
+
+          return (
+            <button
+              key={`${postId}-${option._id ?? idx}`}
+              onClick={() => handleVote(option._id)}
+              disabled={revealBars || loading}
+              className={`relative w-full overflow-hidden rounded-2xl border transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/15 text-left
+                ${hasImage ? "aspect-square bg-muted" : "min-h-[96px] sm:min-h-[110px] p-4 flex flex-col justify-between bg-card"}
+                ${
+                  !revealBars
+                    ? "border-border hover:border-primary/60 hover:shadow-md hover:bg-primary/[0.02] active:scale-[0.98]"
+                    : "border-border/80 cursor-default"
+                }
+                disabled:cursor-not-allowed
+              `}
+            >
+              {/* Image background if option has an image */}
+              {hasImage ? (
+                <>
                   <img
                     src={option.imageVariants?.md || option.imageVariants?.sm || option.image}
                     srcSet={
@@ -121,112 +136,72 @@ export default function DilemmaViewer({ post, postId }) {
                     loading="lazy"
                     decoding="async"
                   />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center p-4">
-                    <span className="text-sm font-semibold text-foreground text-center line-clamp-3">
+                  {/* Caption gradient over image */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-3 sm:p-4 z-10">
+                    <p className="text-white font-bold text-sm sm:text-base leading-snug line-clamp-2">
                       {option.text}
-                    </span>
+                    </p>
                   </div>
-                )}
-
-                {/* Result overlay */}
-                {revealBars && (
-                  <div
-                    className="absolute inset-0 bg-primary/20 transition-all duration-700 ease-out"
-                    style={{ opacity: Math.max(0.15, percentage / 100) }}
-                  />
-                )}
-
-                {/* Caption gradient */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                  <p className="text-white font-bold text-sm text-left line-clamp-2">
+                </>
+              ) : (
+                /* Text-only option content */
+                <div className="relative z-10 flex-1 flex items-center pr-1">
+                  <span className="text-sm sm:text-base font-bold text-foreground leading-snug line-clamp-3">
                     {option.text}
-                  </p>
+                  </span>
                 </div>
+              )}
 
-                {revealBars && (
-                  <span className="absolute top-2 right-2 bg-black/70 text-white text-sm font-black px-2 py-0.5 rounded-md">
+              {/* Vote result progress fill */}
+              {revealBars && (
+                <div
+                  className={`absolute inset-0 transition-all duration-700 ease-out ${
+                    hasImage ? "bg-primary/25" : "bg-primary/10 dark:bg-primary/20"
+                  }`}
+                  style={
+                    hasImage
+                      ? { opacity: Math.max(0.2, percentage / 100) }
+                      : { width: `${percentage}%` }
+                  }
+                />
+              )}
+
+              {/* Percentage & Vote Count Badge (after reveal) */}
+              {revealBars && (
+                <div className={`relative z-10 flex items-center justify-between gap-1 mt-2 pt-1 border-t ${
+                  hasImage ? "border-white/10 absolute top-2 right-2 m-0 p-0 border-none" : "border-border/60"
+                }`}>
+                  <span
+                    className={`font-black text-xs sm:text-sm ${
+                      hasImage
+                        ? "bg-black/75 text-white px-2 py-0.5 rounded-md backdrop-blur-sm"
+                        : "text-primary"
+                    }`}
+                  >
                     {percentage}%
                   </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Standard text poll (no images) ──────────────────────────────── */}
-      {!hasImageOptions && (
-        <div className="flex flex-col gap-2.5 relative">
-          {post.pollOptions.map((option, idx) => {
-            const count = displayCounts[option._id] || 0;
-            const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-
-            const unvotedClass =
-              "bg-card border border-border hover:border-primary/50 hover:bg-primary/[0.02] active:scale-[0.99] focus:ring-primary/10";
-
-            return (
-              <button
-                key={`${postId}-${option._id ?? idx}`}
-                onClick={() => handleVote(option._id)}
-                disabled={revealBars || loading}
-                className={`relative w-full flex items-center gap-4 px-5 rounded-2xl border-solid transition-all duration-300
-                  disabled:cursor-not-allowed group focus:outline-none focus:ring-4 py-3.5 sm:py-4
-                  ${!revealBars ? unvotedClass : "bg-muted/30 border border-border/80 cursor-default"}
-                `}
-              >
-                {/* Background fill bar */}
-                {revealBars && (
-                  <div
-                    className="absolute inset-y-0 left-0 transition-all duration-700 ease-out bg-primary/10 dark:bg-primary/20"
-                    style={{ width: `${percentage}%` }}
-                  />
-                )}
-
-                {option.image && (
-                  <img
-                    src={option.imageVariants?.sm || option.image}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="relative z-10 w-10 h-10 rounded-lg object-cover border border-border shrink-0"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-
-                <span className="relative z-10 leading-snug break-words pr-2 flex-1 text-left text-sm sm:text-base font-bold text-foreground">
-                  {option.text}
-                </span>
-
-                {revealBars && (
-                  <span className="relative z-10 shrink-0 text-sm sm:text-base font-black text-foreground">
-                    {percentage}%
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
-          {/* OR badge for 2-option text polls before voting */}
-          {!revealBars && post.pollOptions.length === 2 && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background border border-border/80 shadow-md flex items-center justify-center text-[10px] font-black tracking-wider text-muted-foreground pointer-events-none">
-              OR
-            </div>
-          )}
-        </div>
-      )}
+                  {!hasImage && (
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {count.toLocaleString()} {count === 1 ? "vote" : "votes"}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* ── Unvoted Poll Status Bar (Total engagement proof) ──────────────── */}
       {!revealBars && (
-        <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground/80 px-1 pt-0.5">
-          <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px] sm:text-[11px] flex items-center gap-1.5">
+        <div className="flex items-center justify-between text-xs text-muted-foreground/80 px-1 pt-0.5">
+          <span className="font-semibold text-muted-foreground uppercase tracking-wider text-xs flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary/70 inline-block animate-pulse" />
             {totalVotes > 0
               ? `${totalVotes.toLocaleString()} ${totalVotes === 1 ? "vote" : "votes"} in poll`
               : "0 votes in poll"}
           </span>
-          <span className="text-[10px] sm:text-[11px] text-muted-foreground/60 font-medium">
+          <span className="text-xs text-muted-foreground/60 font-medium">
             Vote to see results
           </span>
         </div>

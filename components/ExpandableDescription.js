@@ -8,7 +8,7 @@ export default function ExpandableDescription({ description }) {
   // If description is short, just show it
   if (!description || description.length < 300) {
     return (
-      <p className="text-sm text-muted-foreground leading-relaxed mt-3 mb-4">
+      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mt-3 mb-4">
         {description}
       </p>
     );
@@ -16,7 +16,7 @@ export default function ExpandableDescription({ description }) {
 
   return (
     <div className="mt-3 mb-4">
-      <p className={`text-sm text-muted-foreground leading-relaxed transition-all duration-300 ${!isExpanded ? "line-clamp-4" : ""}`}>
+      <p className={`text-sm sm:text-base text-muted-foreground leading-relaxed transition-all duration-300 ${!isExpanded ? "line-clamp-4" : ""}`}>
         {description}
       </p>
       <button
