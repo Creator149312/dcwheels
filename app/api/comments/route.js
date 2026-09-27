@@ -11,6 +11,7 @@ import { sessionUserId } from "@/utils/SessionData";
 import mongoose from "mongoose";
 import { createNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
+import { syncListIndexedState } from "@/lib/listIndexGate";
 
 // ✅ Create a new comment or reply
 export async function POST(req) {
@@ -57,6 +58,7 @@ export async function POST(req) {
         await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
       } else if (entityType === "list") {
         await UnifiedList.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        syncListIndexedState(entityId).catch(() => {});
       }
     } catch (countErr) {
       console.error("Error updating comment count:", countErr);

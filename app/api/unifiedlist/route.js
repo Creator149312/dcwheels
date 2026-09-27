@@ -153,7 +153,10 @@ export async function POST(req) {
 
     // ✅ 2. Parse request body
     const body = await req.json();
-    const { name, description = "", tags = [], isPublic = true } = body;
+    const { name, description = "", tags = [], isPublic = true, format = "standard", tierConfig } = body;
+
+    const VALID_FORMATS = ["standard", "ranked", "tiered"];
+    const listFormat = VALID_FORMATS.includes(format) ? format : "standard";
 
     if (!name || typeof name !== "string") {
       return NextResponse.json(
@@ -222,6 +225,8 @@ export async function POST(req) {
       items: [],
       isPublic: typeof isPublic === "boolean" ? isPublic : true,
       slug,
+      format: listFormat,
+      ...(Array.isArray(tierConfig) && tierConfig.length > 0 ? { tierConfig } : {}),
     });
 
     // ✅ 5. Format response
@@ -235,6 +240,8 @@ export async function POST(req) {
       updatedAt: newList.updatedAt,
       isPublic: newList.isPublic ?? true,
       isSystem: newList.isSystem ?? false,
+      format: newList.format || "standard",
+      tierConfig: newList.tierConfig,
       items: [],
     };
 

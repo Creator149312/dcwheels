@@ -72,6 +72,8 @@ export async function DELETE(req, { params }) {
           name: list.name,
           userId: list.userId,
           description: list.description,
+          format: list.format || "standard",
+          tierConfig: list.tierConfig,
           items: list.items,
         },
       },
@@ -113,6 +115,8 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
+    let hasUpdated = false;
+
     if (body.word !== undefined || body.wordData !== undefined) {
       // ── Rename / update image of a word item ──────────────────────────
       if (item.type !== "word") {
@@ -124,21 +128,38 @@ export async function PATCH(req, { params }) {
           return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
         }
         item.word = newWord;
+        hasUpdated = true;
       }
       if (body.wordData !== undefined) {
         const oldUrl = item.wordData;
         item.wordData = body.wordData;
+        hasUpdated = true;
         // Schedule old blob deletion after save (handled below)
         var replacedBlobUrl = isBlobUrl(oldUrl) && oldUrl !== body.wordData ? oldUrl : null;
       }
-    } else if (body.status !== undefined) {
+    }
+
+    if (body.status !== undefined) {
       // ── Update progress status ────────────────────────────────────────
       const VALID = ["want", "in-progress", "done"];
       if (!VALID.includes(body.status)) {
         return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
       }
       item.status = body.status;
-    } else {
+      hasUpdated = true;
+    }
+
+    if (body.tier !== undefined) {
+      item.tier = body.tier ? String(body.tier).trim() : null;
+      hasUpdated = true;
+    }
+
+    if (body.rank !== undefined) {
+      item.rank = typeof body.rank === "number" ? body.rank : null;
+      hasUpdated = true;
+    }
+
+    if (!hasUpdated) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
@@ -161,6 +182,8 @@ export async function PATCH(req, { params }) {
           name: list.name,
           userId: list.userId,
           description: list.description,
+          format: list.format || "standard",
+          tierConfig: list.tierConfig,
           items: list.items,
         },
       },

@@ -97,9 +97,47 @@ export function FeedSkeleton() {
 
 // ── ASYNC LOADERS ────────────────────────────────────────────────────────────
 
+/** Normalize provider/link names for deduplication ("Prime Video" ≡ "Amazon", etc.) */
+function normalizeProviderName(name) {
+  const n = String(name || "")
+    .toLowerCase()
+    .replace(/\b(stream|now|store|page|app|tv|official|search)\b/g, "")
+    .replace(/[^a-z0-9]/g, "");
+  if (!n) return "";
+  if (n.includes("amazon") || n.includes("primevideo")) return "amazon";
+  if (n.includes("crunchyroll")) return "crunchyroll";
+  if (n.includes("netflix")) return "netflix";
+  if (n.includes("hulu")) return "hulu";
+  if (n.includes("disney")) return "disney";
+  if (n.includes("max") || n.includes("hbo")) return "max";
+  if (n.includes("justwatch")) return "justwatch";
+  if (n.includes("bilibili")) return "bilibili";
+  if (n.includes("steam")) return "steam";
+  if (n.includes("playstation") || n.includes("psn")) return "playstation";
+  if (n.includes("xbox")) return "xbox";
+  if (n.includes("nintendo")) return "nintendo";
+  if (n.includes("gog")) return "gog";
+  return n;
+}
+
+/** Drop affiliate search links that duplicate a real streaming provider entry. */
+function filterDuplicateAffiliates(streaming, affiliateLinks) {
+  const taken = new Set(
+    (streaming || [])
+      .map((p) => normalizeProviderName(p.provider_name || p.site || p.store?.name))
+      .filter(Boolean)
+  );
+  return (affiliateLinks || []).filter(
+    (link) => !taken.has(normalizeProviderName(link.name))
+  );
+}
+
 /** Renders streaming/affiliate links inside both mobile and desktop views */
 function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType = "mobile" }) {
   if (!streaming?.length && !affiliateLinks?.length) return null;
+
+  // Remove affiliate search links that duplicate an actual provider (e.g. Crunchyroll twice)
+  const uniqueAffiliates = filterDuplicateAffiliates(streaming, affiliateLinks);
 
   if (styleType === "mobile") {
     return (
@@ -138,7 +176,7 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
               </a>
             );
           })}
-          {affiliateLinks.map((link) => {
+          {uniqueAffiliates.map((link) => {
             let domain = "amazon.com";
             try {
               domain = new URL(link.url).hostname;
@@ -222,7 +260,7 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
           </a>
         ))}
 
-        {affiliateLinks.map((link) => {
+        {uniqueAffiliates.map((link) => {
           let domain = "amazon.com";
           try {
             domain = new URL(link.url).hostname;
@@ -247,7 +285,7 @@ function InnerStreamingAndAffiliate({ type, streaming, affiliateLinks, styleType
                   {link.name}
                 </p>
                 <p className="text-[10px] text-muted-foreground font-medium leading-none mt-0.5">
-                  Store Page
+                  Search
                 </p>
               </div>
             </a>

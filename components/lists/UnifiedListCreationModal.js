@@ -5,16 +5,17 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    isRanked: false,
     tags: "",
   });
 
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -47,6 +48,7 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
     const listData = {
       name: formData.name,
       description: formData.description,
+      format: formData.isRanked ? "ranked" : "standard",
       tags: tagArray,
     };
 
@@ -96,6 +98,21 @@ const UnifiedListCreationModal = ({ isOpen, closeModal, addNewList }) => {
             {errors.description && (
               <p className="text-red-500 text-sm">{errors.description}</p>
             )}
+          </div>
+
+          {/* Ranked List Checkbox */}
+          <div className="mb-4 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="modalIsRanked"
+              name="isRanked"
+              checked={formData.isRanked}
+              onChange={handleChange}
+              className="h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <label htmlFor="modalIsRanked" className="text-sm font-medium text-foreground cursor-pointer">
+              Numbered / Ranked list <span className="text-xs text-muted-foreground">(#1, #2, #3...)</span>
+            </label>
           </div>
 
           {/* Tags */}

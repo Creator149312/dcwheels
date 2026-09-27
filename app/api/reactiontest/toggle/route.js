@@ -12,6 +12,7 @@ import Comment from "@models/comment";
 import { sessionUserId } from "@/utils/SessionData";
 import { createNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
+import { syncListIndexedState } from "@/lib/listIndexGate";
 
 export async function PATCH(req) {
   const ip = getIpFromRequest(req);
@@ -133,6 +134,7 @@ export async function PATCH(req) {
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
+      syncListIndexedState(entityObjectId).catch(() => {});
     }
 
     // Count only the reactions matching the toggled type, using an indexed

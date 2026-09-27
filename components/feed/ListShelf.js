@@ -98,10 +98,20 @@ function ListShelf({ list }) {
 
       {/* Title + description */}
       <div className="mb-3 px-2 sm:px-0">
-        <Link href={getListUrl(list)}>
+        <Link href={getListUrl(list)} className="inline-flex items-center gap-2 flex-wrap">
           <h3 className="text-lg sm:text-xl font-bold leading-tight text-foreground hover:text-primary line-clamp-2">
             {list.name || list.title || "Untitled List"}
           </h3>
+          {list.format === "tiered" && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
+              🏆 Tier List
+            </span>
+          )}
+          {list.format === "ranked" && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-2 py-0.5 rounded-full">
+              # Ranked
+            </span>
+          )}
         </Link>
         {list.description && (
           <p className="mt-1 text-sm sm:text-[15px] text-muted-foreground line-clamp-2 leading-relaxed">

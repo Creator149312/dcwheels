@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { evaluateListQuality } from "../lib/listIndexGate.js";
+
 const { Schema, models } = mongoose;
 
 const ListItemSchema = new Schema(
@@ -43,6 +45,10 @@ const ListItemSchema = new Schema(
       default: "want",
     },
 
+    // Format metadata
+    tier: { type: String, trim: true, default: null }, // e.g. "S", "A", "B", "C", "D"
+    rank: { type: Number, default: null }, // e.g. 1, 2, 3...
+
     addedAt: { type: Date, default: Date.now },
   },
   { _id: false } // suppresses auto _id — we define it explicitly above
@@ -71,7 +77,9 @@ const ListSchema = new Schema(
     // Final canonical name
     name: { type: String, required: true, trim: true, maxlength: 100 },
 
-    description: { type: String, default: "", trim: true, maxlength: 300 },
+    // Allow longer, SEO-friendly descriptions for auto-generated lists.
+    // UI inputs remain capped; this supports AI summaries up to ~2,000 chars.
+    description: { type: String, default: "", trim: true, maxlength: 1000 },
 
     tags: {
       type: [String],
@@ -100,11 +108,11 @@ const ListSchema = new Schema(
       validate: {
         validator: function(arr) {
           // System lists (e.g. My Library) have a much higher limit to act as a primary backlog.
-          // Custom user lists remain capped at 100 to encourage curation.
-          const limit = this.isSystem ? 2000 : 100;
+          // Custom user lists support up to 200 items to accommodate full anime character casts.
+          const limit = this.isSystem ? 2000 : 250;
           return arr.length <= limit;
         },
-        message: (props) => `List limit reached. System lists support up to 2000 items, custom lists 100.`,
+        message: (props) => `List limit reached. System lists support up to 2000 items, custom lists 200.`,
       },
     },
 
@@ -114,6 +122,36 @@ const ListSchema = new Schema(
     // Soft-delete flag. When true, the list is hidden from all reads except
     // owner recovery/admin queries, and its public URL returns 404.
     isDeleted: { type: Boolean, default: false },
+
+    // LIST FORMAT (Display & Curation Mode)
+    // standard — standard collection, grid, or checklist
+    // ranked   — numbered items (1, 2, 3...)
+    // tiered   — visual S/A/B/C/D tier ranking board
+    format: {
+      type: String,
+      enum: ["standard", "ranked", "tiered"],
+      default: "standard",
+      index: true,
+    },
+
+    // Custom tier configuration (labels, colors, order)
+    tierConfig: {
+      type: [
+        {
+          _id: false,
+          key: { type: String, required: true },
+          label: { type: String, required: true },
+          color: { type: String, required: true },
+        },
+      ],
+      default: () => [
+        { key: "S", label: "S", color: "#EF4444" },
+        { key: "A", label: "A", color: "#F97316" },
+        { key: "B", label: "B", color: "#EAB308" },
+        { key: "C", label: "C", color: "#10B981" },
+        { key: "D", label: "D", color: "#3B82F6" },
+      ],
+    },
 
     // SYSTEM FLAGS (Optimization for TopicPages)
     // Helps identify default lists regardless of their display name.
@@ -130,7 +168,7 @@ const ListSchema = new Schema(
       trim: true,
       index: true,
     },
-    indexed: { type: Boolean, default: false },
+    indexed: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
@@ -168,6 +206,14 @@ ListSchema.index(
  * 2. isPublic: true
  */
 ListSchema.pre("save", async function (next) {
+  // 1. Auto-index evaluation: set indexed based on content & engagement quality
+  try {
+    this.indexed = evaluateListQuality(this);
+  } catch (indexGateErr) {
+    console.error("Error evaluating list quality in pre-save:", indexGateErr);
+  }
+
+  // 2. Track old state for tag counts
   if (!this.isNew) {
     try {
       const oldDoc = await this.constructor

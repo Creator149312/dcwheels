@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { List, ArrowLeft, Loader2 } from "lucide-react";
+import { List, ArrowLeft, Loader2, Layers, Trophy, Check } from "lucide-react";
 import { getListUrl } from "@utils/UrlHandler";
 
 export default function CreateListClient() {
@@ -12,6 +12,7 @@ export default function CreateListClient() {
   const { data: session } = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [format, setFormat] = useState("standard"); // "standard" | "tiered"
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +32,12 @@ export default function CreateListClient() {
       const res = await fetch("/api/unifiedlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), description: description.trim(), isPublic }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim(),
+          isPublic,
+          format: format === "tiered" ? "tiered" : "standard",
+        }),
       });
 
       const data = await res.json();
@@ -40,7 +46,8 @@ export default function CreateListClient() {
         throw new Error(data.error || "Something went wrong");
       }
 
-      router.push(getListUrl(data.list));
+      const targetUrl = getListUrl(data.list);
+      router.push(targetUrl.includes("?") ? `${targetUrl}&action=add` : `${targetUrl}?action=add`);
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -74,7 +81,8 @@ export default function CreateListClient() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* List Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-1.5">
               List Name
@@ -84,13 +92,76 @@ export default function CreateListClient() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. My Anime Watchlist"
+              placeholder="e.g. Best 90s Anime or Marvel Movies"
               className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
               required
               disabled={loading}
             />
           </div>
 
+          {/* Format Selector: 2 Clean Cards */}
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              Choose Format
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Card 1: Standard List */}
+              <button
+                type="button"
+                onClick={() => setFormat("standard")}
+                disabled={loading}
+                className={`relative flex flex-col items-start p-3.5 rounded-xl border-2 text-left transition-all ${
+                  format === "standard"
+                    ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 shadow-xs"
+                    : "border-border hover:border-border/80 bg-background"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1.5">
+                  <div className={`p-1.5 rounded-lg ${format === "standard" ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                    <Layers size={16} />
+                  </div>
+                  {format === "standard" && (
+                    <div className="w-4 h-4 rounded-full bg-violet-600 text-white flex items-center justify-center">
+                      <Check size={11} strokeWidth={3} />
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-foreground">Standard List</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                  Curated cards, collections, and spin wheel
+                </span>
+              </button>
+
+              {/* Card 2: Tier Board */}
+              <button
+                type="button"
+                onClick={() => setFormat("tiered")}
+                disabled={loading}
+                className={`relative flex flex-col items-start p-3.5 rounded-xl border-2 text-left transition-all ${
+                  format === "tiered"
+                    ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 shadow-xs"
+                    : "border-border hover:border-border/80 bg-background"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1.5">
+                  <div className={`p-1.5 rounded-lg ${format === "tiered" ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                    <Trophy size={16} />
+                  </div>
+                  {format === "tiered" && (
+                    <div className="w-4 h-4 rounded-full bg-violet-600 text-white flex items-center justify-center">
+                      <Check size={11} strokeWidth={3} />
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-foreground">Tier Board</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                  Visual S / A / B / C / D ranking board
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-1.5">
               Description <span className="text-muted-foreground font-normal">(Optional)</span>
@@ -100,22 +171,25 @@ export default function CreateListClient() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="A short description of what this list is for."
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none min-h-[100px]"
+              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none min-h-[85px]"
               disabled={loading}
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              id="isPublic"
-              type="checkbox"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500"
-            />
-            <label htmlFor="isPublic" className="text-sm text-muted-foreground">
-              Make this list public
-            </label>
+          {/* Public Visibility */}
+          <div className="pt-1">
+            <div className="flex items-center gap-2.5">
+              <input
+                id="isPublic"
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="h-4 w-4 rounded border-border text-violet-600 focus:ring-violet-500 cursor-pointer"
+              />
+              <label htmlFor="isPublic" className="text-sm text-muted-foreground cursor-pointer">
+                Make this list public
+              </label>
+            </div>
           </div>
 
           <div className="pt-2">

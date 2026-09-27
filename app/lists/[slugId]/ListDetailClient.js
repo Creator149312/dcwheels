@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trash2, Pencil, Zap, X, Image as ImageIcon, Eye, EyeOff, ArrowUpDown, Loader2, Plus } from "lucide-react";
+import { Trash2, Pencil, Zap, X, Image as ImageIcon, Eye, EyeOff, ArrowUpDown, Loader2, Plus, Layers, ListOrdered, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createSegment } from "@utils/segmentUtils";
 import { getListUrl } from "@utils/UrlHandler";
 
 import AddItemPanel from "./components/AddItemPanel";
 import ListItems from "./components/ListItems";
+
+const TierBoard = dynamic(() => import("./components/TierBoard"), { ssr: false });
 
 // Lazy-loaded — EditListModal is only needed when owner clicks the pencil icon.
 const EditListModal = dynamic(() => import("@components/lists/EditListModal"), { ssr: false });
@@ -36,8 +38,15 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const [commentCount, setCommentCount] = useState(initialList?.commentCount || 0);
 
   // Visibility state (sort order is a local UI preference only)
-  const [sortBy, setSortBy] = useState("recently-saved");
+  const [sortBy, setSortBy] = useState("custom");
   const [isPublic, setIsPublic] = useState(initialList?.isPublic ?? true);
+  const [activeFormat, setActiveFormat] = useState(() => {
+    const viewParam = searchParams.get("view");
+    if (viewParam && ["standard", "ranked", "tiered"].includes(viewParam)) {
+      return viewParam;
+    }
+    return initialList?.format || "standard";
+  });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [origin, setOrigin] = useState("");
@@ -65,9 +74,18 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     }
   }, [session, status, listOwnerId]);
 
-  // null = panel closed, "text" | "bulk" | "image" = panel open on that tab
-  const [addPanelMode, setAddPanelMode] = useState(null);
+  // null = panel closed, "search" | "bulk" | "image" = panel open on that tab
+  const [addPanelMode, setAddPanelMode] = useState(() => {
+    return searchParams.get("action") === "add" ? "search" : null;
+  });
   const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Auto-open add panel if routed with ?action=add (e.g. from /lists/create)
+  useEffect(() => {
+    if (searchParams.get("action") === "add" && isOwner && !isSystemList) {
+      setAddPanelMode("search");
+    }
+  }, [searchParams, isOwner, isSystemList]);
 
   // Inline item editing (word items only)
   const [editingItemId, setEditingItemId] = useState(null);
@@ -194,8 +212,9 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   }
 
   // ✅ Spin this list on the home wheel
-  function spinList() {
-    const segments = list.items
+  function spinList(overrideItems = null, customTitle = null) {
+    const itemsToSpin = Array.isArray(overrideItems) ? overrideItems : list.items;
+    const segments = itemsToSpin
       .map((i) => {
         if (i.type === "entity") {
           return createSegment(i.name, {
@@ -222,7 +241,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     if (segments.length === 0) return;
 
     const wheelObject = {
-      title: list.name,
+      title: customTitle || list.name,
       description: list.description || "",
       type: "basic",
       data: segments,
@@ -244,20 +263,113 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     router.push("/wheels/create");
   }
 
-  // ✅ Add new item(s)
-  async function addItem(payload) {
-    const res = await fetch(`/api/unifiedlist/${listId}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  // ✅ Batch reorder / tier update
+  async function handleItemsReorder(newItems) {
+    setList((prev) => ({ ...prev, items: newItems }));
 
-    const data = await res.json();
-    if (!res.ok || !data.list) {
-      console.error("addItem failed:", data?.error);
-      return;
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}/items`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: newItems }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.list) setList((prev) => ({ ...prev, ...data.list }));
+      }
+    } catch (e) {
+      console.error("Failed to reorder items:", e);
     }
-    setList(prev => ({ ...prev, ...data.list }));
+  }
+
+  // ✅ Switch view mode (and persist default format if owner)
+  async function updateFormat(newFormat) {
+    setActiveFormat(newFormat);
+    if (!isOwner) return;
+
+    // Preserve "ranked" format when returning to List View
+    const targetFormat = (newFormat === "standard" && list.format === "ranked") ? "ranked" : newFormat;
+    if (targetFormat === list.format) return;
+
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: targetFormat }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.list) setList((prev) => ({ ...prev, format: targetFormat }));
+      }
+    } catch (e) {
+      console.error("Failed to update format:", e);
+    }
+  }
+
+  // ✅ Add new item(s) (with optimistic UI update for instant feedback)
+  async function addItem(payload) {
+    // Generate optimistic item for instant UI responsiveness
+    let tempId = `temp-${Date.now()}`;
+    let optimisticItem = null;
+
+    if (payload.type === "word") {
+      optimisticItem = {
+        _id: tempId,
+        type: "word",
+        word: payload.word,
+        wordData: payload.wordData || "",
+        addedAt: new Date().toISOString(),
+      };
+    } else if (payload.type === "entity") {
+      optimisticItem = {
+        _id: tempId,
+        type: "entity",
+        entityType: payload.entityType,
+        entityId: payload.entityId,
+        name: payload.name,
+        slug: payload.slug,
+        image: payload.image || null,
+        status: payload.status || "want",
+        addedAt: new Date().toISOString(),
+      };
+    }
+
+    if (optimisticItem) {
+      setList(prev => ({
+        ...prev,
+        items: [...(prev.items || []), optimisticItem],
+      }));
+    }
+
+    try {
+      const res = await fetch(`/api/unifiedlist/${listId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.list) {
+        console.error("addItem failed:", data?.error);
+        // Revert on error
+        if (optimisticItem) {
+          setList(prev => ({
+            ...prev,
+            items: (prev.items || []).filter(i => i._id !== tempId),
+          }));
+        }
+        return;
+      }
+      setList(prev => ({ ...prev, ...data.list }));
+    } catch (err) {
+      console.error("addItem network error:", err);
+      if (optimisticItem) {
+        setList(prev => ({
+          ...prev,
+          items: (prev.items || []).filter(i => i._id !== tempId),
+        }));
+      }
+    }
   }
 
   // ✅ Start inline edit
@@ -444,7 +556,19 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                 </h1>
                 {isSystemList && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                    🔒 Locked
+                    🔒 System
+                  </span>
+                )}
+                {isOwner && !isSystemList && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      isPublic
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}
+                  >
+                    {isPublic ? <Eye size={11} /> : <EyeOff size={11} />}
+                    <span>{isPublic ? "Public" : "Private"}</span>
                   </span>
                 )}
               </div>
@@ -460,46 +584,74 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
 
             {/* Owner actions */}
             {isOwner && !isSystemList && (
-              <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 mt-1" ref={listMenuRef}>
-                <button
-                  onClick={() => setEditModalOpen(true)}
-                  title="Edit List Details"
-                  className="p-2 rounded-full hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Pencil size={16} />
-                </button>
+              <div className="flex items-center shrink-0 mt-1" ref={listMenuRef}>
                 <div className="relative">
                   <button
                     onClick={() => setListMenuOpen((prev) => !prev)}
-                    className="p-2 rounded-full hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors font-bold text-base"
-                    title="More options"
+                    className="p-2 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border font-bold text-base flex items-center justify-center w-8 h-8"
+                    title="List options"
+                    aria-label="List options"
                   >
                     ⋮
                   </button>
 
                   {listMenuOpen && (
-                    <div className="absolute right-0 mt-2 bg-popover shadow-xl border border-border rounded-xl w-40 z-50 overflow-hidden">
-                      <SharePopup url={getListUrl(list)} variant="simple" />
-                      <button
-                        onClick={deleteList}
-                        disabled={deleteSubmitting}
-                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs transition-colors border-t border-border ${
-                          deleteConfirm
-                            ? "bg-red-50 text-red-600 hover:bg-red-100 font-bold dark:bg-red-950/40"
-                            : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        }`}
-                        title={deleteConfirm ? "Click again to confirm deletion" : "Delete this list"}
-                      >
-                        {deleteSubmitting ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : deleteConfirm ? (
-                          "Confirm Delete?"
-                        ) : (
-                          <>
-                            <Trash2 className="h-3.5 w-3.5" /> Delete List
-                          </>
-                        )}
-                      </button>
+                    <div className="absolute right-0 mt-2 bg-popover shadow-xl border border-border rounded-xl w-48 z-50 overflow-hidden divide-y divide-border">
+                      <div className="p-1">
+                        <button
+                          onClick={() => {
+                            updateVisibility(!isPublic);
+                            setListMenuOpen(false);
+                          }}
+                          disabled={settingsSaving}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-lg transition-colors text-left"
+                        >
+                          {isPublic ? (
+                            <>
+                              <EyeOff size={14} className="text-muted-foreground shrink-0" />
+                              <span>Make Private</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye size={14} className="text-emerald-600 shrink-0" />
+                              <span>Make Public</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditModalOpen(true);
+                            setListMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-lg transition-colors text-left"
+                        >
+                          <Pencil size={14} className="text-muted-foreground shrink-0" />
+                          <span>Edit Details</span>
+                        </button>
+                      </div>
+
+                      <div className="p-1">
+                        <button
+                          onClick={deleteList}
+                          disabled={deleteSubmitting}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg transition-colors ${
+                            deleteConfirm
+                              ? "bg-red-50 text-red-600 hover:bg-red-100 font-bold dark:bg-red-950/40"
+                              : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          }`}
+                        >
+                          {deleteSubmitting ? (
+                            <Loader2 size={13} className="animate-spin shrink-0" />
+                          ) : deleteConfirm ? (
+                            "Confirm Delete?"
+                          ) : (
+                            <>
+                              <Trash2 size={14} className="shrink-0" />
+                              <span>Delete List</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -508,113 +660,90 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
           </div>
 
           {/* Action Button & Engagement Bar */}
-          <div className="mt-5 pt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-4 pt-3 flex items-center justify-between gap-2.5">
             <button
               onClick={spinList}
               disabled={list.items.length === 0}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-primary-foreground text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all active:scale-95 shrink-0"
             >
               <Zap size={15} className="fill-current" />
-              Spin this List
+              <span>Spin this List</span>
             </button>
 
-            <StatsBar
-              entityType="list"
-              entityId={listId}
-              session={session}
-              show={{ like: true, share: true, save: false, follow: false, comment: true }}
-              shareUrl={origin ? `${origin}${getListUrl(list)}` : ""}
-              commentCount={commentCount}
-              onCommentClick={() => {
-                if (typeof window !== 'undefined') {
-                  if (window.innerWidth < 768) {
-                    window.dispatchEvent(new CustomEvent("comments:open-drawer", {
-                      detail: { entityId: String(listId) }
-                    }));
-                  } else {
-                    const el = document.getElementById("comments-section");
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth" });
-                      setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent("comment-form:focus"));
-                      }, 300);
+            <div className="shrink-0">
+              <StatsBar
+                entityType="list"
+                entityId={listId}
+                session={session}
+                show={{ like: true, share: true, save: false, follow: false, comment: true }}
+                shareUrl={origin ? `${origin}${getListUrl(list)}` : ""}
+                commentCount={commentCount}
+                onCommentClick={() => {
+                  if (typeof window !== 'undefined') {
+                    if (window.innerWidth < 768) {
+                      window.dispatchEvent(new CustomEvent("comments:open-drawer", {
+                        detail: { entityId: String(listId) }
+                      }));
+                    } else {
+                      const el = document.getElementById("comments-section");
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth" });
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent("comment-form:focus"));
+                        }, 300);
+                      }
                     }
                   }
-                }
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* ✅ Controls Bar */}
-      <div className={`mb-5 pb-3 ${isSystemList ? "" : "border-b border-border/40"}`}>
-        <div className="flex flex-wrap gap-2.5 items-center justify-between">
-          {/* Sort Control */}
-          <div className="flex items-center gap-1.5">
-            <ArrowUpDown size={14} className="text-muted-foreground" />
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sort</label>
-            <select
-              value={sortBy}
-              onChange={(e) => updateSort(e.target.value)}
-              disabled={settingsSaving}
-              title="Choose how to sort items"
-              className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border bg-card border-border/60 text-foreground hover:border-primary/50 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="recently-saved">Recently Saved</option>
-              <option value="alphabetical">Alphabetical (A→Z)</option>
-              <option value="status">Status (Want → Done)</option>
-              <option value="entity-type">By Type</option>
-            </select>
-          </div>
-
-          {/* Right side controls (Owner Add Item + Visibility + Share Controls) */}
-          {isOwner && !isSystemList && (
-            <div className="flex flex-wrap gap-2 items-center">
+      <div className={`mb-4 pb-2 ${isSystemList ? "" : "border-b border-border/40"}`}>
+        <div className="flex items-center justify-between gap-2">
+          {/* View / Format Mode Switcher (Custom lists only) */}
+          {!isSystemList ? (
+            <div className="flex items-center p-0.5 rounded-xl border border-border bg-muted/40 shadow-2xs">
               <button
-                onClick={() => setAddPanelMode((prev) => (prev === null ? "text" : null))}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-2xs transition-all active:scale-95"
-              >
-                <Plus size={14} /> Add Item
-              </button>
-
-              <button
-                onClick={() => updateVisibility(!isPublic)}
-                disabled={settingsSaving}
-                title={`Click to make ${isPublic ? "private" : "public"}`}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                  isPublic
-                    ? "bg-emerald-50/80 border-emerald-300 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
-                    : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                type="button"
+                onClick={() => updateFormat("standard")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeFormat !== "tiered"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
+                title="Standard collection view"
               >
-                {isPublic ? (
-                  <>
-                    <Eye size={14} /> Public
-                  </>
-                ) : (
-                  <>
-                    <EyeOff size={14} /> Private
-                  </>
-                )}
+                <Layers size={14} />
+                <span>Collection</span>
               </button>
-
-              {/* Share Link / Copied Feedback */}
-              {isPublic && (
-                <button
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      navigator.clipboard.writeText(`${window.location.origin}${getListUrl(list)}`);
-                      alert("Share link copied!");
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all"
-                  title="Copy share link"
-                >
-                  🔗 Copy Link
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => updateFormat("tiered")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeFormat === "tiered"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Visual S/A/B/C/D tier list board"
+              >
+                <Trophy size={14} />
+                <span>Tier Board</span>
+              </button>
             </div>
+          ) : <div />}
+
+          {/* Right side controls (Owner Add Item) */}
+          {isOwner && !isSystemList && (
+            <button
+              onClick={() => setAddPanelMode((prev) => (prev === null ? "search" : null))}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-2xs transition-all active:scale-95 shrink-0"
+            >
+              <Plus size={14} /> Add Item
+            </button>
           )}
         </div>
       </div>
@@ -638,25 +767,37 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         setImgPreview={setImgPreview}
       />
 
-      {/* ✅ Items */}
-      <ListItems
-        list={list}
-        sortBy={sortBy}
-        isOwner={isOwner}
-        isSystemList={isSystemList}
-        editingItemId={editingItemId}
-        editingItemValue={editingItemValue}
-        editingImgPreview={editingImgPreview}
-        editingSaving={editingSaving}
-        editInputRef={editInputRef}
-        editingImgFileRef={editingImgFileRef}
-        startEdit={startEdit}
-        saveItemEdit={saveItemEdit}
-        cancelEdit={cancelEdit}
-        deleteItem={deleteItem}
-        handleEditImageSelect={handleEditImageSelect}
-        setEditingItemValue={setEditingItemValue}
-      />
+      {/* ✅ Render Items by Selected Format */}
+      {activeFormat === "tiered" && !isSystemList ? (
+        <TierBoard
+          list={list}
+          isOwner={isOwner}
+          onReorder={handleItemsReorder}
+          onSpinTier={spinList}
+          deleteItem={deleteItem}
+        />
+      ) : (
+        <ListItems
+          list={list}
+          sortBy={sortBy}
+          onSortChange={updateSort}
+          onReorder={handleItemsReorder}
+          isOwner={isOwner}
+          isSystemList={isSystemList}
+          editingItemId={editingItemId}
+          editingItemValue={editingItemValue}
+          editingImgPreview={editingImgPreview}
+          editingSaving={editingSaving}
+          editInputRef={editInputRef}
+          editingImgFileRef={editingImgFileRef}
+          startEdit={startEdit}
+          saveItemEdit={saveItemEdit}
+          cancelEdit={cancelEdit}
+          deleteItem={deleteItem}
+          handleEditImageSelect={handleEditImageSelect}
+          setEditingItemValue={setEditingItemValue}
+        />
+      )}
 
       {/* ✅ Edit List Modal (lazy-loaded) */}
       <EditListModal

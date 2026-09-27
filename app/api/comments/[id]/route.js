@@ -9,6 +9,7 @@ import Wheel from "@models/wheel";
 import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@/utils/SessionData";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
+import { syncListIndexedState } from "@/lib/listIndexGate";
 
 // ✅ Edit a comment
 export async function PATCH(req, { params }) {
@@ -110,6 +111,7 @@ export async function DELETE(req, { params }) {
         await Wheel.updateOne({ _id: comment.entityId }, decrementStage);
       } else if (comment.entityType === "list") {
         await UnifiedList.updateOne({ _id: comment.entityId }, decrementStage);
+        syncListIndexedState(comment.entityId).catch(() => {});
       }
     } catch (countErr) {
       console.error("Error decrementing comment count:", countErr);

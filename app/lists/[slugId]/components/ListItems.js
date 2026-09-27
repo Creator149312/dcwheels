@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, Plus, Image as ImageIcon, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, Image as ImageIcon, LayoutGrid, List as ListIcon, ChevronUp, ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { sortListItems } from "@lib/listSorting";
 import { getWheelUrl } from "@utils/UrlHandler";
@@ -12,6 +12,8 @@ const GridItems = dynamic(() => import("./GridItems"), { ssr: false });
 export default function ListItems({
   list,
   sortBy,
+  onSortChange,
+  onReorder,
   isOwner,
   isSystemList,
   editingItemId,
@@ -29,6 +31,31 @@ export default function ListItems({
 }) {
   // Default view mode: "grid" for entity/media lists or lists with posters, "list" for small text lists
   const [viewMode, setViewMode] = useState("grid");
+
+  const handleMove = (index, direction) => {
+    if (!onReorder || !list.items) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= sortedItems.length) return;
+
+    // Work on the currently displayed sortedItems array
+    const newItems = [...sortedItems];
+    const temp = newItems[index];
+    newItems[index] = newItems[targetIndex];
+    newItems[targetIndex] = temp;
+
+    // Reset sort selector to custom when user explicitly shifts items
+    if (onSortChange && sortBy !== "custom") {
+      onSortChange("custom");
+    }
+
+    // Maintain rank index metadata
+    const reordered = newItems.map((item, idx) => ({
+      ...item,
+      rank: idx + 1,
+    }));
+
+    onReorder(reordered);
+  };
 
   if (list.items.length === 0) {
     return (
@@ -48,10 +75,30 @@ export default function ListItems({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          {list.items.length} item{list.items.length !== 1 ? "s" : ""}
-        </p>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-muted-foreground tracking-wider uppercase">
+            {list.items.length} item{list.items.length !== 1 ? "s" : ""}
+          </span>
+
+          {/* Inline compact Sort selector */}
+          {onSortChange && (
+            <div className="flex items-center gap-1.5 pl-3 border-l border-border/60">
+              <select
+                value={sortBy || "custom"}
+                onChange={(e) => onSortChange(e.target.value)}
+                className="text-xs font-medium bg-transparent text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none transition-colors"
+                title="Sort items"
+              >
+                <option value="custom">Custom / Ranked</option>
+                <option value="recently-saved">Recently Saved</option>
+                <option value="alphabetical">Alphabetical (A→Z)</option>
+                <option value="status">Status (Want → Done)</option>
+                <option value="entity-type">By Type</option>
+              </select>
+            </div>
+          )}
+        </div>
 
         {/* Layout Switcher Toggle */}
         <div className="flex items-center p-0.5 rounded-lg border border-border bg-muted/30">
@@ -63,10 +110,10 @@ export default function ListItems({
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="Grid view"
+            title="Grid card layout"
           >
             <LayoutGrid size={14} />
-            <span className="hidden sm:inline">Grid</span>
+            <span className="hidden sm:inline text-[11px] font-semibold">Grid</span>
           </button>
           <button
             type="button"
@@ -76,10 +123,10 @@ export default function ListItems({
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="List view"
+            title="Compact row layout"
           >
             <ListIcon size={14} />
-            <span className="hidden sm:inline">List</span>
+            <span className="hidden sm:inline text-[11px] font-semibold">Compact</span>
           </button>
         </div>
       </div>
@@ -189,6 +236,35 @@ export default function ListItems({
                 key={safeId}
                 className="group flex items-center justify-between bg-card hover:bg-muted/40 border border-border/60 shadow-sm rounded-xl p-2.5 sm:p-3 transition-all"
               >
+                {/* Rank Number Badge & Reorder Arrows (Owner only) */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {isOwner && !isSystemList && (
+                    <div className="flex flex-col -space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => handleMove(index, "up")}
+                        disabled={index === 0}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed"
+                        title="Move Up (#)"
+                      >
+                        <ChevronUp size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(index, "down")}
+                        disabled={index === sortedItems.length - 1}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 transition-all cursor-pointer disabled:cursor-not-allowed"
+                        title="Move Down (#)"
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+                    </div>
+                  )}
+                  <div className="w-6 sm:w-7 text-xs sm:text-sm font-black text-muted-foreground text-center">
+                    #{index + 1}
+                  </div>
+                </div>
+
                 {/* Thumbnail */}
                 <div className="w-12 h-16 sm:w-14 sm:h-20 bg-muted flex items-center justify-center rounded-lg mr-3 overflow-hidden shrink-0 border border-border/40 shadow-xs relative">
                   {thumbnail ? (

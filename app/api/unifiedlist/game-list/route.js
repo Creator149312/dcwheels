@@ -1,0 +1,313 @@
+// app/api/unifiedlist/game-list/route.js
+// Separate, isolated endpoint for generating a game list from a free-text prompt.
+// AI interprets the prompt (title, description, game picks); each pick is resolved
+// to a real RAWG game via /games?search= so every item carries a genuine RAWG id.
+// Does NOT modify the generic POST /api/unifiedlist behavior.
+
+import { NextResponse } from "next/server";
+import mongoose from "mongoose";
+import { connectMongoDB } from "@lib/mongodb";
+import UnifiedList from "@models/unifiedlist";
+import { sessionUserId } from "@utils/SessionData";
+import { createImmutableGlobalSlug, getListUrl } from "@utils/UrlHandler";
+import { fetchWithTimeout } from "@lib/topicPage";
+import { slugify } from "@lib/slug";
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const MAX_GAMES = 40;
+const MIN_GAMES = 7;
+
+/**
+ * Trim text to the last complete sentence within the limit.
+ * Avoids mid-word / mid-sentence cutoffs in generated content.
+ */
+function trimAtSentenceBoundary(text, maxChars) {
+  if (!text || text.length <= maxChars) return text;
+  const window = text.slice(0, maxChars);
+  const lastBoundary = Math.max(
+    window.lastIndexOf(". "),
+    window.lastIndexOf("! "),
+    window.lastIndexOf("? "),
+    window.lastIndexOf(".\n"),
+    window.lastIndexOf("!\n"),
+    window.lastIndexOf("?\n")
+  );
+  if (lastBoundary > maxChars * 0.4) {
+    return window.slice(0, lastBoundary + 1).trim();
+  }
+  const lastSpace = window.lastIndexOf(" ");
+  return (lastSpace > 0 ? window.slice(0, lastSpace) : window).trim();
+}
+
+// Rotating description styles so generated text doesn't read the same.
+const DESCRIPTION_STYLES = [
+  { key: "debate", instruction: (t) => `Open with a bold hot take about the games in "${t}" that gamers love to argue about.` },
+  { key: "nostalgia", instruction: (t) => `Open with a nostalgic or emotional angle — why the games in "${t}" stick with players long after the credits roll.` },
+  { key: "challenge", instruction: (t) => `Open with a direct challenge to the reader ("How many of these have you actually finished?").` },
+  { key: "guide", instruction: (t) => `Open with a helpful, guide-like tone — for players wondering where to start with "${t}".` },
+  { key: "community", instruction: (t) => `Open with the community angle — multiplayer nights, speedruns, fan debates around "${t}".` },
+];
+
+/**
+ * Extract a JSON payload from a model response. GPT-5 sometimes wraps output
+ * in ```json fences despite instructions — strip them before parsing.
+ */
+function extractJson(raw) {
+  if (!raw) return null;
+  let text = String(raw).trim();
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) text = fence[1].trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end > start) text = text.slice(start, end + 1);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ask AI to interpret the user prompt and return:
+ * { listTitle, description, games: [{ title, year }] }
+ */
+async function generateGamePlan(userPrompt) {
+  const style = DESCRIPTION_STYLES[Math.floor(Math.random() * DESCRIPTION_STYLES.length)];
+
+  const prompt = `A user wants a video game list based on this request: "${userPrompt}"
+
+Return ONLY valid JSON in this exact format, no markdown, no code blocks:
+{
+  "listTitle": "A catchy, SEO-friendly list title (max 70 characters) that captures the request",
+  "description": "A natural, fan-written description of 120-150 words in 2 short paragraphs. ${style.instruction(userPrompt)} Sound like a genuine gamer. BANNED phrases: curated collection, comprehensive list, delve into, embark on a journey, you'll love this, dives deep. Do NOT start with 'If you'. End with a complete sentence.",
+  "games": [
+    { "title": "Exact official game title", "year": 2015 }
+  ]
+}
+
+Game selection rules:
+- Include at least ${MIN_GAMES} and up to ${MAX_GAMES} REAL video games that genuinely fit the request
+- If the request is narrow (e.g. a specific franchise), include every matching game even if that's only 7-15
+- If the request is broad, aim for 30-40
+- Use exact official titles as they appear on RAWG (critical for search matching)
+- Include the release year to disambiguate remakes, remasters and sequels
+- Do NOT append edition labels (no "GOTY Edition", "Definitive Edition") unless the request specifically asks for that edition — use the base game title
+- Order from most essential to least
+- Mix popular picks with a few underrated gems
+- Only include games you are confident actually exist`;
+
+  const res = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.85,
+    max_tokens: 1500,
+  });
+
+  const raw = res.choices?.[0]?.message?.content?.trim() || "";
+  if (!raw) {
+    console.error("Game plan: empty completion", JSON.stringify({
+      finishReason: res.choices?.[0]?.finish_reason,
+      usage: res.usage,
+    }));
+    throw new Error("AI returned an empty response");
+  }
+
+  const parsed = extractJson(raw);
+  if (!parsed) {
+    console.error("Game plan: unparseable response", raw.slice(0, 200));
+    throw new Error("AI returned invalid JSON");
+  }
+
+  if (!parsed.listTitle || !Array.isArray(parsed.games) || parsed.games.length === 0) {
+    throw new Error("AI returned an invalid game plan");
+  }
+
+  return {
+    listTitle: String(parsed.listTitle).slice(0, 100),
+    description: trimAtSentenceBoundary(String(parsed.description || ""), 1000),
+    games: parsed.games.slice(0, MAX_GAMES),
+  };
+}
+
+/**
+ * Resolve one game title to a RAWG game via /games?search=.
+ * Returns the best match with a cover image, or null when nothing usable is found.
+ */
+async function resolveGameOnRAWG(title, year) {
+  const apiKey = process.env.RAWG_API_KEY;
+  if (!apiKey || !title) return null;
+
+  const url = new URL("https://api.rawg.io/api/games");
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set("search", title);
+  // search_precise=false allows fuzzy match; RAWG ranks by relevance
+  url.searchParams.set("search_precise", "false");
+  url.searchParams.set("page_size", "5");
+
+  try {
+    const res = await fetchWithTimeout(url.toString(), { next: { revalidate: 86400 } }, 8000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const results = (data.results || []).filter((g) => g.background_image);
+    if (results.length === 0) return null;
+
+    const needle = title.toLowerCase().trim();
+
+    // Prefer exact title match; then exact+year; else first result
+    const exact = results.find((g) => (g.name || "").toLowerCase().trim() === needle);
+    if (exact && year) {
+      const yearStr = String(year);
+      const exactYear = results.find(
+        (g) =>
+          (g.name || "").toLowerCase().trim() === needle &&
+          (g.released || "").startsWith(yearStr)
+      );
+      if (exactYear) return exactYear;
+    }
+    return exact || results[0];
+  } catch {
+    return null;
+  }
+}
+
+export async function POST(req) {
+  await connectMongoDB();
+
+  try {
+    const userId = await sessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const {
+      prompt: userPrompt,
+      isPublic = true,
+      listName, // optional custom title override
+    } = body;
+
+    if (!userPrompt || typeof userPrompt !== "string" || userPrompt.trim().length < 5) {
+      return NextResponse.json(
+        { error: "Prompt is required (at least 5 characters)" },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.RAWG_API_KEY) {
+      return NextResponse.json({ error: "RAWG API is not configured" }, { status: 500 });
+    }
+
+    // ✅ 1. AI interprets the prompt → title, description, game picks
+    let plan;
+    try {
+      plan = await generateGamePlan(userPrompt.trim());
+    } catch (e) {
+      console.error("Game plan generation failed:", e.message);
+      return NextResponse.json(
+        { error: "Could not interpret the prompt. Try rephrasing it." },
+        { status: 422 }
+      );
+    }
+
+    const baseName = typeof listName === "string" && listName.trim()
+      ? listName.trim().slice(0, 100)
+      : plan.listTitle;
+
+    // Prevent duplicate list names for the same user
+    const existing = await UnifiedList.findOne({
+      userId,
+      name: baseName,
+      isDeleted: { $ne: true },
+    }).lean();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "A list with this name already exists" },
+        { status: 409 }
+      );
+    }
+
+    // ✅ 2. Resolve each AI pick against RAWG (parallel, tolerant of failures)
+    const resolved = await Promise.all(
+      plan.games.map((g) => resolveGameOnRAWG(g.title, g.year))
+    );
+
+    // ✅ 3. Deduplicate by RAWG id and build entity items
+    const seenIds = new Set();
+    const items = [];
+    for (const game of resolved) {
+      if (!game) continue;
+      const id = String(game.id || "").trim();
+      if (!id || seenIds.has(id)) continue;
+      seenIds.add(id);
+
+      const name = game.name || "Untitled";
+      items.push({
+        type: "entity",
+        entityType: "game",
+        entityId: id,
+        name,
+        slug: `${id}-${game.slug || slugify(name)}`,
+        image: game.background_image || null,
+        addedAt: new Date(),
+        rank: items.length + 1,
+      });
+    }
+
+    if (items.length < MIN_GAMES) {
+      return NextResponse.json(
+        { error: `Only ${items.length} game${items.length === 1 ? "" : "s"} could be matched on RAWG (need at least ${MIN_GAMES}). Try a broader prompt.` },
+        { status: 404 }
+      );
+    }
+
+    const fallbackDescription = `Game list: ${baseName}.`;
+    const description = (plan.description || fallbackDescription).slice(0, 1000);
+
+    // ✅ 4. Create the list (Standard format; Tier Board toggle stays available)
+    const idForSlug = new mongoose.Types.ObjectId().toString();
+    const slug = await createImmutableGlobalSlug({ title: baseName, id: idForSlug });
+
+    const newList = await UnifiedList.create({
+      _id: idForSlug,
+      userId,
+      name: baseName,
+      description,
+      tags: ["games", slugify(baseName)].filter(Boolean),
+      items,
+      isPublic: typeof isPublic === "boolean" ? isPublic : true,
+      slug,
+      format: "standard",
+    });
+
+    const formatted = {
+      id: newList._id,
+      name: newList.name,
+      slug: newList.slug,
+      description: newList.description,
+      tags: newList.tags,
+      createdAt: newList.createdAt,
+      updatedAt: newList.updatedAt,
+      isPublic: newList.isPublic ?? true,
+      isSystem: newList.isSystem ?? false,
+      format: newList.format || "standard",
+      tierConfig: newList.tierConfig,
+      items: newList.items,
+    };
+
+    return NextResponse.json(
+      { list: formatted, url: getListUrl(formatted) },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("POST /api/unifiedlist/game-list error:", err);
+    return NextResponse.json(
+      { error: "Failed to create game list", details: err.message },
+      { status: 500 }
+    );
+  }
+}

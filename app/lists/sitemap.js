@@ -11,10 +11,11 @@ export default async function sitemap() {
 
   const lists = await UnifiedList.find({
     isPublic: true,
+    indexed: true,
     isDeleted: { $ne: true },
     isSystem: { $ne: true },
   })
-    .select("_id updatedAt")
+    .select("_id slug updatedAt")
     .limit(1000)
     .lean();
 

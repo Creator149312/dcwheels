@@ -22,7 +22,7 @@ export async function GET(req, { params }) {
     // - Owner always allowed
     // - Non-owners allowed only if list.isPublic === true
     const list = await UnifiedList.findOne({ _id: id, isDeleted: { $ne: true } })
-      .select("_id userId name description tags createdAt updatedAt isPublic isSystem items")
+      .select("_id userId name description tags createdAt updatedAt isPublic isSystem items format tierConfig slug")
       .lean();
 
     if (!list) {
@@ -51,6 +51,16 @@ export async function GET(req, { params }) {
       updatedAt: list.updatedAt,
       isPublic: list.isPublic ?? true,
       isSystem: list.isSystem ?? false,
+      format: list.format || "standard",
+      tierConfig: list.tierConfig?.length
+        ? list.tierConfig
+        : [
+            { key: "S", label: "S", color: "#EF4444" },
+            { key: "A", label: "A", color: "#F97316" },
+            { key: "B", label: "B", color: "#EAB308" },
+            { key: "C", label: "C", color: "#10B981" },
+            { key: "D", label: "D", color: "#3B82F6" },
+          ],
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,
@@ -62,6 +72,8 @@ export async function GET(req, { params }) {
         slug: item.slug,
         image: item.image,
         status: item.status ?? "want",
+        tier: item.tier || null,
+        rank: item.rank ?? null,
         addedAt: item.addedAt,
       })),
     };
@@ -94,9 +106,9 @@ export async function PUT(req, { params }) {
 
     // ✅ 2. Parse body
     const body = await req.json();
-    const { name, description, tags } = body;
+    const { name, description, tags, format, tierConfig } = body;
 
-    if (!name && !description && !tags) {
+    if (!name && !description && !tags && !format && !tierConfig) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
@@ -169,6 +181,17 @@ export async function PUT(req, { params }) {
       list.tags = tags;
     }
 
+    if (format !== undefined) {
+      const VALID_FORMATS = ["standard", "ranked", "tiered"];
+      if (VALID_FORMATS.includes(format)) {
+        list.format = format;
+      }
+    }
+
+    if (tierConfig !== undefined && Array.isArray(tierConfig)) {
+      list.tierConfig = tierConfig;
+    }
+
     await list.save();
 
     // Bust ISR cache for this detail page.
@@ -190,6 +213,8 @@ export async function PUT(req, { params }) {
           tags: list.tags,
           isPublic: list.isPublic ?? false,
           isSystem: list.isSystem ?? false,
+          format: list.format || "standard",
+          tierConfig: list.tierConfig,
           items: list.items,
         },
       },
@@ -280,20 +305,13 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ 2. Parse body — allow isPublic toggle only
+    // ✅ 2. Parse body — allow isPublic, format, and tierConfig updates
     const body = await req.json();
-    const { isPublic } = body;
+    const { isPublic, format, tierConfig } = body;
 
-    if (isPublic === undefined) {
+    if (isPublic === undefined && format === undefined && tierConfig === undefined) {
       return NextResponse.json(
-        { error: "Must provide isPublic" },
-        { status: 400 }
-      );
-    }
-
-    if (typeof isPublic !== "boolean") {
-      return NextResponse.json(
-        { error: "Invalid isPublic. Must be a boolean." },
+        { error: "Must provide isPublic, format, or tierConfig" },
         { status: 400 }
       );
     }
@@ -308,7 +326,36 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    list.isPublic = isPublic;
+    if (isPublic !== undefined) {
+      if (typeof isPublic !== "boolean") {
+        return NextResponse.json(
+          { error: "Invalid isPublic. Must be a boolean." },
+          { status: 400 }
+        );
+      }
+      list.isPublic = isPublic;
+    }
+
+    if (format !== undefined) {
+      const VALID_FORMATS = ["standard", "ranked", "tiered"];
+      if (!VALID_FORMATS.includes(format)) {
+        return NextResponse.json(
+          { error: "Invalid format. Must be 'standard', 'ranked', or 'tiered'." },
+          { status: 400 }
+        );
+      }
+      list.format = format;
+    }
+
+    if (tierConfig !== undefined) {
+      if (!Array.isArray(tierConfig) || tierConfig.length === 0) {
+        return NextResponse.json(
+          { error: "tierConfig must be a non-empty array of tier rows." },
+          { status: 400 }
+        );
+      }
+      list.tierConfig = tierConfig;
+    }
 
     await list.save();
 
@@ -332,6 +379,8 @@ export async function PATCH(req, { params }) {
       updatedAt: list.updatedAt,
       isPublic: list.isPublic ?? true,
       isSystem: list.isSystem ?? false,
+      format: list.format || "standard",
+      tierConfig: list.tierConfig,
       items: list.items.map((item) => ({
         _id: item._id,
         type: item.type,
@@ -343,6 +392,8 @@ export async function PATCH(req, { params }) {
         slug: item.slug,
         image: item.image,
         status: item.status ?? "want",
+        tier: item.tier || null,
+        rank: item.rank ?? null,
         addedAt: item.addedAt,
       })),
     };

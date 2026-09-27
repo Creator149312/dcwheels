@@ -28,8 +28,8 @@ export async function POST(req, { params }) {
       if (body.items.length === 0) {
         return NextResponse.json({ error: "No items provided" }, { status: 400 });
       }
-      if (body.items.length > 100) {
-        return NextResponse.json({ error: "Cannot add more than 100 items at once" }, { status: 400 });
+      if (body.items.length > 250) {
+        return NextResponse.json({ error: "Cannot add more than 250 items at once" }, { status: 400 });
       }
       const invalid = body.items.find(
         (item) => item.type !== "word" || !item.word || typeof item.word !== "string" || item.word.trim().length === 0
@@ -103,6 +103,8 @@ export async function POST(req, { params }) {
             name: list.name,
             userId: list.userId,
             description: list.description,
+            format: list.format || "standard",
+            tierConfig: list.tierConfig,
             items: list.items,
           },
         },
@@ -171,6 +173,13 @@ export async function POST(req, { params }) {
       if (status) newItem.status = status;
     }
 
+    if (body.tier !== undefined) {
+      newItem.tier = body.tier ? String(body.tier).trim() : null;
+    }
+    if (body.rank !== undefined) {
+      newItem.rank = typeof body.rank === "number" ? body.rank : null;
+    }
+
     // ✅ 5. Push item and save
     list.items.push(newItem);
     await list.save();
@@ -187,6 +196,8 @@ export async function POST(req, { params }) {
           name: list.name,
           userId: list.userId,
           description: list.description,
+          format: list.format || "standard",
+          tierConfig: list.tierConfig,
           items: list.items,
         },
       },
@@ -198,5 +209,73 @@ export async function POST(req, { params }) {
       { error: "Failed to add item", details: err.message },
       { status: 500 }
     );
+  }
+}
+
+// PUT /api/unifiedlist/[id]/items
+// Batch update/reorder items (used by TierBoard drag-and-drop and RankedList sorting)
+export async function PUT(req, { params }) {
+  await connectMongoDB();
+
+  try {
+    const { id } = params;
+
+    const userId = await sessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { items } = body;
+
+    if (!Array.isArray(items)) {
+      return NextResponse.json({ error: "items array is required" }, { status: 400 });
+    }
+
+    const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
+    if (!list) {
+      return NextResponse.json({ error: "List not found or access denied" }, { status: 404 });
+    }
+
+    // Map existing items by string ID
+    const itemMap = new Map(list.items.map((it) => [String(it._id), it]));
+    const updatedList = [];
+
+    for (const incoming of items) {
+      const match = incoming._id ? itemMap.get(String(incoming._id)) : null;
+      if (match) {
+        if (incoming.tier !== undefined) match.tier = incoming.tier ? String(incoming.tier).trim() : null;
+        if (incoming.rank !== undefined) match.rank = typeof incoming.rank === "number" ? incoming.rank : null;
+        updatedList.push(match);
+      }
+    }
+
+    if (updatedList.length === list.items.length) {
+      list.items = updatedList;
+    }
+    await list.save();
+
+    revalidatePath(`/lists/${id}`);
+    revalidatePath(getListUrl(list));
+    revalidateTag(`list-${id}`);
+
+    return NextResponse.json(
+      {
+        message: "Items reordered",
+        list: {
+          id: list._id,
+          name: list.name,
+          userId: list.userId,
+          description: list.description,
+          format: list.format || "standard",
+          tierConfig: list.tierConfig,
+          items: list.items,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("PUT /api/lists/:id/items error:", err);
+    return NextResponse.json({ error: "Failed to reorder items", details: err.message }, { status: 500 });
   }
 }

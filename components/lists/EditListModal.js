@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 export default function EditListModal({ isOpen, onClose, list, isSystem = false, onSave }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [format, setFormat] = useState("standard");
   const [tagInput, setTagInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -13,6 +14,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
     if (list) {
       setName(list.name || "");
       setDescription(list.description || "");
+      setFormat(list.format || "standard");
       setTagInput(Array.isArray(list.tags) ? list.tags.join(", ") : "");
     }
   }, [list]);
@@ -29,7 +31,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
             .filter((t) => t.length > 0)
         : [];
 
-      await onSave({ name, description, tags: tagArray });
+      await onSave({ name, description, tags: tagArray, format });
     } finally {
       setIsSaving(false);
     }
@@ -93,7 +95,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
                   ? "bg-muted border-border text-muted-foreground cursor-not-allowed"
                   : "bg-card border-border text-foreground hover:border-primary/50"
               }`}
-              rows={4}
+              rows={3}
               value={description}
               onChange={(e) => !isSystem && setDescription(e.target.value)}
               readOnly={isSystem}
@@ -105,6 +107,23 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
               {description.length}/300 characters
             </p>
           </div>
+
+          {/* Default Format (Non-system lists only) */}
+          {!isSystem && (
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-1.5">
+                Default Format
+              </label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg border bg-card border-border text-foreground hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm font-semibold cursor-pointer"
+              >
+                <option value="standard">Standard List (Collections, watchlists & guides)</option>
+                <option value="tiered">Tier List (S, A, B, C, D ranking board)</option>
+              </select>
+            </div>
+          )}
 
           {/* Tags Field */}
           {!isSystem && (
