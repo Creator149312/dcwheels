@@ -22,7 +22,7 @@ export async function GET(request) {
   const query = { userId: new mongoose.Types.ObjectId(userId) };
 
   const lists = await Wheel.find(query)
-    .select("_id title description data createdAt wheelPreview tags")
+    .select("_id title slug description data createdAt wheelPreview tags")
     .sort({ updatedAt: -1 })
     .lean();
 

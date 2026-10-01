@@ -5,6 +5,8 @@ import UnifiedList from "@models/unifiedlist";
 import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
+import { syncListIndexedState } from "@lib/listIndexGate";
+import { validateContentSafety, validateListItemsSafety } from "@lib/contentSafety";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,10 @@ export async function POST(req, { params }) {
           { status: 400 }
         );
       }
+      const itemsSafety = validateListItemsSafety(body.items);
+      if (!itemsSafety.isSafe) {
+        return NextResponse.json({ error: itemsSafety.error }, { status: 400 });
+      }
     } else {
       const { type } = body;
       if (!type || !["word", "entity"].includes(type)) {
@@ -50,6 +56,12 @@ export async function POST(req, { params }) {
       }
       if (type === "word" && (!body.word || typeof body.word !== "string" || body.word.trim().length === 0)) {
         return NextResponse.json({ error: "word is required for word items" }, { status: 400 });
+      }
+      if (type === "word") {
+        const itemSafety = validateContentSafety([body.word]);
+        if (!itemSafety.isSafe) {
+          return NextResponse.json({ error: itemSafety.error }, { status: 400 });
+        }
       }
       if (type === "entity" && (!body.entityType || !body.entityId || !body.name || !body.slug)) {
         return NextResponse.json(
@@ -89,6 +101,7 @@ export async function POST(req, { params }) {
       if (newItems.length > 0) {
         list.items.push(...newItems);
         await list.save();
+        await syncListIndexedState(list._id);
       }
 
       revalidatePath(`/lists/${id}`);
@@ -183,6 +196,9 @@ export async function POST(req, { params }) {
     // ✅ 5. Push item and save
     list.items.push(newItem);
     await list.save();
+
+    // Check if adding this item qualifies list for indexing (e.g. crossing >= 7 items threshold)
+    await syncListIndexedState(list._id);
 
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));

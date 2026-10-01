@@ -7,6 +7,8 @@ import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
 import { del } from "@vercel/blob";
+import { syncListIndexedState } from "@lib/listIndexGate";
+import { validateContentSafety } from "@lib/contentSafety";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,9 @@ export async function DELETE(req, { params }) {
     // or: list.items.pull({ _id: itemId });
 
     await list.save();
+
+    // Check if removing this item demotes list from indexing (e.g. dropping < 7 items)
+    await syncListIndexedState(list._id);
 
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
@@ -126,6 +131,10 @@ export async function PATCH(req, { params }) {
         const newWord = String(body.word || "").trim();
         if (!newWord) {
           return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
+        }
+        const safety = validateContentSafety([newWord]);
+        if (!safety.isSafe) {
+          return NextResponse.json({ error: safety.error }, { status: 400 });
         }
         item.word = newWord;
         hasUpdated = true;

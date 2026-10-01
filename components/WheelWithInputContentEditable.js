@@ -315,6 +315,8 @@ const WheelWithInputContentEditable = ({
             setMuted={setMuted}
             onEditClick={() => setIsEditorOpen(true)}
             isEditingActive={currentPath === "/" || isWheelsCreatePage || isEditMode}
+            wheelTitle={pageWheelTitle}
+            wheelDescription={wheelData?.description}
           />
         </div>
 

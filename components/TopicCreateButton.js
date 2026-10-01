@@ -85,7 +85,7 @@ export default function TopicCreateButton({ tag, tagDisplay, contentRef = null }
       if (session?.user?.username) {
         router.push(`/u/${session.user.username}`);
       } else {
-        router.push(id ? `/post/${id}` : `/tags/${tag}`);
+        router.push(id ? `/posts/${id}` : `/tags/${tag}`);
       }
     } catch (err) {
       setError(err.message);

@@ -175,7 +175,7 @@ function AskCard({ data }) {
 }
 
 function PostCard({ data }) {
-  const href = `/post/${data.id || data._id}`;
+  const href = `/posts/${data.id || data._id}`;
 
   return (
     <div className="space-y-2">

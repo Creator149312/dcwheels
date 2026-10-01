@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { isRouteAdEligible } from "@/lib/adEligibility";
 
 function AdSlot({ slot, width, minHeight, className }) {
   const insRef = useRef(null);
@@ -9,15 +10,20 @@ function AdSlot({ slot, width, minHeight, className }) {
     const el = insRef.current;
     if (!el) return;
 
+    let cancelled = false;
+    let idleHandle = null;
+    let timerHandle = null;
+
     const schedulePush = () => {
       if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(doPush, { timeout: 2000 });
+        idleHandle = requestIdleCallback(doPush, { timeout: 2000 });
       } else {
-        setTimeout(doPush, 0);
+        timerHandle = setTimeout(doPush, 0);
       }
     };
 
     function doPush() {
+      if (cancelled) return;
       if (!el.isConnected) return;
       if (el.dataset.adsActualPushed) return;
       if (el.getAttribute("data-adsbygoogle-status")) return;
@@ -32,6 +38,7 @@ function AdSlot({ slot, width, minHeight, className }) {
     // Use ResizeObserver exclusively — reads width from contentRect (no
     // reflow) instead of el.offsetWidth (forces synchronous layout flush).
     const ro = new ResizeObserver((entries) => {
+      if (cancelled) return;
       const w = entries[0]?.contentRect?.width ?? 0;
       if (w === 0) return;
       if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
@@ -44,7 +51,16 @@ function AdSlot({ slot, width, minHeight, className }) {
       schedulePush();
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+      if (idleHandle && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(idleHandle);
+      }
+      if (timerHandle) {
+        clearTimeout(timerHandle);
+      }
+    };
   }, [slot]);
 
   return (
@@ -88,5 +104,10 @@ function AdaptiveLeaderBoardInner({ desktopSlot, mobileSlot }) {
 
 export default function AdaptiveLeaderBoardAds(props) {
   const pathname = usePathname();
+
+  if (!isRouteAdEligible(pathname)) {
+    return null;
+  }
+
   return <AdaptiveLeaderBoardInner key={pathname} {...props} />;
 }

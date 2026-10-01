@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { EyeOff, Flag, Trash2, Pencil } from "lucide-react";
+import { EyeOff, Flag, Trash2, Pencil, Share2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const REPORT_REASONS = [
@@ -30,6 +30,20 @@ export default function PostMenu({ postId, isOwnPost, isLoggedIn, onHide, onClos
     onHide();
     onClose();
     toast("Post hidden", { icon: "👋" });
+  };
+
+  const handleCopyLink = () => {
+    const postUrl = typeof window !== "undefined"
+      ? `${window.location.origin}/posts/${postId}`
+      : `/posts/${postId}`;
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(postUrl);
+      toast.success("Post link copied!");
+    } else {
+      toast.error("Unable to copy link");
+    }
+    onClose();
   };
 
   const handleDelete = async () => {
@@ -90,12 +104,24 @@ export default function PostMenu({ postId, isOwnPost, isLoggedIn, onHide, onClos
     <div className="absolute right-0 top-9 z-[81] w-52 bg-popover border border-border rounded-2xl shadow-xl overflow-hidden text-sm py-1">
       {!showReportPicker ? (
         <>
+          {/* Share / Copy Link */}
+          <button
+            onClick={handleCopyLink}
+            className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-accent transition"
+          >
+            <Share2 size={15} className="text-muted-foreground" />
+            <div>
+              <p className="font-medium text-foreground">Share post</p>
+              <p className="text-xs text-muted-foreground">Copy direct link</p>
+            </div>
+          </button>
+
           {/* ── Own-post actions ── */}
           {isOwnPost && (
             <>
               <button
                 onClick={() => {
-                  router.push(`/post/create?postId=${postId}`);
+                  router.push(`/posts/create?postId=${postId}`);
                   onClose();
                 }}
                 className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-accent transition"

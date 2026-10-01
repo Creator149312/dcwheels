@@ -225,7 +225,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
             </div>
             <div className="flex flex-col py-1">
               <Link
-                href="/post/create"
+                href="/posts/create"
                 className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
                 onClick={() => setCreateSheetOpen(false)}
               >

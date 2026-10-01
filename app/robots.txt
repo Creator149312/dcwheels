@@ -12,6 +12,21 @@ User-agent: SemrushBot
 User-agent: DotBot
 Disallow: /
 
+# AdSense Bot Policy: Mediapartners-Google must have unfettered access
+# to inspect page text for ad placement and policy compliance.
+User-agent: Mediapartners-Google
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /register
+Disallow: /verify/
+Disallow: /embed/
+Allow: /wheels/
+Allow: /lists/
+Allow: /posts/
+Allow: /tags/
+Allow: /
+
 # General bot policy: add a Crawl-delay to slow down aggressive crawlers
 # This prevents bots from triggering thousands of ISR revalidations per minute.
 User-agent: *
@@ -32,7 +47,6 @@ Disallow: /*?*
 Disallow: /*sex*
 Disallow: /tags
 Disallow: /u/*
-Disallow: /post/*
 
 Allow: /sitemap.xml
 Allow: /character/sitemap.xml
@@ -40,6 +54,7 @@ Allow: /anime/sitemap.xml
 Allow: /movie/sitemap.xml
 Allow: /game/sitemap.xml
 Allow: /wheels/sitemap.xml
+Allow: /lists/sitemap.xml
 
 # Industry standard sitemap declaration (Replace with your actual domain)
 Sitemap: https://spinpapa.com/sitemap.xml
@@ -48,3 +63,4 @@ Sitemap: https://spinpapa.com/anime/sitemap.xml
 Sitemap: https://spinpapa.com/movie/sitemap.xml
 Sitemap: https://spinpapa.com/game/sitemap.xml
 Sitemap: https://spinpapa.com/wheels/sitemap.xml
+Sitemap: https://spinpapa.com/lists/sitemap.xml

@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { Check, Loader2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEntityTracking } from "./EntityTrackingProvider";
+
+// Lazy-load the heavy dialog and star modal only if and when an unrated user needs it
+const QuickRateModal = dynamic(() => import("./QuickRateModal"), { ssr: false });
 
 const LABELS = {
   movie: "Watched",
@@ -21,8 +25,11 @@ export default function TrackQuickButton({ type, entityId, name, slug, image }) 
   const ctx = useEntityTracking();
   const statusData = ctx?.statusData;
   const setStatusData = ctx?.setStatusData;
+  const userRating = ctx?.userRating;
+  const setUserRating = ctx?.setUserRating;
 
   const [loading, setLoading] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
 
   const isDone = statusData?.status === "done";
   const isLoading = statusData === undefined && authStatus === "authenticated";
@@ -58,6 +65,11 @@ export default function TrackQuickButton({ type, entityId, name, slug, image }) 
         const data = await res.json();
         setStatusData?.({ status: data.status });
         toast.success(`Marked as ${doneLabel}`);
+
+        // If the user has not rated yet and this is a ratable content type, prompt with quick rating popup
+        if (!userRating && type !== "character") {
+          setShowRateModal(true);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -73,36 +85,48 @@ export default function TrackQuickButton({ type, entityId, name, slug, image }) 
     );
   }
 
-  if (isDone) {
-    return (
-      <button
-        onClick={toggleStatus}
-        disabled={loading}
-        className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold border border-green-600/30 bg-green-600/10 text-green-700 dark:text-green-400 hover:bg-green-600/15 active:scale-95 transition-colors duration-150 disabled:opacity-50 shadow-sm"
-      >
-        {loading ? (
-          <Loader2 size={15} className="animate-spin" />
-        ) : (
-          <Check size={15} strokeWidth={3} />
-        )}
-        {doneLabel}
-        <X size={13} className="ml-0.5 opacity-60" />
-      </button>
-    );
-  }
-
   return (
-    <button
-      onClick={toggleStatus}
-      disabled={loading}
-      className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold border border-border bg-muted/50 text-foreground hover:bg-muted active:scale-95 transition-colors duration-150 disabled:opacity-50 shadow-sm"
-    >
-      {loading ? (
-        <Loader2 size={15} className="animate-spin" />
+    <>
+      {isDone ? (
+        <button
+          onClick={toggleStatus}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold border border-green-600/30 bg-green-600/10 text-green-700 dark:text-green-400 hover:bg-green-600/15 active:scale-95 transition-colors duration-150 disabled:opacity-50 shadow-sm"
+        >
+          {loading ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Check size={15} strokeWidth={3} />
+          )}
+          {doneLabel}
+          <X size={13} className="ml-0.5 opacity-60" />
+        </button>
       ) : (
-        <Check size={15} className="text-muted-foreground/70" />
+        <button
+          onClick={toggleStatus}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold border border-border bg-muted/50 text-foreground hover:bg-muted active:scale-95 transition-colors duration-150 disabled:opacity-50 shadow-sm"
+        >
+          {loading ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Check size={15} className="text-muted-foreground/70" />
+          )}
+          Mark as {doneLabel}
+        </button>
       )}
-      Mark as {doneLabel}
-    </button>
+
+      {/* Lazy-loaded Quick Rate Dialog (only renders in DOM once showRateModal becomes true) */}
+      {showRateModal && (
+        <QuickRateModal
+          open={showRateModal}
+          onOpenChange={setShowRateModal}
+          name={name}
+          doneLabel={doneLabel}
+          topicPageId={entityId}
+          onRated={(score) => setUserRating?.(score)}
+        />
+      )}
+    </>
   );
 }

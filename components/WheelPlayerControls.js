@@ -6,7 +6,9 @@ import {
   Maximize,
   Minimize,
   Pencil,
+  ListOrdered,
 } from "lucide-react";
+import { switchWheelToList } from "@/utils/wheelToListBridge";
 
 export default function WheelPlayerControls({
   handleSpinClick,
@@ -22,9 +24,40 @@ export default function WheelPlayerControls({
   setMuted,
   onEditClick,
   isEditingActive,
+  wheelTitle,
+  wheelDescription,
 }) {
   const toggleMute = () => {
     setMuted((prev) => !prev);
+  };
+
+  const handleSwitchToList = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 1. If saveWheelData is available, ensure current wheel edits are flushed
+    if (typeof saveWheelData === "function") {
+      try {
+        saveWheelData(segData, wheelData);
+      } catch (err) {
+        console.warn("Failed saving wheel before switch:", err);
+      }
+    }
+
+    // 2. Convert current wheel segments + title/desc into List draft
+    const targetUrl = switchWheelToList({
+      segData,
+      wheelData,
+      wheelTitle,
+      wheelDescription,
+    });
+
+    // 3. Route to list creation page
+    if (router && typeof router.push === "function") {
+      router.push(targetUrl);
+    } else {
+      window.location.href = targetUrl;
+    }
   };
 
   return (
@@ -59,6 +92,17 @@ export default function WheelPlayerControls({
 
       {/* Right Controls: Fullscreen */}
       <div className="flex items-center gap-1 sm:gap-4 pointer-events-auto">
+        {/* Switch to List Button */}
+        <button
+          type="button"
+          onClick={handleSwitchToList}
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/25 active:scale-95 transition-all text-white outline-none focus-visible:ring-2 focus-visible:ring-white text-xs sm:text-sm font-semibold backdrop-blur-xs"
+          title="Convert this wheel into a rankable list or tier board"
+        >
+          <ListOrdered size={16} className="text-violet-300 sm:w-[18px] sm:h-[18px]" />
+          <span>Switch to List</span>
+        </button>
+
         {/* Edit button: 
             1. If editing is active (Home/Create/?edit=true), show yellow button on mobile only 
             2. Otherwise show white button that redirects to creates on all devices */}

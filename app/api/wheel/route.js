@@ -6,6 +6,9 @@ import { sessionUser } from "@utils/SessionData";
 import { revalidateTag } from "next/cache";
 import mongoose from "mongoose";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
+import { createImmutableGlobalSlug } from "@utils/UrlHandler";
+import { syncWheelIndexedState } from "@lib/wheelIndexGate";
+import { validateContentSafety, validateWheelSegmentsSafety } from "@lib/contentSafety";
 
 // Strip base64 images from segment data before persisting to DB.
 // Blob URLs (https://...) are kept; data:image/... strings are removed.
@@ -52,12 +55,32 @@ export async function POST(request) {
       if (quizErr) error = quizErr;
     }
 
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const safetyCheck = validateContentSafety([
+      title,
+      description,
+      ...(Array.isArray(tags) ? tags : []),
+    ]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ error: safetyCheck.error }, { status: 400 });
+    }
+
+    const segmentsSafetyCheck = validateWheelSegmentsSafety(data);
+    if (!segmentsSafetyCheck.isSafe) {
+      return NextResponse.json({ error: segmentsSafetyCheck.error }, { status: 400 });
+    }
+
     if (error.length === 0) {
       await connectMongoDB();
 
       try {
+        const idForSlug = new mongoose.Types.ObjectId().toString();
+        const slug = await createImmutableGlobalSlug({ title, id: idForSlug });
+
         const creationData = await Wheel.create({
+          _id: idForSlug,
           title,
+          slug,
           description,
           data: sanitizeSegments(data),
           userId: new mongoose.Types.ObjectId(userId),
@@ -74,6 +97,9 @@ export async function POST(request) {
             : [],
         });
 
+        // Evaluate and sync wheel indexed state
+        await syncWheelIndexedState(creationData._id);
+
         revalidateTag(`wheel-${creationData._id}`);
         if (userId) {
           revalidateTag(`profile-${userId}`);
@@ -82,6 +108,7 @@ export async function POST(request) {
         return NextResponse.json({
           message: "Wheel Created Successfully",
           creationID: creationData._id,
+          slug: creationData.slug,
         });
       } catch (e) {
         // Duplicate title for the same creator → friendly 409 instead of 500.

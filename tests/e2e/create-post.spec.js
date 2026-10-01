@@ -4,7 +4,7 @@ test.describe('Create Post - Form Validation & Limits', () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to create post page
-    await page.goto('/post/create');
+    await page.goto('/posts/create');
   });
 
   test('shows login prompt for visitors', async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('Create Post - Form Validation & Limits', () => {
 
     const loginButton = page.locator('a', { hasText: 'Log In' });
     await expect(loginButton).toBeVisible();
-    await expect(loginButton).toHaveAttribute('href', '/login?callbackUrl=/post/create');
+    await expect(loginButton).toHaveAttribute('href', '/login?callbackUrl=/posts/create');
   });
 
   test('has no separate title field and maintains single composer state', async ({ page }) => {

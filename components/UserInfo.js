@@ -4,33 +4,59 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "./ui/button";
 
+const AUTH_STORAGE_KEY = "sp_auth_hint";
 
 export default function UserInfo() {
   const [isMounted, setIsMounted] = useState(false);
+  const [cachedUser, setCachedUser] = useState(null);
   const { status, data: session } = useSession();
 
-
+  // Read local auth cache immediately on mount
   useEffect(() => {
     setIsMounted(true);
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        setCachedUser(JSON.parse(stored));
+      }
+    } catch {
+      // LocalStorage access restricted or unavailable
+    }
   }, []);
 
-  // Stable placeholder sized identically to both logged-in and logged-out states
-  // so the navbar right-actions width never changes after auth resolves.
-  const avatarSkeleton = (
-    <div className="h-9 w-9 sm:w-10 sm:h-10 rounded-full bg-muted animate-pulse" aria-hidden="true" />
-  );
+  // Sync cache whenever auth status settles
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      try {
+        const payload = {
+          name: session.user.name || "User",
+          username: session.user.username || session.user.name || "User",
+        };
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+        setCachedUser(payload);
+      } catch {
+        // Ignore quota/access errors
+      }
+    } else if (status === "unauthenticated") {
+      try {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        setCachedUser(null);
+      } catch {
+        // Ignore
+      }
+    }
+  }, [status, session]);
 
-  if (!isMounted || status === "loading") {
-    return (
-      <div className="hidden sm:flex items-center gap-2">
-        {avatarSkeleton}
-      </div>
-    );
+  // While waiting for hydration: render nothing or null
+  if (!isMounted) {
+    return null;
   }
 
-  if (status === "authenticated") {
-    const name = session?.user?.name || "User";
-    const username = session?.user?.username || name;
+  // 1. Authenticated state: either confirmed by NextAuth or predicted via cache
+  if (status === "authenticated" || (status === "loading" && cachedUser)) {
+    const activeUser = session?.user || cachedUser;
+    const name = activeUser?.name || "User";
+    const username = activeUser?.username || name;
     const profileUrl = `/u/${encodeURIComponent(username.toLowerCase())}`;
     
     const initials = name
@@ -50,25 +76,26 @@ export default function UserInfo() {
         </div>
       </Link>
     );
-  } else {
-    return (
-      <div className="hidden sm:flex items-center gap-2">
-        <Link
-          href="/login"
-          className="px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-        >
-          Log In
-        </Link>
-        <Link href="/register">
-          <Button
-            className="cursor-pointer font-bold rounded-full px-5"
-            size="sm"
-            variant="default"
-          >
-            Sign Up
-          </Button>
-        </Link>
-      </div>
-    );
   }
+
+  // 2. Unauthenticated state: confirmed by NextAuth or known to be unauthenticated (no cache)
+  return (
+    <div className="hidden sm:flex items-center gap-2">
+      <Link
+        href="/login"
+        className="px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+      >
+        Log In
+      </Link>
+      <Link href="/register">
+        <Button
+          className="cursor-pointer font-bold rounded-full px-5"
+          size="sm"
+          variant="default"
+        >
+          Sign Up
+        </Button>
+      </Link>
+    </div>
+  );
 }

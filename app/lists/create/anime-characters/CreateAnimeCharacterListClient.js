@@ -263,18 +263,23 @@ export default function CreateAnimeCharacterListClient() {
 
           {/* Public Visibility */}
           <div className="pt-1">
-            <div className="flex items-center gap-2.5">
+            <label htmlFor="isPublic" className="flex items-start gap-2.5 cursor-pointer">
               <input
                 id="isPublic"
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-pink-600 focus:ring-pink-500 cursor-pointer"
+                className="mt-0.5 h-4 w-4 rounded border-border text-pink-600 focus:ring-pink-500 cursor-pointer"
               />
-              <label htmlFor="isPublic" className="text-sm text-muted-foreground cursor-pointer">
-                Make this list public
-              </label>
-            </div>
+              <div className="text-xs">
+                <span className="font-semibold text-foreground block">
+                  Publish publicly (Recommended for SEO & discovery)
+                </span>
+                <span className="text-muted-foreground block mt-0.5">
+                  Uncheck to keep as a private draft. You can publish it to the community when ready.
+                </span>
+              </div>
+            </label>
           </div>
 
           <div className="pt-2">

@@ -9,6 +9,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
   const [format, setFormat] = useState("standard");
   const [tagInput, setTagInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (list) {
@@ -23,6 +24,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
 
   const handleSave = async () => {
     setIsSaving(true);
+    setError("");
     try {
       const tagArray = tagInput
         ? tagInput
@@ -32,6 +34,8 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
         : [];
 
       await onSave({ name, description, tags: tagArray, format });
+    } catch (err) {
+      setError(err.message || "Something went wrong");
     } finally {
       setIsSaving(false);
     }
@@ -56,6 +60,12 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
 
         {/* Content */}
         <div className="px-6 py-4 space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm border border-red-200 dark:border-red-800/50">
+              {error}
+            </div>
+          )}
+
           {isSystem && (
             <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
               <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">ℹ️</span>
@@ -101,10 +111,10 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
               readOnly={isSystem}
               disabled={isSystem}
               placeholder="Add a description for this list..."
-              maxLength={300}
+              maxLength={2000}
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              {description.length}/300 characters
+              {description.length}/2000 characters
             </p>
           </div>
 

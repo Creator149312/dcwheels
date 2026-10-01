@@ -4,6 +4,7 @@ import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import { sessionUser } from "@utils/SessionData";
 import { shadowBanUser } from "@lib/shadowBan";
+import { validateContentSafety } from "@lib/contentSafety";
 // Posts per minute that triggers a shadow-ban (rate limit)
 const RATE_LIMIT_PER_MINUTE = 10;
 
@@ -47,6 +48,19 @@ export async function POST(req) {
 
     if (masterText.length > 600) {
       return NextResponse.json({ message: "Post must be 600 characters or less" }, { status: 400 });
+    }
+
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const pollTexts = Array.isArray(pollOptions)
+      ? pollOptions.map((o) => (typeof o === "string" ? o : o?.text || ""))
+      : [];
+    const safetyCheck = validateContentSafety([
+      masterText,
+      ...(Array.isArray(tags) ? tags : []),
+      ...pollTexts,
+    ]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ message: safetyCheck.error }, { status: 400 });
     }
 
     if (hasPoll && image) {

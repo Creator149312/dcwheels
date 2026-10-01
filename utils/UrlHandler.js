@@ -2,17 +2,18 @@
  * Unified URL Generator for Wheels
  * Tiered Strategy:
  * 1. Admin/SEO: /wheels/[slug]
- * 2. User/Community: /wheels/[id]
+ * 2. User/Community (Compound): /wheels/[slug]-[id] (stored in wheel.slug)
+ * 3. Fallback: /wheels/[id]
  */
 export function getWheelUrl(wheel) {
   if (!wheel) return "#";
   
-  // Rule 1: Use slug for Admin/SEO wheels
+  // Rule 1: Use slug if present (both pure admin slugs and user compound slugs)
   if (wheel.slug) {
     return `/wheels/${wheel.slug}`;
   }
 
-  // Rule 2: Use ObjectId for User wheels
+  // Rule 2: Fallback to ObjectId for legacy user wheels without slug
   const id = wheel._id?.toString() || wheel.id?.toString();
   return id ? `/wheels/${id}` : "#";
 }
@@ -107,12 +108,58 @@ export function parseListSlugId(segment) {
 }
 
 /**
+ * Parse a /wheels/[slug] or /wheels/[slug]-[id] path segment.
+ * Supports:
+ *   - Canonical compound format: /wheels/[slug]-[id] (24-char ObjectId at tail)
+ *   - Bare ObjectId: /wheels/[id]
+ *   - Admin / Pure SEO slug: /wheels/[slug] (e.g. "yes-or-no-wheel")
+ * Returns { id: string | null, slug: string, isCompound: boolean, isPureId: boolean }.
+ */
+export function parseWheelSlugId(segment) {
+  if (!segment || typeof segment !== "string") {
+    return { id: null, slug: "", isCompound: false, isPureId: false };
+  }
+
+  const trimmed = segment.trim();
+  const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+
+  // 1. Bare ObjectId: /wheels/[id]
+  if (objectIdRegex.test(trimmed)) {
+    return {
+      id: trimmed.toLowerCase(),
+      slug: trimmed,
+      isCompound: false,
+      isPureId: true,
+    };
+  }
+
+  // 2. Canonical Compound: /wheels/[slug]-[id] (trailing 24-char hex)
+  const compoundMatch = trimmed.match(/^(.+)-([0-9a-fA-F]{24})$/);
+  if (compoundMatch) {
+    return {
+      id: compoundMatch[2].toLowerCase(),
+      slug: trimmed,
+      isCompound: true,
+      isPureId: false,
+    };
+  }
+
+  // 3. Admin / Pure SEO Slug: /wheels/[slug]
+  return {
+    id: null,
+    slug: trimmed,
+    isCompound: false,
+    isPureId: false,
+  };
+}
+
+/**
  * Unified URL Generator for Posts
- * Pattern: /post/[id] (ID-only, like Threads/Twitter)
+ * Pattern: /posts/[id] (ID-only, like Threads/Twitter)
  * The slug is intentionally not used; IDs are the stable lookup key.
  */
 export function getPostUrl(post) {
   if (!post) return "#";
   const id = post._id?.toString() || post.id?.toString();
-  return id ? `/post/${id}` : "#";
+  return id ? `/posts/${id}` : "#";
 }

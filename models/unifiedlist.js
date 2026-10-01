@@ -158,6 +158,13 @@ const ListSchema = new Schema(
     isSystem: { type: Boolean, default: false },
     systemKey: { type: String, trim: true },
 
+    // Remix/fork lineage: set when this list was created as a copy of another list.
+    forkedFrom: {
+      listId: { type: Schema.Types.ObjectId, ref: "UnifiedList", default: null },
+      userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    },
+    forkCount: { type: Number, default: 0, min: 0 },
+
     commentCount: { type: Number, default: 0, min: 0 }, // denormalized from Comment; kept here for fast feed/page reads
     likeCount: { type: Number, default: 0, min: 0 }, // denormalized from Reaction; kept here for fast feed/page reads
 
@@ -187,6 +194,10 @@ ListSchema.index(
 // Multikey index: Mongo expands the items array automatically.
 ListSchema.index({ userId: 1, "items.entityId": 1 });
 ListSchema.index({ tags: 1 });
+ListSchema.index(
+  { "forkedFrom.listId": 1 },
+  { partialFilterExpression: { "forkedFrom.listId": { $type: "objectId" } } }
+);
 
 // Partial compound for public list discovery feeds filtered by tag or userId.
 ListSchema.index(

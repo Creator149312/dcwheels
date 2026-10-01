@@ -5,7 +5,6 @@ import DecisionLog from "@models/decisionLog";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
-import { getPublicSpinStoriesForUser } from "@lib/spinStories";
 import { getPostsForUser } from "@lib/posts";
 import { getProfileLists, getProfileWheels, buildDashboardData } from "@lib/dashboard";
 import { getFeedItemsSafe } from "@/lib/feedService";
@@ -105,11 +104,10 @@ export default async function ProfilePage({ params }) {
   const FEED_PAGE_SIZE = 8;
 
   // 2. Fetch initial slices of data according to ownership permissions
-  const [allWheels, listsList, allPosts, storiesList] = await Promise.all([
+  const [allWheels, listsList, allPosts] = await Promise.all([
     getFeedItemsSafe({ userId: String(user._id), docType: "wheel", limit: FEED_PAGE_SIZE + 1, showPrivate: isOwner }),
     getProfileLists(String(user._id), !isOwner),
     getFeedItemsSafe({ userId: String(user._id), docType: "post", limit: FEED_PAGE_SIZE + 1, showPrivate: isOwner }),
-    getPublicSpinStoriesForUser(String(user._id), 20, isOwner),
   ]);
 
   // Process wheels for pagination
@@ -165,7 +163,6 @@ export default async function ProfilePage({ params }) {
         lists={listsList}
         posts={posts}
         postsCursor={postsCursor}
-        stories={storiesList}
       />
     </main>
   );

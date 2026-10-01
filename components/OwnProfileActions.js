@@ -20,7 +20,7 @@ export default function OwnProfileActions({ profileUserId }) {
   return (
     <div className="mt-4 flex gap-3 flex-wrap">
       <Link
-        href="/post/create"
+        href="/posts/create"
         className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-full hover:bg-primary/90 transition active:scale-95 shadow-md shadow-primary/20"
       >
         <PenLine size={15} />

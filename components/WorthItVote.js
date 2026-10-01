@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Star } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
+import { useEntityTracking } from "@components/EntityTrackingProvider";
 import { 
   calculateConsensusPercent, 
   calculateAverageRating,
@@ -87,6 +88,7 @@ export default function WorthItVote({
 }) {
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
+  const entityTracking = useEntityTracking();
   const storageKey = `worthit_${topicPageId}`;
 
   const [worthIt, setWorthIt] = useState(initialWorthIt);
@@ -96,27 +98,59 @@ export default function WorthItVote({
   const [submitting, setSubmitting] = useState(false);
 
   // Sync with server on mount / when session changes for authenticated user & fresh stats
+  // For guest users: initialWorthIt and initialRating are already baked into the ISR HTML!
+  // Only authenticated users need to hit the server to check their personal rating.
   useEffect(() => {
+    // Check localStorage first (instant synchronous check for guest or offline vote)
+    const stored = typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed)) {
+        setUserRating(parsed);
+        entityTracking?.setUserRating?.(parsed);
+      }
+    }
+
+    // If guest / unauthenticated, do NOT fire a network request — use the server-rendered stats!
+    if (!session) return;
+
+    let cancelled = false;
     const fetchData = async () => {
       try {
-        const stored = localStorage.getItem(storageKey);
-        
         const res = await fetch(`/api/worthit/vote?id=${topicPageId}`);
-        if (res.ok) {
+        if (!cancelled && res.ok) {
           const data = await res.json();
           setWorthIt(data.worthIt);
           setRating(data.rating);
-          if (data.userRating) setUserRating(data.userRating);
-        } else if (stored) {
-          // Fallback to guest localStorage if API fetch fails or unauth
-          setUserRating(parseInt(stored));
+          if (data.userRating) {
+            setUserRating(data.userRating);
+            entityTracking?.setUserRating?.(data.userRating);
+          }
         }
       } catch (err) {
         // Silent catch
       }
     };
     fetchData();
-  }, [topicPageId, storageKey, session]);
+    return () => {
+      cancelled = true;
+    };
+  }, [topicPageId, storageKey, session, entityTracking]);
+
+  // Keep internal userRating in sync if updated from external modal (TrackQuickButton)
+  useEffect(() => {
+    if (entityTracking?.userRating && entityTracking.userRating !== userRating) {
+      setUserRating(entityTracking.userRating);
+      // Re-fetch fresh stats
+      fetch(`/api/worthit/vote?id=${topicPageId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.worthIt) setWorthIt(data.worthIt);
+          if (data.rating) setRating(data.rating);
+        })
+        .catch(() => {});
+    }
+  }, [entityTracking?.userRating, userRating, topicPageId]);
 
   const handleRate = useCallback(
     async (score, e) => {
@@ -137,6 +171,7 @@ export default function WorthItVote({
       // Optimistic update
       const prevRating = userRating;
       setUserRating(score);
+      entityTracking?.setUserRating?.(score);
 
       try {
         const res = await fetch("/api/worthit/vote", {
@@ -150,16 +185,23 @@ export default function WorthItVote({
           setWorthIt(data.worthIt);
           setRating(data.rating);
           try { localStorage.setItem(storageKey, score); } catch {}
+
+          // Auto-mark as Watched / Played in client state if not already done
+          if (entityTracking?.setStatusData && entityTracking?.statusData?.status !== "done") {
+            entityTracking.setStatusData({ status: "done" });
+          }
         } else {
           setUserRating(prevRating);
+          entityTracking?.setUserRating?.(prevRating);
         }
       } catch (err) {
         setUserRating(prevRating);
+        entityTracking?.setUserRating?.(prevRating);
       } finally {
         setSubmitting(false);
       }
     },
-    [submitting, topicPageId, userRating, storageKey, session, openLoginPrompt]
+    [submitting, topicPageId, userRating, storageKey, session, openLoginPrompt, entityTracking]
   );
 
   const totalVotes = (worthIt?.yes || 0) + (worthIt?.no || 0) + (worthIt?.meh || 0);

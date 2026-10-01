@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { memo, useState, useEffect, useCallback } from "react";
 import { Bookmark } from "lucide-react";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
+import { useSavedEntities } from "@components/providers/SavedEntitiesProvider";
+import { trackAffinity } from "@utils/affinity";
 
-export default function QuickSaveButton({
+function QuickSaveButton({
   entityType,
   entityId,
   itemTitle = "",
@@ -14,30 +16,45 @@ export default function QuickSaveButton({
   variant = "icon",
   className = "",
   showText = false,
-  lazyCheck = false, // If true, skips on-mount fetch and checks state on click
+  lazyCheck = false, // legacy prop — global cache makes per-card fetching unnecessary
 }) {
   const { data: session, status: sessionStatus } = useSession();
   const openLoginPrompt = useLoginPrompt();
+  const savedEntities = useSavedEntities(); // null when provider is absent
 
-  // { listId, itemId } when saved, null when not
-  const [savedRef, setSavedRef] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Fallback state for contexts rendered outside SavedEntitiesProvider
+  const [localRef, setLocalRef] = useState(null);
 
-  // Check initial saved state once the session is resolved
+  // Source of truth: global cache when available, else local state
+  const savedRef = savedEntities ? savedEntities.getSaved(entityId) : localRef;
+
+  // Fallback path only: if mounted outside the provider (e.g. isolated modals),
+  // do the legacy one-off lookup. When the provider exists this never fires.
   useEffect(() => {
-    // If lazyCheck is true (e.g. lists pages), skip the on-mount fetch
-    if (lazyCheck) return;
-    
+    if (savedEntities) return;
     if (sessionStatus !== "authenticated" || !entityId) return;
     let ignore = false;
     fetch(`/api/unifiedlist/by-entity?entityId=${encodeURIComponent(entityId)}`)
-      .then((r) => r.json())
-      .then((d) => { if (!ignore && d.found) setSavedRef({ listId: d.listId, itemId: d.itemId }); })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!ignore && d?.found) setLocalRef({ listId: d.listId, itemId: d.itemId }); })
       .catch(() => {});
     return () => { ignore = true; };
-  }, [sessionStatus, entityId]);
+  }, [savedEntities, sessionStatus, entityId]);
 
-  const handleToggle = async (e) => {
+  const setSaved = useCallback(
+    (ref, fromListId) => {
+      if (savedEntities) {
+        if (ref) savedEntities.addSaved(entityId, ref);
+        else savedEntities.removeSaved(entityId, fromListId);
+      } else {
+        setLocalRef(ref);
+      }
+    },
+    [savedEntities, entityId]
+  );
+
+  const handleToggle = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -47,36 +64,26 @@ export default function QuickSaveButton({
     }
     if (loading) return;
 
+    // Affinity capture: saving is the strongest fandom signal we have
+    trackAffinity(entityType, "save");
+
     const prevRef = savedRef;
     setLoading(true);
 
     try {
-      // If we are in lazy mode and the heart is empty, we must check the DB first
-      // to ensure we aren't saving a duplicate before proceeding.
-      let currentRef = prevRef;
-      if (lazyCheck && !prevRef) {
-        const checkRes = await fetch(`/api/unifiedlist/by-entity?entityId=${encodeURIComponent(entityId)}`);
-        if (checkRes.ok) {
-          const checkData = await checkRes.json();
-          if (checkData.found) {
-            currentRef = { listId: checkData.listId, itemId: checkData.itemId };
-          }
-        }
-      }
-
-      if (currentRef) {
+      if (prevRef) {
         // ── UNSAVE ─────────────────────────────────────────────────────
-        setSavedRef(null); // optimistic
+        setSaved(null, prevRef.listId); // optimistic
         const res = await fetch(
-          `/api/unifiedlist/${currentRef.listId}/items/${currentRef.itemId}`,
+          `/api/unifiedlist/${prevRef.listId}/items/${prevRef.itemId}`,
           { method: "DELETE" }
         );
         if (!res.ok) throw new Error();
         toast.success("Removed from Library");
       } else {
         // ── SAVE ───────────────────────────────────────────────────────
-        // Use the optimized quick-track endpoint:
-        // One request handles list lookup/creation and item insertion.
+        // The global cache already answers "is this saved?" — no duplicate
+        // pre-check request needed. quick-track upserts server-side anyway.
         const res = await fetch("/api/unifiedlist/quick-track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -86,25 +93,33 @@ export default function QuickSaveButton({
             name: itemTitle || "Untitled",
             slug: itemSlug || String(entityId),
             image: itemImage || "",
-            status: "want", // Wheels default to 'want' status
+            status: "want",
           }),
         });
 
         if (!res.ok) throw new Error();
 
         const data = await res.json();
-        setSavedRef({ listId: data.listId, itemId: data.itemId }); 
+        setSaved({ listId: data.listId, itemId: data.itemId });
         toast.success("Saved to Library!");
       }
     } catch {
-      setSavedRef(prevRef); // revert
+      setSaved(prevRef); // revert
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
-  };
+  }, [session, openLoginPrompt, loading, savedRef, setSaved, entityType, entityId, itemTitle, itemSlug, itemImage]);
 
   const isSaved = !!savedRef;
+
+  // Memoized icon — avoids re-creating the SVG node on unrelated re-renders
+  const bookmarkIcon = (
+    <Bookmark
+      size={16}
+      className={`h-4 w-4 ${isSaved ? "fill-current" : "fill-transparent"}`}
+    />
+  );
 
   if (variant === "button") {
     return (
@@ -124,19 +139,23 @@ export default function QuickSaveButton({
     );
   }
 
+  // Unified overlay (feed shelves + topic grids): slim bookmark, top-right,
+  // no heavy circle. Saved state stays visible as a persistent library signal.
   return (
     <button
       onClick={handleToggle}
       disabled={loading}
-      className={`absolute top-2 right-2 p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 z-10 shadow-sm ${
+      className={`absolute top-1.5 right-1.5 z-10 p-1 rounded-md transition-all duration-300 ${
         isSaved
-          ? "bg-primary text-white"
-          : "bg-black/40 text-white hover:bg-black/60 opacity-100 md:opacity-0 group-hover:opacity-100"
+          ? "opacity-100 text-primary bg-black/25"
+          : "opacity-100 md:opacity-0 group-hover:opacity-100 text-white bg-black/35 hover:bg-black/55"
       } ${loading ? "opacity-60" : ""} ${className}`}
       aria-label={isSaved ? "Remove from Library" : "Save to Library"}
     >
-      <Bookmark size={18} className={isSaved ? "fill-current" : "fill-transparent"} />
+      {bookmarkIcon}
     </button>
   );
 }
+
+export default memo(QuickSaveButton);
 

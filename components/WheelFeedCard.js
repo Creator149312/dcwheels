@@ -73,6 +73,7 @@ function WheelFeedCard({ wheel }) {
 
         {/* Action Menu */}
         <WheelMenu
+          wheel={wheel}
           wheelId={wheel._id || wheel.id}
           isPublic={wheel.isPublic}
           authorHandle={authorHandle}

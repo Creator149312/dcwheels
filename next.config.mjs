@@ -161,6 +161,11 @@ const nextConfig = {
         destination: "/wheels",
         permanent: true,
       },
+      {
+        source: "/post/:path*",
+        destination: "/posts/:path*",
+        permanent: true,
+      },
     ];
   },
   async headers() {

@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 import { createNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
+import { validateContentSafety } from "@lib/contentSafety";
 
 // ✅ Create a new comment or reply
 export async function POST(req) {
@@ -35,6 +36,12 @@ export async function POST(req) {
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const safetyCheck = validateContentSafety([text]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ error: safetyCheck.error }, { status: 400 });
     }
 
     const userId = await sessionUserId();
@@ -76,7 +83,7 @@ export async function POST(req) {
           recipientId = parentComment.userId;
           link = (entityType === "wheel" || entityType === "uwheel")
             ? `/wheels/${entityId}` // fallback, could fetch wheel for exact link
-            : `/post/${entityId}`;
+            : `/posts/${entityId}`;
           modelStr = "Comment";
         }
       } else {
@@ -85,7 +92,7 @@ export async function POST(req) {
           const post = await Post.findById(entityId).select("userId").lean();
           if (post?.userId) {
             recipientId = post.userId;
-            link = `/post/${entityId}`;
+            link = `/posts/${entityId}`;
             modelStr = "Post";
           }
         } else if (entityType === "wheel" || entityType === "uwheel") {

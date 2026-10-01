@@ -14,7 +14,7 @@ export default async function Home() {
   // Request limit+1 to know if there are more items for pagination
   const allItems = await getFeedItemsSafe({ limit: FEED_PAGE_SIZE + 1 });
   const items = allItems.slice(0, FEED_PAGE_SIZE);
-  const nextItem = allItems.length > FEED_PAGE_SIZE ? allItems[FEED_PAGE_SIZE] : null;
+  const nextItem = allItems.slice(FEED_PAGE_SIZE).find((i) => (i._docType || i.docType) !== "list") || null;
   const hasList = items.some(i => i.docType === "list" || i._docType === "list");
   const initialNextCursor = nextItem
     ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`

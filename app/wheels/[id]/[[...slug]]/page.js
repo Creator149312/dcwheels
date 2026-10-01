@@ -1,6 +1,7 @@
 import { cache, Suspense } from "react";
+import ReactDOM from "react-dom";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { sessionUser } from "@utils/SessionData";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getRelatedTopicPages } from "@components/actions/actions";
@@ -10,8 +11,9 @@ import Description from "@components/description/Description";
 import UniversalCommentsSection from "@components/UniversalCommentsSection";
 import ViewTracker from "@components/ViewTracker";
 import SidebarDiscovery from "@components/SidebarDiscovery";
-import { getWheelUrl } from "@utils/UrlHandler";
+import { getWheelUrl, parseWheelSlugId } from "@utils/UrlHandler";
 import { connectMongoDB } from "@/lib/mongodb";
+import { isWheelAdEligible } from "@/lib/adEligibility";
 import Wheel from "@models/wheel";
 import WheelAnalytics from "@models/wheelAnalytics";
 import mongoose from "mongoose";
@@ -35,29 +37,31 @@ const WHEEL_PAGE_PROJECTION =
 
 /**
  * React.cache() dedupes the identifier lookup between generateMetadata and the body.
- * This unified function handles both MongoDB ObjectIds and SEO Slugs.
+ * This unified function handles:
+ *   1. Compound user slugs: /wheels/[slug]-[id] -> direct findById(id)
+ *   2. Bare ObjectIds: /wheels/[id] -> direct findById(id)
+ *   3. Admin / SEO slugs: /wheels/[slug] -> findOne({ slug })
  */
 const getCachedPageDataByIdentifier = cache(async (identifier) => {
   await connectMongoDB();
 
   let wheel = null;
-  const isObjectId = mongoose.Types.ObjectId.isValid(identifier);
+  const parsed = parseWheelSlugId(identifier);
 
-  if (isObjectId) {
-    // ID-based URL (user wheels): try ID first, then slug fallback.
-    wheel = await Wheel.findById(identifier)
+  if (parsed.id) {
+    // 1. Compound slug (/wheels/[slug]-[id]) or bare ObjectId (/wheels/[id])
+    wheel = await Wheel.findById(parsed.id)
       .select(WHEEL_PAGE_PROJECTION)
       .lean();
-    if (!wheel) {
+    if (!wheel && !parsed.isPureId) {
+      // Fallback: check if the whole string was stored as a slug
       wheel = await Wheel.findOne({ slug: identifier })
         .select(WHEEL_PAGE_PROJECTION)
         .lean();
     }
   } else {
-    // Slug-based URL (SEO pages): query by slug directly and skip the
-    // wasted ObjectId lookup. This saves one DB round-trip for every
-    // indexed wheel page and improves TTFB for the crawlable URL surface.
-    wheel = await Wheel.findOne({ slug: identifier })
+    // 2. Pure Admin / SEO slug (/wheels/[slug])
+    wheel = await Wheel.findOne({ slug: parsed.slug })
       .select(WHEEL_PAGE_PROJECTION)
       .lean();
   }
@@ -95,12 +99,9 @@ export async function generateMetadata({ params }) {
     ? `${pageData.title} Picker Wheel`
     : pageData.title;
 
-  // De-index ObjectId-based wheel URLs. Only slug-based (SEO/admin) wheels
-  // should appear in search indexes. User-created wheels and any direct _id
-  // links should still work for sharing, but should not be indexed.
-  const requestedId = identifier?.toString() || "";
-  const isIdUrl = mongoose.Types.ObjectId.isValid(requestedId);
-  const isIndexed = pageData.wheel.indexed && !isIdUrl;
+  // Only admin / verified indexed wheels should appear in search indexes.
+  // User wheels (indexed: false) remain noindex, whether accessed by bare ID or compound slug.
+  const isIndexed = !!pageData.wheel.indexed;
 
   const metadata = {
     title: metaTitle,
@@ -109,7 +110,7 @@ export async function generateMetadata({ params }) {
       canonical: `https://www.spinpapa.com${getWheelUrl(pageData.wheel)}`,
     },
     robots: {
-      index: !!isIndexed,
+      index: isIndexed,
       follow: true,
     }
   };
@@ -205,10 +206,24 @@ export default async function UnifiedWheelPage({ params }) {
     }
   }
 
+  // Canonical URL Enforcement & 308 Permanent Redirect:
+  // If the wheel has a canonical slug (either an admin slug or a compound user slug)
+  // and the current URL does not match it, permanently redirect to the canonical path.
+  // This automatically upgrades legacy /wheels/[id] and mis-slugged links.
+  const canonicalUrl = getWheelUrl(wheel);
+  const currentPath = `/wheels/${identifier}`;
+  if (canonicalUrl !== "#" && currentPath !== canonicalUrl) {
+    permanentRedirect(canonicalUrl);
+  }
+
   const wheelIdStr = wheel._id.toString();
   const resolvedDocs = pageData._relatedTopicDocs || { direct: [], secondary: [] };
   const displayTopics = resolvedDocs.direct || [];
   const sidebarTopics = [...displayTopics, ...(resolvedDocs.secondary || [])];
+
+  // ── LCP Optimization: Preload the critical above-the-fold pointer asset ──
+  // Hoisted into document <head> via React 19 / Next.js resource hints.
+  ReactDOM.preload("/smallredpointer.png", { as: "image" });
 
   return (
     <div className="flex flex-col max-w-7xl mx-auto w-full">
@@ -275,9 +290,11 @@ export default async function UnifiedWheelPage({ params }) {
         className="px-3 md:px-4"
       />
 
-      <div className="min-h-[90px] mt-1 sm:mt-2 px-3 sm:px-4">
-        <AdsUnit slot="4694567949" />
-      </div>
+      {isWheelAdEligible(pageData.wheel) && (
+        <div className="min-h-[90px] mt-1 sm:mt-2 px-3 sm:px-4">
+          <AdsUnit slot="4694567949" />
+        </div>
+      )}
 
       <div className="flex justify-center px-0 sm:px-4">
         <Suspense fallback={<HubFeedSkeleton />}>

@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import TopicPage from "@models/topicpage";
 import TopicPageVote from "@models/topicPageVote";
+import UserEntityStatus from "@models/userEntityStatus";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@app/api/auth/[...nextauth]/route";
 import { ratingToVote } from "@lib/worthItLogic";
@@ -126,16 +127,50 @@ export async function POST(req) {
 
       const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
         new: true,
-        select: "worthIt rating",
+        select: "worthIt rating type title slug",
       });
 
       // Invalidate cache for this topic page
       revalidateTag(`worthit-${topicPageId}`);
 
+      // Auto-link rating to watched/played:
+      // If the user rates the topic, ensure it is automatically tracked as "done"
+      if (rating && updated?.type && ["movie", "anime", "game", "character"].includes(updated.type)) {
+        try {
+          const entityName =
+            updated.title?.default ||
+            updated.title?.english ||
+            updated.title?.romaji ||
+            updated.title?.localized ||
+            updated.title?.original ||
+            updated.slug;
+          await UserEntityStatus.findOneAndUpdate(
+            { userId, entityId: String(topicPageId) },
+            {
+              $set: {
+                entityType: updated.type,
+                name: String(entityName || "").slice(0, 200),
+                status: "done",
+                updatedAt: new Date(),
+              },
+              $setOnInsert: {
+                userId,
+                entityId: String(topicPageId),
+                createdAt: new Date(),
+              },
+            },
+            { upsert: true }
+          );
+        } catch (statusErr) {
+          console.error("Auto-marking entity status on vote failed:", statusErr);
+        }
+      }
+
       return NextResponse.json({
         worthIt: updated.worthIt,
         rating: updated.rating,
         userRating: rating,
+        autoMarkedDone: true,
       });
     } else {
       // First time voting
@@ -149,16 +184,50 @@ export async function POST(req) {
 
       const updated = await TopicPage.findByIdAndUpdate(topicPageId, updateQuery, {
         new: true,
-        select: "worthIt rating",
+        select: "worthIt rating type title slug",
       });
 
       // Invalidate cache for this topic page
       revalidateTag(`worthit-${topicPageId}`);
 
+      // Auto-link rating to watched/played:
+      // If the user rates the topic, ensure it is automatically tracked as "done"
+      if (rating && updated?.type && ["movie", "anime", "game", "character"].includes(updated.type)) {
+        try {
+          const entityName =
+            updated.title?.default ||
+            updated.title?.english ||
+            updated.title?.romaji ||
+            updated.title?.localized ||
+            updated.title?.original ||
+            updated.slug;
+          await UserEntityStatus.findOneAndUpdate(
+            { userId, entityId: String(topicPageId) },
+            {
+              $set: {
+                entityType: updated.type,
+                name: String(entityName || "").slice(0, 200),
+                status: "done",
+                updatedAt: new Date(),
+              },
+              $setOnInsert: {
+                userId,
+                entityId: String(topicPageId),
+                createdAt: new Date(),
+              },
+            },
+            { upsert: true }
+          );
+        } catch (statusErr) {
+          console.error("Auto-marking entity status on vote failed:", statusErr);
+        }
+      }
+
       return NextResponse.json({
         worthIt: updated.worthIt,
         rating: updated.rating,
         userRating: rating,
+        autoMarkedDone: true,
       });
     }
   }

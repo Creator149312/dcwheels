@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { timeAgo } from "@utils/HelperFunctions";
-import { getListUrl, getWheelUrl } from "@utils/UrlHandler";
+import { getListUrl, getWheelUrl, getPostUrl } from "@utils/UrlHandler";
 import { Zap, MoreHorizontal } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import ContentRefCard from "@components/ContentRefCard";
@@ -117,9 +117,13 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
                 {displayName}
               </Link>
               <span className="text-xs text-muted-foreground/40">•</span>
-              <span className="text-xs font-semibold text-muted-foreground/60 whitespace-nowrap">
+              <Link
+                href={getPostUrl(post)}
+                className="text-xs font-semibold text-muted-foreground/60 hover:text-foreground hover:underline transition whitespace-nowrap"
+                title="View post"
+              >
                 {timeAgo(post.createdAt)}
-              </span>
+              </Link>
               {isOwnPost && !post.isPublic && (
                 <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
                   Private
@@ -189,7 +193,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
 
       {/* Image Uploaded to Post */}
       {post.image && (
-        <div className="mb-3 w-full sm:mx-0 sm:rounded-xl overflow-hidden bg-muted/20 border-y sm:border border-border/40">
+        <div className="mb-3 w-full sm:rounded-2xl overflow-hidden bg-muted/20 border-y sm:border border-border/40 flex items-center justify-center max-h-[640px]">
           <img
             src={post.imageVariants?.md || post.imageVariants?.sm || post.image}
             srcSet={
@@ -199,9 +203,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
             }
             sizes="(max-width: 480px) 480px, (max-width: 780px) 780px, 1080px"
             alt="Post attachment"
-            width={1080}
-            height={720}
-            className="w-full object-cover max-h-[400px] sm:max-h-[500px]"
+            className="w-full h-auto max-h-[640px] object-cover sm:object-contain bg-black/5"
             loading="lazy"
             decoding="async"
           />
@@ -303,7 +305,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
           entityId={post._id || post.id}
           session={session}
           show={{ like: true, share: true, save: false, follow: false, comment: true }}
-          shareUrl={`/post/${post._id || post.id}`}
+          shareUrl={`/posts/${post._id || post.id}`}
           commentCount={commentCount}
           onCommentClick={() => {
             const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;

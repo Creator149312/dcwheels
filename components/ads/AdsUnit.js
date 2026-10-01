@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { isRouteAdEligible } from "@/lib/adEligibility";
 
 const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }) => {
   const insRef = useRef(null);
@@ -9,18 +10,24 @@ const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }
     const el = insRef.current;
     if (!el) return;
 
+    let cancelled = false;
+
     // Schedule push() during browser idle time so AdSense's forced reflows
     // (which are unavoidable inside show_ads_impl.js) happen AFTER LCP is
     // locked in, not during the critical rendering path.
+    let idleHandle = null;
+    let timerHandle = null;
+
     const schedulePush = () => {
       if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(doPush, { timeout: 2000 });
+        idleHandle = requestIdleCallback(doPush, { timeout: 2000 });
       } else {
-        setTimeout(doPush, 0);
+        timerHandle = setTimeout(doPush, 0);
       }
     };
 
     function doPush() {
+      if (cancelled) return;
       if (!el.isConnected) return;
       if (el.dataset.adsActualPushed) return;
       if (el.getAttribute("data-adsbygoogle-status")) return;
@@ -37,6 +44,7 @@ const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }
     // call el.offsetWidth (which forces a synchronous layout/reflow).
     // The width comes from the observer entry's contentRect at zero cost.
     const ro = new ResizeObserver((entries) => {
+      if (cancelled) return;
       const width = entries[0]?.contentRect?.width ?? 0;
       if (width === 0) return;
       if (el.dataset.adsScheduled || el.getAttribute("data-adsbygoogle-status")) {
@@ -51,18 +59,27 @@ const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }
     });
     ro.observe(el);
 
-    return () => ro.disconnect();
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+      if (idleHandle && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(idleHandle);
+      }
+      if (timerHandle) {
+        clearTimeout(timerHandle);
+      }
+    };
   }, [slot]);
 
   return (
     <div
-      className={`w-full bg-muted/5 text-center py-0 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40 ${className}`}
-      style={{ minHeight: `${minHeight}px` }}
+      className={`w-full bg-muted/5 text-center py-0 my-2 sm:my-6 sm:rounded-xl border-y sm:border border-border/40 overflow-hidden ${className}`}
+      style={{
+        minHeight: `${minHeight}px`,
+        contain: "paint layout",
+      }}
     >
-      {/* <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 mb-">
-        Advertisement
-      </div> */}
-      <div className="flex justify-center items-center overflow-hidden w-full">
+      <div className="flex justify-center items-center overflow-hidden w-full" style={{ minHeight: `${minHeight}px` }}>
         <ins
           ref={insRef}
           className="w-full"
@@ -80,8 +97,14 @@ const AdsUnitInner = ({ slot, format = "auto", minHeight = 250, className = "" }
   );
 };
 
-export default function AdsUnit({ slot, format, minHeight, className }) {
+export default function AdsUnit({ slot, format, minHeight, className, isEligible = true }) {
   const pathname = usePathname();
+
+  // Route-level suppression (auth, dashboard, embed, etc.) or explicit entity suppression
+  if (!isEligible || !isRouteAdEligible(pathname)) {
+    return null;
+  }
+
   return (
     <AdsUnitInner
       key={`${pathname}-${slot}`}

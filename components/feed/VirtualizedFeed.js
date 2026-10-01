@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { useViewportCull } from "@/hooks/useViewportCull";
 import { getFeedItemKey } from "@/utils/feedUtils";
 
@@ -14,33 +14,27 @@ import { getFeedItemKey } from "@/utils/feedUtils";
  *
  * Tuned for mobile:
  * - Smaller default rootMargin on narrow viewports.
- * - Heights are measured once and cached.
+ * - Heights are tracked live via ResizeObserver.
  * - Placeholder and rendered rows are memoized to avoid re-render churn.
  */
 const RenderedRow = memo(function RenderedRow({ item, index, renderItem, measure, register }) {
-  const key = getFeedItemKey(item, index);
+  const setRef = useCallback((node) => {
+    register(index, node);
+    measure(index, node);
+  }, [index, register, measure]);
   return (
-    <div
-      key={key}
-      data-vc-index={index}
-      ref={(node) => {
-        register(index, node);
-        measure(index, node);
-      }}
-      className="mb-0 sm:mb-5"
-    >
+    <div data-vc-index={index} ref={setRef} className="mb-0 sm:mb-5">
       {renderItem(item, index)}
     </div>
   );
 });
 
-const PlaceholderRow = memo(function PlaceholderRow({ index, height, register, item }) {
-  const key = getFeedItemKey(item, index);
+const PlaceholderRow = memo(function PlaceholderRow({ index, height, register }) {
+  const setRef = useCallback((node) => register(index, node), [index, register]);
   return (
     <div
-      key={key}
       data-vc-index={index}
-      ref={(node) => register(index, node)}
+      ref={setRef}
       style={{ height, minHeight: height }}
       className="w-full mb-0 sm:mb-5"
       aria-hidden="true"
@@ -85,7 +79,6 @@ export default function VirtualizedFeed({
           return (
             <PlaceholderRow
               key={getFeedItemKey(item, index)}
-              item={item}
               index={index}
               height={height}
               register={register}

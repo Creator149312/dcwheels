@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { useEntityTracking } from "@components/EntityTrackingProvider";
+import { useSavedEntities } from "@components/providers/SavedEntitiesProvider";
 import { Plus, Check, Bookmark, List, X, Loader2, ChevronDown } from "lucide-react";
 
 /**
@@ -15,15 +16,32 @@ import { Plus, Check, Bookmark, List, X, Loader2, ChevronDown } from "lucide-rea
  * - After saving, the button shows "Saved" with a dropdown to add to more lists.
  */
 export default function AddToListButton({ type, entityId, name, slug, image }) {
-  const [lists, setLists]                = useState([]);
   const [open, setOpen]                  = useState(false);
   const [creating, setCreating]          = useState(false);
   const [newListName, setNewListName]    = useState("");
   const [savedPopup, setSavedPopup]      = useState({ show: false, listName: "" });
-  // Shared list-membership state from the topic page provider (optional).
+  // List membership comes from the GLOBAL saved-entities cache (single writer).
+  // EntityTrackingProvider reads the same cache, so this button's state and
+  // every feed/grid bookmark share one source of truth.
   const ctx = useEntityTracking();
-  const listData = ctx?.listData;
-  const setListData = ctx?.setListData;
+  const savedEntities = useSavedEntities();
+  // Fallbacks for contexts rendered outside the providers (e.g. embeds)
+  const [localSaved, setLocalSaved] = useState(null);
+  const [fallbackLists, setFallbackLists] = useState([]);
+
+  const listData = savedEntities
+    ? savedEntities.getSaved(entityId)
+    : ctx?.listData ?? localSaved;
+
+  const lists = savedEntities ? savedEntities.lists : fallbackLists;
+
+  const saveMembership = (ref) => {
+    if (savedEntities) savedEntities.addSaved(entityId, ref);
+    else {
+      ctx?.setListData?.(ref);
+      setLocalSaved(ref);
+    }
+  };
   const [isSavingToList, setIsSavingToList] = useState(null); // stores listId being saved to
   const [quickSaving, setQuickSaving]    = useState(false);
   const { status: authStatus } = useSession();
@@ -38,13 +56,26 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     return () => clearTimeout(t);
   }, [savedPopup.show]);
   useEffect(() => {
-    // Fetch only once — if lists are already loaded from a previous open, skip.
-    if (!open || authStatus !== "authenticated" || lists.length > 0) return;
+    // Provider present → lists are already in memory, nothing to fetch.
+    // Legacy fallback (provider absent): one slim fetch, cached on this mount.
+    if (savedEntities) return;
+    if (!open || authStatus !== "authenticated" || fallbackLists.length > 0) return;
     fetch("/api/unifiedlist?slim=1")
       .then((r) => r.json())
-      .then((d) => setLists(d.lists || []));
+      .then((d) => setFallbackLists(d.lists || []));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, authStatus]);
+  }, [open, authStatus, savedEntities]);
+
+  // YouTube-style membership indicator: which lists already contain this item.
+  const memberListIds = savedEntities
+    ? savedEntities.getMemberListIds(entityId)
+    : new Set(
+        fallbackLists
+          .filter((l) => (l.memberEntityIds || []).includes(String(entityId)))
+          .map((l) => String(l.id))
+      );
+  // The just-saved list from this session — covers the gap before lists refresh
+  if (listData?.listId) memberListIds.add(String(listData.listId));
 
   // Payload shape expected by /api/unifiedlist/[id]/items
   const payload = {
@@ -79,7 +110,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
       });
       if (!res.ok) throw new Error("Quick save failed");
       const data = await res.json();
-      setListData?.({ listId: data.listId, itemId: data.itemId });
+      saveMembership({ listId: data.listId, itemId: data.itemId });
       setSavedPopup({ show: true, listName: "Saved" });
     } catch (err) {
       console.error(err);
@@ -103,7 +134,7 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
       // because the server used Array.push before saving.
       const items = data?.list?.items || [];
       const newItem = items[items.length - 1];
-      setListData?.({ listId, itemId: newItem?._id || null });
+      saveMembership({ listId, itemId: newItem?._id || null });
       setOpen(false);
       setSavedPopup({ show: true, listName: list?.name || "List" });
     } catch (err) {
@@ -132,8 +163,17 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
       const itemData = await itemRes.json();
       const items = itemData?.list?.items || [];
       const newItemObj = items[items.length - 1];
-      setListData?.({ listId: newList.id, itemId: newItemObj?._id || null });
-      setLists((prev) => [...prev, newList]);
+      saveMembership({ listId: newList.id, itemId: newItemObj?._id || null });
+      if (savedEntities) {
+        savedEntities.addList({
+          id: newList.id,
+          name: newList.name,
+          isSystem: newList.isSystem,
+          systemKey: newList.systemKey,
+        });
+      } else {
+        setFallbackLists((prev) => [...prev, newList]);
+      }
       setNewListName("");
       setCreating(false);
       setOpen(false);
@@ -239,31 +279,45 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
 
             {/* Existing lists */}
             <div className="space-y-1.5 mb-4 max-h-[300px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
-              {lists.length === 0 ? (
+              {savedEntities && (!savedEntities.isLoaded || savedEntities.isFetching) ? (
+                <div className="py-8 flex items-center justify-center">
+                  <Loader2 size={20} className="animate-spin text-primary" />
+                </div>
+              ) : lists.length === 0 ? (
                 <div className="py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border mb-2">
                    <Bookmark className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
                    <p className="text-xs text-muted-foreground font-medium px-4">No lists yet. Create your first collection below!</p>
                 </div>
               ) : (
-                lists.map((list) => (
-                  <button
-                    key={list.id}
-                    onClick={() => saveToList(list.id)}
-                    disabled={isSavingToList === list.id}
-                    className="group w-full text-left px-4 py-3 rounded-xl
-                               hover:bg-primary/5 hover:border-primary/20
-                               border border-transparent
-                               text-foreground text-sm font-semibold
-                               transition-all flex items-center justify-between"
-                  >
-                    <span>{list.name}</span>
-                    {isSavingToList === list.id ? (
-                      <Loader2 size={16} className="animate-spin text-primary" />
-                    ) : (
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">Save</span>
-                    )}
-                  </button>
-                ))
+                lists.map((list) => {
+                  const isMember = memberListIds.has(String(list.id));
+                  return (
+                    <button
+                      key={list.id}
+                      onClick={() => saveToList(list.id)}
+                      disabled={isMember || isSavingToList === list.id}
+                      className={`group w-full text-left px-4 py-3 rounded-xl
+                                 border text-sm font-semibold
+                                 transition-all flex items-center justify-between
+                                 ${isMember
+                                   ? "border-primary/20 bg-primary/5 text-primary cursor-default"
+                                   : "border-transparent hover:bg-primary/5 hover:border-primary/20 text-foreground"
+                                 }`}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        {isMember && <Check size={15} strokeWidth={3} className="shrink-0 text-primary" />}
+                        <span className="truncate">{list.name}</span>
+                      </span>
+                      {isSavingToList === list.id ? (
+                        <Loader2 size={16} className="animate-spin text-primary" />
+                      ) : isMember ? (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary/60">Saved</span>
+                      ) : (
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">Save</span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
 

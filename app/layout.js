@@ -7,6 +7,7 @@ import LayoutShell from "@components/LayoutShell";
 import { LoginPromptProvider } from "./LoginPromptProvider";
 import ConditionalFooter from "@components/ConditionalFooter";
 import { StatsBatchProvider } from "@components/providers/StatsBatchProvider";
+import { SavedEntitiesProvider } from "@components/providers/SavedEntitiesProvider";
 
 const GAnalytics = dynamic(() => import("./GAnalytics"), { ssr: false });
 const AdsScriptLoader = dynamic(() => import("@components/ads/AdsScriptLoader"), { ssr: false });
@@ -88,7 +89,9 @@ export default function RootLayout({ children }) {
           <SegmentsProvider>
             <LoginPromptProvider>
               <StatsBatchProvider>
-                <LayoutShell>{children}</LayoutShell>
+                <SavedEntitiesProvider>
+                  <LayoutShell>{children}</LayoutShell>
+                </SavedEntitiesProvider>
               </StatsBatchProvider>
             </LoginPromptProvider>
           </SegmentsProvider>

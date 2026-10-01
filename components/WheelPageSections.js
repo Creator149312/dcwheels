@@ -1,16 +1,17 @@
 import { Suspense, cache } from "react";
 import dynamic from "next/dynamic";
 import { getWheelMeta } from "@components/actions/actions";
-import { getPublicSpinStoriesForWheel } from "@lib/spinStories";
 import { getFeedItemsSafe } from "@/lib/feedService";
 import WheelInfoActions from "@components/WheelInfoActions";
-import InfiniteFeedStream from "@components/feed/InfiniteFeedStream";
 
-const WheelStatsBar = dynamic(() => import("@components/WheelStatsBar"));
-const WheelSpinFeed = dynamic(() => import("@components/WheelSpinFeed"));
+// Lazy-load the heavy infinite stream module so it does not block main-thread
+// execution, wheel canvas initialization, or TBT on first paint.
+const InfiniteFeedStream = dynamic(
+  () => import("@components/feed/InfiniteFeedStream"),
+  { ssr: false }
+);
 
-// Cache getWheelMeta so SuspendedInfoActions and SuspendedStatsFeed both
-// resolve from a single DB round-trip per render.
+// Cache getWheelMeta so SuspendedInfoActions resolves from a single DB round-trip per render.
 export const getCachedWheelMeta = cache(async (wheelId) => {
   return getWheelMeta(wheelId, null);
 });
@@ -22,12 +23,6 @@ export const getCachedWheelMeta = cache(async (wheelId) => {
 export function InfoActionsSkeleton() {
   return (
     <div className="h-14 mt-1 mx-4 rounded-lg bg-muted animate-pulse w-full text-left" />
-  );
-}
-
-export function StatsFeedSkeleton() {
-  return (
-    <div className="h-64 mt-8 w-full bg-muted rounded-xl animate-pulse mx-4 text-left" />
   );
 }
 
@@ -63,22 +58,6 @@ export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityTyp
       authorHandle={authorHandle}
       initialMeta={initialMeta}
     />
-  );
-}
-
-export async function SuspendedStatsFeed({ wheelId }) {
-  const [initialMeta, initialStories] = await Promise.all([
-    getCachedWheelMeta(wheelId), // deduped — same call as SuspendedInfoActions
-    getPublicSpinStoriesForWheel(wheelId, 10),
-  ]);
-  return (
-    <div className="w-full px-4 text-left">
-      <WheelStatsBar
-        wheelId={wheelId}
-        initialStats={initialMeta?.analytics}
-      />
-      <WheelSpinFeed wheelId={wheelId} initialStories={initialStories} />
-    </div>
   );
 }
 

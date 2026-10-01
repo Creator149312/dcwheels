@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
+import { trackAffinity } from "@utils/affinity";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
@@ -39,6 +40,10 @@ export default function DilemmaViewer({ post, postId }) {
 
   const handleVote = async (optionId) => {
     if (revealBars || loading) return;
+
+    // Affinity capture: a vote is a strong fandom signal. Works for guests too
+    // (tracked in localStorage — the warm feed personalizes on their next visit).
+    trackAffinity(post?.contentRef?.type || "anime", "vote");
 
     // Anonymous: show optimistic result + nudge, don't hit the API yet
     if (!session?.user) {

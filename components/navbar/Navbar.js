@@ -12,7 +12,7 @@ const NotificationBell = dynamic(
 
 const UserInfo = dynamic(
   () => import("@components/UserInfo"),
-  { ssr: false, loading: () => <div className="h-9 w-9 sm:w-10 sm:h-10 bg-muted rounded-full animate-pulse" /> }
+  { ssr: false }
 );
 
 const SearchBar = dynamic(

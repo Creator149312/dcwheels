@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -35,6 +35,48 @@ export default function UniversalCommentsSection({
   const { data: session } = useSession();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [localCount, setLocalCount] = useState(initialCount ?? 0);
+  const [hasIntersected, setHasIntersected] = useState(false);
+  const sectionRef = useRef(null);
+
+  // Lazy-hydrate comments list:
+  // - Desktop: When user scrolls near the comments section (IntersectionObserver)
+  // - Mobile: Strictly on explicit interaction (when the drawer is opened)
+  // - Feed: When user explicitly toggles comments on a post card
+  useEffect(() => {
+    if (hasIntersected || isDrawerOpen) return;
+
+    // If inside a feed card and toggled open, load immediately
+    if (isInFeed && visible) {
+      setHasIntersected(true);
+      return;
+    }
+
+    // On mobile screens (< 768px), comments live inside the bottom drawer.
+    // Do NOT auto-fetch on scroll. Wait until the user explicitly opens the drawer.
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+    if (isMobile) {
+      return;
+    }
+
+    const el = sectionRef.current;
+    if (!el || typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      setHasIntersected(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setHasIntersected(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasIntersected, isDrawerOpen, isInFeed, visible]);
 
   // Handle global triggers (e.g. from a StatsBar elsewhere on the page)
   useEffect(() => {
@@ -44,6 +86,7 @@ export default function UniversalCommentsSection({
           openLoginPrompt?.();
           return;
         }
+        setHasIntersected(true);
         setIsDrawerOpen(true);
         // Autofocus the form after a small delay for the drawer animation
         setTimeout(() => {
@@ -88,7 +131,10 @@ export default function UniversalCommentsSection({
   }, [isDrawerOpen]);
   
   return (
-    <div id="comments-section" className={`
+    <div
+      id="comments-section"
+      ref={sectionRef}
+      className={`
       w-full text-left sm:pt-1 pb-1 border-t border-border/10 bg-muted/5 
       ${visible || isDrawerOpen ? "" : "hidden"}
       ${isInFeed ? 'mt-1 sm:mt-2 sm:rounded-xl bg-muted/20 border border-border/20' : 'mt-0 -mb-1'}
@@ -164,15 +210,21 @@ export default function UniversalCommentsSection({
           overflow-y-auto flex-1 ${className} pb-10 md:pb-4
           md:max-h-[500px] md:overflow-y-auto
         `}>
-          <CommentsPanel
-            entityType={entityType}
-            entityId={entityId}
-            isLoggedIn={!!session}
-            openLoginPrompt={openLoginPrompt}
-            currentUser={session?.user}
-            visible={visible || isDrawerOpen} 
-            onCountChange={handleCountUpdate}
-          />
+          {hasIntersected ? (
+            <CommentsPanel
+              entityType={entityType}
+              entityId={entityId}
+              isLoggedIn={!!session}
+              openLoginPrompt={openLoginPrompt}
+              currentUser={session?.user}
+              visible={visible || isDrawerOpen} 
+              onCountChange={handleCountUpdate}
+            />
+          ) : (
+            <div className="py-6 flex items-center justify-center text-xs text-muted-foreground">
+              <span className="animate-pulse">Loading comments...</span>
+            </div>
+          )}
         </div>
       </div>
 

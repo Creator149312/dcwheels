@@ -44,8 +44,8 @@ export async function GET(req) {
     // Return only the first 'limit' items to client
     const items = allItems.slice(0, limit);
     
-    // Set cursor to the (limit+1)th item if it exists, so the next page starts AFTER the last displayed item
-    const nextItem = allItems.length > limit ? allItems[limit] : null;
+    // Cursor = first undisplayed post/wheel (cursor match is inclusive).
+    const nextItem = allItems.slice(limit).find((i) => (i._docType || i.docType) !== "list") || null;
     const currentListOffset = cursor ? (parseInt(cursor.split("|")[2], 10) || 0) : 0;
     const hasListInPage = items.some(i => i.docType === "list" || i._docType === "list");
     const nextListOffset = currentListOffset + (hasListInPage ? 1 : 0);

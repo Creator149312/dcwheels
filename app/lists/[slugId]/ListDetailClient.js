@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Trash2, Pencil, Zap, X, Image as ImageIcon, Eye, EyeOff, ArrowUpDown, Loader2, Plus, Layers, ListOrdered, Trophy } from "lucide-react";
+import toast from "react-hot-toast";
+import { Trash2, Pencil, Zap, X, Image as ImageIcon, Eye, EyeOff, ArrowUpDown, Loader2, Plus, Layers, ListOrdered, Trophy, GitFork } from "lucide-react";
 import dynamic from "next/dynamic";
 import { createSegment } from "@utils/segmentUtils";
 import { getListUrl } from "@utils/UrlHandler";
@@ -23,6 +24,8 @@ const SharePopup = dynamic(() => import("@components/SharePopup"), { ssr: false 
 // Lazy-loaded — these sections render below the fold and pull in comment/reaction bundles.
 const UniversalCommentsSection = dynamic(() => import("@components/UniversalCommentsSection"), { ssr: false });
 const StatsBar = dynamic(() => import("@app/(content)/[type]/StatsBar"), { ssr: false });
+const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), { ssr: false });
+import { isListAdEligible } from "@/lib/adEligibility";
 
 export default function ListDetailClient({ initialList, listId, listOwnerId }) {
   const router = useRouter();
@@ -156,7 +159,7 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
       method: "DELETE",
     });
     const data = await res.json();
-    if (res.ok && data.list) setList(data.list);
+    if (res.ok && data.list) setList((prev) => ({ ...prev, ...data.list }));
   }
 
   // ✅ Save list edits
@@ -168,7 +171,10 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     });
 
     const data = await res.json();
-    setList(data.list);
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to save list");
+    }
+    setList((prev) => ({ ...prev, ...data.list }));
     setEditModalOpen(false);
   }
 
@@ -177,15 +183,20 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     setSortBy(newSortBy);
   }
 
-  // ✅ Update visibility setting
+  // ✅ Publish list to public (one-way door: once public, cannot revert to private)
   async function updateVisibility(newIsPublic) {
-    setIsPublic(newIsPublic);
+    if (!newIsPublic) {
+      toast.error("Public lists cannot be made private. You can delete the list if you wish to remove it.");
+      return;
+    }
+
+    setIsPublic(true);
     setSettingsSaving(true);
     try {
       const res = await fetch(`/api/unifiedlist/${listId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPublic: newIsPublic }),
+        body: JSON.stringify({ isPublic: true }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -194,18 +205,21 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         setList(prev => ({
           ...prev,
           ...updatedList,
-          isPublic: newIsPublic,
+          isPublic: true,
         }));
-        // Generate share link if going public
-        if (newIsPublic) {
-          if (typeof window !== 'undefined') {
-            setShareLink(`${window.location.origin}${getListUrl(updatedList)}`);
-          }
+        toast.success("List is now published publicly!");
+        if (typeof window !== 'undefined') {
+          setShareLink(`${window.location.origin}${getListUrl(updatedList)}`);
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to publish list");
+        setIsPublic(false); // revert
       }
     } catch (err) {
       console.error("Failed to update visibility:", err);
-      setIsPublic(isPublic); // revert
+      toast.error("Failed to publish list");
+      setIsPublic(false); // revert
     } finally {
       setSettingsSaving(false);
     }
@@ -261,6 +275,50 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
 
     localStorage.setItem("SpinpapaWheel", JSON.stringify(wheelObject));
     router.push("/wheels/create");
+  }
+
+  // ✅ Copy this list into the create-page draft so anyone can fix/remix it as their own
+  function remixList() {
+    const LS_DRAFT_KEY = "SpinpapaListDraft";
+    try {
+      const existing = JSON.parse(localStorage.getItem(LS_DRAFT_KEY) || "null");
+      const hasUnsaved = existing && (existing.name?.trim() || existing.items?.length);
+      if (hasUnsaved && !window.confirm("You have an unsaved list draft. Replace it with this remix?")) {
+        return;
+      }
+
+      const ts = Date.now();
+      const draft = {
+        name: isOwner ? `${list.name} (Copy)` : list.name,
+        description: list.description || "",
+        format: activeFormat === "tiered" ? "tiered" : "standard",
+        tierConfig: list.tierConfig,
+        isPublic: true,
+        items: (list.items || []).map((it, idx) => ({
+          draftId: `remix-${ts}-${idx}`,
+          type: it.type,
+          word: it.word,
+          wordData: it.wordData,
+          entityType: it.entityType,
+          entityId: it.entityId,
+          name: it.name,
+          slug: it.slug,
+          image: it.image,
+          tier: it.tier || null,
+        })),
+        forkedFrom: {
+          listId: String(listId),
+          name: list.name,
+          username: list.ownerUsername || null,
+        },
+        updatedAt: ts,
+      };
+      localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draft));
+      router.push("/lists/create");
+    } catch (err) {
+      console.error("Failed to remix list:", err);
+      toast.error("Couldn't open this list for editing");
+    }
   }
 
   // ✅ Batch reorder / tier update
@@ -574,6 +632,27 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               </div>
 
               <div className="flex flex-col gap-1.5 mt-1">
+                {list.forkedFrom && (
+                  <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <GitFork size={12} className="shrink-0" />
+                    <span>Remixed from</span>
+                    {list.forkedFrom.listId ? (
+                      <a href={getListUrl({ slug: list.forkedFrom.slug, id: list.forkedFrom.listId })} className="font-semibold text-foreground hover:underline truncate">
+                        {list.forkedFrom.name}
+                      </a>
+                    ) : (
+                      <span className="italic">a list that&apos;s no longer available</span>
+                    )}
+                    {list.forkedFrom.username && (
+                      <>
+                        <span>by</span>
+                        <a href={`/u/${encodeURIComponent(list.forkedFrom.username)}`} className="font-semibold text-foreground hover:underline">
+                          @{list.forkedFrom.username}
+                        </a>
+                      </>
+                    )}
+                  </p>
+                )}
                 {list.description && (
                   <p className="text-sm sm:text-base text-muted-foreground/90 leading-relaxed font-normal max-w-3xl mt-0.5">
                     {list.description}
@@ -598,26 +677,19 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
                   {listMenuOpen && (
                     <div className="absolute right-0 mt-2 bg-popover shadow-xl border border-border rounded-xl w-48 z-50 overflow-hidden divide-y divide-border">
                       <div className="p-1">
-                        <button
-                          onClick={() => {
-                            updateVisibility(!isPublic);
-                            setListMenuOpen(false);
-                          }}
-                          disabled={settingsSaving}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted rounded-lg transition-colors text-left"
-                        >
-                          {isPublic ? (
-                            <>
-                              <EyeOff size={14} className="text-muted-foreground shrink-0" />
-                              <span>Make Private</span>
-                            </>
-                          ) : (
-                            <>
-                              <Eye size={14} className="text-emerald-600 shrink-0" />
-                              <span>Make Public</span>
-                            </>
-                          )}
-                        </button>
+                        {!isPublic && (
+                          <button
+                            onClick={() => {
+                              updateVisibility(true);
+                              setListMenuOpen(false);
+                            }}
+                            disabled={settingsSaving}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-muted rounded-lg transition-colors text-left"
+                          >
+                            <Eye size={14} className="shrink-0" />
+                            <span>Publish to Public</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setEditModalOpen(true);
@@ -669,6 +741,21 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
               <Zap size={15} className="fill-current" />
               <span>Spin this List</span>
             </button>
+
+            <button
+              onClick={remixList}
+              disabled={list.items.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed text-foreground text-xs sm:text-sm font-bold rounded-xl transition-all active:scale-95 shrink-0"
+              title={isOwner ? "Duplicate this list as a new draft" : "Make your own version of this list"}
+            >
+              <GitFork size={15} />
+              <span>{isOwner ? "Duplicate" : "Remix"}</span>
+              {list.forkCount > 0 && (
+                <span className="text-muted-foreground font-semibold">{list.forkCount}</span>
+              )}
+            </button>
+
+            <div className="flex-1" />
 
             <div className="shrink-0">
               <StatsBar
@@ -807,6 +894,12 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
         isSystem={isSystemList}
         onSave={saveListEdits}
       />
+
+      {isListAdEligible(list) && (
+        <div className="min-h-[90px] my-4 px-1">
+          <AdsUnit slot="4694567949" />
+        </div>
+      )}
 
       <UniversalCommentsSection
         entityId={listId}

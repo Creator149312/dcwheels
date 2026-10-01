@@ -8,6 +8,7 @@
  */
 
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
 import { slugify } from "@utils/HelperFunctions";
@@ -54,10 +55,10 @@ export async function generateMetadata({ params }) {
 export default async function MoviePage({ params }) {
   const { slug } = await params;
   const relatedId = extractId(slug);
-  if (!relatedId) return <div>Invalid URL</div>;
+  if (!relatedId) notFound();
 
   const pageDoc = await getCachedMoviePage(relatedId);
-  if (!pageDoc) return <div>Not found</div>;
+  if (!pageDoc) notFound();
 
   const displayTitle = resolveTitle(pageDoc);
 

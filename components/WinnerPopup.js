@@ -224,7 +224,7 @@ const WinnerPopup = ({
       params.set("cr_entity_image", winnerImage);
     }
 
-    router.push(`/post/create?${params.toString()}`);
+    router.push(`/posts/create?${params.toString()}`);
   };
 
   const removeWinner = (removeAll) => {

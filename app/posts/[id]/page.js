@@ -5,8 +5,14 @@ import Post from "@models/post";
 import User from "@models/user";
 import PostCard from "@components/PostCard";
 import mongoose from "mongoose";
+import dynamicLoader from "next/dynamic";
 import { getPostUrl } from "@utils/UrlHandler";
 import { sessionUser } from "@utils/SessionData";
+import { isPostAdEligible } from "@/lib/adEligibility";
+
+const AdsUnit = dynamicLoader(() => import("@components/ads/AdsUnit"), {
+  ssr: false,
+});
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +115,12 @@ export default async function SinglePostPage({ params }) {
       <div className="mb-6 border border-border bg-card rounded-xl overflow-hidden shadow-sm">
         <PostCard post={postData} defaultOpenComments={true} />
       </div>
+
+      {isPostAdEligible(post) && (
+        <div className="min-h-[90px] my-6">
+          <AdsUnit slot="4694567949" />
+        </div>
+      )}
     </main>
   );
 }

@@ -1,11 +1,13 @@
 // app/api/lists/route.js
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import mongoose from "mongoose";
 import { connectMongoDB } from "@lib/mongodb";
 import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@utils/SessionData";
-import { createImmutableGlobalSlug } from "@utils/UrlHandler";
+import { createImmutableGlobalSlug, getListUrl } from "@utils/UrlHandler";
+import { syncListIndexedState } from "@lib/listIndexGate";
+import { validateContentSafety, validateListItemsSafety } from "@lib/contentSafety";
 
 // GET returns the logged-in user's lists, paginated. The route is private
 // and session-driven; we keep max-age=0 so mutations are reflected immediately,
@@ -24,10 +26,12 @@ export async function GET(req) {
     const slim = searchParams.get("slim") === "1";
 
     if (slim) {
-      // Lightweight fetch — only id + name, no items. Used by AddToListButton
-      // picker so it doesn't ship full item arrays across the wire.
+      // Lightweight fetch — id + name + which entities each list contains.
+      // memberEntityIds powers the YouTube-style ✓ indicators in the
+      // AddToListButton picker. The projection still avoids shipping full
+      // item payloads (images, wordData, etc.) across the wire.
       const lists = await UnifiedList.find({ userId, isDeleted: { $ne: true } })
-        .select("_id name isSystem systemKey")
+        .select("_id name isSystem systemKey items.type items.entityId")
         .lean();
 
       // Sort system lists to the top, then by name
@@ -41,9 +45,15 @@ export async function GET(req) {
         id: l._id,
         name: l.name,
         isSystem: l.isSystem,
-        systemKey: l.systemKey
+        systemKey: l.systemKey,
+        memberEntityIds: (l.items || [])
+          .filter((i) => i.type === "entity" && i.entityId != null)
+          .map((i) => String(i.entityId)),
       }));
-      return NextResponse.json({ lists: formatted }, { status: 200 });
+      return NextResponse.json(
+        { lists: formatted },
+        { status: 200, headers: { "Cache-Control": "private, max-age=30" } }
+      );
     }
 
     // ✅ 2. Cursor pagination params
@@ -153,7 +163,16 @@ export async function POST(req) {
 
     // ✅ 2. Parse request body
     const body = await req.json();
-    const { name, description = "", tags = [], isPublic = true, format = "standard", tierConfig } = body;
+    const {
+      name,
+      description = "",
+      tags = [],
+      isPublic = true,
+      format = "standard",
+      tierConfig,
+      items = [],
+      forkedFromListId,
+    } = body;
 
     const VALID_FORMATS = ["standard", "ranked", "tiered"];
     const listFormat = VALID_FORMATS.includes(format) ? format : "standard";
@@ -192,6 +211,21 @@ export async function POST(req) {
       }
     }
 
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const safetyCheck = validateContentSafety([
+      name,
+      description,
+      ...(Array.isArray(tags) ? tags : []),
+    ]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ error: safetyCheck.error }, { status: 400 });
+    }
+
+    const itemsSafetyCheck = validateListItemsSafety(items);
+    if (!itemsSafetyCheck.isSafe) {
+      return NextResponse.json({ error: itemsSafetyCheck.error }, { status: 400 });
+    }
+
     // Reserved system list names cannot be used for custom lists
     const RESERVED_NAMES = ["Saved", "Favorites", "My Collection"];
     if (RESERVED_NAMES.map(n => n.toLowerCase()).includes(name.trim().toLowerCase())) {
@@ -201,6 +235,52 @@ export async function POST(req) {
       );
     }
 
+    // Validate and sanitize initial items if provided
+    let sanitizedItems = [];
+    if (Array.isArray(items) && items.length > 0) {
+      if (items.length > 250) {
+        return NextResponse.json(
+          { error: "Cannot create a list with more than 250 items." },
+          { status: 400 }
+        );
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (!it || typeof it !== "object") continue;
+
+        if (it.type === "entity") {
+          if (!it.entityType || !it.entityId || !it.name || !it.slug) {
+            continue; // Skip malformed entity items
+          }
+          sanitizedItems.push({
+            type: "entity",
+            entityType: it.entityType,
+            entityId: it.entityId,
+            name: String(it.name).trim().slice(0, 200),
+            slug: String(it.slug).trim(),
+            image: it.image || "",
+            status: ["want", "in-progress", "done"].includes(it.status) ? it.status : "want",
+            tier: it.tier ? String(it.tier).trim() : null,
+            rank: typeof it.rank === "number" ? it.rank : (listFormat === "ranked" ? i + 1 : null),
+            addedAt: new Date(),
+          });
+        } else {
+          // Default to word item
+          const word = (it.word || it.name || it.text || "").trim();
+          if (!word) continue;
+          sanitizedItems.push({
+            type: "word",
+            word: word.slice(0, 300),
+            wordData: it.wordData || it.image || "",
+            tier: it.tier ? String(it.tier).trim() : null,
+            rank: typeof it.rank === "number" ? it.rank : (listFormat === "ranked" ? i + 1 : null),
+            addedAt: new Date(),
+          });
+        }
+      }
+    }
+
     // ✅ 3. Prevent duplicate list names for the same user
     const existing = await UnifiedList.findOne({ userId, name, isDeleted: { $ne: true } }).lean();
     if (existing) {
@@ -208,6 +288,21 @@ export async function POST(req) {
         { error: "A list with this name already exists" },
         { status: 409 }
       );
+    }
+
+    // Only link lineage to a source the user is allowed to see.
+    let forkSource = null;
+    if (forkedFromListId && mongoose.Types.ObjectId.isValid(forkedFromListId)) {
+      const src = await UnifiedList.findOne({
+        _id: forkedFromListId,
+        isDeleted: { $ne: true },
+        isSystem: { $ne: true },
+      })
+        .select("_id userId isPublic slug")
+        .lean();
+      if (src && (src.isPublic !== false || String(src.userId) === String(userId))) {
+        forkSource = src;
+      }
     }
 
     // ✅ 4. Create the list with a global, transliterated slug
@@ -222,12 +317,22 @@ export async function POST(req) {
       name,
       description,
       tags: Array.isArray(tags) ? tags : [],
-      items: [],
+      items: sanitizedItems,
       isPublic: typeof isPublic === "boolean" ? isPublic : true,
       slug,
       format: listFormat,
       ...(Array.isArray(tierConfig) && tierConfig.length > 0 ? { tierConfig } : {}),
+      ...(forkSource ? { forkedFrom: { listId: forkSource._id, userId: forkSource.userId } } : {}),
     });
+
+    if (forkSource && String(forkSource.userId) !== String(userId)) {
+      await UnifiedList.updateOne({ _id: forkSource._id }, { $inc: { forkCount: 1 } });
+      revalidateTag(`list-${forkSource._id}`);
+      revalidatePath(getListUrl(forkSource));
+    }
+
+    // Ensure list index state is evaluated & synced immediately
+    await syncListIndexedState(newList._id);
 
     // ✅ 5. Format response
     const formatted = {
@@ -242,10 +347,13 @@ export async function POST(req) {
       isSystem: newList.isSystem ?? false,
       format: newList.format || "standard",
       tierConfig: newList.tierConfig,
-      items: [],
+      items: newList.items,
     };
 
-    return NextResponse.json({ list: formatted }, { status: 201 });
+    return NextResponse.json(
+      { list: formatted, url: getListUrl(formatted) },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /api/lists error:", err);
     return NextResponse.json(

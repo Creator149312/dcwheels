@@ -9,6 +9,7 @@ import { Card } from "./ui/card";
 import SharePopup from "./SharePopup";
 import EmptyState from "./EmptyState";
 import { Layers } from "lucide-react";
+import { getWheelUrl } from "@utils/UrlHandler";
 
 export default function WordLists({ createdBy, userId }) {
   const [data, setData] = useState([]);
@@ -58,24 +59,27 @@ export default function WordLists({ createdBy, userId }) {
       )}
       {/* show the lists if data is found */}
       {data.length > 0 &&
-        data.map((item, index) => (
-          <Card key={index} className="p-1 sm:p-2 mt-3">
-            <div className="leading-normal m-2 flex flex-col md:flex-row justify-between items-center">
-              <p className="text-lg font-bold m-1">{item.title}</p>
-              <div className="flex items-center mt-1">
-                <div className="mx-2">{item.data.length} Options</div>
-                <Link href={`/wheels/${item._id}`} className="mx-2">
-                  <Eye size={24} />
-                </Link>
-                <SharePopup
-                  url={`/wheels/${item._id}`}
-                  variant="simple"
-                />
-                <RemoveListBtn id={item._id} type={"wheel"} />
+        data.map((item, index) => {
+          const wheelLink = getWheelUrl(item);
+          return (
+            <Card key={index} className="p-1 sm:p-2 mt-3">
+              <div className="leading-normal m-2 flex flex-col md:flex-row justify-between items-center">
+                <p className="text-lg font-bold m-1">{item.title}</p>
+                <div className="flex items-center mt-1">
+                  <div className="mx-2">{item.data.length} Options</div>
+                  <Link href={wheelLink} className="mx-2">
+                    <Eye size={24} />
+                  </Link>
+                  <SharePopup
+                    url={wheelLink}
+                    variant="simple"
+                  />
+                  <RemoveListBtn id={item._id} type={"wheel"} />
+                </div>
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       {/* if data is loading is finished and data array is still empty  */}
       {!isLoading && data.length === 0 && (
         <div className="py-8">

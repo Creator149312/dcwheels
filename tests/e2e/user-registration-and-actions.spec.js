@@ -155,8 +155,8 @@ test.describe('User Registration & Actions Flow', () => {
 
   test('should create and publish a post', async ({ page }) => {
     // Navigate to post creation
-    await page.goto('/post/create').catch(() => {
-      // If /post/create doesn't exist, try /new
+    await page.goto('/posts/create').catch(() => {
+      // If /posts/create doesn't exist, try /new
     });
 
     // Alternative: try /new page

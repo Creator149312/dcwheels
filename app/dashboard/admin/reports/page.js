@@ -196,7 +196,7 @@ export default function ReportsPage() {
                     <AlertTriangle size={14} /> Shadow-ban author
                   </button>
                   <a
-                    href={r.targetType === "post" ? `/post/${r.targetId}` : "#"}
+                    href={r.targetType === "post" ? `/posts/${r.targetId}` : "#"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-accent transition"

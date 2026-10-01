@@ -120,7 +120,7 @@ export default function LeftSidebar({ isOpen, onClose }) {
           {createMenuOpen && (
             <div className="absolute bottom-full mb-2 left-0 w-48 xl:w-full bg-card border border-border shadow-xl rounded-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <Link
-                href="/post/create"
+                href="/posts/create"
                 onClick={() => setCreateMenuOpen(false)}
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-muted text-sm font-semibold text-foreground transition-colors"
               >

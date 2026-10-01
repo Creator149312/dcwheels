@@ -1,9 +1,16 @@
 ﻿"use client";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { isRouteAdEligible } from "@/lib/adEligibility";
 
 const AdsScriptLoader = () => {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // Never load AdSense script on excluded routes (embeds, auth, dashboard, etc.)
+    if (!isRouteAdEligible(pathname)) return;
 
     let loaded = false;
     const ADS_ID = "ca-pub-6746947892342481"; // Replace with your actual ID

@@ -17,6 +17,22 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { feedCache } from '@/lib/feedCache';
 
+const REQUEST_TIMEOUT_MS = 10000;
+const RETRY_DELAYS_MS = [800, 2500];
+
+class HttpError extends Error {
+  constructor(status, statusText) {
+    super(`Feed fetch failed: ${status} ${statusText}`);
+    this.status = status;
+  }
+}
+
+// 4xx (except 408/429) won't succeed on retry.
+const isRetryable = (err) =>
+  !(err instanceof HttpError) || err.status >= 500 || err.status === 408 || err.status === 429;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function useFeedCache({
   type = '',
   externalId = '',
@@ -44,6 +60,31 @@ export function useFeedCache({
   const fetchingRef = useRef(false);
   // Track if we've ever completed a successful fetch so transient errors don't kill hasMore
   const everFetchedRef = useRef(initialItems.length > 0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const requestPage = useCallback(async (url) => {
+    for (let attempt = 0; ; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(url, { method: 'GET', cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new HttpError(response.status, response.statusText);
+        return await response.json();
+      } catch (err) {
+        if (!mountedRef.current || attempt >= RETRY_DELAYS_MS.length || !isRetryable(err)) throw err;
+        await wait(RETRY_DELAYS_MS[attempt]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+  }, []);
 
   /**
    * Fetch feed items from API
@@ -68,16 +109,7 @@ export function useFeedCache({
           ...(cursor && { cursor }),
         });
 
-        const response = await fetch(`${endpoint}?${params.toString()}`, {
-          method: 'GET',
-          cache: 'no-store', // Always fetch fresh from server
-        });
-
-        if (!response.ok) {
-          throw new Error(`Feed fetch failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = await requestPage(`${endpoint}?${params.toString()}`);
         const newItems = data.items || [];
         const nextCursor = data.nextCursor || null;
         const more = data.hasMore ?? false;
@@ -97,6 +129,7 @@ export function useFeedCache({
         setHasMore(more);
         everFetchedRef.current = true;
       } catch (err) {
+        if (!mountedRef.current) return;
         console.error('Feed cache error:', err);
         if (!isSWR) {
           setError(err.message || 'Failed to load feed');
@@ -110,7 +143,7 @@ export function useFeedCache({
         if (!isSWR) setLoading(false);
       }
     },
-    [type, externalId, tag, userId, docType, limit, endpoint]
+    [type, externalId, tag, userId, docType, limit, endpoint, requestPage]
   );
 
   /**
@@ -133,12 +166,19 @@ export function useFeedCache({
     fetchFeed(null);
   }, [type, externalId, tag, userId, docType, fetchFeed]);
 
+  const retry = useCallback(() => {
+    if (fetchingRef.current) return;
+    setHasMore(true);
+    setLoading(true);
+    fetchFeed(cursorRef.current);
+  }, [fetchFeed]);
+
   // Sentinel logic: automatically trigger loadMore when sentinel is visible
   const sentinelRef = useRef(null);
 
   useEffect(() => {
-    // Only observe if there are more items and we aren't already fetching
-    if (!hasMore || loading) return;
+    // After retries are exhausted, auto-loading stops until the user taps retry.
+    if (!hasMore || loading || error) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -159,7 +199,7 @@ export function useFeedCache({
         observer.unobserve(currentSentinel);
       }
     };
-  }, [hasMore, loading, loadMore]);
+  }, [hasMore, loading, error, loadMore, rootMargin]);
 
   /**
    * Initial load: check cache first, then fetch if needed.
@@ -182,12 +222,8 @@ export function useFeedCache({
       setHasMore(lastCursor !== null);
       everFetchedRef.current = true;
       setLoading(false);
-
-      // Revalidate in background if the cache is older than 1 minute
-      const cacheAge = Date.now() - (feedCache.getTimestamp?.(type, externalId, tag, userId, docType) || 0);
-      if (cacheAge > 60 * 1000) {
-        fetchFeed(null, { isSWR: true });
-      }
+      // No background refetch: swapping page 1 mid-scroll rewinds the cursor and
+      // reshuffles rows. The 5-min cache TTL bounds staleness instead.
     } else if (initialItems.length > 0) {
       // Already has initial items (SSR), don't fetch page 1
       // But we should store them in cache so they are available on next navigation
@@ -210,6 +246,7 @@ export function useFeedCache({
     error,
     hasMore,
     loadMore,
+    retry,
     refresh,
     sentinelRef,
     cacheStats: feedCache.getStats(), // For debugging

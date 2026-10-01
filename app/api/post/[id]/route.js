@@ -162,7 +162,18 @@ export async function PATCH(req, { params }) {
         : [];
     }
     if (tags !== undefined) updateData.tags = tags;
-    if (isPublic !== undefined) updateData.isPublic = isPublic;
+    if (isPublic !== undefined) {
+      // 🛡️ SEO & Social Permanence Policy (One-way publish door):
+      // A post that is already public cannot be reverted to private.
+      // If the author wishes to remove it from feeds and indexing, they can delete it.
+      if (post.isPublic !== false && isPublic === false) {
+        return NextResponse.json(
+          { message: "Public posts cannot be reverted to private. You can delete the post if you wish to remove it." },
+          { status: 409 }
+        );
+      }
+      updateData.isPublic = isPublic;
+    }
     if (ogMeta !== undefined) updateData.ogMeta = ogMeta || null;
 
     await Post.updateOne({ _id: id }, { $set: updateData });

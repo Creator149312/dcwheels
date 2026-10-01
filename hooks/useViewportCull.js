@@ -27,6 +27,7 @@ export function useViewportCull({ itemCount, rootMargin = null, minHeight = 180 
   const elementsRef = useRef(new Map()); // index -> DOM node
   const heightsRef = useRef(new Map()); // index -> number
   const visibleRef = useRef(new Set());
+  const resizeObserverRef = useRef(null);
   const storeRef = useRef(null);
 
   if (!storeRef.current) {
@@ -52,15 +53,32 @@ export function useViewportCull({ itemCount, rootMargin = null, minHeight = 180 
   );
 
   const measure = useCallback((index, node) => {
-    if (!node || heightsRef.current.has(index)) return;
-    const height = node.getBoundingClientRect().height;
-    if (height > 0) heightsRef.current.set(index, Math.max(minHeight, height));
-  }, [minHeight]);
+    if (!node) return;
+    // ResizeObserver keeps the cached height current as images/polls expand,
+    // so the placeholder that replaces this row later is exactly as tall.
+    if (!resizeObserverRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserverRef.current = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const i = Number(entry.target.dataset.vcIndex);
+          if (Number.isNaN(i)) continue;
+          const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+          if (h > 0) heightsRef.current.set(i, h);
+        }
+      });
+    }
+    resizeObserverRef.current?.observe(node);
+  }, []);
 
   const getHeight = useCallback((index) => heightsRef.current.get(index) || minHeight, [minHeight]);
 
   const register = useCallback((index, node) => {
     if (!node) {
+      const prev = elementsRef.current.get(index);
+      if (prev) {
+        // A detached node would report "not intersecting" and evict its replacement.
+        observerRef.current?.unobserve(prev);
+        resizeObserverRef.current?.unobserve(prev);
+      }
       elementsRef.current.delete(index);
       return;
     }
@@ -69,12 +87,15 @@ export function useViewportCull({ itemCount, rootMargin = null, minHeight = 180 
     observerRef.current?.observe(node);
   }, []);
 
-  useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") {
-      storeRef.current.set(new Set(Array.from({ length: itemCount }, (_, i) => i)));
-      return;
-    }
+  useEffect(() => () => resizeObserverRef.current?.disconnect(), []);
 
+  useEffect(() => {
+    if (typeof IntersectionObserver !== "undefined") return;
+    storeRef.current.set(new Set(Array.from({ length: itemCount }, (_, i) => i)));
+  }, [itemCount]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
     const finalRootMargin = rootMargin ?? getDefaultRootMargin();
     observerRef.current?.disconnect();
 
@@ -104,7 +125,7 @@ export function useViewportCull({ itemCount, rootMargin = null, minHeight = 180 
       observerRef.current?.disconnect();
       observerRef.current = null;
     };
-  }, [rootMargin, itemCount]);
+  }, [rootMargin]);
 
   return { visible, register, measure, getHeight };
 }

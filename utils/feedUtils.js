@@ -4,79 +4,59 @@
  * Major platforms (Instagram/YouTube/Facebook) use a "Rule-based Slotting" system.
  * This separates the DATA (Fetched from DB) from the PLACEMENT (UX rules).
  *
- * Rules implemented:
- * 1. Primary content (Posts) forms the base.
- * 2. Secondary content (Wheels) is slotted every N items.
- * 3. Discovery/Collections (Lists) are slotted at fixed indices (e.g. index 2) to maximize visibility.
- * 4. Monetization (Ads) are injected last using absolute positions to avoid layout shifts.
+ * Target blend: ~60% posts / ~25% wheels / ~15% lists.
+ * When posts are sparse, remaining wheels/lists fill the tail (each once).
  */
 export function buildStandardFeed(items = [], options = {}) {
   const {
-    wheelCadence = 4, // 1 wheel every 4 posts
-    listIndices = [2], // Show List Shelf specifically at the 3rd position (Index 2)
-    adInterval = 7,    // Ads every 7 items
+    wheelCadence = 4,   // 1 wheel every 4 slots (~25%)
+    listPosition = 2,   // Batch-relative slot for the server-injected list
+    adInterval = 7,     // Ads every 7 items
+    slotOffset = 0,     // Continue cadence from a previous batch (infinite scroll)
   } = options;
 
   if (!items || items.length === 0) return [];
 
-  // 1. Separate items by Category
+  // 1. Separate by category; each id enters exactly one queue exactly once.
   const posts = [];
   const wheels = [];
   const lists = [];
-  const others = [];
+  const seen = new Set();
 
   items.forEach(item => {
+    const id = String(item._id || item.id || "");
+    if (!id || seen.has(id)) return;
+    seen.add(id);
     const type = item.docType || item._docType || "post";
     if (type === "post") posts.push(item);
     else if (type === "wheel") wheels.push(item);
     else if (type === "list") {
-      // Universal Rule: lists must have at least 5 items AND be of type 'entity'
-      // Word lists are utility/internal; Entity lists are discovery-worthy.
+      // Only entity lists with 5+ items are discovery-worthy.
       const hasMinItems = item.items && item.items.length >= 5;
       const isEntityList = item.items && item.items.some(i => i.type === "entity");
-      
-      if (hasMinItems && isEntityList) {
-        lists.push(item);
-      }
+      if (hasMinItems && isEntityList) lists.push(item);
     }
-    else others.push(item);
   });
 
+  // 2. Interleave: one placement per iteration, queues only move forward,
+  // so an item can never be emitted twice.
   const finalFeed = [];
-  let wheelIdx = 0;
-  let listIdx = 0;
-
-  // 2. Interleave following Platform Standards
-  posts.forEach((post, i) => {
-    // Check if current slot is a reserved List index
-    // Industry tip: Lists are "Discovery Layer" and should be at the top.
-    if (listIndices.includes(finalFeed.length) && listIdx < lists.length) {
-      finalFeed.push(lists[listIdx++]);
-    }
-
-    // Add the Post
-    finalFeed.push(post);
-
-    // After every N posts, inject a Wheel
-    // Industry tip: Wheels/Shorts increase "Dwell Time".
-    if ((i + 1) % wheelCadence === 0 && wheelIdx < wheels.length) {
-      finalFeed.push(wheels[wheelIdx++]);
-    }
-  });
-
-  // 3. Append remaining discovery items that weren't slotted
-  while (listIdx < lists.length || wheelIdx < wheels.length) {
-    if (listIdx < lists.length) finalFeed.push(lists[listIdx++]);
-    if (wheelIdx < wheels.length) finalFeed.push(wheels[wheelIdx++]);
+  const total = posts.length + wheels.length + lists.length;
+  let p = 0, w = 0, l = 0;
+  while (finalFeed.length < total) {
+    const slot = slotOffset + finalFeed.length + 1;
+    if (l < lists.length && finalFeed.length === listPosition) finalFeed.push(lists[l++]);
+    else if (w < wheels.length && (slot % wheelCadence === 0 || p >= posts.length)) finalFeed.push(wheels[w++]);
+    else if (p < posts.length) finalFeed.push(posts[p++]);
+    else if (l < lists.length) finalFeed.push(lists[l++]);
+    else finalFeed.push(wheels[w++]);
   }
 
-  // 4. Inject Ads based on final positions
-  // Industry tip: Ads should be injected into the final array so they don't move
-  // if content is prepended/appended later.
+  // 3. Ads on absolute positions so cadence continues across batches.
   const adInjectedFeed = [];
   finalFeed.forEach((item, index) => {
     adInjectedFeed.push(item);
-    if ((index + 1) % adInterval === 0 && index !== finalFeed.length - 1) {
+    if ((slotOffset + index + 1) % adInterval === 0 && index !== finalFeed.length - 1) {
       adInjectedFeed.push({
         isAdMarker: true,
         docType: "ad",
@@ -89,11 +69,55 @@ export function buildStandardFeed(items = [], options = {}) {
 }
 
 /**
+ * Reorder a batch of feed items for the warm state: boost items whose tags
+ * match the user's tracked affinities, while reserving a permanent discovery
+ * floor so the feed never becomes a single-fandom echo chamber.
+ *
+ * @param {Array} items - raw feed items (before slotting)
+ * @param {Object|null} affinityShares - { anime: 0.6, game: 0.3, ... } from getAffinityShares()
+ * @param {number} discoveryFloor - fraction of items that must be non-affinity (default 15%)
+ */
+export function applyWarmOrder(items = [], affinityShares = null, discoveryFloor = 0.15) {
+  if (!affinityShares || items.length === 0) return items;
+
+  const scored = items.map((item) => {
+    const tags = item.tags || [];
+    const contentType = item.contentRef?.type || null;
+    let score = 0;
+
+    for (const [cat, share] of Object.entries(affinityShares)) {
+      if (contentType === cat || tags.includes(cat)) score += share;
+    }
+    return { item, score };
+  });
+
+  // Affinity-matched items first, then the rest — but keep relative order
+  // stable within each group so recency pacing is preserved.
+  const matched = scored.filter((s) => s.score > 0).map((s) => s.item);
+  const unmatched = scored.filter((s) => s.score === 0).map((s) => s.item);
+
+  // Discovery floor: interleave at least `floor` share of unmatched items
+  // throughout, so a 90%-anime user still sees movies/games regularly.
+  const floorCount = Math.max(1, Math.round(items.length * discoveryFloor));
+  const discovery = unmatched.slice(0, floorCount);
+  const rest = [...matched, ...unmatched.slice(floorCount)];
+
+  // Sprinkle discovery items evenly across the warm feed
+  const result = [...rest];
+  discovery.forEach((d, idx) => {
+    const pos = Math.min(result.length, Math.floor(((idx + 1) * result.length) / (floorCount + 1)));
+    result.splice(pos, 0, d);
+  });
+
+  return result;
+}
+
+/**
  * Normalizes item IDs and types for consistent React key usage
  */
 export function getFeedItemKey(item, index) {
-  if (item.id === "home" || item._id === "home") return home-feed- + index;
-  return item.id || item._id || item- + index;
+  if (item.id === "home" || item._id === "home") return `home-feed-${index}`;
+  return String(item.id || item._id || `item-${index}`);
 }
 
 /**

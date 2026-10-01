@@ -119,6 +119,7 @@ function CreatePostForm() {
     { text: "", image: "" },
   ]);
   const [isPublic, setIsPublic] = useState(true);
+  const [wasOriginallyPublic, setWasOriginallyPublic] = useState(false);
   const [explicitTags, setExplicitTags] = useState([]);
   const [pollImagePreviews, setPollImagePreviews] = useState({});
   const [loading, setLoading] = useState(false);
@@ -211,7 +212,9 @@ function CreatePostForm() {
                 }))
               );
             }
-            setIsPublic(post.isPublic !== false);
+            const isPub = post.isPublic !== false;
+            setIsPublic(isPub);
+            setWasOriginallyPublic(isPub);
             if (Array.isArray(post.tags)) {
               setExplicitTags(post.tags);
             }
@@ -319,6 +322,24 @@ function CreatePostForm() {
     }
   }, [initialLoadDone, spinResult, spinImage, wheelShareTitle, cr_title, text]);
 
+  // Handle URL flags (?poll=true, ?poll=vs, ?image=1) from fast teaser or external links
+  useEffect(() => {
+    if (!initialLoadDone || postId) return;
+
+    const pollParam = searchParams.get("poll");
+    const imageParam = searchParams.get("image");
+
+    if (pollParam === "true" || pollParam === "vs" || pollParam === "1") {
+      setHasPoll(true);
+    } else if (imageParam === "1" || imageParam === "true") {
+      // Small timeout to allow input ref to mount
+      const timer = setTimeout(() => {
+        imageInputRef.current?.click();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [initialLoadDone, postId, searchParams]);
+
   useEffect(() => {
     const draft = sessionStorage.getItem("post-draft");
     if (draft && !text) {
@@ -348,9 +369,28 @@ function CreatePostForm() {
   }, [text, imagePreview]);
 
   const handleAddPollOption = useCallback(() => {
-    setPollOptions((prev) =>
-      prev.length < 6 ? [...prev, { text: "", image: "" }] : prev
-    );
+    setPollOptions((prev) => {
+      if (prev.length >= 4) return prev;
+      // Expand from 2 to 4 in a balanced 2x2 grid
+      if (prev.length === 2) {
+        return [
+          ...prev,
+          { text: "", image: "" },
+          { text: "", image: "" },
+        ];
+      }
+      return [...prev, { text: "", image: "" }];
+    });
+  }, []);
+
+  const handleResetToTwoOptions = useCallback(() => {
+    setPollOptions((prev) => prev.slice(0, 2));
+    setPollImagePreviews((prev) => {
+      const updated = { ...prev };
+      delete updated[2];
+      delete updated[3];
+      return updated;
+    });
   }, []);
 
   const handleRemovePollOption = useCallback((index) => {
@@ -653,7 +693,7 @@ function CreatePostForm() {
 
       const result = await res.json();
       sessionStorage.removeItem("post-draft");
-      router.push(`/post/${result.id || postId}`);
+      router.push(`/posts/${result.id || postId}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -676,7 +716,7 @@ function CreatePostForm() {
           You must be logged in to create a post.
         </p>
         <Link
-          href="/login?callbackUrl=/post/create"
+          href="/login?callbackUrl=/posts/create"
           className="inline-block bg-primary text-primary-foreground font-semibold px-6 py-2.5 rounded-full hover:bg-primary/90"
         >
           Log In
@@ -831,43 +871,52 @@ function CreatePostForm() {
 
                 {hasPoll && (
                   <div className="rounded-2xl border border-border border-l-4 border-l-primary bg-muted/20 p-4 mt-3 relative group transition-colors focus-within:border-l-primary">
-                    <button
-                      type="button"
-                      onClick={() => setHasPoll(false)}
-                      className="absolute top-3 right-3 text-muted-foreground hover:text-foreground opacity-50 hover:opacity-100 transition"
-                    >
-                      <X size={16} />
-                    </button>
-                    <div className="space-y-3 pr-6">
-                      {pollOptions.map((option, idx) => (
-                        <div key={idx} className="flex gap-2 items-start">
-                          <input
-                            type="text"
-                            value={option.text}
-                            onChange={(e) => handlePollOptionChange(idx, e.target.value)}
-                            placeholder={`Option ${idx + 1}`}
-                            maxLength={65}
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
-                          />
-                          <div className="flex items-center gap-1">
-                            {option.image ? (
-                              <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-border shrink-0">
-                                <img
-                                  src={pollImagePreviews[idx] || option.image}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemovePollOptionImage(idx)}
-                                  className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition"
-                                  aria-label="Remove option image"
-                                >
-                                  <X size={12} />
-                                </button>
-                              </div>
-                            ) : (
-                              <>
+                    <div className="flex items-center justify-between pb-3 border-b border-border/40 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                          {pollOptions.length === 2 ? "Head-to-Head Comparison" : "4-Way Comparison Grid"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          ({pollOptions.length} Options)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setHasPoll(false)}
+                        className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition p-1"
+                        title="Remove poll"
+                        aria-label="Remove poll"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Responsive Card Grid: 2 columns on all devices for balanced side-by-side or 2x2 symmetry */}
+                    <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Central VS / OR badge for 2-option head-to-head */}
+                      {pollOptions.length === 2 && (
+                        <div className="hidden sm:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-card border-2 border-primary/40 shadow-sm items-center justify-center text-xs font-black tracking-wider text-primary pointer-events-none ring-4 ring-background">
+                          VS
+                        </div>
+                      )}
+
+                      {pollOptions.map((option, idx) => {
+                        const hasImg = !!(pollImagePreviews[idx] || option.image);
+                        return (
+                          <div
+                            key={idx}
+                            className={`rounded-xl border transition-all p-3 flex flex-col justify-between gap-2.5 ${
+                              hasImg
+                                ? "bg-card border-primary/30 shadow-xs"
+                                : "bg-card/90 border-border hover:border-primary/40"
+                            }`}
+                          >
+                            {/* Option Header: Label + Image Upload Button + Delete button */}
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                                Option {idx + 1}
+                              </span>
+                              <div className="flex items-center gap-1.5">
                                 <input
                                   type="file"
                                   id={`poll-opt-img-${idx}`}
@@ -881,38 +930,92 @@ function CreatePostForm() {
                                 />
                                 <label
                                   htmlFor={`poll-opt-img-${idx}`}
-                                  className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition cursor-pointer shrink-0"
-                                  title="Add image"
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border cursor-pointer transition ${
+                                    hasImg
+                                      ? "bg-primary/10 text-primary border-primary/30"
+                                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
+                                  }`}
+                                  title="Add option photo"
                                 >
-                                  <ImageIcon size={16} />
+                                  <ImageIcon size={13} />
+                                  <span className="text-[11px]">{hasImg ? "Change" : "Photo"}</span>
                                 </label>
-                              </>
+                                {pollOptions.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePollOption(idx)}
+                                    className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                                    title="Remove this option"
+                                    aria-label="Remove option"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Image Thumbnail Preview if uploaded */}
+                            {hasImg && (
+                              <div className="relative w-full aspect-16/9 sm:aspect-square max-h-36 rounded-lg overflow-hidden border border-border bg-muted">
+                                <img
+                                  src={pollImagePreviews[idx] || option.image}
+                                  alt={`Option ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePollOptionImage(idx)}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 hover:bg-destructive text-white flex items-center justify-center transition"
+                                  title="Remove image"
+                                  aria-label="Remove image"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
                             )}
-                            {pollOptions.length > 2 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemovePollOption(idx)}
-                                className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-muted rounded-lg transition"
-                              >
-                                <X size={16} />
-                              </button>
-                            )}
+
+                            {/* Option Text Input */}
+                            <input
+                              type="text"
+                              value={option.text}
+                              onChange={(e) => handlePollOptionChange(idx, e.target.value)}
+                              placeholder={`Name or title (e.g. ${
+                                idx === 0 ? "Naruto" : idx === 1 ? "Sasuke" : idx === 2 ? "Kakashi" : "Itachi"
+                              })`}
+                              maxLength={65}
+                              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs"
+                            />
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <p className="text-[11px] text-muted-foreground/75 mt-3 px-2">
-                      Add an image to each option to create a visual VS poll.
-                    </p>
-                    {pollOptions.length < 6 && (
-                      <button
-                        type="button"
-                        onClick={handleAddPollOption}
-                        className="mt-2 flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition px-2"
-                      >
-                        <Plus size={16} /> Add Option
-                      </button>
-                    )}
+
+                    {/* Bottom Controls: Pair Expansion / Reset */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-3.5 pt-3 border-t border-border/40 px-1">
+                      <p className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
+                        <span className="font-semibold text-primary">Pro-tip:</span> Adding photos turns this into a visual VS comparison card.
+                      </p>
+
+                      <div className="flex items-center gap-2">
+                        {pollOptions.length === 2 ? (
+                          <button
+                            type="button"
+                            onClick={handleAddPollOption}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition"
+                          >
+                            <Plus size={14} /> Add 2 More Options (4-Way Grid)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResetToTwoOptions}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 transition"
+                          >
+                            <X size={14} /> Back to 2 Options (VS Mode)
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -985,9 +1088,23 @@ function CreatePostForm() {
 
               <button
                 type="button"
-                onClick={() => setIsPublic(!isPublic)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold text-muted-foreground hover:bg-muted transition"
-                title={isPublic ? "Public Post" : "Private Post"}
+                disabled={postId && wasOriginallyPublic}
+                onClick={() => {
+                  if (postId && wasOriginallyPublic) return;
+                  setIsPublic(!isPublic);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition ${
+                  postId && wasOriginallyPublic
+                    ? "text-muted-foreground/60 cursor-not-allowed opacity-80"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+                title={
+                  postId && wasOriginallyPublic
+                    ? "Public posts cannot be made private. Delete the post to remove it."
+                    : isPublic
+                    ? "Public Post (Click to make private draft)"
+                    : "Private Draft (Click to make public)"
+                }
               >
                 {isPublic ? <Earth size={14} /> : <Lock size={14} />}
                 <span className="hidden sm:inline">{isPublic ? "Public" : "Private"}</span>

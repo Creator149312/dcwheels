@@ -1,12 +1,15 @@
-import { getAllWheelPages } from "@components/actions/actions";
+import { connectMongoDB } from "@lib/mongodb";
+import Wheel from "@models/wheel";
+import Page from "@models/page";
+import { getWheelUrl } from "@utils/UrlHandler";
 import { replaceUnderscoreWithDash } from "@utils/HelperFunctions";
+
 const BASE_URL = "https://www.spinpapa.com";
 
-export const revalidate = 0;
+export const revalidate = 86400; // 24 hours
 
-export default async function sitemap({ id }) {
-  // const AllUrls = Object.keys(WheelData);
-  const AllUrls = await getAllWheelPages();
+export default async function sitemap() {
+  await connectMongoDB();
 
   const adultWords = [
     "sex",
@@ -32,13 +35,52 @@ export default async function sitemap({ id }) {
     "sex-position",
   ];
 
-  const isAdult = (word) => {
-    const normalizedWord = word.toLowerCase();
-    return adultWords.some((adultTerm) => normalizedWord.includes(adultTerm));
+  const isClean = (text) => {
+    if (!text || typeof text !== "string") return true;
+    const lower = text.toLowerCase();
+    return !adultWords.some((term) => lower.includes(term));
   };
 
-  return AllUrls.filter((word) => !isAdult(word)).map((word) => ({
-    url: `${BASE_URL}/wheels/${replaceUnderscoreWithDash(word)}`.trim(),
-    lastModified: new Date(),
-  }));
+  // 1. Fetch Verified / Admin Wheels from Page collection
+  const legacyPages = await Page.aggregate([
+    { $project: { _id: 0, slug: 1 } },
+  ]);
+
+  const adminEntries = legacyPages
+    .map((doc) => doc.slug)
+    .filter((slug) => slug && isClean(slug))
+    .map((slug) => ({
+      url: `${BASE_URL}/wheels/${replaceUnderscoreWithDash(slug)}`.trim(),
+      lastModified: new Date(),
+    }));
+
+  // 2. Fetch High-Quality Indexed User/Community Wheels
+  const indexedUserWheels = await Wheel.find({
+    isPublic: true,
+    indexed: true,
+    isDeleted: { $ne: true },
+  })
+    .select("_id slug updatedAt title")
+    .limit(2000)
+    .lean();
+
+  const userEntries = indexedUserWheels
+    .filter((w) => isClean(w.title) && isClean(w.slug))
+    .map((w) => ({
+      url: `${BASE_URL}${getWheelUrl(w)}`.trim(),
+      lastModified: w.updatedAt ? new Date(w.updatedAt) : new Date(),
+    }));
+
+  // Dedup URLs
+  const seen = new Set();
+  const combined = [];
+
+  for (const item of [...adminEntries, ...userEntries]) {
+    if (!seen.has(item.url)) {
+      seen.add(item.url);
+      combined.push(item);
+    }
+  }
+
+  return combined;
 }

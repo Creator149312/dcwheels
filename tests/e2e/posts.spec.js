@@ -46,7 +46,7 @@ async function waitForComposer(page) {
 test.describe("Posts", () => {
   test.describe("Create post page", () => {
     test("should show login prompt for anonymous visitors", async ({ page }) => {
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
 
       await expect(page.locator('text="You must be logged in to create a post."')).toBeVisible({
         timeout: 10000,
@@ -54,18 +54,18 @@ test.describe("Posts", () => {
 
       const loginButton = page.locator("main").locator("a", { hasText: "Log In" }).first();
       await expect(loginButton).toBeVisible();
-      await expect(loginButton).toHaveAttribute("href", "/login?callbackUrl=/post/create");
+      await expect(loginButton).toHaveAttribute("href", "/login?callbackUrl=/posts/create");
     });
 
     test("should load composer for authenticated user", async ({ page }) => {
       await login(page);
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
       await waitForComposer(page);
     });
 
     test("should enforce 600 character limit", async ({ page }) => {
       await login(page);
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
       const composer = await waitForComposer(page);
 
       const longText = "a".repeat(650);
@@ -86,7 +86,7 @@ test.describe("Posts", () => {
 
     test("should validate poll options (2-6, 65 chars max)", async ({ page }) => {
       await login(page);
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
       await waitForComposer(page);
 
       const pollToggle = page.locator('button:has-text("Poll")').first();
@@ -114,7 +114,7 @@ test.describe("Posts", () => {
       await page.goto("/");
       await page.waitForTimeout(3000);
 
-      const postLinks = page.locator('a[href*="/post/"], article');
+      const postLinks = page.locator('a[href*="/posts/"], article');
       expect(await postLinks.count()).toBeGreaterThan(0);
     });
 
@@ -155,7 +155,7 @@ test.describe("Posts", () => {
     });
 
     test("should create and publish a text post", async ({ page }) => {
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
       const composer = await waitForComposer(page);
 
       const postText = `E2E text post ${Date.now()}`;
@@ -282,7 +282,7 @@ test.describe("Posts", () => {
     });
 
     test("should create a poll post", async ({ page }) => {
-      await page.goto("/post/create");
+      await page.goto("/posts/create");
       const composer = await waitForComposer(page);
       await composer.fill(`E2E poll ${Date.now()}`);
 

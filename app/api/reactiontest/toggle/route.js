@@ -88,7 +88,7 @@ export async function PATCH(req) {
             const post = await Post.findById(entityObjectId).select("userId").lean();
             if (post?.userId) {
               recipientId = post.userId;
-              link = `/post/${entityId}`;
+              link = `/posts/${entityId}`;
               modelStr = "Post";
             }
           } else if (entityType === "wheel") {

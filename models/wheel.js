@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { evaluateWheelQuality } from "../lib/wheelIndexGate.js";
 const { Schema, models } = mongoose;
 
 /**
@@ -53,10 +54,12 @@ const wheelSchema = new Schema(
       type: String,
       default: null,
     },
+    // SEO & Unified Routing:
+    // - Admin wheels: clean SEO slug (e.g. "yes-or-no-wheel")
+    // - User wheels: immutable compound slug (e.g. "dinner-ideas-660e1234567890abcdef1234")
+    // Using index: true (non-unique) matching UnifiedList to prevent duplicate key errors
     slug: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
       trim: true,
       index: true,
@@ -209,6 +212,16 @@ wheelSchema.index(
  * 2. isDeleted: false
  */
 wheelSchema.pre("save", async function (next) {
+  // 1. Auto-index evaluation: set indexed based on content & engagement quality
+  try {
+    if (!this.isVerified) {
+      this.indexed = evaluateWheelQuality(this);
+    }
+  } catch (indexGateErr) {
+    console.error("Error evaluating wheel quality in pre-save:", indexGateErr);
+  }
+
+  // 2. Track old state for tag counts
   if (!this.isNew) {
     try {
       const oldDoc = await this.constructor

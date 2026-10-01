@@ -5,6 +5,8 @@ import { sessionUser } from "@utils/SessionData";
 import { validateQuizSegments } from "@utils/Validator";
 import { revalidateTag, revalidatePath } from "next/cache";
 import mongoose from "mongoose";
+import { syncWheelIndexedState } from "@lib/wheelIndexGate";
+import { validateContentSafety, validateWheelSegmentsSafety } from "@lib/contentSafety";
 
 // Strip base64 images from segment data before persisting to DB.
 function sanitizeSegments(data) {
@@ -65,6 +67,23 @@ export async function PUT(request, { params }) {
       }
     }
 
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const safetyCheck = validateContentSafety([
+      title,
+      description,
+      ...(Array.isArray(tags) ? tags : []),
+    ]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ error: safetyCheck.error }, { status: 400 });
+    }
+
+    if (Array.isArray(data)) {
+      const segmentsSafetyCheck = validateWheelSegmentsSafety(data);
+      if (!segmentsSafetyCheck.isSafe) {
+        return NextResponse.json({ error: segmentsSafetyCheck.error }, { status: 400 });
+      }
+    }
+
     // Only patch relatedTopics / tags when the client actually sent them.
     // Otherwise a partial update (e.g. title-only save) would clobber those
     // fields to undefined.
@@ -85,6 +104,9 @@ export async function PUT(request, { params }) {
     }
 
     const updatedWheel = await Wheel.findByIdAndUpdate(id, update, { new: true }).lean();
+
+    // Re-evaluate indexing gate for updated title/segments/description
+    await syncWheelIndexedState(id);
 
     // Invalidate Next.js cache so deleted segments or title changes take effect immediately
     try {
@@ -121,7 +143,7 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
 
     await connectMongoDB();
-    const wheel = await Wheel.findById(id).select("userId isPublic").lean();
+    const wheel = await Wheel.findById(id).select("userId isPublic indexed").lean();
     if (!wheel) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const wheelUserId = wheel.userId ? String(wheel.userId) : null;
 
@@ -132,6 +154,19 @@ export async function PATCH(request, { params }) {
     // Only allow toggling isPublic via PATCH — full updates go through PUT.
     if (typeof body.isPublic !== "boolean") {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // 🛡️ SEO & Permanence Policy (One-way publish door):
+    // Once a wheel has been published publicly, it cannot be reverted to private.
+    // It must be deleted if the creator wants it removed.
+    if (wheel.isPublic && body.isPublic === false) {
+      return NextResponse.json(
+        {
+          error:
+            "Public wheels cannot be reverted to private. You can delete the wheel if you wish to remove it.",
+        },
+        { status: 409 }
+      );
     }
 
     await Wheel.findByIdAndUpdate(id, { isPublic: body.isPublic });

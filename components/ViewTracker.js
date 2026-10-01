@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 
 // 1-in-N probabilistic sample. The bulk of Vercel function cost on cached
-// content pages comes from this single endpoint — every page hit fires a
-// POST. Setting SAMPLE_RATE to 1 during this phase to ensure the user sees
-// instant feedback during their testing.
+// content pages comes from this single endpoint.
 const SAMPLE_RATE = 1;
 
 /**
@@ -15,6 +13,9 @@ const SAMPLE_RATE = 1;
  * wheel page can be fully static / CDN-cached. Uses sessionStorage to
  * avoid double-counting when the same tab revisits the same wheel
  * (e.g. back/forward navigation within the SPA).
+ *
+ * Uses requestIdleCallback / deferred timer so tracking never competes
+ * with above-the-fold paint, wheel canvas setup, or user interaction.
  */
 export default function ViewTracker({ wheelId }) {
   useEffect(() => {
@@ -35,23 +36,46 @@ export default function ViewTracker({ wheelId }) {
     if (Math.random() * SAMPLE_RATE >= 1) return;
 
     const controller = new AbortController();
-    fetch("/api/track-view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wheelId, sampleN: SAMPLE_RATE }),
-      signal: controller.signal,
-      keepalive: true,
-    })
-      .then((res) => {
-        if (res.ok) {
-          window.dispatchEvent(new CustomEvent("wheel:view-counted", { detail: { wheelId } }));
-        }
-      })
-      .catch(() => {
-        // Silent — analytics failure must not surface to the user.
-      });
 
-    return () => controller.abort();
+    const sendPing = () => {
+      fetch("/api/track-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wheelId, sampleN: SAMPLE_RATE }),
+        signal: controller.signal,
+        keepalive: true,
+      })
+        .then((res) => {
+          if (res.ok) {
+            window.dispatchEvent(
+              new CustomEvent("wheel:view-counted", { detail: { wheelId } })
+            );
+          }
+        })
+        .catch(() => {
+          // Silent — analytics failure must not surface to the user.
+        });
+    };
+
+    // Defer tracking execution until browser main thread is completely idle
+    let idleId = null;
+    let timerId = null;
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(sendPing, { timeout: 3000 });
+    } else {
+      timerId = setTimeout(sendPing, 1500);
+    }
+
+    return () => {
+      controller.abort();
+      if (idleId && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+    };
   }, [wheelId]);
 
   return null;

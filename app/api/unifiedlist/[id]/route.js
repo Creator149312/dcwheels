@@ -7,6 +7,8 @@ import { getListUrl } from "@utils/UrlHandler";
 import { getServerSession } from "next-auth";
 import { sessionUserId } from "@utils/SessionData";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
+import { syncListIndexedState } from "@lib/listIndexGate";
+import { validateContentSafety } from "@lib/contentSafety";
 
 // GET is public/private depending on list.isPublic. The data itself is
 // tag-busted on mutations via revalidateTag, so we don't force dynamic on GET.
@@ -112,6 +114,16 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
+    // Tier 1 Content Safety Gate (Write-Time Hard Reject)
+    const safetyCheck = validateContentSafety([
+      name,
+      description,
+      ...(Array.isArray(tags) ? tags : []),
+    ]);
+    if (!safetyCheck.isSafe) {
+      return NextResponse.json({ error: safetyCheck.error }, { status: 400 });
+    }
+
     // ✅ 3. Fetch list (must belong to user)
     const list = await UnifiedList.findOne({ _id: id, userId, isDeleted: { $ne: true } });
 
@@ -166,9 +178,9 @@ export async function PUT(req, { params }) {
       list.name = name;
     }
 
-    if (!list.isSystem && description !== undefined && description.length > 300) {
+    if (!list.isSystem && description !== undefined && description.length > 2000) {
       return NextResponse.json(
-        { error: "Description must be 300 characters or less." },
+        { error: "Description must be 2000 characters or less." },
         { status: 400 }
       );
     }
@@ -193,6 +205,9 @@ export async function PUT(req, { params }) {
     }
 
     await list.save();
+
+    // Re-evaluate quality gate on update (e.g. description lengthened or generic title changed)
+    await syncListIndexedState(list._id);
 
     // Bust ISR cache for this detail page.
     revalidatePath(`/lists/${id}`);
@@ -333,6 +348,21 @@ export async function PATCH(req, { params }) {
           { status: 400 }
         );
       }
+
+      // 🛡️ SEO & Permanence Policy (One-way publish door):
+      // Once a list has been published publicly, it cannot be reverted to private.
+      // Reverting to private causes Google 404s, index thrashing, and breaks shared links.
+      // The creator must delete the list if they want it removed from the platform.
+      if (list.isPublic && isPublic === false) {
+        return NextResponse.json(
+          {
+            error:
+              "Public lists cannot be reverted to private. You can delete the list if you wish to remove it.",
+          },
+          { status: 409 }
+        );
+      }
+
       list.isPublic = isPublic;
     }
 

@@ -12,9 +12,10 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import ReactDOM from "react-dom";
 import WorthItVote from "@components/WorthItVote";
 import EntityTrackingBar from "@components/EntityTrackingBar";
-import DoneNudge from "@components/DoneNudge";
+import { EntityTrackingProvider } from "@components/EntityTrackingProvider";
 import CreatePostTeaser from "@components/CreatePostTeaser";
 import ExpandableDescription from "@components/ExpandableDescription";
 
@@ -78,25 +79,46 @@ export default async function TopicPageLayout({
   const finalRelatedPagesPromise = relatedPagesPromise || Promise.resolve(relatedPages || []);
   const finalFeedPromise = feedPromise || Promise.resolve(initialFeed || []);
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
+  // ── LCP Optimization: Preconnect to external image CDNs per topic type ────
+  // Hoisted into document <head> via React 19 / Next.js preconnect API.
+  if (type === "movie" || type === "tv") {
+    ReactDOM.preconnect("https://image.tmdb.org", { crossOrigin: "anonymous" });
+  } else if (type === "anime" || type === "character") {
+    ReactDOM.preconnect("https://s4.anilist.co", { crossOrigin: "anonymous" });
+  } else if (type === "game") {
+    ReactDOM.preconnect("https://media.rawg.io", { crossOrigin: "anonymous" });
+  }
+  // If cover image is hosted on an external origin, ensure it's preconnected
+  if (pageDoc?.cover && typeof pageDoc.cover === "string" && pageDoc.cover.startsWith("http")) {
+    try {
+      const coverOrigin = new URL(pageDoc.cover).origin;
+      ReactDOM.preconnect(coverOrigin, { crossOrigin: "anonymous" });
+    } catch {}
+  }
 
-      {/* ── Mobile hero (< sm) ────────────────────────────────────────────── */}
-      <div className="sm:hidden px-2 pt-1.5 pb-1.5 border-b border-border/40">
+  return (
+    <EntityTrackingProvider entityId={String(pageDoc._id)}>
+      <div className="min-h-screen bg-background text-foreground">
+
+        {/* ── Mobile hero (< sm) ────────────────────────────────────────────── */}
+        <div className="sm:hidden px-2 pt-1.5 pb-1.5 border-b border-border/40">
 
         {/* Row 1: poster + title / CTA */}
         <div className="flex gap-3 items-start">
           {pageDoc.cover && (
             <div className="flex flex-col gap-2 w-[110px] flex-shrink-0">
-              <Image
-                src={pageDoc.cover}
-                alt={displayTitle}
-                width={110}
-                height={145}
-                priority
-                sizes="110px"
-                className="w-full rounded-lg shadow-md aspect-[3/4] object-cover"
-              />
+              <div className="w-full relative aspect-[2/3] rounded-lg shadow-md overflow-hidden bg-muted/40">
+                <Image
+                  src={pageDoc.cover}
+                  alt={displayTitle}
+                  width={110}
+                  height={165}
+                  priority
+                  fetchPriority="high"
+                  sizes="110px"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               {finalExtrasPromise !== null && (
                 <Suspense fallback={<TrailerSkeleton />}>
                   <SuspendedTrailer extrasPromise={finalExtrasPromise} type={type} displayTitle={displayTitle} />
@@ -143,11 +165,6 @@ export default async function TopicPageLayout({
           />
         </div>
 
-        {/* Row 5: Status Update */}
-        <div className="mt-2">
-          <DoneNudge />
-        </div>
-
         {/* Row 5: streaming + affiliate links */}
         {finalExtrasPromise !== null && (
           <Suspense fallback={<StreamingSkeletonMobile />}>
@@ -167,15 +184,18 @@ export default async function TopicPageLayout({
           {/* Left: Poster - 3 columns */}
           {pageDoc.cover && (
             <div className="col-span-3 flex flex-col gap-2">
-              <Image
-                src={pageDoc.cover}
-                alt={displayTitle}
-                width={208}
-                height={277}
-                priority
-                sizes="208px"
-                className="w-full rounded-xl shadow-lg aspect-[3/4] object-cover"
-              />
+              <div className="w-full relative aspect-[2/3] rounded-xl shadow-lg overflow-hidden bg-muted/40">
+                <Image
+                  src={pageDoc.cover}
+                  alt={displayTitle}
+                  width={208}
+                  height={312}
+                  priority
+                  fetchPriority="high"
+                  sizes="(max-width: 1280px) 25vw, 208px"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               {finalExtrasPromise !== null && (
                 <Suspense fallback={<TrailerSkeleton />}>
                   <SuspendedTrailer extrasPromise={finalExtrasPromise} type={type} displayTitle={displayTitle} />
@@ -205,8 +225,6 @@ export default async function TopicPageLayout({
             <MetaPills type={type} pageDoc={pageDoc} />
 
             <ExpandableDescription description={pageDoc.description} />
-
-            <DoneNudge />
             
             {type !== "character" && (
               <WorthItVote
@@ -284,5 +302,6 @@ export default async function TopicPageLayout({
       </div>
 
     </div>
+    </EntityTrackingProvider>
   );
 }

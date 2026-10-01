@@ -10,7 +10,7 @@ test.describe('Posts - User Interactions & Actions', () => {
     await page.waitForTimeout(3000);
 
     // Look for post cards
-    const postLinks = page.locator('a[href*="/post/"], article');
+    const postLinks = page.locator('a[href*="/posts/"], article');
     const postCount = await postLinks.count();
 
     // Verify posts are displayed
@@ -25,7 +25,7 @@ test.describe('Posts - User Interactions & Actions', () => {
     await page.waitForTimeout(3000);
 
     // Look for a post link
-    const postLink = page.locator('a[href*="/post/"]').first();
+    const postLink = page.locator('a[href*="/posts/"]').first();
     
     if (await postLink.isVisible()) {
       const postId = await postLink.getAttribute('href');
@@ -171,7 +171,7 @@ test.describe('Posts - User Interactions & Actions', () => {
     await page.waitForTimeout(3000);
 
     // Look for results
-    const results = page.locator('a[href*="/post/"]');
+    const results = page.locator('a[href*="/posts/"]');
     const resultCount = await results.count();
 
     // Search page should load

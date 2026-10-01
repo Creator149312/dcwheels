@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getListUrl } from "@utils/UrlHandler";
 import { timeAgo } from "@utils/HelperFunctions";
+import QuickSaveButton from "@components/QuickSaveButton";
 
 const ListCarouselItem = memo(function ListCarouselItem({ item }) {
   const isEntity = item.type === "entity";
@@ -13,7 +14,7 @@ const ListCarouselItem = memo(function ListCarouselItem({ item }) {
   const href = isEntity ? `/${item.entityType}/${item.slug}` : null;
 
   const CardContent = (
-    <div className="w-full h-full bg-background hover:bg-accent/40 border border-border/40 rounded-xl overflow-hidden transition-all duration-200 hover:scale-[1.02] group flex flex-col shadow-sm">
+    <div className="w-full h-full bg-background hover:bg-accent/40 border border-border/40 rounded-xl overflow-hidden transition-all duration-200 hover:scale-[1.02] group flex flex-col shadow-sm relative">
       <div className="relative aspect-[3/4] bg-muted overflow-hidden flex-shrink-0">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -28,6 +29,17 @@ const ListCarouselItem = memo(function ListCarouselItem({ item }) {
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-[10px] text-muted-foreground/60 px-2 text-center break-words">{title}</span>
           </div>
+        )}
+        {/* Tracking hook: save this entity to your library straight from the feed */}
+        {isEntity && (
+          <QuickSaveButton
+            entityType={item.entityType}
+            entityId={String(item.entityId)}
+            itemTitle={title}
+            itemSlug={item.slug}
+            itemImage={image || ""}
+            lazyCheck
+          />
         )}
       </div>
       <div className="p-2 flex flex-col justify-between flex-1 min-w-0">
