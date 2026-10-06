@@ -358,7 +358,8 @@ export async function SuspendedFeedStream({
 
   const initialFeed = feedData ? feedData.slice(0, 8) : [];
   const nextItem = feedData && feedData.length > 8 ? feedData[8] : null;
-  const initialCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+  const stagePrefix = nextItem?._feedStage === "cat" ? "cat|" : "";
+  const initialCursor = nextItem ? `${stagePrefix}${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
   return (
     <InfiniteFeedStream

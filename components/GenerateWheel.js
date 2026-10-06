@@ -71,7 +71,7 @@ const GenerateWheel = ({ url }) => {
       return "Please sign in to use Smart Wheel.";
     }
     if (response.status === 429) {
-      return "You're spinning too fast â€” please wait a moment and retry.";
+      return "You're spinning too fast — please wait a moment and retry.";
     }
     try {
       const body = await response.clone().json();
@@ -86,8 +86,9 @@ const GenerateWheel = ({ url }) => {
     setLoadingTxt("Generating...");
   };
 
-  const handleGenerateClick = async () => {
-    const trimmed = prompt.trim();
+  const handleGenerateClick = async (customPrompt) => {
+    const rawPrompt = typeof customPrompt === "string" ? customPrompt : prompt;
+    const trimmed = rawPrompt.trim();
     if (!trimmed) {
       toast.error("Please enter a prompt!");
       return;
@@ -99,15 +100,13 @@ const GenerateWheel = ({ url }) => {
 
     setLoading(true);
     setProgress(15);
-    setLoadingTxt("Curating your wheelâ€¦");
+    setLoadingTxt("Curating your wheel…");
 
     try {
       const wordCount = 10;
 
-      // Run the wheel + theme calls in parallel â€” theme is decorative, so
-      // we don't gate the wheel on it. Old code ran them serially which
-      // doubled latency and made a theme failure cascade into a wheel
-      // failure (the user would retry "to fix the colours").
+      // Run the wheel + theme calls in parallel — theme is decorative, so
+      // we don't gate the wheel on it.
       const wheelReq = fetch("/api/ai/generate-wheel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,10 +137,9 @@ const GenerateWheel = ({ url }) => {
       }
 
       setProgress(75);
-      setLoadingTxt("Picking coloursâ€¦");
+      setLoadingTxt("Picking colors…");
 
-      // Theme is best-effort. A network or 4xx/5xx here just falls back
-      // to the existing wheel colours â€” the user still gets their wheel.
+      // Theme is best-effort.
       let colorCodes = null;
       const themeRes = await themeReq;
       if (themeRes && themeRes.ok) {
@@ -151,7 +149,7 @@ const GenerateWheel = ({ url }) => {
             colorCodes = themeData.colorCodes;
           }
         } catch {
-          /* ignore â€” keep current palette */
+          /* ignore — keep current palette */
         }
       }
 
@@ -236,9 +234,9 @@ const GenerateWheel = ({ url }) => {
         <Button
           variant="outline"
           onClick={() => setIsPopupVisible(true)}
-          className="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold shadow-md border border-input hover:bg-accent hover:text-accent-foreground text-foreground transition-all duration-150"
+          className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm border border-input hover:bg-accent hover:text-accent-foreground text-foreground transition-all duration-150 rounded-lg cursor-pointer"
         >
-          <Wand2 size={18} className="shrink-0 text-amber-500" />
+          <Wand2 size={15} className="shrink-0 text-amber-500" />
           <span>Smart Wheel</span>
         </Button>
       </DialogTrigger>
@@ -279,20 +277,50 @@ const GenerateWheel = ({ url }) => {
 
               {/* Options Below Input */}
               {!loading && (
-                <div className="flex items-center gap-4 px-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={optimize}
-                      onChange={(e) => setOptimize(e.target.checked)}
-                      className="h-4 w-4 accent-primary cursor-pointer rounded"
-                    />
-                    <span className="text-sm text-muted-foreground">Optimize wheel options</span>
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Tip: &quot;best taco fillings&quot; works better than &quot;food&quot;
-                  </p>
-                </div>
+                <>
+                  {/* Quick-Pick One-Tap Prompts */}
+                  <div className="space-y-1.5 px-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Popular Ideas
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "What to Eat for Dinner",
+                        "Movie Night Picker",
+                        "Truth or Dare",
+                        "Yes, No, Maybe",
+                        "Weekend Activity Ideas",
+                      ].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            setPrompt(preset);
+                            handleGenerateClick(preset);
+                          }}
+                          className="text-xs px-2.5 py-1 rounded-full border border-border/60 bg-muted/40 hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all cursor-pointer font-medium"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 px-1 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={optimize}
+                        onChange={(e) => setOptimize(e.target.checked)}
+                        className="h-4 w-4 accent-primary cursor-pointer rounded"
+                      />
+                      <span className="text-sm text-muted-foreground">Optimize wheel options</span>
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Tip: &quot;best taco fillings&quot; works better than &quot;food&quot;
+                    </p>
+                  </div>
+                </>
               )}
 
               {loading && (

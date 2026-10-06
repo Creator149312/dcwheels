@@ -14,7 +14,7 @@ const defaultWheelJSON = {
       "#FF9000",
     ],
     spinDuration: 5,
-    maxNumberOfOptions: 100, //this is max number of options to show on wheel
+    maxNumberOfOptions: 1000, //this is max number of options to show on wheel
     innerRadius: 15,
     centerText: "",
     centerImage: "",

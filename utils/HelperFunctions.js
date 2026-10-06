@@ -64,6 +64,7 @@ export const prepareData = (
     const sliceColor = rawSeg.color || col;
     const weightVal = Number(rawSeg.weight);
     const safeWeight = Number.isFinite(weightVal) && weightVal > 0 ? weightVal : 1;
+    const userTextForImage = mysteryMode ? "" : rawText;
 
     if (advOptions) {
       const advImgUri = rawSeg.image
@@ -77,7 +78,7 @@ export const prepareData = (
 
       if (resolvedImgUri && rawSeg.visible !== false) {
         result.push({
-          option: "",
+          option: userTextForImage,
           style: { backgroundColor: sliceColor },
           image: {
             uri: resolvedImgUri,
@@ -112,7 +113,7 @@ export const prepareData = (
 
       if (resolvedImgUri) {
         result.push({
-          option: "",
+          option: userTextForImage,
           style: { backgroundColor: sliceColor },
           image: {
             uri: resolvedImgUri,

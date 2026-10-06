@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useLoginPrompt } from "@app/LoginPromptProvider";
 import {
   Home,
   HomeIcon,
@@ -28,6 +29,11 @@ const SearchBar = dynamic(() => import("@components/SearchBar"));
 
 const NotificationBell = dynamic(
   () => import("@components/notifications/NotificationBell"),
+  { ssr: false }
+);
+
+const InlineQuickComposer = dynamic(
+  () => import("@components/InlineQuickComposer"),
   { ssr: false }
 );
 
@@ -65,10 +71,13 @@ function BottomNavItem({ href, icon, activeIcon, label, active, onClick, prefetc
 
 export default function MobileNavChrome({ onToggleSidebar }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
+  const openLoginPrompt = useLoginPrompt();
 
   const [isVisible, setIsVisible] = useState(true);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [mobilePostComposerOpen, setMobilePostComposerOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastScrollYRef = useRef(0);
@@ -224,21 +233,34 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               </button>
             </div>
             <div className="flex flex-col py-1">
-              <Link
-                href="/posts/create"
-                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
-                onClick={() => setCreateSheetOpen(false)}
+              <button
+                type="button"
+                className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70 text-left w-full"
+                onClick={() => {
+                  setCreateSheetOpen(false);
+                  if (!session?.user) {
+                    openLoginPrompt();
+                    return;
+                  }
+                  setMobilePostComposerOpen(true);
+                }}
               >
                 <MessageCircle size={20} className="text-blue-500" />
-                {"Post"}
-              </Link>
+                <div className="flex flex-col">
+                  <span>{"Post"}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">Share thoughts, photos or VS polls</span>
+                </div>
+              </button>
               <Link
                 href="/wheels/create"
                 className="flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted active:bg-muted/70"
                 onClick={() => setCreateSheetOpen(false)}
               >
                 <Disc3 size={20} className="text-primary" />
-                {"Wheel"}
+                <div className="flex flex-col">
+                  <span>{"Wheel"}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">Spin wheel for random picks</span>
+                </div>
               </Link>
               <Link
                 href="/lists/create"
@@ -246,7 +268,10 @@ export default function MobileNavChrome({ onToggleSidebar }) {
                 onClick={() => setCreateSheetOpen(false)}
               >
                 <List size={20} className="text-violet-500" />
-                {"List"}
+                <div className="flex flex-col">
+                  <span>{"List"}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">Curate rankings, favorites & tier lists</span>
+                </div>
               </Link>
             </div>
           </div>
@@ -316,6 +341,14 @@ export default function MobileNavChrome({ onToggleSidebar }) {
           />
         </div>
       </nav>
+
+      {/* Mobile Post Composer Bottom Sheet / Modal */}
+      {mobilePostComposerOpen && (
+        <InlineQuickComposer
+          mode="modal"
+          onClose={() => setMobilePostComposerOpen(false)}
+        />
+      )}
     </>
   );
 }

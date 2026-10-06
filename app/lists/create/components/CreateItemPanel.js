@@ -82,7 +82,18 @@ export default function CreateItemPanel({ onAddItem, onAddBulkItems }) {
     };
   }, [query, activeMode]);
 
+  function triggerHaptic() {
+    try {
+      if (typeof window !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(10);
+      }
+    } catch {
+      // Ignore vibration error on unsupported platforms
+    }
+  }
+
   function handleSelectEntity(item) {
+    triggerHaptic();
     onAddItem({
       type: "entity",
       entityType: item.type,
@@ -94,7 +105,24 @@ export default function CreateItemPanel({ onAddItem, onAddBulkItems }) {
     });
     setQuery("");
     setSuggestions([]);
-    inputRef.current?.focus();
+    setSelectedIdx(-1);
+    // Keep focus so user can immediately type the next item without extra taps
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+  }
+
+  function handleAddWordItem(text) {
+    const trimmed = text?.trim();
+    if (!trimmed) return;
+    triggerHaptic();
+    onAddItem({ type: "word", word: trimmed, wordData: "" });
+    setQuery("");
+    setSuggestions([]);
+    setSelectedIdx(-1);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
   }
 
   function handleKeyDown(e) {
@@ -109,9 +137,7 @@ export default function CreateItemPanel({ onAddItem, onAddBulkItems }) {
       if (selectedIdx >= 0 && suggestions[selectedIdx]) {
         handleSelectEntity(suggestions[selectedIdx]);
       } else if (query.trim()) {
-        onAddItem({ type: "word", word: query.trim(), wordData: "" });
-        setQuery("");
-        setSuggestions([]);
+        handleAddWordItem(query);
       }
     }
   }
@@ -210,11 +236,7 @@ export default function CreateItemPanel({ onAddItem, onAddBulkItems }) {
           {query.trim() ? (
             <button
               type="button"
-              onClick={() => {
-                onAddItem({ type: "word", word: query.trim(), wordData: "" });
-                setQuery("");
-                setSuggestions([]);
-              }}
+              onClick={() => handleAddWordItem(query)}
               className="inline-flex items-center gap-1 px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all active:scale-95"
             >
               <span>Add</span>

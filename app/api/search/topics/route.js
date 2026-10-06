@@ -8,6 +8,7 @@ import {
   fetchGames,
   fetchCharacters,
 } from "@app/(content)/[type]/TopicPagesHelperFunctions";
+import { isCleanText, isTopicDocSafe } from "@/lib/contentSafety";
 
 /**
  * GET /api/search/topics?q=query&type=movie&limit=12
@@ -169,6 +170,7 @@ async function runLocalSearch({ q, type, page, limit }) {
   const seenTitles = new Set();
   const deduped = [];
   for (const item of scored) {
+    if (!isTopicDocSafe(item.doc)) continue;
     const title = normalizeTitle(item.doc);
     if (!title || seenTitles.has(title)) continue;
     seenTitles.add(title);
@@ -361,19 +363,37 @@ async function fetchExternalTopics({ q, type, limit }) {
   switch (type) {
     case "anime":
       return fetchAnime({ search: q, page: 1, perPage: limit }).then((items) =>
-        (items || []).map(normalizeExternalAnime)
+        (items || [])
+          .filter((a) => !a.isAdult)
+          .map(normalizeExternalAnime)
+          .filter(isTopicDocSafe)
       );
     case "movie":
       return fetchMovies({ search: q, page: 1 }).then((items) =>
-        (items || []).map(normalizeExternalMovie)
+        (items || [])
+          .filter((m) => !m.adult && isCleanText(m.title))
+          .map(normalizeExternalMovie)
+          .filter(isTopicDocSafe)
       );
     case "game":
       return fetchGames({ search: q, page: 1, page_size: limit }).then((items) =>
-        (items || []).map(normalizeExternalGame)
+        (items || [])
+          .filter((g) => {
+            const isAdultEsrb = g.esrb_rating?.slug === "adults-only";
+            const hasAdultTag = (g.tags || []).some((t) => {
+              const name = (t.name || "").toLowerCase();
+              return name === "nsfw" || name === "sexual content" || name === "erotic" || name === "hentai";
+            });
+            return !isAdultEsrb && !hasAdultTag && isCleanText(g.name);
+          })
+          .map(normalizeExternalGame)
+          .filter(isTopicDocSafe)
       );
     case "character":
       return fetchCharacters({ search: q, page: 1, perPage: limit }).then((items) =>
-        (items || []).map(normalizeExternalCharacter)
+        (items || [])
+          .map(normalizeExternalCharacter)
+          .filter(isTopicDocSafe)
       );
     default:
       return [];

@@ -1,51 +1,9 @@
-import {
-  fetchAnime,
-  fetchCharacters,
-  fetchGames,
-  fetchMobileGames,
-  fetchMovies,
-  renderAnimeCard,
-  renderCharacterCard,
-  renderGameCard,
-  renderMovieCard,
-  renderHeroCard,
-  GENRE_PILLS,
-} from "./TopicPagesHelperFunctions";
-import FiltersBarWrapper from "./FiltersBarWrapper";
-import { connectMongoDB } from "@/lib/mongodb";
-import TopicPage from "@/models/topicpage";
-import { unstable_cache } from "next/cache";
+import CategorySpotlightRail from "./CategorySpotlightRail";
+import CategoryCommunityFeed from "./CategoryCommunityFeed";
+import { getCachedSpotlight } from "./getCategorySpotlight";
+import { getFeedItemsSafe } from "@/lib/feedService";
 
 const VALID_TYPES = ["anime", "movie", "game", "character"];
-
-// Cache the local DB fallback so repeated API failures don't hammer MongoDB.
-const getCachedTopicPageFallback = unstable_cache(
-  async (type, page, limit) => {
-    await connectMongoDB();
-    const skip = (page - 1) * limit;
-    return TopicPage.find({ type })
-      .sort({ wheels: -1, updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-  },
-  ["topic-page-fallback"],
-  { revalidate: 3600, tags: ["topic-page-fallback"] } // 1 hour
-);
-
-// Build a ?query=string that preserves all active filters while overriding
-// specific keys (e.g. to change the page number).
-function buildHref(sp, updates = {}) {
-  const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(sp || {})) {
-    if (k !== "page" && v) p.set(k, String(v));
-  }
-  for (const [k, v] of Object.entries(updates)) {
-    if (v != null && String(v) !== "") p.set(k, String(v));
-    else p.delete(k);
-  }
-  return `?${p.toString()}`;
-}
 
 export async function generateMetadata({ params }) {
   const { type } = await params;
@@ -53,24 +11,25 @@ export async function generateMetadata({ params }) {
   const typeLabels = {
     anime: "Anime",
     movie: "Movies",
-    game: "Games",
+    game: "Gaming",
     character: "Characters",
   };
 
   const typeDescriptions = {
     anime:
-      "Discover trending anime titles, vote on your favorites, and explore community-generated wheels and lists.",
+      "Join the Anime community on Spinpapa. Discover trending anime, vote on polls, discuss hot takes, and spin themed wheels.",
     movie:
-      "Explore popular movies, share your reactions, and spin up themed wheels for your next watch party.",
-    game: "Discover what's trending in gaming right now, vote on your favourites, and create wheels for your next gaming session.",
+      "Explore trending movies, share reviews, vote in community polls, and spin themed wheels for your next watch party.",
+    game:
+      "Discover what's trending in gaming right now, join debates, vote on tier lists, and create wheels for your next gaming session.",
     character:
-      "Explore iconic characters, celebrate fan favorites, and create wheels to spark fun character matchups.",
+      "Explore iconic characters, celebrate fan favorites, debate matchups, and spin custom character wheels.",
   };
 
-  const label = typeLabels[type] || "Content";
+  const label = typeLabels[type] || "Community Hub";
   const description =
     typeDescriptions[type] ||
-    "Explore curated content and community-generated wheels.";
+    "Explore curated content, community discussions, and custom wheels.";
 
   return {
     title: `${label}`,
@@ -83,229 +42,60 @@ export async function generateStaticParams() {
   return VALID_TYPES.map((type) => ({ type }));
 }
 
-// ---------- Main Page ----------
+// ---------- Main Category Page ----------
 export default async function TopicListPage({ params, searchParams }) {
   const { type } = await params;
   const resolvedSearchParams = await searchParams;
-  const page = Math.max(1, parseInt(resolvedSearchParams?.page || "1"));
-  const sort  = resolvedSearchParams?.sort  || "";
-  const genre = resolvedSearchParams?.genre || "";
+  const tag = resolvedSearchParams?.tag || "";
 
-  let items = [];
-  let mobileItems = [];
-  let apiUnavailable = false;
-
-  // Sort value → API sort parameter mapping
-  const animeSortMap = { trending: "TRENDING_DESC", popular: "POPULARITY_DESC", new: "START_DATE_DESC", top: "SCORE_DESC" };
-  const movieSortMap = { trending: "popularity.desc", new: "release_date.desc", top: "vote_average.desc" };
-  const gameSortMap  = { trending: "-added", new: "-released", top: "-rating" };
-  const charSortMap  = { popular: "FAVOURITES_DESC", new: "ID_DESC" };
-
-  if (type === "anime") {
-    items = await fetchAnime({ page, genre, sort: animeSortMap[sort] || "TRENDING_DESC" });
-  }
-
-  if (type === "movie") {
-    items = await fetchMovies({ page, genres: genre, sortBy: movieSortMap[sort] || "popularity.desc" });
-  }
-
-  if (type === "game") {
-    const ordering = gameSortMap[sort] || "-added";
-    const [general, mobile] = await Promise.all([
-      fetchGames({ page, genres: genre, page_size: 16, ordering }),
-      fetchMobileGames({ page, page_size: 8 }),
-    ]);
-    // null means the upstream API is down (not simply empty results)
-    const generalUnavailable = general === null;
-    const mobileUnavailable = mobile === null;
-
-    if (generalUnavailable) {
-      items = null;
-      apiUnavailable = true;
-    } else {
-      items = general;
-      const seenIds = new Set(general.map((g) => g.id));
-      mobileItems = mobileUnavailable ? [] : mobile.filter((g) => !seenIds.has(g.id)).slice(0, 8);
-    }
-  }
-
-  if (type === "character") {
-    items = await fetchCharacters({ page, sort: charSortMap[sort] || "FAVOURITES_DESC" });
-  }
-
-  // null means the upstream API is down (not simply empty results)
-  if (items === null) {
-    apiUnavailable = true;
-  }
-
-  if (apiUnavailable) {
-    // Fall back to database to keep feeds working during API outages.
-    // Sort/genre filters are not applied in fallback mode because local
-    // TopicPage documents don't carry the same structured metadata.
-    const fallbackLimit = type === "game" ? 16 : 20;
-    const dbItems = await getCachedTopicPageFallback(type, page, fallbackLimit);
-
-    items = dbItems.map((db) => {
-      if (type === "anime") {
-        return {
-          id: db.relatedId,
-          title: { english: db.title?.english || db.title?.default || db.title?.romaji || "Unknown" },
-          coverImage: { large: db.cover },
-          genres: db.tags,
-          startDate: { year: db.details?.releaseYear },
-        };
-      }
-      if (type === "movie") {
-        return {
-          id: db.relatedId,
-          title: db.title?.localized || db.title?.default || "Unknown",
-          // The DB has the absolute TMDB image URL, but renderMovieCard expects a poster_path.
-          // Since renderMovieCard blindly prefixes 'https://image.tmdb.org/t/p/w500', 
-          // we can just strip it, or renderMovieCard should handle absolute URLs.
-          // Actually, passing the absolute URL and modifying renderMovieCard is safer,
-          // but for now we can just strip the prefix to fit exactly.
-          poster_path: db.cover ? db.cover.replace("https://image.tmdb.org/t/p/w500", "") : "",
-          release_date: db.details?.releaseYear ? `${db.details.releaseYear}-01-01` : null,
-        };
-      }
-      if (type === "game") {
-        return {
-          id: db.relatedId,
-          slug: db.slug.replace(`${db.relatedId}-`, ""),
-          name: db.title?.default || "Unknown",
-          background_image: db.cover,
-          released: db.details?.releaseYear ? `${db.details.releaseYear}-01-01` : null,
-          genres: db.tags?.map(t => ({ name: t })) || [],
-        };
-      }
-      if (type === "character") {
-        return {
-          id: db.relatedId,
-          name: { full: db.title?.english || db.title?.default || "Unknown" },
-          image: { large: db.cover },
-          media: { nodes: [] }
-        };
-      }
-      return null;
-    });
-  }
-
-  // Hero: first item on page 1 only when we have enough items to look good.
-  // Skip for characters — portrait art looks awkward in wide hero.
-  const showHero  = page === 1 && items.length >= 6 && type !== "character";
-  const heroItem  = showHero ? items[0] : null;
-  const gridItems = showHero ? items.slice(1) : items;
-
-  // "Has more" heuristic: if we got a full page, there's probably a next page.
-  const hasMore = type === "game" ? items.length >= 16 : items.length >= 20;
-
-  const typeLabels = {
-    anime:     "🎌 Discover Anime",
-    movie:     "🎬 Discover Movies",
-    game:      "🎮 Trending Games",
-    character: "🧑‍🤝‍🧑 Discover Characters",
+  const typeTitles = {
+    anime: "Anime",
+    movie: "Movies",
+    game: "Gaming",
+    character: "Characters",
   };
 
+  // Fetch Top 4 Spotlight for the compact rail
+  const spotlightItems = await getCachedSpotlight(type);
+
+  // Fetch initial category-filtered feed (Posts + Wheels)
+  const FEED_PAGE_SIZE = 8;
+  const allFeedItems = await getFeedItemsSafe({
+    type,
+    tag: tag || null,
+    docType: "post,wheel",
+    limit: FEED_PAGE_SIZE + 1,
+  });
+
+  const feedItems = allFeedItems.slice(0, FEED_PAGE_SIZE);
+  const nextItem =
+    allFeedItems.slice(FEED_PAGE_SIZE).find((i) => (i._docType || i.docType) !== "list") ||
+    null;
+  const hasList = feedItems.some((i) => i.docType === "list" || i._docType === "list");
+  const initialFeedCursor = nextItem
+    ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`
+    : null;
+
+  const initialFeedItems = JSON.parse(JSON.stringify(feedItems));
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-
-      {/* ── Hero spotlight (page 1 only) ────────────────────────────────── */}
-      {heroItem && renderHeroCard(heroItem, type)}
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-
-        {/* ── Header row: title + sort tabs + genre pills + search ────── */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6 md:mb-8">
-          <h1 className="text-2xl font-bold shrink-0">{typeLabels[type] || "Discover"}</h1>
-          <div className="flex-1 min-w-0">
-            <FiltersBarWrapper
-              genresList={GENRE_PILLS[type] || []}
-              type={type}
-            />
-          </div>
-        </div>
-
-        {/* ── Content ─────────────────────────────────────────────────────── */}
-        {gridItems.length > 0 || mobileItems.length > 0 ? (
-          <>
-            {type === "game" ? (
-              <>
-                {/* Console & PC section */}
-                {gridItems.length > 0 && (
-                  <section className="mb-10">
-                    <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-                      <span className="w-1 h-5 bg-primary rounded-full inline-block" />
-                      🖥️ Console &amp; PC
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {gridItems.map((item) => renderGameCard(item))}
-                    </div>
-                  </section>
-                )}
-                {/* Mobile section */}
-                {mobileItems.length > 0 && (
-                  <section className="mb-10">
-                    <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
-                      <span className="w-1 h-5 bg-green-500 rounded-full inline-block" />
-                      📱 Mobile (Android &amp; iOS)
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {mobileItems.map((item) => renderGameCard(item))}
-                    </div>
-                  </section>
-                )}
-              </>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {gridItems.map((item) =>
-                  type === "anime"     ? renderAnimeCard(item)
-                  : type === "movie"   ? renderMovieCard(item)
-                  : type === "character" ? renderCharacterCard(item)
-                  : null
-                )}
-              </div>
-            )}
-
-            {/* ── Pagination ── */}
-            <div className="mt-10 flex justify-center items-center gap-3">
-              {page > 1 && (
-                <a
-                  href={buildHref(resolvedSearchParams, { page: page - 1 })}
-                  className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
-                >
-                  ← Prev
-                </a>
-              )}
-              <span className="text-sm text-muted-foreground px-2">Page {page}</span>
-              {hasMore && (
-                <a
-                  href={buildHref(resolvedSearchParams, { page: page + 1 })}
-                  className="px-5 py-2 rounded-full bg-muted hover:bg-accent text-sm font-medium transition"
-                >
-                  Next →
-                </a>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="py-16 text-center text-muted-foreground">
-            {apiUnavailable ? (
-              <>
-                <p className="text-lg font-medium mb-2">Service temporarily unavailable</p>
-                <p className="text-sm">The data provider is currently experiencing issues. Please check back shortly.</p>
-              </>
-            ) : (
-              `No ${type}s found. Try adjusting your filters.`
-            )}
-          </div>
-        )}
-
-        {apiUnavailable && items.length > 0 && (
-          <div className="mt-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs font-medium text-center">
-            Showing local results while the external service is down. Filters may not apply.
-          </div>
-        )}
+    <div className="mx-auto max-w-2xl px-0 py-2 sm:py-6">
+      {/* ── Compact Spotlight Rail ─────────────────────────────────── */}
+      <div className="px-3 sm:px-0">
+        <CategorySpotlightRail
+          title={`Top ${type === "movie" ? "Movies" : type === "game" ? "Games" : type === "anime" ? "Anime" : "Characters"} This Week`}
+          items={spotlightItems}
+          type={type}
+        />
       </div>
+
+      {/* ── Feed Stream (Composer + Infinite Stream) ───────────────── */}
+      <CategoryCommunityFeed
+        type={type}
+        initialFeedItems={initialFeedItems}
+        initialFeedCursor={initialFeedCursor}
+        activeTag={tag}
+      />
     </div>
   );
 }

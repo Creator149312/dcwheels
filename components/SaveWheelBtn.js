@@ -73,19 +73,12 @@ export default function SaveWheelBtn({ segmentsData }) {
   useEffect(() => {
     if (showDataDialog && !selectedWheel && !defaultsAppliedRef.current) {
       defaultsAppliedRef.current = true;
-      if (!title) {
-        if (urlTopic) {
-          const suggested = `${urlTopic.id.charAt(0).toUpperCase() + urlTopic.id.slice(1).replace(/-/g, ' ')} Wheel`;
-          setTitle(suggested);
-        } else {
-          setTitle("New Wheel");
-        }
-      }
       if (!description) {
-        setDescription("This is my new wheel");
+        const segCount = Array.isArray(segData) ? segData.length : 0;
+        setDescription(`A custom wheel with ${segCount} options ready to spin.`);
       }
     }
-  }, [showDataDialog, selectedWheel, urlTopic, title, description]);
+  }, [showDataDialog, selectedWheel, description, segData]);
 
   // Reset the defaults gate when the dialog closes so the next open
   // gets a fresh application of defaults.
@@ -165,14 +158,14 @@ export default function SaveWheelBtn({ segmentsData }) {
           onClick={() => {
             setShowDataDialog(true);
           }}
-          className="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold shadow-md bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent transition-all duration-150"
+          className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent transition-all duration-150 rounded-lg cursor-pointer"
         >
           {isSaving ? (
             "Saving..."
           ) : (
             <>
               <span>Save Wheel</span>
-              <CloudUpload size={18} className="shrink-0" />
+              <CloudUpload size={15} className="shrink-0" />
             </>
           )}
         </Button>

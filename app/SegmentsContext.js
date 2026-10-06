@@ -94,8 +94,8 @@ export const SegmentsProvider = ({ children }) => {
   // Add a new segment
   const addSegment = useCallback((index) => {
     setSegData((prevSegData) => {
-      if (prevSegData.length >= 100) {
-        toast.error("Maximum 100 segments allowed");
+      if (prevSegData.length >= 1000) {
+        toast.error("Maximum 1,000 segments allowed");
         return prevSegData;
       }
       if (index >= 0) {

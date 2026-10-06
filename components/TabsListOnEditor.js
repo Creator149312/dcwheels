@@ -1,117 +1,113 @@
 import React from "react";
 import { TabsTrigger } from "./ui/tabs";
-import { Eye, EyeOff, ClipboardList, Shuffle, ArrowDownAZ, Brain, List } from "lucide-react";
+import {
+  Shuffle,
+  ArrowDownAZ,
+  Brain,
+  List,
+  Trash2,
+  Image as ImageIcon,
+} from "lucide-react";
 import SettingsAdv from "./SettingsAdv";
 
 const TabsListOnEditor = ({
   segData,
   resultList,
-  isVisible,
-  toggleVisibility,
-  advOptions,
   wheelType,
   activeTab,
-  bulkMode,
-  onToggleBulkMode,
-  onToggleAdvanced,
   onShuffle,
   onSort,
+  onBatchImageUpload,
+  onClearAll,
   onToggleMode,
 }) => {
-  const showBasicControls =
-    wheelType === "basic" && activeTab === "list" && isVisible;
+  const showBasicControls = wheelType === "basic" && activeTab === "list";
 
   return (
-    <div className="flex w-full flex-col gap-2 pb-0.5">
+    <div className="flex w-full flex-col gap-1.5 pb-0.5">
       {/* Top Row: Tabs + Right Utilities */}
-      <div className="flex w-full items-center justify-between px-1">
-        <div className="flex items-center gap-1 rounded-lg bg-background p-0.5">
+      <div className="flex w-full items-center justify-between">
+        <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-lg border border-border/40">
           <TabsTrigger
             value="list"
-            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-foreground data-[state=active]:text-background text-muted-foreground transition-all"
+            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs text-muted-foreground transition-all cursor-pointer"
           >
-            List <span className="ml-1.5 text-[#ffbe0b]">{segData.length}</span>
+            Entries <span className="ml-1.5 text-primary font-bold">{segData.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="result"
-            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-foreground data-[state=active]:text-background text-muted-foreground transition-all"
+            className="h-7 px-3 text-xs font-semibold rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs text-muted-foreground transition-all cursor-pointer"
           >
-            Result <span className="ml-1.5 text-muted-foreground/60">{resultList.length}</span>
+            Results <span className="ml-1.5 text-muted-foreground/60 font-semibold">{resultList.length}</span>
           </TabsTrigger>
         </div>
 
-        <div className="flex items-center gap-1 bg-background rounded-lg p-0.5">
-          <button
-            type="button"
-            onClick={toggleVisibility}
-            className="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
-            title={isVisible ? "Hide Editor" : "Show Editor"}
-          >
-            {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
+        <div className="flex items-center gap-0.5">
           <SettingsAdv
             showLabel={false}
-            iconSize={18}
+            iconSize={16}
             triggerVariant="ghost"
-            triggerClassName="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
+            triggerClassName="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           />
           <button
             type="button"
             onClick={onToggleMode}
-            className="flex items-center justify-center p-1.5 rounded-md text-foreground bg-background hover:bg-muted transition-colors shadow-sm"
+            className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             title={wheelType === "quiz" ? "Switch to Basic Mode" : "Switch to Quiz Mode"}
           >
-            {wheelType === "quiz" ? <List size={18} /> : <Brain size={18} />}
+            {wheelType === "quiz" ? <List size={16} /> : <Brain size={16} />}
           </button>
         </div>
       </div>
 
       {/* Bottom Row: Utilities */}
       {showBasicControls && (
-        <div className="flex items-center justify-between text-muted-foreground mt-1 px-1">
-          <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-between text-muted-foreground pt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
               onClick={onShuffle}
-              className="flex items-center justify-center h-6 w-6 rounded hover:bg-muted hover:text-foreground transition-colors"
-              title="Shuffle Segments"
+              className="flex items-center gap-1 h-6 px-2 rounded-md hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Shuffle entries randomly"
             >
-              <Shuffle size={16} />
+              <Shuffle size={12} className="text-primary" />
+              <span>Shuffle</span>
             </button>
             <button
               type="button"
               onClick={onSort}
-              className="flex items-center justify-center h-6 w-6 rounded hover:bg-muted hover:text-foreground transition-colors"
-              title="Sort A-Z"
+              className="flex items-center gap-1 h-6 px-2 rounded-md hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Sort entries alphabetically"
             >
-              <ArrowDownAZ size={16} />
+              <ArrowDownAZ size={13} className="text-primary" />
+              <span>Sort</span>
             </button>
-          </div>
-          
-          <div className="flex items-center gap-4">
             <label
-              className="flex cursor-pointer select-none items-center gap-1.5 hover:text-foreground transition-colors"
-              title="Toggle extra configuration fields"
+              className="flex items-center gap-1 h-6 px-2 rounded-md hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Add one or multiple image options"
             >
+              <ImageIcon size={12} className="text-primary" />
+              <span>Add image</span>
               <input
-                type="checkbox"
-                checked={!!advOptions}
-                onChange={onToggleAdvanced}
-                className="h-3 w-3 rounded-sm border-muted-foreground/40 accent-primary cursor-pointer"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={onBatchImageUpload}
               />
-              <span className="text-[11px] font-medium tracking-wide">
-                Advanced
-              </span>
             </label>
+          </div>
+
+          {segData.length > 0 && (
             <button
               type="button"
-              onClick={onToggleBulkMode}
-              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+              onClick={onClearAll}
+              className="flex items-center justify-center h-6 w-6 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 text-muted-foreground/60 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
+              title="Clear all entries"
             >
-              <ClipboardList size={16} />
-              {bulkMode ? "Close paste" : "Paste list"}
+              <Trash2 size={13} />
             </button>
-          </div>
+          )}
         </div>
       )}
     </div>

@@ -165,7 +165,7 @@ export default function StatsBar({
       {show.comment && (
         <button
           onClick={onCommentClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm h-8 md:h-9"
+          className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation"
         >
           <MessageCircle size={15} />
           <span className="flex items-center">

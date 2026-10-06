@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -40,6 +40,17 @@ function CreatePostTeaser({ defaultTag = "", className = "", contentRef = null }
 
   // Inline composer open state: null | "text" | "photo" | "poll"
   const [composerMode, setComposerMode] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen width on mount
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile, { passive: true });
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleTriggerClick = (e, mode) => {
     e.preventDefault();
@@ -91,11 +102,44 @@ function CreatePostTeaser({ defaultTag = "", className = "", contentRef = null }
     [defaultTag]
   );
 
-  // If inline composer is opened, render it directly in-place without page transition
+  // If composer is opened:
+  // On mobile (<768px): render as a bottom-sheet modal to prevent virtual keyboard clutter
+  // On desktop (>=768px): render inline in-feed
   if (composerMode) {
+    if (isMobile) {
+      return (
+        <div className={className}>
+          <div
+            className={`bg-card p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-border/50 shadow-xs`}
+          >
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 items-center justify-center text-xs font-black text-primary">
+                {avatarInitial ? avatarInitial : <User className="w-4 h-4 text-muted-foreground/80" strokeWidth={2.2} />}
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <div className="group relative rounded-2xl px-4 py-2 bg-background/80 border border-primary/40">
+                  <span className="block text-xs font-medium text-foreground truncate">
+                    {placeholderText}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <InlineQuickComposer
+            mode="modal"
+            defaultTag={defaultTag}
+            contentRef={contentRef}
+            initialMode={composerMode}
+            onClose={() => setComposerMode(null)}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={className}>
         <InlineQuickComposer
+          mode="inline"
           defaultTag={defaultTag}
           contentRef={contentRef}
           initialMode={composerMode}

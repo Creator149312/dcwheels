@@ -13,6 +13,9 @@ import {
   Gamepad2,
   User,
   Zap,
+  Tag,
+  X,
+  Check,
 } from "lucide-react";
 
 const TYPE_CONFIG = {
@@ -32,6 +35,17 @@ export default function DraftItemsEditor({
   onRemoveItem,
 }) {
   const [draggedId, setDraggedId] = useState(null);
+  const [mobilePickerItem, setMobilePickerItem] = useState(null);
+
+  const triggerHaptic = () => {
+    try {
+      if (typeof window !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(10);
+      }
+    } catch {
+      // Ignore vibration error
+    }
+  };
 
   const handleMove = (index, direction) => {
     const targetIdx = direction === "up" ? index - 1 : index + 1;
@@ -51,6 +65,7 @@ export default function DraftItemsEditor({
   };
 
   const handleTierChange = (itemId, newTier) => {
+    triggerHaptic();
     const updated = items.map((it) => {
       if (it.draftId === itemId) {
         return { ...it, tier: newTier || null };
@@ -135,7 +150,7 @@ export default function DraftItemsEditor({
                       key={item.draftId}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item.draftId)}
-                      className="group relative flex items-center gap-2 bg-background border border-border/80 hover:border-violet-500/50 rounded-xl p-1.5 pr-2 shadow-2xs cursor-grab active:cursor-grabbing transition-all select-none"
+                      className="group relative flex items-center gap-1.5 sm:gap-2 bg-background border border-border/80 hover:border-violet-500/50 rounded-xl p-1.5 pr-2 shadow-2xs cursor-grab active:cursor-grabbing transition-all select-none"
                     >
                       {item.image || item.wordData ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
@@ -150,7 +165,7 @@ export default function DraftItemsEditor({
                         </div>
                       )}
 
-                      <div className="min-w-0 max-w-[120px] sm:max-w-[160px]">
+                      <div className="min-w-0 max-w-[100px] sm:max-w-[140px]">
                         <p className="text-xs font-bold text-foreground truncate">
                           {item.name || item.word}
                         </p>
@@ -161,11 +176,22 @@ export default function DraftItemsEditor({
                         )}
                       </div>
 
-                      {/* Dropdown to change tier or remove */}
+                      {/* Quick Mobile Tier Change Trigger */}
+                      <button
+                        type="button"
+                        onClick={() => setMobilePickerItem(item)}
+                        className="sm:hidden px-1.5 py-0.5 rounded text-[10px] font-extrabold text-white"
+                        style={{ backgroundColor: t.color }}
+                        title="Change Tier"
+                      >
+                        {t.label}
+                      </button>
+
+                      {/* Desktop Tier Dropdown */}
                       <select
                         value={item.tier || ""}
                         onChange={(e) => handleTierChange(item.draftId, e.target.value)}
-                        className="text-[10px] font-bold bg-muted/60 border border-border rounded px-1 py-0.5 cursor-pointer ml-1"
+                        className="hidden sm:inline-block text-[10px] font-bold bg-muted/60 border border-border rounded px-1 py-0.5 cursor-pointer ml-1"
                         aria-label="Change Tier"
                       >
                         {tiers.map((ot) => (
@@ -207,67 +233,158 @@ export default function DraftItemsEditor({
             </h4>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 min-h-[50px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {unranked.map((item) => (
               <div
                 key={item.draftId}
                 draggable
                 onDragStart={(e) => handleDragStart(e, item.draftId)}
-                className="group flex items-center gap-2 bg-muted/30 hover:bg-muted/60 border border-border rounded-xl p-1.5 pr-2.5 cursor-grab active:cursor-grabbing transition-all select-none"
+                className="group flex flex-col gap-2 bg-muted/30 hover:bg-muted/60 border border-border rounded-xl p-2 cursor-grab active:cursor-grabbing transition-all select-none"
               >
-                {item.image || item.wordData ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={item.image || item.wordData}
-                    alt={item.name || item.word}
-                    className="w-7 h-9 object-cover rounded-md shrink-0 bg-muted"
-                  />
-                ) : (
-                  <div className="w-7 h-9 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase shrink-0">
-                    {(item.name || item.word || "?").charAt(0)}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {item.image || item.wordData ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={item.image || item.wordData}
+                      alt={item.name || item.word}
+                      className="w-8 h-10 object-cover rounded-md shrink-0 bg-muted"
+                    />
+                  ) : (
+                    <div className="w-8 h-10 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase shrink-0">
+                      {(item.name || item.word || "?").charAt(0)}
+                    </div>
+                  )}
 
-                <div className="min-w-0 max-w-[130px] sm:max-w-[180px]">
-                  <p className="text-xs font-bold text-foreground truncate">
-                    {item.name || item.word}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-foreground truncate">
+                      {item.name || item.word}
+                    </p>
+                    {item.type === "entity" && (
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        {item.entityType}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(item.draftId)}
+                    className="text-muted-foreground hover:text-red-500 p-1 transition-colors shrink-0"
+                    title="Remove"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
 
-                <select
-                  value=""
-                  onChange={(e) => handleTierChange(item.draftId, e.target.value)}
-                  className="text-[10px] font-bold bg-background border border-border rounded px-1.5 py-0.5 cursor-pointer ml-1"
-                  aria-label="Assign Tier"
-                >
-                  <option value="" disabled>
-                    Set Tier...
-                  </option>
-                  {tiers.map((ot) => (
-                    <option key={ot.key} value={ot.key}>
-                      Tier {ot.label}
-                    </option>
+                {/* Inline Fast Touch Pill Picker for Unranked */}
+                <div className="flex items-center gap-1 overflow-x-auto pt-1 border-t border-border/50">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase mr-0.5">Tier:</span>
+                  {tiers.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => handleTierChange(item.draftId, t.key)}
+                      style={{ backgroundColor: t.color }}
+                      className="w-6 h-6 rounded-md text-white font-extrabold text-[10px] shadow-2xs hover:scale-105 active:scale-95 transition-transform flex items-center justify-center shrink-0"
+                      title={`Assign to Tier ${t.label}`}
+                    >
+                      {t.label}
+                    </button>
                   ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={() => onRemoveItem(item.draftId)}
-                  className="text-muted-foreground hover:text-red-500 p-0.5 transition-colors"
-                  title="Remove"
-                >
-                  <Trash2 size={13} />
-                </button>
+                </div>
               </div>
             ))}
 
             {unranked.length === 0 && (
-              <span className="text-xs text-muted-foreground/60 italic py-2">
+              <span className="text-xs text-muted-foreground/60 italic py-2 col-span-full">
                 All {items.length} items have been assigned to tiers! 🎉
               </span>
             )}
           </div>
         </div>
+
+        {/* Mobile Quick Bottom Sheet Picker for Tier Reassignment */}
+        {mobilePickerItem && (
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+            onClick={() => setMobilePickerItem(null)}
+          >
+            <div
+              className="w-full max-w-md bg-card border-t sm:border border-border rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl animate-in slide-in-from-bottom duration-200"
+              style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-border/70 mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {mobilePickerItem.image || mobilePickerItem.wordData ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={mobilePickerItem.image || mobilePickerItem.wordData}
+                      alt={mobilePickerItem.name || mobilePickerItem.word}
+                      className="w-9 h-11 object-cover rounded-lg shrink-0 bg-muted"
+                    />
+                  ) : null}
+                  <div className="min-w-0">
+                    <h5 className="text-xs text-muted-foreground font-semibold">Assign Tier</h5>
+                    <p className="text-sm font-bold text-foreground truncate">
+                      {mobilePickerItem.name || mobilePickerItem.word}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobilePickerItem(null)}
+                  className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 my-3">
+                {tiers.map((t) => {
+                  const isCurrent = mobilePickerItem.tier === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => {
+                        handleTierChange(mobilePickerItem.draftId, t.key);
+                        setMobilePickerItem(null);
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-border/80 hover:border-violet-500/50 bg-muted/20 hover:bg-muted/50 active:scale-95 transition-all text-left"
+                    >
+                      <div
+                        style={{ backgroundColor: t.color }}
+                        className="w-8 h-8 rounded-lg text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs"
+                      >
+                        {t.label}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-foreground block">Tier {t.label}</span>
+                        {isCurrent && (
+                          <span className="text-[10px] text-violet-600 font-semibold flex items-center gap-0.5">
+                            <Check size={10} /> Current
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleTierChange(mobilePickerItem.draftId, null);
+                  setMobilePickerItem(null);
+                }}
+                className="w-full mt-2 py-2.5 rounded-xl border border-border/70 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              >
+                Remove from Tier (Move to Unranked)
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

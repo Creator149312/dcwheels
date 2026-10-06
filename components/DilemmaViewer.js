@@ -41,6 +41,13 @@ export default function DilemmaViewer({ post, postId }) {
   const handleVote = async (optionId) => {
     if (revealBars || loading) return;
 
+    // Haptic feedback on mobile if supported
+    if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+      try {
+        window.navigator.vibrate(12);
+      } catch {}
+    }
+
     // Affinity capture: a vote is a strong fandom signal. Works for guests too
     // (tracked in localStorage — the warm feed personalizes on their next visit).
     trackAffinity(post?.contentRef?.type || "anime", "vote");
@@ -83,17 +90,20 @@ export default function DilemmaViewer({ post, postId }) {
 
   const pickedOption = post.pollOptions.find((o) => o._id === optimisticPick);
   const isTwoOptions = post.pollOptions.length === 2;
+  const anyHasImage = post.pollOptions.some((o) => !!o.image);
 
   return (
     <div className="space-y-3">
       {/* ── Unified Poll Options Grid ──────────────────────────────────────── */}
       <div
-        className={`relative grid gap-2.5 ${
-          post.pollOptions.length === 2
+        className={`relative grid gap-2 sm:gap-2.5 ${
+          anyHasImage
+            ? isTwoOptions
+              ? "grid-cols-2"
+              : "grid-cols-2 sm:grid-cols-3"
+            : isTwoOptions
             ? "grid-cols-2"
-            : post.pollOptions.length <= 4
-            ? "grid-cols-2"
-            : "grid-cols-2 sm:grid-cols-3"
+            : "grid-cols-1 sm:grid-cols-2"
         }`}
       >
         {/* Central "VS" badge for 2-option comparisons */}
@@ -113,8 +123,14 @@ export default function DilemmaViewer({ post, postId }) {
               key={`${postId}-${option._id ?? idx}`}
               onClick={() => handleVote(option._id)}
               disabled={revealBars || loading}
-              className={`relative w-full overflow-hidden rounded-2xl border transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/15 text-left
-                ${hasImage ? "aspect-square bg-muted" : "min-h-[96px] sm:min-h-[110px] p-4 flex flex-col justify-between bg-card"}
+              className={`relative w-full overflow-hidden rounded-xl sm:rounded-2xl border transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/15 text-left
+                ${
+                  hasImage
+                    ? "aspect-square bg-muted"
+                    : isTwoOptions
+                    ? "min-h-[84px] sm:min-h-[110px] p-3 sm:p-4 flex flex-col justify-between bg-card"
+                    : "min-h-[48px] sm:min-h-[56px] px-3.5 py-3 sm:p-4 flex items-center justify-between bg-card"
+                }
                 ${
                   !revealBars
                     ? "border-border hover:border-primary/60 hover:shadow-md hover:bg-primary/[0.02] active:scale-[0.98]"
@@ -148,10 +164,17 @@ export default function DilemmaViewer({ post, postId }) {
                     </p>
                   </div>
                 </>
-              ) : (
-                /* Text-only option content */
+              ) : isTwoOptions ? (
+                /* Two-option text card (vertical layout with VS badge) */
                 <div className="relative z-10 flex-1 flex items-center pr-1">
                   <span className="text-sm sm:text-base font-bold text-foreground leading-snug line-clamp-3">
+                    {option.text}
+                  </span>
+                </div>
+              ) : (
+                /* 3+ Option text row (clean horizontal thumb-friendly bar) */
+                <div className="relative z-10 flex-1 flex items-center pr-3 min-w-0">
+                  <span className="text-sm sm:text-[15px] font-semibold text-foreground leading-snug truncate">
                     {option.text}
                   </span>
                 </div>
@@ -173,9 +196,15 @@ export default function DilemmaViewer({ post, postId }) {
 
               {/* Percentage & Vote Count Badge (after reveal) */}
               {revealBars && (
-                <div className={`relative z-10 flex items-center justify-between gap-1 mt-2 pt-1 border-t ${
-                  hasImage ? "border-white/10 absolute top-2 right-2 m-0 p-0 border-none" : "border-border/60"
-                }`}>
+                <div
+                  className={`relative z-10 flex items-center gap-2 ${
+                    hasImage
+                      ? "border-white/10 absolute top-2 right-2 m-0 p-0 border-none"
+                      : isTwoOptions
+                      ? "justify-between border-t border-border/60 mt-2 pt-1"
+                      : "shrink-0 justify-end"
+                  }`}
+                >
                   <span
                     className={`font-black text-xs sm:text-sm ${
                       hasImage
@@ -185,7 +214,7 @@ export default function DilemmaViewer({ post, postId }) {
                   >
                     {percentage}%
                   </span>
-                  {!hasImage && (
+                  {!hasImage && isTwoOptions && (
                     <span className="text-xs text-muted-foreground font-medium">
                       {count.toLocaleString()} {count === 1 ? "vote" : "votes"}
                     </span>

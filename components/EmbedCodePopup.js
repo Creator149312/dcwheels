@@ -14,7 +14,31 @@ export default function EmbedCodePopup({ wheelId, onClose }) {
 
   const { width, height } = sizes[size];
   const embedUrl = `https://spinpapa.com/embed/${wheelId}`;
-  const iframeCode = `<iframe\n  src="${embedUrl}"\n  width="${width}"\n  height="${height}"\n  style="border:none;border-radius:12px;"\n  allow="autoplay"\n  loading="lazy"\n  title="SpinPapa Wheel"\n></iframe>`;
+
+  // Auto-resize script that embeds alongside the iframe for seamless height adjustment
+  const autoResizeScript = `
+<script>
+(function() {
+  window.addEventListener('message', function(e) {
+    if (e.origin !== 'https://spinpapa.com') return;
+    if (e.data && e.data.type === 'wheel-resize') {
+      var iframe = document.getElementById('spinpapa-wheel-iframe');
+      if (iframe) iframe.style.height = e.data.height + 'px';
+    }
+  });
+})();
+</script>`;
+
+  const iframeCode = `<iframe
+  id="spinpapa-wheel-iframe"
+  src="${embedUrl}"
+  width="${width}"
+  height="${height}"
+  style="border:none;border-radius:12px;width:100%;max-width:${width}px;"
+  allow="autoplay"
+  loading="lazy"
+  title="SpinPapa Wheel"
+></iframe>${autoResizeScript}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(iframeCode).then(() => {

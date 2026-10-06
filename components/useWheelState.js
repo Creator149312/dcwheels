@@ -105,16 +105,26 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
   const [prizeNumber, setPrizeNumber] = useState(-1);
   const [winner, setWinner] = useState();
   const [showCelebration, setShowCelebration] = useState(false);
-  const [maxlengthOfSegmentText, setMaxlengthOfSegmentText] = useState(1);
-  const [segTxtfontSize, setSegTxtfontSize] = useState(
-    wheelData?.fontSize ? wheelData.fontSize : 1
-  );
+
+  // Derive text length and font size directly from segData and wheel settings.
+  // Converting these from state to useMemo eliminates circular setState loops
+  // where segData -> useEffect -> setMaxLength -> preparedData -> useEffect.
+  const maxlengthOfSegmentText = useMemo(() => {
+    return calculateMaxLengthOfText(segData);
+  }, [segData]);
+
+  const segTxtfontSize = useMemo(() => {
+    if (wheelData?.fontSize) return wheelData.fontSize;
+    return calculateFontSizeOfText(maxlengthOfSegmentText, segData);
+  }, [wheelData?.fontSize, maxlengthOfSegmentText, segData]);
+
   const [showOverlay, setShowOverlay] = useState(true);
   const [muted, setMuted] = useState(false);
-  const { startTicking, stopTicking, playVictory } = useWheelSounds(muted);
+  const { playTick, startTicking, stopTicking, playVictory } = useWheelSounds(muted);
   const initializedRef = useRef(false);
   const lastImageSigRef = useRef("");
   const quotaWarnedRef = useRef(false);
+  const pendingWinnerRef = useRef(null);
 
   const saveWheelData = (segData, wheelData) => {
     if (typeof window === "undefined" || !window.localStorage) return;
@@ -141,25 +151,36 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       const combinedSig = `${imageSig}##${refsSig}`;
       if (combinedSig !== lastImageSigRef.current) {
         lastImageSigRef.current = combinedSig;
-        try {
-          if (imageSig.length) {
-            window.localStorage.setItem(
-              IMAGES_LS_KEY,
-              JSON.stringify({ images, refs })
-            );
-          } else {
-            window.localStorage.removeItem(IMAGES_LS_KEY);
+
+        // Persist off the critical path: JSON.stringify of multi-MB base64 blobs
+        // can block the main thread for 300ms+ on mid-range phones. Defer to
+        // idle time (or setTimeout fallback) so typing/spinning never janks.
+        const scheduleIdle =
+          typeof window !== "undefined" && window.requestIdleCallback
+            ? (fn) => window.requestIdleCallback(fn, { timeout: 2000 })
+            : (fn) => setTimeout(fn, 0);
+
+        scheduleIdle(() => {
+          try {
+            if (imageSig.length) {
+              window.localStorage.setItem(
+                IMAGES_LS_KEY,
+                JSON.stringify({ images, refs })
+              );
+            } else {
+              window.localStorage.removeItem(IMAGES_LS_KEY);
+            }
+          } catch (quotaErr) {
+            // localStorage has a ~5MB per-origin quota. At that size we just
+            // stop persisting images locally — they still work in memory until
+            // the wheel is saved to the server. Warn once per session.
+            if (!quotaWarnedRef.current) {
+              quotaWarnedRef.current = true;
+              toast("Too many local images to cache — save your wheel to keep them.", { icon: "ℹ️" });
+            }
+            try { window.localStorage.removeItem(IMAGES_LS_KEY); } catch {}
           }
-        } catch (quotaErr) {
-          // localStorage has a ~5MB per-origin quota. At that size we just
-          // stop persisting images locally — they still work in memory until
-          // the wheel is saved to the server. Warn once per session.
-          if (!quotaWarnedRef.current) {
-            quotaWarnedRef.current = true;
-            toast("Too many local images to cache — save your wheel to keep them.", { icon: "ℹ️" });
-          }
-          try { window.localStorage.removeItem(IMAGES_LS_KEY); } catch {}
-        }
+        });
       }
     } catch (e) {
       // Non-image localStorage failure (e.g. private browsing) — warn once.
@@ -170,43 +191,82 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     }
   };
 
-  // Function to pick a random element based on weights
+  // Function to pick a random element from the FULL segData pool based on weights with cryptographic uniform randomness
   const pickRandomWinner = () => {
-    if (!Array.isArray(data) || data.length === 0) return 0;
-    const totalWeight = data.reduce((sum, element) => {
-      const w = Number(element?.optionSize);
+    if (!Array.isArray(segData) || segData.length === 0) return { winnerSeg: null, prizeIdx: 0 };
+    
+    // Eligible segments are those with visible !== false
+    const eligible = [];
+    for (let i = 0; i < segData.length; i++) {
+      if (segData[i]?.visible !== false) {
+        eligible.push({ seg: segData[i], originalIndex: i });
+      }
+    }
+    if (eligible.length === 0) return { winnerSeg: null, prizeIdx: 0 };
+
+    const totalWeight = eligible.reduce((sum, item) => {
+      const w = Number(item.seg?.weight);
       return sum + (Number.isFinite(w) && w > 0 ? w : 1);
     }, 0);
-    if (totalWeight <= 0) return 0;
-    const randomValue = Math.floor(Math.random() * totalWeight);
-    let cumulativeWeight = 0;
-    for (let i = 0; i < data.length; i++) {
-      const w = Number(data[i]?.optionSize);
-      const safeW = Number.isFinite(w) && w > 0 ? w : 1;
-      cumulativeWeight += safeW;
-      if (randomValue < cumulativeWeight) return i;
+
+    // Cryptographic uniform random float in [0, 1)
+    let randFloat = Math.random();
+    if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+      const uint32 = new Uint32Array(1);
+      window.crypto.getRandomValues(uint32);
+      randFloat = uint32[0] / (0xffffffff + 1);
     }
-    return 0;
+
+    let selected = eligible[0];
+    if (totalWeight > 0) {
+      const randomValue = randFloat * totalWeight;
+      let cumulativeWeight = 0;
+      for (let i = 0; i < eligible.length; i++) {
+        const w = Number(eligible[i].seg?.weight);
+        const safeW = Number.isFinite(w) && w > 0 ? w : 1;
+        cumulativeWeight += safeW;
+        if (randomValue < cumulativeWeight) {
+          selected = eligible[i];
+          break;
+        }
+      }
+    } else {
+      selected = eligible[Math.floor(randFloat * eligible.length)];
+    }
+
+    const maxOpts = wheelData?.maxNumberOfOptions || 1000;
+    const selectedVisibleIndex = eligible.findIndex(item => item === selected);
+
+    // If the selected winner is already within the visible wheel slices
+    if (selectedVisibleIndex >= 0 && selectedVisibleIndex < maxOpts) {
+      return { winnerSeg: selected.seg, prizeIdx: selectedVisibleIndex };
+    }
+
+    // Winner is beyond the maxOpts window: swap it into a random position in the active display window
+    const targetSliceIdx = Math.floor(randFloat * Math.min(eligible.length, maxOpts));
+    const targetEligibleItem = eligible[targetSliceIdx];
+
+    if (targetEligibleItem && selected.originalIndex !== targetEligibleItem.originalIndex) {
+      const nextSegData = [...segData];
+      const origA = selected.originalIndex;
+      const origB = targetEligibleItem.originalIndex;
+      const temp = nextSegData[origA];
+      nextSegData[origA] = nextSegData[origB];
+      nextSegData[origB] = temp;
+      setSegData(nextSegData);
+      html.current = segmentsToHTMLTxt(nextSegData);
+    }
+
+    return { winnerSeg: selected.seg, prizeIdx: targetSliceIdx };
   };
 
   const handleSpinClick = () => {
     if (!mustSpin) {
       setShowOverlay(false);
+      const { winnerSeg, prizeIdx } = pickRandomWinner();
+      pendingWinnerRef.current = winnerSeg;
+      setPrizeNumber(prizeIdx);
       setMustSpin(true);
-      // react-custom-roulette total animation = (2600 + 750 + 8000) * spinDurationProp
-      // spinDurationProp = wheelData.spinDuration / MAX_SPIN_TIME
-      const spinDurationProp = wheelData.spinDuration / MAX_SPIN_TIME;
-      const actualSpinMs = 11350 * spinDurationProp;
-      startTicking(actualSpinMs);
-      const newPrizeNumber = advancedOptions
-        ? pickRandomWinner()
-        : Math.floor(
-            Math.random() *
-              (data.length < wheelData.maxNumberOfOptions
-                ? data.length
-                : wheelData.maxNumberOfOptions)
-          );
-      setPrizeNumber(newPrizeNumber);
     }
   };
 
@@ -215,30 +275,21 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     stopTicking();
     playVictory();
     let winnerSegment = null;
-    if (advancedOptions) {
-      let adjustedWinner = null;
-      let j = 0;
-      for (let i = 0; i < segData.length; i++) {
-        // Match prepareData()'s visibility rule: a segment is visible
-        // unless explicitly set to false. Using `!== false` keeps us in
-        // sync when `visible` is omitted entirely (the storage-saving
-        // path drops it when not set).
-        if (segData[i].visible !== false) {
-          if (j === prizeNumber) {
-            adjustedWinner = segData[i];
-            setPrizeNumber(i);
-            break;
-          } else j++;
-        }
+    let adjustedWinner = null;
+    let j = 0;
+    for (let i = 0; i < segData.length; i++) {
+      if (segData[i].visible !== false) {
+        if (j === prizeNumber) {
+          adjustedWinner = segData[i];
+          break;
+        } else j++;
       }
-      setWinner(adjustedWinner);
-      setResultList([...resultList, adjustedWinner]);
-      winnerSegment = adjustedWinner;
-    } else {
-      setWinner(segData[prizeNumber]);
-      setResultList([...resultList, segData[prizeNumber]]);
-      winnerSegment = segData[prizeNumber];
     }
+    const finalWinner = pendingWinnerRef.current || adjustedWinner || segData[prizeNumber];
+    pendingWinnerRef.current = null;
+    setWinner(finalWinner);
+    setResultList((prev) => [...prev, finalWinner]);
+    winnerSegment = finalWinner;
 
     if (wheelId) {
       // Pull the displayable label off the winning segment. Different parts
@@ -276,24 +327,29 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
 
   // Pre-validate image URIs without forcing CORS headers.
   // External image CDNs (like TMDB) do not send CORS headers for canvas export,
-  // but can be safely drawn directly onto the canvas by react-custom-roulette.
+  // but can be safely drawn directly onto the canvas by SpinWheelCanvas.
   // We test loading the image with a plain Image element:
   // - If it successfully loads (200 OK), we mark it as valid (safeUrl: uri).
   // - If it fails or 404s, we mark it as invalid (safeUrl: null) to gracefully fall back to text.
+  // We track loaded URIs in a ref to avoid infinite re-render cycles while typing.
   const [safeImageDataUris, setSafeImageDataUris] = useState(() => ({}));
+  const safeImageUrisRef = useRef(safeImageDataUris);
+  safeImageUrisRef.current = safeImageDataUris;
 
   useEffect(() => {
     if (!Array.isArray(segData)) return;
 
     let isMounted = true;
     const pendingLoads = [];
+    const currentSafe = safeImageUrisRef.current;
+    const newLocalUris = {};
 
     for (const seg of segData) {
       const uri = seg?.image || (typeof seg?.text === "string" && /src="([^"]+)"/.exec(seg.text)?.[1]);
-      if (uri && typeof uri === "string" && !(uri in safeImageDataUris)) {
+      if (uri && typeof uri === "string" && !(uri in currentSafe)) {
         if (uri.startsWith("data:")) {
           // Data URLs are already local and always valid
-          setSafeImageDataUris((prev) => ({ ...prev, [uri]: uri }));
+          newLocalUris[uri] = uri;
           continue;
         }
 
@@ -312,6 +368,10 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
           })
         );
       }
+    }
+
+    if (Object.keys(newLocalUris).length > 0) {
+      setSafeImageDataUris((prev) => ({ ...prev, ...newLocalUris }));
     }
 
     if (pendingLoads.length > 0) {
@@ -344,11 +404,11 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       segData,
       wheelData.segColors,
       maxlengthOfSegmentText,
-      advancedOptions,
+      true, // Unified: always respect custom slice colors, weights & visibility
       wheelData.mysteryMode,
       safeImageDataUris
     ),
-    [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, advancedOptions, safeImageDataUris]
+    [segData, wheelData.segColors, wheelData.mysteryMode, maxlengthOfSegmentText, safeImageDataUris]
   );
 
   // Wheel update vs localStorage save have very different latency budgets:
@@ -360,10 +420,6 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
   //     main-thread time on every keystroke.
   const renderCountRef = useRef(0);
   useEffect(() => {
-    const maxLen = calculateMaxLengthOfText(segData);
-    setMaxlengthOfSegmentText(maxLen);
-    setSegTxtfontSize(calculateFontSizeOfText(maxLen, segData));
-
     // Push wheel data on the next frame — instant from the user's POV.
     const raf = requestAnimationFrame(() => {
       setData(preparedData);
@@ -419,15 +475,13 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
       setWheelData(localWheelData);
 
       const initialMaxLength = calculateMaxLengthOfText(localSegData);
-      setMaxlengthOfSegmentText(initialMaxLength);
-      setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, localSegData));
       setPrizeNumber(Math.floor(Math.random() * localSegData.length));
       setData(
         prepareData(
           localSegData,
           localWheelData.segColors,
           initialMaxLength,
-          advancedOptions,
+          true,
           localWheelData.mysteryMode,
           safeImageDataUris
         )
@@ -436,15 +490,13 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     } else {
       setSegData(newSegments);
       const initialMaxLength = calculateMaxLengthOfText(newSegments);
-      setMaxlengthOfSegmentText(initialMaxLength);
-      setSegTxtfontSize(calculateFontSizeOfText(initialMaxLength, newSegments));
       setPrizeNumber(Math.floor(Math.random() * newSegments.length));
       setData(
         prepareData(
           newSegments,
           wheelPresetSettings?.segColors || wheelData.segColors,
           initialMaxLength,
-          advancedOptions,
+          true,
           wheelPresetSettings?.mysteryMode ?? wheelData.mysteryMode,
           safeImageDataUris
         )
@@ -477,5 +529,6 @@ export function useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp 
     handleSpinClick,
     handleStopSpinning,
     saveWheelData,
+    playTick,
   };
 }

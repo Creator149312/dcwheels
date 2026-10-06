@@ -61,13 +61,14 @@ export default function WheelPlayerControls({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent text-white flex items-center justify-between px-3 sm:px-4 pb-2 sm:pb-3 pt-6 sm:pt-8 z-10 pointer-events-auto">
+    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 via-black/40 to-transparent text-white flex items-center justify-between px-2.5 sm:px-4 pb-2 sm:pb-3 pt-6 sm:pt-8 z-10 pointer-events-auto touch-manipulation">
       {/* Left Controls: Play/Pause + Volume */}
-      <div className="flex items-center gap-1 sm:gap-4 pointer-events-auto">
+      <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto">
         {/* Play/Pause */}
         <button
           onClick={handleSpinClick}
-          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="min-w-[38px] min-h-[38px] sm:min-w-[42px] sm:min-h-[42px] flex items-center justify-center rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
+          aria-label={mustSpin ? "Pause wheel" : "Spin wheel"}
         >
           {mustSpin ? (
             <Pause size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
@@ -79,8 +80,9 @@ export default function WheelPlayerControls({
         {/* Mute/Unmute */}
         <button
           onClick={toggleMute}
-          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="min-w-[38px] min-h-[38px] sm:min-w-[42px] sm:min-h-[42px] flex items-center justify-center rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
           title={muted ? "Unmute" : "Mute"}
+          aria-label={muted ? "Unmute sounds" : "Mute sounds"}
         >
           {muted ? (
             <VolumeX size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
@@ -91,12 +93,12 @@ export default function WheelPlayerControls({
       </div>
 
       {/* Right Controls: Fullscreen */}
-      <div className="flex items-center gap-1 sm:gap-4 pointer-events-auto">
+      <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto">
         {/* Switch to List Button */}
         <button
           type="button"
           onClick={handleSwitchToList}
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/25 active:scale-95 transition-all text-white outline-none focus-visible:ring-2 focus-visible:ring-white text-xs sm:text-sm font-semibold backdrop-blur-xs"
+          className="min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/25 active:scale-95 transition-all text-white outline-none focus-visible:ring-2 focus-visible:ring-white text-xs sm:text-sm font-semibold backdrop-blur-xs touch-manipulation cursor-pointer"
           title="Convert this wheel into a rankable list or tier board"
         >
           <ListOrdered size={16} className="text-violet-300 sm:w-[18px] sm:h-[18px]" />
@@ -108,21 +110,23 @@ export default function WheelPlayerControls({
             2. Otherwise show white button that redirects to creates on all devices */}
         {isEditingActive ? (
           <button
-            className="lg:hidden flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all text-yellow-400 outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="lg:hidden min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all text-yellow-400 outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
             onClick={onEditClick}
+            aria-label="Edit wheel entries"
           >
-            <Pencil size={18} className="sm:w-[20px] sm:h-[20px]" />
+            <Pencil size={17} className="sm:w-[19px] sm:h-[19px]" />
             <span className="font-bold text-xs sm:text-sm">Edit</span>
           </button>
         ) : (
           <button
-            className="flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
             onClick={(e) => {
               saveWheelData(segData, wheelData);
               window.location.href = "/wheels/create";
             }}
+            aria-label="Edit wheel entries"
           >
-            <Pencil size={18} className="sm:w-[20px] sm:h-[20px]" />
+            <Pencil size={17} className="sm:w-[19px] sm:h-[19px]" />
             <span className="font-medium text-xs sm:text-sm">Edit</span>
           </button>
         )}
@@ -130,7 +134,8 @@ export default function WheelPlayerControls({
         {/* Fullscreen Button*/}
         <button
           onClick={handleToggleFullScreen}
-          className="p-1.5 sm:p-2 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="min-w-[38px] min-h-[38px] sm:min-w-[42px] sm:min-h-[42px] flex items-center justify-center rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
+          aria-label={isFullScreen ? "Exit full screen" : "Enter full screen"}
         >
           {isFullScreen ? (
             <Minimize size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />

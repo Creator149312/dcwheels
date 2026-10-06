@@ -5,6 +5,7 @@ import Post from "@models/post";
 import PostVote from "@models/postVote";
 import { sessionUser } from "@utils/SessionData";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
+import { validateContentSafety } from "@lib/contentSafety";
 
 const POST_API_PROJECTION =
   "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
@@ -93,6 +94,23 @@ export async function PATCH(req, { params }) {
       }
       if (trimmedContent.length > 600) {
         return NextResponse.json({ message: "Post exceeds 600 character limit" }, { status: 400 });
+      }
+    }
+
+    // Tier 1 Content Safety Gate (Hard Reject on Prohibited Terms)
+    const pollTextsToCheck = Array.isArray(pollOptions)
+      ? pollOptions.map((o) => (typeof o === "string" ? o : o?.text || ""))
+      : [];
+    const fieldsToValidate = [
+      content,
+      ...(Array.isArray(tags) ? tags : []),
+      ...pollTextsToCheck,
+    ].filter(Boolean);
+
+    if (fieldsToValidate.length > 0) {
+      const safetyCheck = validateContentSafety(fieldsToValidate);
+      if (!safetyCheck.isSafe) {
+        return NextResponse.json({ message: safetyCheck.error }, { status: 400 });
       }
     }
 

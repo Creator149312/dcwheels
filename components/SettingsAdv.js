@@ -404,6 +404,7 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
 
       setCenterImage(dataUrl);
       setCenterText(""); // clear text if image is set
+      handleWheelSettingsChange({ centerImage: dataUrl, centerText: "" });
       toast.success("Image added");
     } catch (error) {
       toast.error(error.message || "Failed to set image. Please try again.");
@@ -423,38 +424,72 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
     e.preventDefault();
   };
 
-  // Handle theme change
-  const handleThemeChange = (theme) => {
-    setSelectedTheme(theme);
+  // Real-time update helper: updates the local preview state AND syncs instantly to wheelData
+  const updateSetting = (key, value) => {
+    handleWheelSettingsChange({ [key]: value });
   };
 
-  // Handle size change
+  // Handle theme change (live instant preview)
+  const handleThemeChange = (theme) => {
+    setSelectedTheme(theme);
+    updateSetting("segColors", theme.colors);
+  };
+
+  // Handle spin duration change
   const onSpinDurationChange = (e) => {
-    setSpinDuration(parseInt(e.target.value));
+    const val = parseInt(e.target.value, 10);
+    setSpinDuration(val);
+    updateSetting("spinDuration", val);
   };
 
   const onRmvWinnerAfterSpinChange = (e) => {
-    setRmvWinnerAfterSpin(e.target.checked);
+    const val = e.target.checked;
+    setRmvWinnerAfterSpin(val);
+    updateSetting("removeWinnerAfterSpin", val);
   };
 
   const onCustomPopupDisplayMessageChange = (e) => {
-    setCustomPopupDisplayMessage(e.target.value);
+    const val = e.target.value;
+    setCustomPopupDisplayMessage(val);
+    updateSetting("customPopupDisplayMessage", val);
   };
 
-  // Handle options size change
+  // Handle options size change (live update)
   const onMaxOptionsChange = (e) => {
     let val = parseInt(e.target.value, 10);
     if (isNaN(val)) val = 1;
-    val = Math.max(1, Math.min(200, val));
+    val = Math.max(1, Math.min(1000, val));
     setMaxOptions(val);
+    updateSetting("maxNumberOfOptions", val);
   };
 
   const onFontSizeChange = (e) => {
-    setFontSize(parseInt(e.target.value));
+    const val = parseInt(e.target.value, 10);
+    setFontSize(val);
+    updateSetting("fontSize", val);
   };
 
   const onInnerRadiusChange = (e) => {
-    setInnerRadius(parseInt(e.target.value));
+    const val = parseInt(e.target.value, 10);
+    setInnerRadius(val);
+    updateSetting("innerRadius", val);
+  };
+
+  const onMysteryModeChange = (e) => {
+    const val = e.target.checked;
+    setMysteryMode(val);
+    updateSetting("mysteryMode", val);
+  };
+
+  const onCenterTextChange = (e) => {
+    const val = e.target.value;
+    setCenterText(val);
+    if (val) {
+      setCenterImage("");
+      handleWheelSettingsChange({ centerText: val, centerImage: "" });
+    } else {
+      updateSetting("centerText", "");
+    }
   };
 
   // Handle close modal
@@ -518,7 +553,7 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
 
       <DialogContent className="max-w-[90vw] md:max-w-[500px] z-[10000]" overlayClassName="z-[10000]">
         <DialogHeader>
-          <DialogTitle>{"Title"}</DialogTitle>
+          <DialogTitle>Customize Wheel Settings</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="appearance" className="w-full">
@@ -613,12 +648,9 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
                 <input
                   type="text"
                   value={centerText}
-                  onChange={(e) => {
-                    setCenterText(e.target.value);
-                    if (e.target.value) setCenterImage(""); // clear image if text is entered
-                  }}
+                  onChange={onCenterTextChange}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder={"Center Text Placeholder"}
+                  placeholder="e.g. Spin Papa or Lucky Draw"
                 />
                 <div className="text-xs text-center text-muted-foreground">{"Or"}</div>
                 
@@ -653,7 +685,8 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
                       <span className="text-xs text-blue-500 hover:text-blue-700 underline" onClick={(e) => {
                         e.stopPropagation(); // prevent opening file dialog
                         setCenterImage("");
-                      }}>{"Remove Image"}</span>
+                        handleWheelSettingsChange({ centerImage: "" });
+                      }}>Remove Image</span>
                     </div>
                   ) : (
                     <div className="flex items-center text-muted-foreground text-sm">
@@ -689,9 +722,9 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
 
             <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-medium">{"Auto Remove Winner"}</h4>
+                <h4 className="text-sm font-medium">Auto Remove Winner</h4>
                 <div className="text-xs text-muted-foreground">
-                  {"Auto Remove Winner Description"}
+                  Automatically remove the winning entry from the wheel after it is selected
                 </div>
               </div>
               <input
@@ -704,48 +737,62 @@ const SettingsAdv = ({ showLabel = false, label = "Customize Wheel", iconSize = 
 
             <div className="space-y-2">
               <h4 className="text-sm font-medium leading-none">
-                {"Applaud Message"}
+                Applaud Message
               </h4>
               <input
                 type="text"
                 value={customPopupDisplayMessage}
                 onChange={onCustomPopupDisplayMessageChange}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder={"Applaud Message Placeholder"}
+                placeholder="e.g. The Winner is..."
               />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium leading-none">
-                {"Font Size"} ({fontSize})
-              </h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium leading-none">
+                  Font Size {Number(fontSize) <= 1 ? "(Auto)" : `(${fontSize}px)`}
+                </h3>
+                {Number(fontSize) > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFontSize(1);
+                      updateSetting("fontSize", 1);
+                    }}
+                    className="text-xs text-primary hover:underline cursor-pointer"
+                  >
+                    Reset to Auto
+                  </button>
+                )}
+              </div>
               <input
                 type="range"
-                min="10"
-                max="50"
+                min="1"
+                max="40"
                 step="1"
                 value={fontSize}
                 onChange={onFontSizeChange}
                 className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{"Small"}</span>
-                <span>{"Large"}</span>
+                <span>Auto</span>
+                <span>Large</span>
               </div>
             </div>
 
             {/* Mystery Mode */}
             <div className="flex flex-row justify-between items-center rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-medium">{"Mystery Wheel"}</h4>
+                <h4 className="text-sm font-medium">Mystery Wheel</h4>
                 <div className="text-xs text-muted-foreground">
-                  {"Mystery Wheel Description"}
+                  Hides slice texts with question marks until the spin ends
                 </div>
               </div>
               <input
                 type="checkbox"
                 checked={mysteryMode}
-                onChange={(e) => setMysteryMode(e.target.checked)}
+                onChange={onMysteryModeChange}
                 className="w-4 h-4 cursor-pointer"
               />
             </div>

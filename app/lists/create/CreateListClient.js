@@ -91,36 +91,58 @@ export default function CreateListClient() {
     }
   }, []);
 
-  // 2. Auto-save draft changes to localStorage (debounced)
+  // 2. Auto-save draft changes to localStorage (debounced) + instant sync on app background
+  const saveDraftToStorage = useCallback(() => {
+    if (!hasLoadedDraft || typeof window === "undefined") return;
+    try {
+      if (!name.trim() && !description.trim() && items.length === 0) {
+        localStorage.removeItem(LS_DRAFT_KEY);
+        return;
+      }
+      const draftObj = {
+        name,
+        description,
+        format,
+        tierConfig,
+        isPublic,
+        items,
+        forkedFrom,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draftObj));
+    } catch (e) {
+      console.warn("Failed to save draft to localStorage:", e);
+    }
+  }, [name, description, format, tierConfig, isPublic, items, forkedFrom, hasLoadedDraft]);
+
   useEffect(() => {
     if (!hasLoadedDraft || typeof window === "undefined") return;
 
     const timer = setTimeout(() => {
-      try {
-        // If everything is completely empty, clean up
-        if (!name.trim() && !description.trim() && items.length === 0) {
-          localStorage.removeItem(LS_DRAFT_KEY);
-          return;
-        }
-
-        const draftObj = {
-          name,
-          description,
-          format,
-          tierConfig,
-          isPublic,
-          items,
-          forkedFrom,
-          updatedAt: Date.now(),
-        };
-        localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draftObj));
-      } catch (e) {
-        console.warn("Failed to save draft to localStorage:", e);
-      }
-    }, 400);
+      saveDraftToStorage();
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [name, description, format, tierConfig, isPublic, items, forkedFrom, hasLoadedDraft]);
+  }, [saveDraftToStorage, hasLoadedDraft]);
+
+  // Protect draft from mobile tab switching or background reclamation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleVisibilityOrPageHide = () => {
+      saveDraftToStorage();
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityOrPageHide);
+    window.addEventListener("pagehide", handleVisibilityOrPageHide);
+    window.addEventListener("beforeunload", handleVisibilityOrPageHide);
+
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityOrPageHide);
+      window.removeEventListener("pagehide", handleVisibilityOrPageHide);
+      window.removeEventListener("beforeunload", handleVisibilityOrPageHide);
+    };
+  }, [saveDraftToStorage]);
 
   // Back URL
   const backUrl = session?.user?.name
@@ -239,7 +261,7 @@ export default function CreateListClient() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 min-h-screen">
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 min-h-screen pb-24 md:pb-12">
       {/* Top Header & Breadcrumb */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <Link
@@ -483,6 +505,42 @@ export default function CreateListClient() {
               <>
                 <Save size={16} />
                 <span>Save List ({items.length} {items.length === 1 ? "Item" : "Items"})</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Sticky Mobile Floating Publish Bar */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border px-4 py-3 shadow-lg"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-foreground truncate">
+              {name.trim() || "Untitled List"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {items.length} {items.length === 1 ? "item added" : "items added"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!name.trim() || loading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all shadow-sm shadow-violet-600/25 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save size={14} />
+                <span>Publish List</span>
               </>
             )}
           </button>

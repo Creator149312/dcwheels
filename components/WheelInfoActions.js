@@ -7,12 +7,13 @@ import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import QuickSaveButton from "@components/QuickSaveButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
-import { MessageSquare, Code2, ArrowLeftRight } from "lucide-react";
+import { MessageSquare, Code2, ArrowLeftRight, QrCode } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
-// Lazy-load on interaction only — removes embed form from
+// Lazy-load on interaction only — removes embed and QR form from
 // the initial JS parse path, cutting TBT.
 const EmbedCodePopup = dynamic(() => import("@components/EmbedCodePopup"), { ssr: false });
+const QRCodeModal = dynamic(() => import("@components/QRCodeModal"), { ssr: false });
 
 function formatCount(n) {
   if (!n || n === 0) return "0";
@@ -51,6 +52,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
   });
   const [commentCount, setCommentCount] = useState(initialMeta?.commentCount || 0);
   const [showEmbed, setShowEmbed] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const displayCreator = authorHandle || "Community";
 
@@ -182,8 +184,17 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
           />
 
           <button
+            onClick={() => setShowQR(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground transition-all leading-none shadow-sm h-8 md:h-9 flex-shrink-0 cursor-pointer"
+            title="Scan QR Code for Classroom or Presentation"
+          >
+            <QrCode size={16} />
+            <span className="text-sm font-medium">QR Code</span>
+          </button>
+
+          <button
             onClick={() => setShowEmbed(true)}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground transition-all leading-none shadow-sm h-8 md:h-9 flex-shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground transition-all leading-none shadow-sm h-8 md:h-9 flex-shrink-0 cursor-pointer"
             title="Embed Wheel"
           >
             <Code2 size={16} />
@@ -194,6 +205,14 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
 
       {showEmbed && (
         <EmbedCodePopup wheelId={wheelId} onClose={() => setShowEmbed(false)} />
+      )}
+
+      {showQR && (
+        <QRCodeModal
+          url={typeof window !== "undefined" ? window.location.href : `https://spinpapa.com/wheels/${wheelSlug || wheelId}`}
+          title={wheelTitle}
+          onClose={() => setShowQR(false)}
+        />
       )}
     </div>
   );

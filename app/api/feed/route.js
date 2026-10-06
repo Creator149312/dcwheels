@@ -46,12 +46,20 @@ export async function GET(req) {
     
     // Cursor = first undisplayed post/wheel (cursor match is inclusive).
     const nextItem = allItems.slice(limit).find((i) => (i._docType || i.docType) !== "list") || null;
-    const currentListOffset = cursor ? (parseInt(cursor.split("|")[2], 10) || 0) : 0;
+    const isCatCursor = cursor && cursor.startsWith("cat|");
+    const cursorParts = cursor ? cursor.split("|") : [];
+    const currentListOffset = isCatCursor
+      ? (parseInt(cursorParts[3], 10) || 0)
+      : (parseInt(cursorParts[2], 10) || 0);
     const hasListInPage = items.some(i => i.docType === "list" || i._docType === "list");
     const nextListOffset = currentListOffset + (hasListInPage ? 1 : 0);
-    const nextCursor = nextItem
-      ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${nextListOffset}`
-      : null;
+
+    let nextCursor = null;
+    if (nextItem) {
+      const isNextCat = nextItem._feedStage === "cat" || isCatCursor;
+      const stagePrefix = isNextCat ? "cat|" : "";
+      nextCursor = `${stagePrefix}${nextItem.createdAt}|${nextItem._id || nextItem.id}|${nextListOffset}`;
+    }
 
     const res = NextResponse.json({ 
       items, 

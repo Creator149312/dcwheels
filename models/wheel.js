@@ -30,9 +30,9 @@ const wheelSchema = new Schema(
       required: true,
       validate: {
         validator: function (v) {
-          return v.length <= 200;
+          return v.length <= 1000;
         },
-        message: "A wheel cannot have more than 200 segments to ensure performance.",
+        message: "A wheel cannot have more than 1000 segments to ensure performance.",
       },
     }, // Array of wordDataObjects
     userId: {
@@ -76,11 +76,11 @@ const wheelSchema = new Schema(
           if (!v || typeof v !== "object") return true;
           if (v.maxNumberOfOptions !== undefined && v.maxNumberOfOptions !== null) {
             const num = Number(v.maxNumberOfOptions);
-            return !isNaN(num) && num >= 1 && num <= 200;
+            return !isNaN(num) && num >= 1 && num <= 1000;
           }
           return true;
         },
-        message: "maxNumberOfOptions must be an integer between 1 and 200.",
+        message: "maxNumberOfOptions must be an integer between 1 and 1000.",
       },
     },
     // Tags are lowercased + trimmed on save so that:

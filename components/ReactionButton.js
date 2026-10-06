@@ -72,7 +72,7 @@ export default function ReactionButton({
       disabled={loading}
       aria-pressed={reacted}
       aria-label={reacted ? "Unlike" : "Like"}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition leading-none shadow-sm h-8 md:h-9 ${
+      className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation ${
         reacted
           ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
           : "border-border bg-muted text-foreground hover:bg-accent"

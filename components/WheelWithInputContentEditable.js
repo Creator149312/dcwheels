@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useEffect, useRef, useContext, useMemo } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import WheelPlayerControls from "./WheelPlayerControls";
 import { useWheelState } from "./useWheelState";
@@ -8,10 +8,10 @@ import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Edit2, X } from "lucide-react";
 
-const Wheel = dynamic(
-  () => import("react-custom-roulette").then((mod) => mod.Wheel),
-  { ssr: false }
-);
+// Lightweight, zero-dependency, Retina-crisp native canvas wheel
+const Wheel = dynamic(() => import("./SpinWheelCanvas"), {
+  ssr: false,
+});
 
 // Editor + modal — used on home page (/) and wheel creation (/wheels/create). 
 // Dynamic imports prevent their chunks from being downloaded on /wheels and 
@@ -72,11 +72,44 @@ const WheelWithInputContentEditable = ({
     handleSpinClick,
     handleStopSpinning,
     saveWheelData,
+    playTick,
   } = useWheelState({ newSegments, wheelPresetSettings, wheelTypeProp, wheelId, wheelTitle: pageWheelTitle });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const wheelContainerRef = useRef(null);
+
+  // Memoize slice and background colors so new array references aren't created on every render
+  const wheelBackgroundColors = useMemo(() => {
+    if (!Array.isArray(data)) return ["#EE4040"];
+    return data.map((d) => d?.style?.backgroundColor || "#EE4040");
+  }, [data]);
+
+  const wheelTextColors = useMemo(() => ["#000000"], []);
+
+  const displayWheelData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    const maxOpts = wheelData?.maxNumberOfOptions || 1000;
+    const slice = data.slice(
+      0,
+      data.length < maxOpts ? data.length : maxOpts
+    );
+    if (wheelType !== "quiz" || quizState.answeredIndices.size === 0) {
+      return slice;
+    }
+    return slice.map((seg, i) =>
+      quizState.answeredIndices.has(i)
+        ? {
+            ...seg,
+            style: {
+              ...seg?.style,
+              backgroundColor: "#475569",
+              textColor: "#94a3b8",
+            },
+          }
+        : seg
+    );
+  }, [data, wheelData?.maxNumberOfOptions, wheelType, quizState.answeredIndices]);
 
   // Auto-open editor modal on mobile ONLY when explicitly requested via ?edit=true parameter
   useEffect(() => {
@@ -188,7 +221,7 @@ const WheelWithInputContentEditable = ({
           className={`bg-card border shadow-sm flex flex-col items-center text-card-foreground lg:mb-0 lg:col-span-7 xl:col-span-5 mx-auto transition-all duration-300 ease-in-out ${
             isFullScreen
               ? "fixed inset-0 z-50 bg-slate-950 text-white rounded-none border-none shadow-none justify-between p-3 sm:p-6"
-              : "relative w-full rounded-2xl overflow-hidden"
+              : "relative w-full rounded-2xl overflow-hidden [content-visibility:auto] [contain-intrinsic-size:480px]"
           }`}
         >
           {wheelType === "quiz" ? (
@@ -213,6 +246,7 @@ const WheelWithInputContentEditable = ({
               setSegData={setSegData}
               setShowCelebration={setShowCelebration}
               mustSpin={mustSpin}
+              onSpinAgain={handleSpinClick}
               wheelId={wheelId}
               wheelPreview={pageWheelPreview}
             />
@@ -223,10 +257,10 @@ const WheelWithInputContentEditable = ({
           {/* Wheel */}
           <div
             onClick={handleSpinClick}
-            className={`relative flex items-center justify-center overflow-hidden ${
+            className={`relative flex items-center justify-center overflow-hidden touch-manipulation cursor-pointer select-none ${
               isFullScreen
                 ? "flex-1 w-full h-full max-h-[85vh] max-w-[85vh] aspect-square mx-auto my-auto"
-                : "w-full min-h-[280px] sm:min-h-[27rem]"
+                : "w-full max-w-[430px] sm:max-w-[460px] aspect-square mx-auto min-h-[280px] sm:min-h-[380px]"
             }`}
           >
             {Array.isArray(data) && data.length > 0 && (
@@ -234,20 +268,7 @@ const WheelWithInputContentEditable = ({
               key={isFullScreen ? "fullscreen-wheel" : "normal-wheel"}
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber >= 0 ? prizeNumber : 0}
-              data={(() => {
-                const maxOpts = wheelData?.maxNumberOfOptions || 100;
-                const slice = data.slice(
-                  0,
-                  data.length < maxOpts ? data.length : maxOpts
-                );
-                if (wheelType !== "quiz" || quizState.answeredIndices.size === 0)
-                  return slice;
-                return slice.map((seg, i) =>
-                  quizState.answeredIndices.has(i)
-                    ? { ...seg, style: { ...seg?.style, backgroundColor: "#6b7280" } }
-                    : seg
-                );
-              })()}
+              data={displayWheelData}
               textDistance={Math.min(60 + 0.5 * (segData?.length || 0), 72)}
               radiusLineWidth={0}
               outerBorderWidth={0}
@@ -258,19 +279,12 @@ const WheelWithInputContentEditable = ({
               innerBorderColor="white"
               fontWeight="normal"
               spinDuration={(wheelData?.spinDuration || 5) / (MAX_SPIN_TIME || 5)}
-              fontSize={segTxtfontSize}
-              backgroundColors={data.map(
-                (d) => d?.style?.backgroundColor || "#EE4040"
-              )}
-              textColors={["#000000"]}
+              fontSize={wheelData?.fontSize || segTxtfontSize}
+              backgroundColors={wheelBackgroundColors}
+              textColors={wheelTextColors}
+              onTick={playTick}
               pointerProps={{
                 src: "/smallredpointer.png",
-                style: {
-                  transform: "rotate(50deg)",
-                  right: "15px",
-                  top: "28px",
-                  scale: "60%",
-                },
               }}
             />
             )}

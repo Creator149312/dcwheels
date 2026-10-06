@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Share2, Mail, X, Link } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Share2, Mail, X, Link, QrCode, Download, Copy, Check } from "lucide-react";
 import { FacebookIcon, TwitterIcon, LinkedInIcon, WhatsAppIcon, TelegramIcon } from "@components/BrandIcons";
+import { renderQRToCanvas, downloadQRCode } from "@utils/qrCode";
 import toast from "react-hot-toast";
 
 export default function SharePopup({
@@ -10,7 +11,10 @@ export default function SharePopup({
   url: urlProp,
 }) {
   const [showPopup, setShowPopup] = useState(false);
+  const [activeTab, setActiveTab] = useState("links"); // "links" | "qr"
   const [url, setUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  const qrCanvasRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -23,11 +27,54 @@ export default function SharePopup({
     }
   }, [urlProp]);
 
-  const togglePopup = () => setShowPopup((prev) => !prev);
+  // Render QR code to canvas whenever the QR tab is active and URL is available
+  useEffect(() => {
+    if (showPopup && activeTab === "qr" && qrCanvasRef.current && url) {
+      renderQRToCanvas(qrCanvasRef.current, url, {
+        size: 200,
+        margin: 2,
+        darkColor: "#0f172a",
+        lightColor: "#ffffff",
+      });
+    }
+  }, [showPopup, activeTab, url]);
+
+  const togglePopup = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // On mobile devices, try native OS Web Share API first
+    if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.share) {
+      const isMobile = window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile) {
+        try {
+          await navigator.share({
+            title: "Check this out on SpinWheel",
+            url: url || window.location.href,
+          });
+          return;
+        } catch (err) {
+          // User aborted share sheet or unsupported payload; fallback to popup modal
+          if (err.name === "AbortError") return;
+        }
+      }
+    }
+
+    setShowPopup((prev) => !prev);
+  };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(url);
+    setCopied(true);
     toast.success("Link copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadQR = () => {
+    downloadQRCode(url, "spinwheel-qr.png", 500);
+    toast.success("QR Code downloaded!");
   };
 
   const platformLinks = {
@@ -51,8 +98,8 @@ export default function SharePopup({
   // ✅ Conditional button styling
   const buttonClass =
     variant === "buttoned"
-      ? "flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm h-8 md:h-9"
-      : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700";
+      ? "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation cursor-pointer"
+      : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer";
 
   return (
     <div className="relative">
@@ -65,53 +112,120 @@ export default function SharePopup({
       {/* Popup */}
       {showPopup && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs flex justify-center items-center z-50 p-4"
           onClick={togglePopup}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-lg w-80 relative dark:bg-gray-800 dark:text-gray-100"
+            className="bg-card text-card-foreground border border-border p-5 rounded-2xl shadow-xl w-full max-w-sm relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button
               onClick={togglePopup}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+              className="absolute top-3.5 right-3.5 text-muted-foreground hover:text-foreground transition-colors p-1"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
 
-            {/* URL + Copy */}
-            <div className="flex items-center border rounded overflow-hidden mb-4 dark:border-gray-600">
-              <input
-                type="text"
-                value={url}
-                readOnly
-                className="flex-1 p-2 text-sm bg-transparent outline-none dark:text-gray-100"
-              />
+            {/* Header Tabs: Links vs QR Code */}
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl mb-4 mr-6">
               <button
-                onClick={copyToClipboard}
-                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                type="button"
+                onClick={() => setActiveTab("links")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === "links"
+                    ? "bg-background text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <Link size={14} />
+                <Share2 size={13} />
+                <span>Share Link</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("qr")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === "qr"
+                    ? "bg-background text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <QrCode size={13} />
+                <span>QR Code</span>
               </button>
             </div>
 
-            {/* Social Icons */}
-            <div className="flex justify-around">
-              {platforms.map((p) => (
-                <a
-                  key={p}
-                  href={platformLinks[p]}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {platformIcons[p]}
-                </a>
-              ))}
-            </div>
+            {/* TAB 1: Links & Social Icons */}
+            {activeTab === "links" ? (
+              <div className="space-y-4">
+                {/* URL + Copy */}
+                <div className="flex items-center border border-border rounded-xl overflow-hidden bg-background">
+                  <input
+                    type="text"
+                    value={url}
+                    readOnly
+                    className="flex-1 px-3 py-2 text-xs bg-transparent outline-none text-foreground font-mono truncate"
+                  />
+                  <button
+                    onClick={copyToClipboard}
+                    className="px-3 py-2 bg-muted hover:bg-muted-foreground/10 text-foreground transition-colors shrink-0"
+                    title="Copy Link"
+                  >
+                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+
+                {/* Social Icons */}
+                <div className="flex justify-around items-center pt-1">
+                  {platforms.map((p) => (
+                    <a
+                      key={p}
+                      href={platformLinks[p]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:scale-110 active:scale-95 transition-transform p-1.5 rounded-full hover:bg-muted"
+                      title={`Share on ${p}`}
+                    >
+                      {platformIcons[p]}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* TAB 2: Zero-Dependency QR Code */
+              <div className="flex flex-col items-center gap-3 py-1">
+                <div className="p-3 rounded-2xl bg-white border border-border/60 shadow-inner flex items-center justify-center">
+                  <canvas ref={qrCanvasRef} className="block rounded-lg" />
+                </div>
+
+                <p className="text-[11px] text-muted-foreground text-center font-medium">
+                  Scan with any phone camera to open and spin instantly
+                </p>
+
+                <div className="flex items-center gap-2 w-full pt-1">
+                  <button
+                    type="button"
+                    onClick={handleDownloadQR}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-2xs active:scale-95"
+                  >
+                    <Download size={14} />
+                    <span>Download QR</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyToClipboard}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-border hover:bg-muted text-foreground text-xs font-bold transition-all active:scale-95"
+                  >
+                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                    <span>{copied ? "Copied" : "Copy Link"}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+

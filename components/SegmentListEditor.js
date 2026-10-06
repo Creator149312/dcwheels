@@ -1,228 +1,866 @@
 "use client";
-import { useContext, useState, useRef, useEffect, memo, useCallback } from "react";
+import {
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  memo,
+  useCallback,
+} from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
-import { Trash2, Plus, Image, Eye, EyeOff, Copy, List } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Image as ImageIcon,
+  Eye,
+  EyeOff,
+  Copy,
+  List,
+  Clipboard,
+  UploadCloud,
+  MoreVertical,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "./ui/dropdown-menu";
 import { compressImage } from "@utils/imageCompression";
+import { createSegment } from "@utils/segmentUtils";
+import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import toast from "react-hot-toast";
 
+// Helper to compress and convert an image file to a base64 dataUrl
+async function processImageFile(file) {
+  const compressed = await compressImage(file, {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 400,
+    useWebWorker: true,
+  });
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(compressed);
+  });
+  const imageLandscape = await new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
+    img.onerror = () => resolve(false);
+    img.src = dataUrl;
+  });
+  const cleanName = file.name
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
 
-// Memoized row — only re-renders when its own `seg` object reference changes.
-// Since `updateSegment` mutates with .map + spread, untouched rows keep the
-// same reference, so typing in row #3 doesn't re-render the other 99 rows.
+  return {
+    image: dataUrl,
+    imageLandscape,
+    text: cleanName || "Option",
+  };
+}
+
+// Memoized row — renders a clean entry with 24x24 image pill, text, and compact [⋮] settings popover
 const SegmentRow = memo(function SegmentRow({
   seg,
   index,
-  advancedOptions,
   fallbackColor,
-  onUpdate,
+  inputRef,
+  onUpdateText,
+  onUpdateField,
   onDelete,
   onDuplicate,
   onImageUpload,
   onRemoveImage,
+  onKeyDown,
+  onPaste,
 }) {
+  const hasCustomSettings =
+    (seg.weight !== undefined && seg.weight !== 1) ||
+    !!seg.color ||
+    seg.visible === false;
+
+  // Local state for smooth, unthrottled typing with 100+ segments
+  const [localText, setLocalText] = useState(seg.text || "");
+  const debounceTimerRef = useRef(null);
+
+  // Sync incoming external updates (like duplicate, import, paste, or reset)
+  useEffect(() => {
+    setLocalText(seg.text || "");
+  }, [seg.text]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setLocalText(val);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      onUpdateText(index, val);
+    }, 120);
+  };
+
+  const handleInputBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    if (localText !== seg.text) {
+      onUpdateText(index, localText);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 group">
-      {/* Thumbnail / image upload */}
-      <label
-        className="relative w-9 h-9 flex-shrink-0 cursor-pointer rounded overflow-hidden bg-gray-200 dark:bg-gray-700"
-        title={seg.image ? "Change image" : "Add image"}
-      >
-        {seg.image ? (
-          <>
-            <img src={seg.image} alt="" className="w-full h-full object-cover" />
+    <div className="flex items-center gap-1.5 px-1 py-0.5 rounded-md group hover:bg-muted/40 focus-within:bg-muted/40 transition-colors">
+      {/* 24x24 Inline Image Thumbnail Pill */}
+      {seg.image ? (
+        <div
+          className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 border border-border/60 bg-muted shadow-2xs group/pill"
+          title="Image attached (Hover to change or remove)"
+        >
+          <img
+            src={seg.image}
+            alt=""
+            className="w-full h-full object-cover select-none"
+          />
+
+          {/* Hover Overlay: Change or Detach */}
+          <div className="absolute inset-0 bg-black/70 opacity-0 group-hover/pill:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
+            <label
+              className="cursor-pointer text-white hover:text-primary p-0.5 leading-none transition-colors"
+              title="Change image"
+            >
+              <ImageIcon size={10} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onImageUpload(index, e.target.files[0])}
+              />
+            </label>
             <button
+              type="button"
               onClick={(e) => onRemoveImage(e, index)}
-              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold"
+              className="text-white hover:text-rose-400 font-bold text-[10px] leading-none p-0.5 transition-colors cursor-pointer"
               title="Remove image"
             >
               ✕
             </button>
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors">
-            <Image size={14} />
           </div>
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => onImageUpload(index, e.target.files[0])}
-        />
-      </label>
-
-      {/* Text */}
-      <input
-        type="text"
-        value={seg.text}
-        onChange={(e) => onUpdate(index, "text", e.target.value)}
-        className="flex-1 bg-transparent border-b border-transparent focus:border-gray-400 dark:focus:border-gray-500 text-sm text-gray-800 dark:text-gray-200 focus:outline-none py-0.5 min-w-0"
-        placeholder="Segment text..."
-      />
-
-      {/* Advanced Controls */}
-      {advancedOptions && (
-        <div className="flex items-center gap-1 md:gap-2 mr-1">
-          <input
-            type="number"
-            min="0"
-            value={seg.weight !== undefined ? seg.weight : 1}
-            onChange={(e) => onUpdate(index, "weight", parseInt(e.target.value) || 0)}
-            className="w-10 bg-transparent text-sm text-center border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:outline-none text-gray-800 dark:text-gray-200 hide-arrows"
-            title="Weight (Probability)"
-          />
-          <input
-            type="color"
-            value={seg.color || fallbackColor}
-            onChange={(e) => onUpdate(index, "color", e.target.value)}
-            className="w-5 h-5 p-0 border-0 rounded cursor-pointer"
-            title="Segment color"
-          />
-          <button
-            onClick={() => onUpdate(index, "visible", seg.visible === false ? true : false)}
-            className={`p-1 transition-colors ${seg.visible !== false ? "text-gray-600 dark:text-gray-300 hover:text-blue-500" : "text-gray-400 dark:text-gray-600 hover:text-gray-500"}`}
-            title={seg.visible !== false ? "Visible" : "Hidden"}
-          >
-            {seg.visible !== false ? <Eye size={14} /> : <EyeOff size={14} />}
-          </button>
-          <button
-            onClick={() => onDuplicate(index)}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-colors flex-shrink-0"
-            title="Duplicate segment"
-          >
-            <Copy size={13} />
-          </button>
         </div>
+      ) : (
+        /* Blank 24x24 Image Pill */
+        <label
+          className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center bg-muted/40 hover:bg-muted border border-border/40 hover:border-primary/50 text-muted-foreground/40 hover:text-primary transition-all cursor-pointer shadow-2xs"
+          title="Add image to this entry"
+        >
+          <ImageIcon size={12} strokeWidth={2} />
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onImageUpload(index, e.target.files[0])}
+          />
+        </label>
       )}
 
-      {/* Delete */}
-      <button
-        onClick={() => onDelete(index)}
-        className="text-red-400 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-        title="Remove segment"
-      >
-        <Trash2 size={13} />
-      </button>
+      {/* Effortless Clean Text Input */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={localText}
+        onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            // Commit immediately on enter
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+            onUpdateText(index, localText);
+          }
+          onKeyDown(e, index);
+        }}
+        onPaste={(e) => onPaste(e, index)}
+        placeholder={`Option ${index + 1}`}
+        className={`flex-1 bg-transparent border-none outline-none text-xs sm:text-sm py-0.5 px-1 min-w-0 font-medium placeholder:text-muted-foreground/30 focus:ring-0 transition-opacity ${
+          seg.visible === false
+            ? "text-muted-foreground/60 line-through decoration-muted-foreground/40"
+            : "text-foreground"
+        }`}
+      />
+
+      {/* 3-Dots Settings & Delete Popover */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={`relative p-1 rounded-md transition-colors cursor-pointer shrink-0 ${
+              hasCustomSettings
+                ? "text-primary hover:bg-primary/10"
+                : "text-muted-foreground/40 hover:text-foreground hover:bg-muted opacity-60 group-hover:opacity-100"
+            }`}
+            title="Option settings"
+          >
+            <MoreVertical size={14} />
+            {hasCustomSettings && (
+              <span
+                className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary"
+                title="Has custom settings (odds/color/hidden)"
+              />
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          sideOffset={5}
+          className="w-52 p-2 space-y-1.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+        >
+          <div className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">
+            Option Settings
+          </div>
+
+          {/* Odds / Weight Multiplier */}
+          <div className="flex items-center justify-between px-1 py-1 text-xs">
+            <span className="font-medium text-foreground">Odds / Weight</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const curr = Math.max(1, (seg.weight ?? 1) - 1);
+                  onUpdateField(index, "weight", curr);
+                }}
+                className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-xs cursor-pointer active:scale-95"
+                title="Decrease odds"
+              >
+                -
+              </button>
+              <span className="w-6 text-center font-bold text-foreground text-xs select-none">
+                {seg.weight ?? 1}x
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const curr = Math.min(20, (seg.weight ?? 1) + 1);
+                  onUpdateField(index, "weight", curr);
+                }}
+                className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-xs cursor-pointer active:scale-95"
+                title="Increase odds"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Slice Color */}
+          <div className="flex items-center justify-between px-1 py-1 text-xs">
+            <span className="font-medium text-foreground">Slice Color</span>
+            <div className="flex items-center gap-1.5">
+              {seg.color && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onUpdateField(index, "color", null);
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                  title="Reset to theme palette"
+                >
+                  Reset
+                </button>
+              )}
+              <input
+                type="color"
+                value={seg.color || fallbackColor}
+                onChange={(e) => onUpdateField(index, "color", e.target.value)}
+                className="w-5 h-5 p-0 border border-border/80 rounded cursor-pointer bg-transparent"
+                title="Change slice color"
+              />
+            </div>
+          </div>
+
+          {/* Visibility Toggle */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUpdateField(index, "visible", seg.visible === false ? true : false);
+            }}
+            className="w-full flex items-center justify-between px-1 py-1 rounded-md hover:bg-muted text-xs transition-colors cursor-pointer"
+            title="Toggle visibility on the wheel"
+          >
+            <span className="font-medium text-foreground">Visibility</span>
+            <span
+              className={`flex items-center gap-1 text-[11px] font-semibold ${
+                seg.visible !== false ? "text-emerald-500" : "text-amber-500"
+              }`}
+            >
+              {seg.visible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+              {seg.visible !== false ? "Visible" : "Hidden"}
+            </span>
+          </button>
+
+          <div className="my-1 border-t border-border/60" />
+
+          {/* Duplicate Option */}
+          <DropdownMenuItem
+            onClick={() => onDuplicate(index)}
+            className="flex items-center gap-2 px-1.5 py-1.5 rounded-lg text-xs cursor-pointer"
+          >
+            <Copy size={13} className="text-muted-foreground" />
+            <span>Duplicate Option</span>
+          </DropdownMenuItem>
+
+          {/* Delete Option */}
+          <DropdownMenuItem
+            onClick={() => onDelete(index)}
+            className="flex items-center gap-2 px-1.5 py-1.5 rounded-lg text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
+          >
+            <Trash2 size={13} />
+            <span>Delete Option</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 });
 
-export default function SegmentListEditor({ bulkMode, bulkText, setBulkText, applyBulkText }) {
-  const { segData, updateSegment, deleteSegment, addSegment, advancedOptions, wheelData } =
-    useContext(SegmentsContext);
+export default function SegmentListEditor() {
+  const {
+    segData,
+    setSegData,
+    html,
+    wheelData,
+  } = useContext(SegmentsContext);
 
-
-  // Scroll the list to the bottom when a new segment is added
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRefs = useRef([]);
   const scrollContainerRef = useRef(null);
-  const prevLengthRef = useRef(segData.length);
+  const hiddenBatchFileInputRef = useRef(null);
+  const segDataRef = useRef(segData);
+
   useEffect(() => {
-    if (segData.length > prevLengthRef.current && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
-    prevLengthRef.current = segData.length;
-  }, [segData.length]);
+    segDataRef.current = segData;
+  }, [segData]);
 
-  const handleImageUpload = useCallback(async (index, file) => {
-    if (!file) return;
+  // Update text of a specific segment
+  const handleUpdateText = useCallback(
+    (index, value) => {
+      setSegData((prev) => {
+        const next = prev.map((s, i) => (i === index ? { ...s, text: value } : s));
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Update arbitrary field (weight, color, visible)
+  const handleUpdateField = useCallback(
+    (index, field, value) => {
+      setSegData((prev) => {
+        const next = prev.map((s, i) =>
+          i === index ? { ...s, [field]: value } : s
+        );
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Delete segment
+  const handleDeleteSegment = useCallback(
+    (index) => {
+      setSegData((prev) => {
+        const next = prev.filter((_, i) => i !== index);
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Duplicate segment
+  const handleDuplicate = useCallback(
+    (index) => {
+      setSegData((prev) => {
+        if (prev.length >= 1000) {
+          toast.error("Maximum 1,000 entries allowed");
+          return prev;
+        }
+        const duplicate = JSON.parse(JSON.stringify(prev[index]));
+        duplicate.id = createSegment().id;
+        const next = [...prev];
+        next.splice(index + 1, 0, duplicate);
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Upload/change image on a segment
+  const handleImageUpload = useCallback(
+    async (index, file) => {
+      if (!file) return;
+      try {
+        const { image, imageLandscape } = await processImageFile(file);
+        setSegData((prev) => {
+          const next = prev.map((s, i) =>
+            i === index ? { ...s, image, imageLandscape } : s
+          );
+          return next;
+        });
+      } catch (err) {
+        console.warn("Image upload failed:", err);
+        toast.error("Image upload failed. Please try again.");
+      }
+    },
+    [setSegData]
+  );
+
+  // Detach image from segment
+  const handleRemoveImage = useCallback(
+    (e, index) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      setSegData((prev) => {
+        const next = prev.map((s, i) =>
+          i === index ? { ...s, image: null, imageLandscape: false } : s
+        );
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Insert segment at target index
+  const insertSegmentAt = useCallback(
+    (targetIndex, initialText = "", overrides = {}) => {
+      setSegData((prev) => {
+        if (prev.length >= 1000) {
+          toast.error("Maximum 1,000 entries allowed");
+          return prev;
+        }
+        const newSeg = createSegment(initialText, overrides);
+        const next = [...prev];
+        next.splice(targetIndex, 0, newSeg);
+        return next;
+      });
+    },
+    [setSegData]
+  );
+
+  // Automatically keep html.current synchronized with segData changes
+  // via a clean effect rather than mutating inside pure reducers.
+  useEffect(() => {
+    if (html && html.current !== undefined && Array.isArray(segData)) {
+      html.current = segmentsToHTMLTxt(segData);
+    }
+  }, [segData, html]);
+
+  // Effortless Keyboard Flow: Enter, Backspace, Arrow keys
+  const handleKeyDown = useCallback(
+    (e, index) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        insertSegmentAt(index + 1);
+        setTimeout(() => {
+          inputRefs.current[index + 1]?.focus();
+        }, 20);
+      } else if (e.key === "Backspace") {
+        const currentList = segDataRef.current || [];
+        const currentSeg = currentList[index];
+        // If cursor is at start of input and text is empty
+        if (
+          e.target.selectionStart === 0 &&
+          e.target.selectionEnd === 0 &&
+          (!currentSeg?.text || currentSeg.text === "")
+        ) {
+          if (currentSeg?.image) {
+            // Detach image first
+            e.preventDefault();
+            handleRemoveImage(null, index);
+          } else if (currentList.length > 1) {
+            e.preventDefault();
+            handleDeleteSegment(index);
+            const prevIndex = Math.max(0, index - 1);
+            setTimeout(() => {
+              const prevInput = inputRefs.current[prevIndex];
+              if (prevInput) {
+                prevInput.focus();
+                const len = prevInput.value.length;
+                prevInput.setSelectionRange(len, len);
+              }
+            }, 20);
+          }
+        }
+      } else if (e.key === "ArrowUp") {
+        if (index > 0) {
+          e.preventDefault();
+          inputRefs.current[index - 1]?.focus();
+        }
+      } else if (e.key === "ArrowDown") {
+        const currentList = segDataRef.current || [];
+        if (index < currentList.length - 1) {
+          e.preventDefault();
+          inputRefs.current[index + 1]?.focus();
+        }
+      }
+    },
+    [insertSegmentAt, handleDeleteSegment, handleRemoveImage]
+  );
+
+  // Paste handling on a specific row
+  const handlePasteOnRow = useCallback(
+    async (e, index) => {
+      // 1. If an image is pasted from clipboard
+      const items = e.clipboardData?.items;
+      if (items) {
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (file) {
+              await handleImageUpload(index, file);
+              toast.success("Image attached to option");
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. If multiline text is pasted
+      const text = e.clipboardData?.getData("text");
+      if (text && text.includes("\n")) {
+        e.preventDefault();
+        const lines = text
+          .split(/[\r\n]+/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+        if (lines.length === 0) return;
+
+        setSegData((prev) => {
+          const firstLine = lines[0];
+          const remainingSegments = lines
+            .slice(1)
+            .map((line) => createSegment(line));
+
+          const next = [...prev];
+          if (next[index]) {
+            next[index] = { ...next[index], text: firstLine };
+          } else {
+            next.push(createSegment(firstLine));
+          }
+          next.splice(index + 1, 0, ...remainingSegments);
+          const sliced = next.slice(0, 1000);
+          return sliced;
+        });
+
+        toast.success(`Pasted ${lines.length} lines`);
+      }
+    },
+    [handleImageUpload, setSegData]
+  );
+
+  // Global clipboard paste button
+  const handlePasteClipboard = async () => {
     try {
-      const compressed = await compressImage(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 400,
-        useWebWorker: true,
-      });
-      // Store as a data: URL in segment state. The actual Blob upload
-      // happens at wheel-save time so storage isn't consumed for wheels
-      // that are never saved. See useSaveWheel.js.
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(compressed);
-      });
-      // Detect orientation so the wheel can render the image correctly
-      const imageLandscape = await new Promise((resolve) => {
-        const img = new window.Image();
-        img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
-        img.onerror = () => resolve(false);
-        img.src = dataUrl;
-      });
-      updateSegment(index, "image", dataUrl);
-      updateSegment(index, "imageLandscape", imageLandscape);
-    } catch {
-      toast.error("Image upload failed. Please try again.");
-    }
-  }, [updateSegment]);
+      const clipText = await navigator.clipboard.readText();
+      if (!clipText || !clipText.trim()) {
+        toast.error("Clipboard is empty");
+        return;
+      }
+      const lines = clipText
+        .split(/[\r\n]+/)
+        .map((l) => l.trim())
+        .filter(Boolean);
 
-  const handleRemoveImage = useCallback((e, index) => {
+      if (lines.length === 0) return;
+
+      setSegData((prev) => {
+        const newSegments = lines.map((l) => createSegment(l));
+        // If only 1 blank/default segment exists, replace it
+        if (
+          prev.length === 1 &&
+          (!prev[0].text || prev[0].text === "Option") &&
+          !prev[0].image
+        ) {
+          return newSegments.slice(0, 1000);
+        }
+        return [...prev, ...newSegments].slice(0, 1000);
+      });
+
+      toast.success(`Pasted ${lines.length} items`);
+    } catch {
+      toast("Use Ctrl+V directly inside any option to paste");
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    updateSegment(index, "image", null);
-  }, [updateSegment]);
+    setIsDragging(true);
+  };
 
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    try {
+      const files = Array.from(e.dataTransfer?.files || []);
+
+      // If image files are dropped
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      if (imageFiles.length > 0) {
+        const toastId = toast.loading(
+          `Processing ${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""}...`
+        );
+        const newSegments = [];
+        for (const file of imageFiles) {
+          const processed = await processImageFile(file);
+          newSegments.push(
+            createSegment(processed.text, {
+              image: processed.image,
+              imageLandscape: processed.imageLandscape,
+            })
+          );
+        }
+
+        setSegData((prev) => {
+          if (
+            prev.length === 1 &&
+            (!prev[0].text || prev[0].text === "Option") &&
+            !prev[0].image
+          ) {
+            return newSegments.slice(0, 1000);
+          }
+          return [...prev, ...newSegments].slice(0, 1000);
+        });
+
+        toast.success(
+          `Added ${newSegments.length} image option${newSegments.length > 1 ? "s" : ""}!`,
+          { id: toastId }
+        );
+        return;
+      }
+
+      // If text/csv/json files are dropped
+      if (files.length > 0) {
+        const textFile = files[0];
+        const content = await textFile.text();
+        let importedLines = [];
+
+        if (textFile.name.endsWith(".json")) {
+          try {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed)) {
+              importedLines = parsed
+                .map((item) =>
+                  typeof item === "string" ? item : item?.text || item?.name || ""
+                )
+                .filter(Boolean);
+            }
+          } catch {}
+        }
+
+        if (importedLines.length === 0) {
+          importedLines = content
+            .split(/[\r\n]+/)
+            .map((line) => line.replace(/^["']|["']$/g, "").trim())
+            .filter(Boolean);
+        }
+
+        if (importedLines.length > 0) {
+          setSegData((prev) => {
+            const newSegments = importedLines.map((l) => createSegment(l));
+            if (
+              prev.length === 1 &&
+              (!prev[0].text || prev[0].text === "Option") &&
+              !prev[0].image
+            ) {
+              return newSegments.slice(0, 1000);
+            }
+            return [...prev, ...newSegments].slice(0, 1000);
+          });
+          toast.success(`Imported ${importedLines.length} choices from ${textFile.name}`);
+        }
+        return;
+      }
+
+      // If text is dropped
+      const droppedText = e.dataTransfer.getData("text");
+      if (droppedText) {
+        const lines = droppedText
+          .split(/[\r\n]+/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+        if (lines.length > 0) {
+          setSegData((prev) => {
+            const newSegments = lines.map((l) => createSegment(l));
+            return [...prev, ...newSegments].slice(0, 1000);
+          });
+          toast.success(`Imported ${lines.length} items`);
+        }
+      }
+    } catch (err) {
+      console.warn("Drop handling error:", err);
+      toast.error("Could not read dropped content");
+    }
+  };
+
+  const addBlankOption = () => {
+    insertSegmentAt(segData.length);
+    setTimeout(() => {
+      inputRefs.current[segData.length]?.focus();
+      scrollContainerRef.current?.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 20);
+  };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-2">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`relative flex flex-col flex-1 min-h-0 transition-all ${
+        isDragging
+          ? "border-2 border-dashed border-primary bg-primary/5 rounded-xl"
+          : ""
+      }`}
+    >
+      {/* Drag & Drop Visual Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-background/90 backdrop-blur-xs pointer-events-none text-primary">
+          <UploadCloud size={30} className="animate-bounce mb-2" />
+          <p className="text-sm font-bold">Drop files or images to import</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Images, TXT, CSV, or copied lists
+          </p>
+        </div>
+      )}
 
-      {bulkMode ? (
-        /* ── Bulk paste mode ── */
-        <div className="space-y-2 flex flex-col flex-1 min-h-0">
-          <textarea
-            autoFocus
-            value={bulkText}
-            onChange={(e) => setBulkText(e.target.value)}
-            placeholder={"Bulk Placeholder"}
-            className="w-full flex-1 min-h-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
-          />
+      {/* Segment rows container */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 min-h-0 overflow-y-auto space-y-0.5 py-1 px-0.5 select-none [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/25 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/45"
+      >
+        {segData.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center gap-3 py-8 text-center px-4">
+            <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground/60">
+              <List size={22} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Wheel is empty</p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
+                Type options, upload images, or drop a list directly into this area.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
+              <button
+                type="button"
+                onClick={addBlankOption}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground shadow-2xs transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus size={14} /> Add Option
+              </button>
+              <label
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground shadow-2xs transition-all active:scale-95 cursor-pointer"
+              >
+                <ImageIcon size={14} /> Add Images
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
+                    const newSegs = [];
+                    for (const f of files) {
+                      const res = await processImageFile(f);
+                      newSegs.push(createSegment(res.text, { image: res.image, imageLandscape: res.imageLandscape }));
+                    }
+                    setSegData(newSegs.slice(0, 1000));
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handlePasteClipboard}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-2xs hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
+              >
+                <Clipboard size={14} /> Paste List
+              </button>
+            </div>
+          </div>
+        ) : (
+          segData.map((seg, index) => (
+            <SegmentRow
+              key={seg.id ?? index}
+              seg={seg}
+              index={index}
+              fallbackColor={
+                wheelData.segColors[index % wheelData.segColors.length]
+              }
+              inputRef={(el) => (inputRefs.current[index] = el)}
+              onUpdateText={handleUpdateText}
+              onUpdateField={handleUpdateField}
+              onDelete={handleDeleteSegment}
+              onDuplicate={handleDuplicate}
+              onImageUpload={handleImageUpload}
+              onRemoveImage={handleRemoveImage}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePasteOnRow}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Bottom Bar: Action buttons & entry count */}
+      <div className="shrink-0 flex items-center justify-between px-0.5 pt-1 pb-0 text-[11px] text-muted-foreground select-none">
+        <div className="flex items-center gap-1">
           <button
-            onClick={applyBulkText}
-            className="w-full shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            type="button"
+            onClick={addBlankOption}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-muted hover:text-foreground text-foreground font-semibold transition-colors cursor-pointer"
           >
-            {"Add To Wheel"}
+            <Plus size={13} className="text-primary" />
+            <span>Add Option</span>
+          </button>
+          <button
+            type="button"
+            onClick={handlePasteClipboard}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
+            title="Paste text list from clipboard"
+          >
+            <Clipboard size={12} />
+            <span>Paste</span>
           </button>
         </div>
-      ) : (
-        /* ── Card list mode ── */
-        <>
-          <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-0.5">
-            {segData.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center gap-3 py-8 text-center select-none">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <List size={20} className="text-muted-foreground/50" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">No segments yet</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">Hit <span className="font-semibold">+ Add Segment</span> below to get started</p>
-                </div>
-              </div>
-            ) : (
-              segData.map((seg, index) => (
-                <SegmentRow
-                  key={seg.id ?? index}
-                  seg={seg}
-                  index={index}
-                  advancedOptions={advancedOptions}
-                  fallbackColor={wheelData.segColors[index % wheelData.segColors.length]}
-                  onUpdate={updateSegment}
-                  onDelete={deleteSegment}
-                  onDuplicate={addSegment}
-                  onImageUpload={handleImageUpload}
-                  onRemoveImage={handleRemoveImage}
-                />
-              ))
-            )}
-          </div>
 
-          {/* Add segment */}
-          <div className="pt-1 mt-auto">
-            <button
-              onClick={() => addSegment(-1)}
-              className="w-full shrink-0 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/80 bg-background/50 hover:bg-muted py-2 text-xs font-semibold text-muted-foreground transition-all hover:text-foreground"
-            >
-              <Plus size={16} /> Add Segment
-            </button>
-          </div>
-        </>
-      )}
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-foreground">{segData.length}</span>
+          <span>{segData.length === 1 ? "entry" : "entries"}</span>
+          {segData.length >= 1000 && (
+            <span className="text-amber-500 font-bold ml-1">(Max 1000)</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

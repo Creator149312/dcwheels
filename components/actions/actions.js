@@ -44,6 +44,7 @@ import {
   fetchMovies,
 } from "../../app/(content)/[type]/TopicPagesHelperFunctions";
 import { slugify } from "@utils/HelperFunctions";
+import { isCleanText, isTopicDocSafe } from "@/lib/contentSafety";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
@@ -1340,12 +1341,15 @@ export async function getRelatedTopicPages(relatedTopics) {
 
   if (directPages.length === 0) return { direct: [], secondary: [] };
 
-  const formattedDirect = directPages.map(formatTopicPage);
+  const safeDirectPages = directPages.filter(isTopicDocSafe);
+  if (safeDirectPages.length === 0) return { direct: [], secondary: [] };
+
+  const formattedDirect = safeDirectPages.map(formatTopicPage);
   let formattedSecondary = [];
 
   if (formattedDirect.length < 10) {
-    const allTags = [...new Set(directPages.flatMap((p) => p.tags || []))];
-    const directIds = directPages.map((p) => p._id);
+    const allTags = [...new Set(safeDirectPages.flatMap((p) => p.tags || []))];
+    const directIds = safeDirectPages.map((p) => p._id);
 
     if (allTags.length > 0) {
       const secondaryPages = await TopicPage.aggregate([
@@ -1369,11 +1373,15 @@ export async function getRelatedTopicPages(relatedTopics) {
           },
         },
         { $sort: { overlapCount: -1, wheels: -1, updatedAt: -1 } },
-        { $limit: 10 - formattedDirect.length },
-        { $project: { title: 1, cover: 1, slug: 1, type: 1, relatedId: 1 } },
+        { $limit: (10 - formattedDirect.length) * 2 },
+        { $project: { title: 1, cover: 1, slug: 1, type: 1, relatedId: 1, tags: 1 } },
       ]);
 
-      formattedSecondary = secondaryPages.map(formatTopicPage);
+      const safeSecondaryPages = secondaryPages
+        .filter(isTopicDocSafe)
+        .slice(0, 10 - formattedDirect.length);
+
+      formattedSecondary = safeSecondaryPages.map(formatTopicPage);
     }
   }
 
@@ -1408,6 +1416,7 @@ const _getTrendingTopicPagesUncached = async (limit = 9) => {
     const hasApiData = movies.length > 0 || anime.length > 0;
     if (hasApiData) {
       const formattedMovies = shuffle(movies)
+        .filter((m) => !m.adult && isCleanText(m.title))
         .slice(0, countPerType)
         .map((m) => {
           const title = m.title;
@@ -1421,7 +1430,7 @@ const _getTrendingTopicPagesUncached = async (limit = 9) => {
         });
 
       const formattedAnime = shuffle(anime)
-        .slice(0, countPerType)
+        .filter((a) => !a.isAdult)
         .map((a) => {
           const title = a.title?.english || a.title?.romaji || "Anime";
           return {
@@ -1431,7 +1440,9 @@ const _getTrendingTopicPagesUncached = async (limit = 9) => {
             cover: a.coverImage?.large,
             id: a.id,
           };
-        });
+        })
+        .filter(isTopicDocSafe)
+        .slice(0, countPerType);
 
       return [...formattedMovies, ...formattedAnime].slice(0, limit);
     }
@@ -1447,12 +1458,12 @@ const _getTrendingTopicPagesUncached = async (limit = 9) => {
       slug: { $exists: true, $ne: null },
     })
       .sort({ wheels: -1, updatedAt: -1 })
-      .limit(limit)
-      .select("title slug type cover relatedId wheels")
+      .limit(limit * 2)
+      .select("title slug type cover relatedId wheels tags description")
       .lean();
 
     if (fallbackPages.length > 0) {
-      return fallbackPages.map(formatTopicPage);
+      return fallbackPages.filter(isTopicDocSafe).slice(0, limit).map(formatTopicPage);
     }
   } catch (err) {
     console.error("[getTrendingTopicPages] local fallback failed:", err);

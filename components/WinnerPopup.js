@@ -34,10 +34,12 @@ function getPickLabel(winner) {
 const WinnerPopup = ({
   winner,
   prizeNumber,
+  setWinner,
   segData,
   setSegData,
   setShowCelebration,
   mustSpin,
+  onSpinAgain,
   wheelId,
   wheelPreview,
 }) => {
@@ -57,6 +59,7 @@ const WinnerPopup = ({
 
   // Get the winning segment's color for visual sync
   const winnerColor =
+    winner?.color ||
     segData[prizeNumber]?.color ||
     wheelData?.segColors?.[prizeNumber % (wheelData?.segColors?.length || 1)] ||
     "#6366f1";
@@ -228,16 +231,47 @@ const WinnerPopup = ({
   };
 
   const removeWinner = (removeAll) => {
-    const updatedSegData = segData.filter((element, index) =>
-      removeAll
-        ? element.text !== winner.text
-        : !(element.id === winner.id && index === prizeNumber)
-    );
+    let removedOne = false;
+    const updatedSegData = segData.filter((element) => {
+      if (removeAll) return element.text !== winner?.text;
+      if (!removedOne && (element.id === winner?.id || element.text === winner?.text)) {
+        removedOne = true;
+        return false;
+      }
+      return true;
+    });
 
     setSegData(updatedSegData);
     html.current = segmentsToHTMLTxt(updatedSegData);
     setOpen(false);
     setShowCelebration(false);
+    if (setWinner) setWinner(null);
+  };
+
+  const removeWinnerAndSpinNext = (removeAll = false) => {
+    let removedOne = false;
+    const updatedSegData = segData.filter((element) => {
+      if (removeAll) return element.text !== winner?.text;
+      if (!removedOne && (element.id === winner?.id || element.text === winner?.text)) {
+        removedOne = true;
+        return false;
+      }
+      return true;
+    });
+
+    setSegData(updatedSegData);
+    html.current = segmentsToHTMLTxt(updatedSegData);
+    setOpen(false);
+    setShowCelebration(false);
+    if (setWinner) setWinner(null);
+
+    // If there are still segments available to spin, trigger the next spin
+    const remainingCount = updatedSegData.filter((s) => s?.visible !== false).length;
+    if (remainingCount > 0 && typeof onSpinAgain === "function") {
+      setTimeout(() => {
+        onSpinAgain();
+      }, 150);
+    }
   };
 
   const MAX_POPUP_TEXT_LEN = 100;
@@ -275,6 +309,11 @@ const WinnerPopup = ({
     element
       ? segData.filter((item) => item.text === element.text && item.id !== element.id).length > 0
       : false;
+
+  const hasDuplicates = containsDuplicates(winner);
+  const visibleSegmentsCount = (segData || []).filter((s) => s?.visible !== false).length;
+  // If we remove this winner, how many segments will remain?
+  const remainingAfterRemoval = Math.max(0, visibleSegmentsCount - 1);
 
   return (
     <>
@@ -490,40 +529,71 @@ const WinnerPopup = ({
                     </div>
                   )}
 
-                  {/* ── Remove — isolated at bottom ───────────────────── */}
+                  {/* ── Elimination / Tournament Mode & Remove Actions ── */}
                   {!wheelData.removeWinnerAfterSpin && (
-                    <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <div className="relative" ref={removeMenuRef}>
-                        <button
-                          onClick={() => setShowRemoveMenu((prev) => !prev)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                          Remove
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </button>
+                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                      {/* One-Click Tournament Mode: Remove Winner & Spin Next */}
+                      <button
+                        type="button"
+                        onClick={() => removeWinnerAndSpinNext(false)}
+                        disabled={remainingAfterRemoval === 0}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-700 active:scale-[0.98] transition-all shadow-sm shadow-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Eliminate winner and spin again immediately"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        <span>Remove & Spin Next</span>
+                        <span className="ml-1 px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-bold">
+                          {remainingAfterRemoval} left
+                        </span>
+                      </button>
 
-                        {showRemoveMenu && (
-                          <div className="absolute bottom-full right-0 mb-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+                      {/* Secondary Remove Only (or Dropdown if duplicate copies exist) */}
+                      <div className="relative shrink-0 flex justify-end" ref={removeMenuRef}>
+                        {hasDuplicates ? (
+                          <>
                             <button
-                              onClick={() => { setShowRemoveMenu(false); removeWinner(false); }}
-                              className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              type="button"
+                              onClick={() => setShowRemoveMenu((prev) => !prev)}
+                              className="inline-flex items-center justify-center gap-1 h-10 px-3 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-700"
+                              title="More remove options"
                             >
-                              Remove this one
+                              <span>Remove</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
                             </button>
-                            {containsDuplicates(segData[prizeNumber]) && (
-                              <button
-                                onClick={() => { setShowRemoveMenu(false); removeWinner(true); }}
-                                className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
-                              >
-                                Remove all matching
-                              </button>
+
+                            {showRemoveMenu && (
+                              <div className="absolute bottom-full right-0 mb-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-30">
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowRemoveMenu(false); removeWinner(false); }}
+                                  className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                >
+                                  Remove this one only
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowRemoveMenu(false); removeWinner(true); }}
+                                  className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors border-t border-gray-100 dark:border-gray-700"
+                                >
+                                  Remove all matching copies
+                                </button>
+                              </div>
                             )}
-                          </div>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => removeWinner(false)}
+                            className="inline-flex items-center justify-center gap-1 h-10 px-3 rounded-xl text-xs font-bold text-gray-500 hover:text-rose-600 dark:text-gray-400 dark:hover:text-rose-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            title="Remove without spinning again"
+                          >
+                            <span>Remove Only</span>
+                          </button>
                         )}
                       </div>
                     </div>

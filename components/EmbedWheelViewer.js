@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { SegmentsContext } from "@app/SegmentsContext";
 import { useWheelState } from "./useWheelState";
 import Link from "next/link";
@@ -10,10 +10,14 @@ const FireworksConfetti = dynamic(
   { ssr: false }
 );
 
-const Wheel = dynamic(
-  () => import("react-custom-roulette").then((mod) => mod.Wheel),
-  { ssr: false }
-);
+const WinnerPopup = dynamic(() => import("@components/WinnerPopup"), {
+  ssr: false,
+});
+
+// Use the new high-quality SpinWheelCanvas instead of react-custom-roulette
+const Wheel = dynamic(() => import("./SpinWheelCanvas"), {
+  ssr: false,
+});
 
 export default function EmbedWheelViewer({
   newSegments,
@@ -21,7 +25,7 @@ export default function EmbedWheelViewer({
   wheelTitle,
   wheelId,
 }) {
-  const { wheelData, segData, data, MAX_SPIN_TIME } = useContext(SegmentsContext);
+  const { wheelData, segData, data, MAX_SPIN_TIME, setSegData } = useContext(SegmentsContext);
 
   const {
     mustSpin,
@@ -37,23 +41,41 @@ export default function EmbedWheelViewer({
     handleStopSpinning,
   } = useWheelState({ newSegments, wheelPresetSettings, wheelId });
 
+  // Auto-resize: post the document height to the parent window so the host
+  // page's message listener can adjust the iframe height seamlessly.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.parent === window) return;
+
+    const postHeight = () => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: "wheel-resize", height }, "*");
+    };
+
+    postHeight();
+
+    const ro = new ResizeObserver(postHeight);
+    ro.observe(document.body);
+    window.addEventListener("resize", postHeight);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", postHeight);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-background select-none overflow-hidden">
-      {/* Winner banner */}
-      {winner && !mustSpin && (
-        <div
-          className="w-full text-center py-1 px-4 text-xs font-semibold text-white truncate tracking-wide"
-          style={{ backgroundColor: "#6366f1" }}
-        >
-          🎉 {winner}
-          <button
-            onClick={() => { setWinner(null); setShowCelebration(false); }}
-            className="ml-2 text-white/60 hover:text-white font-normal"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Winner Popup Modal — same as main app */}
+      <WinnerPopup
+        winner={winner}
+        prizeNumber={prizeNumber}
+        setWinner={setWinner}
+        segData={segData}
+        setSegData={setSegData}
+        setShowCelebration={setShowCelebration}
+        mustSpin={mustSpin}
+        wheelId={wheelId}
+      />
 
       {/* Wheel area */}
       <div

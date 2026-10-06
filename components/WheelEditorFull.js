@@ -13,6 +13,8 @@ import { Brain, List } from "lucide-react";
 import { Suspense } from "react";
 import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
+import { compressImage } from "@utils/imageCompression";
+import toast from "react-hot-toast";
 
 // The full home-page editor — renders the tabbed interface with list/result
 // editing, quiz authoring, AI generation, and import/save controls.
@@ -32,45 +34,11 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
     segData,
     setSegData,
     html,
-    advancedOptions,
-    setadvancedOptions,
-    prepareDataForEditorSwitch,
     wheelType,
     setWheelType,
   } = useContext(SegmentsContext);
 
   const [activeTab, setActiveTab] = useState("list");
-  const [isVisible, setIsVisible] = useState(true);
-  const [bulkMode, setBulkMode] = useState(false);
-  const [bulkText, setBulkText] = useState("");
-  const toggleVisibility = () => setIsVisible((prev) => !prev);
-
-  const handleAdvancedToggle = () => {
-    const nextValue = !advancedOptions;
-    prepareDataForEditorSwitch(nextValue);
-    setadvancedOptions(nextValue);
-  };
-
-  const toggleBulkMode = () => setBulkMode((prev) => !prev);
-
-  const applyBulkText = () => {
-    const lines = bulkText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (lines.length === 0) return;
-
-    if (lines.length > 100) {
-      toast.error("Maximum 100 segments allowed. Truncating to first 100.");
-    }
-
-    const newSegments = lines.slice(0, 100).map((text) => createSegment(text));
-    setSegData(newSegments);
-    html.current = segmentsToHTMLTxt(newSegments);
-    setBulkMode(false);
-    setBulkText("");
-  };
 
   const shuffleSegments = () => {
     const shuffled = [...segData].sort(() => Math.random() - 0.5);
@@ -93,8 +61,82 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
     html.current = segmentsToHTMLTxt(sorted);
   };
 
+  const clearAllSegments = () => {
+    setSegData([]);
+    html.current = "";
+  };
+
+  const handleBatchImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    e.target.value = "";
+
+    const toastId = toast.loading(
+      `Processing ${files.length} image${files.length > 1 ? "s" : ""}...`
+    );
+
+    try {
+      const newSegments = [];
+      for (const file of files) {
+        const compressed = await compressImage(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 400,
+          useWebWorker: true,
+        });
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(compressed);
+        });
+        const imageLandscape = await new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
+          img.onerror = () => resolve(false);
+          img.src = dataUrl;
+        });
+
+        const cleanName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[_-]+/g, " ")
+          .trim();
+
+        newSegments.push(
+          createSegment(cleanName || "Option", {
+            image: dataUrl,
+            imageLandscape,
+          })
+        );
+      }
+
+      setSegData((prev) => {
+        // If current wheel has only 1 blank/default option, replace it
+        if (
+          prev.length === 1 &&
+          (!prev[0].text || prev[0].text === "Option") &&
+          !prev[0].image
+        ) {
+          const updated = newSegments.slice(0, 1000);
+          html.current = segmentsToHTMLTxt(updated);
+          return updated;
+        }
+        const updated = [...prev, ...newSegments].slice(0, 1000);
+        html.current = segmentsToHTMLTxt(updated);
+        return updated;
+      });
+
+      toast.success(
+        `Added ${newSegments.length} image option${newSegments.length > 1 ? "s" : ""}!`,
+        { id: toastId }
+      );
+    } catch (err) {
+      console.warn("Batch image upload failed:", err);
+      toast.error("Failed to process some images", { id: toastId });
+    }
+  };
+
   return (
-    <div className={`bg-card text-card-foreground border shadow-sm px-2 pt-1.5 pb-2 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden ${inModal ? "border-none shadow-none p-0 flex-1 min-h-0" : "flex min-h-[32rem] lg:max-h-[521px]"}`}>
+    <div className={`bg-card text-card-foreground border shadow-sm p-1 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden ${inModal ? "border-none shadow-none p-0 flex-1 min-h-0" : "flex min-h-[32rem] lg:max-h-[521px]"}`}>
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -105,23 +147,18 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           transition: "opacity 0.3s ease",
         }}
       >
-        <TabsList className="w-full h-auto shrink-0 flex-wrap justify-between gap-1 rounded-xl border border-border/60 bg-muted/40 p-1">
+        <TabsList className="w-full h-auto shrink-0 flex-col gap-1 bg-transparent p-0 pb-1">
           <TabsListOnEditor
             segData={segData}
             resultList={resultList}
-            isVisible={isVisible}
-            toggleVisibility={toggleVisibility}
-            advOptions={advancedOptions}
             wheelType={wheelType}
             activeTab={activeTab}
-            bulkMode={bulkMode}
-            onToggleBulkMode={toggleBulkMode}
-            onToggleAdvanced={handleAdvancedToggle}
             onShuffle={shuffleSegments}
             onSort={sortSegments}
+            onBatchImageUpload={handleBatchImageUpload}
+            onClearAll={clearAllSegments}
             onToggleMode={() => {
               const newType = wheelType === "basic" ? "quiz" : "basic";
-              setBulkMode(false);
               setWheelType(newType);
               if (newType === "quiz") {
                 setSegData((prev) =>
@@ -142,14 +179,14 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
         <TabsContent
           value="list"
           style={{
-            display: isVisible && activeTab === "list" ? "flex" : "none",
+            display: activeTab === "list" ? "flex" : "none",
             flexDirection: "column",
             flex: 1,
             minHeight: 0,
             overflow: "hidden",
           }}
         >
-          <div className="shrink-0 mb-1">
+          <div className="shrink-0 my-0.5">
             <ListSelector html={html} setSegData={setSegData} />
           </div>
           {wheelType === "quiz" ? (
@@ -158,23 +195,18 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
             </div>
           ) : (
             <div className="flex flex-col flex-1 min-h-0">
-              <SegmentListEditor
-                bulkMode={bulkMode}
-                bulkText={bulkText}
-                setBulkText={setBulkText}
-                applyBulkText={applyBulkText}
-              />
+              <SegmentListEditor />
             </div>
           )}
         </TabsContent>
         <TabsContent
           value="result"
-          style={{ display: isVisible && activeTab === "result" ? "flex" : "none", flexDirection: "column", flex: 1, minHeight: 0, overflowY: "auto" }}
+          style={{ display: activeTab === "result" ? "flex" : "none", flexDirection: "column", flex: 1, minHeight: 0, overflowY: "auto" }}
         >
           <ContentEditableDivResult resultList={resultList} />
         </TabsContent>
       </Tabs>
-      <div className="grid grid-cols-2 gap-2 mt-2 shrink-0">
+      <div className="grid grid-cols-2 gap-1.5 mt-1 shrink-0">
         <Suspense fallback={<div className="h-10 bg-muted animate-pulse rounded-md" />}>
           <GenerateWheel url={currentPath} />
         </Suspense>
