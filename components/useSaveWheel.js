@@ -150,22 +150,50 @@ function drawWheelPreview(canvas, wheel) {
 }
 
 async function canvasToBlob(canvas) {
-  // To improve sharpness, render at 2x and downscale
-  const tmpCanvas = document.createElement("canvas");
-  tmpCanvas.width = canvas.width * 2;
-  tmpCanvas.height = canvas.height * 2;
-  const tmpCtx = tmpCanvas.getContext("2d");
-  tmpCtx.scale(2, 2);
-  tmpCtx.drawImage(canvas, 0, 0);
   return new Promise((resolve, reject) => {
-    tmpCanvas.toBlob((blob) => {
+    canvas.toBlob((blob) => {
       if (!blob) {
         reject(new Error("Failed to create image blob"));
         return;
       }
       resolve(blob);
-    }, "image/webp", 1.0); // quality 100
+    }, "image/webp", 0.92);
   });
+}
+
+// Generates a crisp 640x640 wheel preview offscreen and uploads it asynchronously in the background
+function triggerBackgroundPreviewUpload(wheelId, wheelDataToDraw) {
+  if (typeof window === "undefined" || !wheelId) return;
+
+  // Run in next microtask / idle so it never delays navigation or UI feedback
+  const runner = async () => {
+    try {
+      const canvas = document.createElement("canvas");
+      // Render at native 640x640 resolution for crisp Retina display & downscaling
+      canvas.width = 640;
+      canvas.height = 640;
+      drawWheelPreview(canvas, wheelDataToDraw);
+      const blob = await canvasToBlob(canvas);
+
+      const form = new FormData();
+      form.append("wheelId", wheelId);
+      form.append("file", new File([blob], `${wheelId}.webp`, { type: "image/webp" }));
+
+      await fetch("/api/wheel-preview", {
+        method: "POST",
+        body: form,
+        keepalive: true,
+      });
+    } catch (previewErr) {
+      console.warn("Background preview generation/upload failed:", previewErr);
+    }
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(runner, { timeout: 2000 });
+  } else {
+    setTimeout(runner, 0);
+  }
 }
 
 function getQueryParams() {
@@ -415,25 +443,9 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           if (resObj?.updatedAt) {
             selectedWheel.updatedAt = resObj.updatedAt;
           }
-          // Generate and upload wheel preview back-to-back with saving
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = 320;
-            canvas.height = 320;
-            drawWheelPreview(canvas, { data, wheelData: wheelDataToStore });
-            const blob = await canvasToBlob(canvas);
 
-            const form = new FormData();
-            form.append("wheelId", selectedWheel._id);
-            form.append("file", new File([blob], `${selectedWheel._id}.webp`, { type: "image/webp" }));
-
-            await fetch("/api/wheel-preview", {
-              method: "POST",
-              body: form,
-            });
-          } catch (previewErr) {
-            console.error("Preview generation/upload failed:", previewErr);
-          }
+          // Trigger high-res preview upload in the background (non-blocking)
+          triggerBackgroundPreviewUpload(selectedWheel._id, { data, wheelData: wheelDataToStore });
 
           router.push(
             sessionData?.user?.username
@@ -443,6 +455,20 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           return true;
         }
       } else {
+        // Check for remix / fork lineage stored in localStorage
+        let forkedFromWheelId = undefined;
+        try {
+          if (typeof window !== "undefined") {
+            const raw = window.localStorage.getItem("SpinpapaWheel");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed?.forkedFrom?.wheelId) {
+                forkedFromWheelId = parsed.forkedFrom.wheelId;
+              }
+            }
+          }
+        } catch {}
+
         const body = {
           title: titleToStore,
           description: descriptionToStore,
@@ -450,6 +476,7 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           createdBy,
           wheelData: wheelDataToStore,
           type: wheelType || "basic",
+          ...(forkedFromWheelId ? { forkedFromWheelId } : {}),
         };
 
         if (relatedTopics) body.relatedTopics = relatedTopics;
@@ -468,25 +495,8 @@ export function useSaveWheel({ createdBy, segData, wheelData, wheelType }) {
           toast.error("Failed to Create Wheel");
           return false;
         } else {
-          // Generate and upload wheel preview back-to-back with saving
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = 320;
-            canvas.height = 320;
-            drawWheelPreview(canvas, { data, wheelData: wheelDataToStore });
-            const blob = await canvasToBlob(canvas);
-
-            const form = new FormData();
-            form.append("wheelId", resObj.creationID);
-            form.append("file", new File([blob], `${resObj.creationID}.webp`, { type: "image/webp" }));
-
-            await fetch("/api/wheel-preview", {
-              method: "POST",
-              body: form,
-            });
-          } catch (previewErr) {
-            console.error("Preview generation/upload failed:", previewErr);
-          }
+          // Trigger high-res preview upload in the background (non-blocking)
+          triggerBackgroundPreviewUpload(resObj.creationID, { data, wheelData: wheelDataToStore });
 
           router.push(
             sessionData?.user?.username

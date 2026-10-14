@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useContext, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { SegmentsContext } from "@app/SegmentsContext";
@@ -10,6 +11,8 @@ import MCQQuestion from "@components/MCQQuestion";
 import ShareableResultCard from "./ShareableResultCard";
 import AddToListButton from "./AddToListButton";
 import { getWheelUrl } from "@utils/UrlHandler";
+import { generateTrophyCard } from "@utils/trophyCardGenerator";
+import { Trash2, Share2, PenSquare, ExternalLink, X } from "lucide-react";
 
 // Map entity type → action-specific CTA label so the button reads naturally
 // for the content category the wheel is about.
@@ -41,21 +44,24 @@ const WinnerPopup = ({
   mustSpin,
   onSpinAgain,
   wheelId,
+  wheelSlug: wheelSlugProp,
   wheelPreview,
 }) => {
   let [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { html, wheelData, wheelTitle } = useContext(SegmentsContext);
   const { data: session, status } = useSession();
   const router = useRouter();
   const openLoginPrompt = useLoginPrompt();
-  const [decisionSaved, setDecisionSaved] = useState(false);
-  const [showNoteInput, setShowNoteInput] = useState(false);
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
-  const [showRemoveMenu, setShowRemoveMenu] = useState(false);
-  const removeMenuRef = useRef(null);
-  const [savedLogId, setSavedLogId] = useState(null);
+  const [isPosting, setIsPosting] = useState(false);
+  const generatedCardDataUrlRef = useRef("");
+  const effectiveWheelId = wheelId || wheelData?._id || "";
+  const effectiveWheelSlug = wheelSlugProp || wheelData?.slug || "";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get the winning segment's color for visual sync
   const winnerColor =
@@ -68,7 +74,6 @@ const WinnerPopup = ({
     setOpen(false);
     setShowCelebration(false);
     setShowShareCard(false);
-    setShowRemoveMenu(false);
     
     // Auto Remove Winner logic executed on popup close instead of immediately
     if (winner && winner !== "" && wheelData?.removeWinnerAfterSpin) {
@@ -84,153 +89,99 @@ const WinnerPopup = ({
 
       setOpen(hasWinner);
       setShowCelebration(hasWinner);
-      setDecisionSaved(false);
-      setShowNoteInput(false);
-      setNote("");
       setShowShareCard(false);
-      setShowRemoveMenu(false);
+      // Reset any previously cached trophy card whenever a new spin lands a winner
+      generatedCardDataUrlRef.current = "";
     }, 200);
 
     return () => clearTimeout(timeoutId);
   }, [winner, mustSpin]);
 
-  // Close remove dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (removeMenuRef.current && !removeMenuRef.current.contains(e.target)) {
-        setShowRemoveMenu(false);
-      }
-    };
-    if (showRemoveMenu) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showRemoveMenu]);
-
-  const saveDecision = async (withNote) => {
-    if (saving || decisionSaved) return;
-    // Guests can't persist decisions — prompt sign-in instead of firing a
-    // 401 to the server and lying to the user with a fake "saved" toast.
+  // Share the spin result as a community Post. Reuses the existing Post
+  // creation flow — attaches wheel + winner as contentRef.
+  const shareAsPost = async () => {
     if (status !== "authenticated") {
-      setShowNoteInput(false);
       openLoginPrompt?.();
       return;
     }
-    setSaving(true);
+
+    setIsPosting(true);
+
     try {
+      // If the trophy card hasn't been generated yet (e.g. user didn't open Share toggle first),
+      // generate it on demand so community posts always feature the high-res 3:4 Trophy Card!
+      if (!generatedCardDataUrlRef.current && winner && winner?.type !== "quiz") {
+        try {
+          const card = await generateTrophyCard({
+            winner,
+            wheelTitle,
+            winnerColor,
+          });
+          if (card?.dataUrl) {
+            generatedCardDataUrlRef.current = card.dataUrl;
+          }
+        } catch (e) {
+          console.warn("On-demand trophy card generation fallback:", e);
+        }
+      }
+
       const winnerText = winner?.text || String(winner);
       const winnerImage = winner?.image || "";
-      // Media segments carry entity fields at the top level (set by Smart Wheel
-      // media routes). Forward them so the DecisionLog row can power the
-      // per-content-page "Recent Spins" feed query.
       const entityType = winner?.entityType || winner?.payload?.entityType || "";
       const entityId   = winner?.entityId   != null ? String(winner.entityId)   : (winner?.payload?.entityId != null ? String(winner.payload.entityId) : "");
       const entitySlug = winner?.slug       || winner?.payload?.slug            || "";
 
-      const res = await fetch("/api/decision-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          wheelId: wheelId || "home",
-          wheelTitle: wheelTitle || "",
-          result: winnerText,
-          resultImage: winnerImage,
-          note: withNote ? note : "",
-          entityType,
-          entityId,
-          entitySlug,
-        }),
-      });
-
-      // Parse the body ONCE before any branching — cloning a Response whose
-      // body was already consumed throws silently and loses `isPublic`.
-      let responseData = {};
-      try {
-        responseData = await res.json();
-      } catch {
-        // Malformed body — non-critical, carry on.
+      const params = new URLSearchParams();
+      params.set("result", winnerText);
+      if (winnerImage) params.set("resultImage", winnerImage);
+      // Ensure we always pass the actual wheel title, never a fallback.
+      const resolvedWheelTitle = wheelTitle || wheelData?.title || "";
+      if (resolvedWheelTitle) {
+        params.set("wheelTitle", resolvedWheelTitle);
+      }
+      if (effectiveWheelId) {
+        params.set("wheelId", effectiveWheelId);
+        params.set("cr_type", "wheel");
+        params.set("cr_id", effectiveWheelId);
+        params.set("cr_slug", effectiveWheelSlug);
+        params.set("cr_title", resolvedWheelTitle);
+        params.set("cr_image", wheelPreview || wheelData?.wheelPreview || winnerImage || "");
+      } else if (entityType && entityId) {
+        // If wheel is not saved in DB yet, but winner is an entity, attach entity as primary contentRef
+        params.set("cr_type", entityType);
+        params.set("cr_id", entityId);
+        params.set("cr_slug", entitySlug);
+        params.set("cr_title", winnerText);
+        params.set("cr_image", winnerImage);
+      }
+      // If the winning segment itself is an entity, include that too.
+      if (entityType) {
+        params.set("cr_entity_type", entityType);
+        params.set("cr_entity_id", entityId);
+        params.set("cr_entity_slug", entitySlug);
+        params.set("cr_entity_title", winnerText);
+        params.set("cr_entity_image", winnerImage);
       }
 
-      if (res.ok) {
-        setDecisionSaved(true);
-        setShowNoteInput(false);
-        setSavedLogId(responseData?.id || null);
-
-        // Always dispatch the event on a successful save so the feed shows
-        // the user's own card immediately (optimistic UX). If `isPublic` is
-        // false (user hasn't opted in), the card is local-only and disappears
-        // on the next 60s background refresh — correct behavior. This fixes
-        // the two previous bugs: (1) response body was already consumed
-        // before `res.clone()` was called, causing isPublic to always be
-        // false; (2) publicSpins defaults to false so new users never saw
-        // their own saves.
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("wheel:decision-saved", {
-              detail: {
-                wheelId: wheelId || "home",
-                result: winnerText,
-                resultImage: winnerImage,
-                note: withNote ? note : "",
-                userName: session?.user?.name || "You",
-                isPublic: !!responseData?.isPublic,
-              },
-            })
-          );
+      // If a 3:4 Trophy Card was generated, store it in sessionStorage for the post composer
+      if (generatedCardDataUrlRef.current && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("spinpapa-share-card", generatedCardDataUrlRef.current);
+        } catch (e) {
+          console.warn("Could not save spinpapa-share-card to sessionStorage", e);
         }
-      } else {
-        // Server-side failure (5xx, etc.). Don't fake success.
-        setShowNoteInput(false);
       }
-    } catch {
-      setShowNoteInput(false);
+
+      // Add a timestamp nonce so repeated shares of different spin instances trigger reactive updates
+      params.set("_spin_ts", Date.now().toString());
+
+      router.push(`/posts/create?${params.toString()}`);
     } finally {
-      setSaving(false);
+      setIsPosting(false);
     }
   };
 
-  // Share the spin result as a community Post. Reuses the existing Post
-  // creation flow — no DecisionLog coupling, no new backend surface.
-  const shareAsPost = () => {
-    if (status !== "authenticated") {
-      openLoginPrompt?.();
-      return;
-    }
-
-    const winnerText = winner?.text || String(winner);
-    const winnerImage = winner?.image || "";
-    const entityType = winner?.entityType || winner?.payload?.entityType || "";
-    const entityId   = winner?.entityId   != null ? String(winner.entityId)   : (winner?.payload?.entityId != null ? String(winner.payload.entityId) : "");
-    const entitySlug = winner?.slug       || winner?.payload?.slug            || "";
-
-    const params = new URLSearchParams();
-    params.set("result", winnerText);
-    if (winnerImage) params.set("resultImage", winnerImage);
-    // Ensure we always pass the actual wheel title, never a fallback.
-    params.set("wheelTitle", wheelTitle || "");
-    if (wheelId) {
-      params.set("wheelId", wheelId);
-      // Always attach the source wheel as a contentRef so the post links back.
-      // Use the same compact shape as anime/game/movie contentRefs:
-      // type + externalId + slug + title + image. No segment count.
-      const wheelSlug = wheelData?.slug || "";
-      params.set("cr_type", "wheel");
-      params.set("cr_id", wheelId);
-      params.set("cr_slug", wheelSlug);
-      params.set("cr_title", wheelTitle || "");
-      params.set("cr_image", wheelPreview || wheelData?.wheelPreview || winnerImage || "");
-    }
-    // If the winning segment itself is an entity, include that too.
-    if (entityType) {
-      params.set("cr_entity_type", entityType);
-      params.set("cr_entity_id", entityId);
-      params.set("cr_entity_slug", entitySlug);
-      params.set("cr_entity_title", winnerText);
-      params.set("cr_entity_image", winnerImage);
-    }
-
-    router.push(`/posts/create?${params.toString()}`);
-  };
-
-  const removeWinner = (removeAll) => {
+  const removeWinner = (removeAll = false) => {
     let removedOne = false;
     const updatedSegData = segData.filter((element) => {
       if (removeAll) return element.text !== winner?.text;
@@ -310,303 +261,211 @@ const WinnerPopup = ({
       ? segData.filter((item) => item.text === element.text && item.id !== element.id).length > 0
       : false;
 
-  const hasDuplicates = containsDuplicates(winner);
-  const visibleSegmentsCount = (segData || []).filter((s) => s?.visible !== false).length;
-  // If we remove this winner, how many segments will remain?
-  const remainingAfterRemoval = Math.max(0, visibleSegmentsCount - 1);
+  const duplicateCount = winner
+    ? segData.filter((item) => item.text === winner.text && item?.visible !== false).length
+    : 0;
+  const hasDuplicates = duplicateCount > 1;
 
-  return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop — click to close */}
-          <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+  const isEntityWinner =
+    winner?.type === "entity" &&
+    Boolean(
+      winner?.payload?.entityId ||
+      winner?.payload?.slug ||
+      winner?.entityId ||
+      winner?.slug
+    );
+
+  const entityType = winner?.payload?.entityType || winner?.entityType || "";
+  const entityId = winner?.payload?.entityId || winner?.entityId;
+  const entitySlug = winner?.payload?.slug || winner?.slug || "";
+  const entityWheelId = winner?.payload?.wheelId || winner?.wheelId || "";
+
+  if (!open || !mounted) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      {/* Backdrop — click to close */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={closePopup}
+      />
+
+      {/* Modal Content */}
+      <div
+        className="relative z-10 w-full max-w-md my-auto mx-auto rounded-3xl shadow-2xl overflow-hidden border border-border/80 bg-background text-foreground animate-in fade-in zoom-in-95 duration-200"
+        style={{
+          borderTop: `4px solid ${winnerColor}`,
+          background: `linear-gradient(to bottom, ${winnerColor}15, transparent 50%), hsl(var(--background))`,
+        }}
+      >
+        <div className="p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+          {/* Close button */}
+          <button
             onClick={closePopup}
-          />
-
-          {/* Modal Content */}
-          <div
-            className="relative z-10 w-full max-w-lg mx-auto rounded-2xl shadow-2xl overflow-hidden"
-            style={{
-              borderTop: `4px solid ${winnerColor}`,
-              background: `linear-gradient(to bottom, ${winnerColor}10, transparent 40%)`,
-            }}
+            className="absolute top-3 right-3 z-20 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            aria-label="Close"
           >
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm p-5">
-              {/* Close button — top right with a generous hit area so
-                  users don't have to hit the tiny icon pixel-perfectly. */}
-              <button
-                onClick={closePopup}
-                className="absolute top-1 right-1 z-20 p-3 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Close"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+            <X size={18} />
+          </button>
 
-              {/* Winner Display */}
-              <div className="text-center mb-6 min-w-0">
-                <p
-                  className="text-xs font-bold uppercase tracking-[0.2em] mb-3 opacity-50 truncate px-1"
-                  style={{ color: winnerColor }}
-                  title={wheelData?.customPopupDisplayMessage || "The wheel has spoken"}
-                >
-                  {formatMessage(wheelData?.customPopupDisplayMessage || "The wheel has spoken")}
-                </p>
+          {/* Winner Header & Display */}
+          <div className="text-center mb-5 min-w-0">
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.2em] mb-3 opacity-70 truncate px-1"
+              style={{ color: winnerColor }}
+              title={wheelData?.customPopupDisplayMessage || "The Winner Is..."}
+            >
+              {formatMessage(wheelData?.customPopupDisplayMessage || "The Winner Is...")}
+            </p>
 
-                {winner?.type === "quiz" ? (
-                  <MCQQuestion
-                    questionData={{
-                      title: winner.question || winner.text || "",
-                      options: winner.options || winner.payload?.options || [],
-                      answer:
-                        (winner.options || winner.payload?.options || [])[
-                          winner.correctIndex ?? winner.payload?.correctIndex ?? 0
-                        ] || "",
-                    }}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-3 px-2 sm:px-4 min-w-0">
-                    {winner?.image && (
-                      <div className="relative group w-fit max-w-full">
-                        <img
-                          src={winner.image}
-                          alt=""
-                          className="max-w-[140px] max-h-[140px] sm:max-w-[180px] sm:max-h-[180px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-white dark:border-gray-800 transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                    )}
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tight drop-shadow-sm break-words w-full">
-                      {formatWinnerText(winner)}
-                    </h2>
+            {winner?.type === "quiz" ? (
+              <MCQQuestion
+                questionData={{
+                  title: winner.question || winner.text || "",
+                  options: winner.options || winner.payload?.options || [],
+                  answer:
+                    (winner.options || winner.payload?.options || [])[
+                      winner.correctIndex ?? winner.payload?.correctIndex ?? 0
+                    ] || "",
+                }}
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-3 px-2 min-w-0">
+                {winner?.image && (
+                  <div className="relative group w-fit max-w-full">
+                    <img
+                      src={winner.image}
+                      alt=""
+                      className="max-w-[140px] max-h-[140px] sm:max-w-[170px] sm:max-h-[170px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-background transition-transform duration-500 group-hover:scale-105"
+                    />
                   </div>
                 )}
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight drop-shadow-xs break-words w-full">
+                  {formatWinnerText(winner)}
+                </h2>
+              </div>
+            )}
+          </div>
+
+          {/* Share Card Modal/Inline Area */}
+          {showShareCard && winner?.type !== "quiz" && (
+            <div className="animate-in zoom-in-95 duration-200 mb-4">
+              <ShareableResultCard
+                winner={winner}
+                wheelTitle={wheelTitle}
+                winnerColor={winnerColor}
+                onCardGenerated={({ dataUrl }) => {
+                  generatedCardDataUrlRef.current = dataUrl;
+                }}
+              />
+            </div>
+          )}
+
+          {/* Action Area */}
+          {winner?.type !== "quiz" && (
+            <div className="space-y-3 pt-1">
+              {/* Row 1: Social Actions [Post to Community Feed] [Share] */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  onClick={shareAsPost}
+                  disabled={isPosting}
+                  className="h-11 px-2.5 sm:px-3 rounded-2xl font-bold text-xs uppercase tracking-wider text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}dd)` }}
+                  title="Post result to Spinpapa Community Feed"
+                >
+                  <PenSquare size={15} />
+                  <span className="truncate">{isPosting ? "Preparing..." : "Post to Community"}</span>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowShareCard((prev) => !prev)}
+                  className={`h-11 px-2.5 sm:px-3 rounded-2xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm ${
+                    showShareCard
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border/80 bg-muted/40 hover:bg-muted text-foreground"
+                  }`}
+                  title="Generate & Share Trophy Card"
+                >
+                  <Share2 size={15} />
+                  <span className="truncate">{showShareCard ? "Hide Share" : "Share"}</span>
+                </button>
               </div>
 
-              {/* Share Card — only shown when user clicks Share */}
-              {showShareCard && winner?.type !== "quiz" && (
-                <div className="animate-in zoom-in-95 duration-200 mb-4">
-                  <ShareableResultCard winner={winner} wheelTitle={wheelTitle} />
+              {/* Optional Entity Hub Extras (Save to List & Explore) */}
+              {isEntityWinner && (entityId || entitySlug) && (
+                <div className="flex items-center gap-2">
+                  {entityId && (
+                    <div className="flex-1">
+                      <AddToListButton
+                        type={entityType}
+                        entityId={entityId}
+                        name={winner.text}
+                        slug={entitySlug}
+                        image={winner.image}
+                      />
+                    </div>
+                  )}
+                  {entitySlug && (
+                    <a
+                      href={getEntityUrl(entityType, entitySlug, entityWheelId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 h-9 px-3 rounded-xl border border-border bg-muted/30 hover:bg-muted text-foreground text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-2xs"
+                    >
+                      <ExternalLink size={13} className="text-muted-foreground" />
+                      <span>Explore</span>
+                    </a>
+                  )}
                 </div>
               )}
 
-              {/* ── Action Loop ────────────────────────────────────────── */}
-              {winner?.type !== "quiz" && (
-                <div className="space-y-4">
-                  {decisionSaved ? (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                      <div className="flex flex-col items-center gap-3 p-4 rounded-[20px] bg-green-500/10 border border-green-500/20 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black text-xs uppercase tracking-widest">
-                          <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-500/30">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                          </div>
-                          Post Published!
-                        </div>
-                        <p className="text-[11px] text-green-700/60 dark:text-green-400/60 font-medium text-center leading-relaxed">
-                          Your choice is now live in the community feed and saved to your profile history.
-                        </p>
-                        <div className="flex gap-2 w-full pt-1">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1 h-9 text-[10px] font-black uppercase tracking-wider rounded-xl border-green-500/20 bg-white/50 dark:bg-black/50"
-                            onClick={() => router.push(`/u/${session?.user?.username || session?.user?.name || "profile"}`)}
-                          >
-                            View Log
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="flex-1 h-9 text-[10px] font-black uppercase tracking-wider rounded-xl bg-gray-900 dark:bg-white dark:text-gray-900 shadow-lg"
-                            onClick={() => setShowShareCard(true)}
-                          >
-                            External Share
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : showNoteInput ? (
-                    <div className="flex gap-2 p-1.5 rounded-2xl bg-gray-100 dark:bg-gray-800/80 border border-black/5 dark:border-white/5 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
-                      <input
-                        type="text"
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="Add a thought..."
-                        maxLength={500}
-                        className="flex-1 px-3 py-2 text-sm bg-transparent border-none focus:ring-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 font-medium"
-                        onKeyDown={(e) => e.key === "Enter" && saveDecision(true)}
-                        autoFocus
-                      />
-                      <Button onClick={() => saveDecision(true)} disabled={saving} size="sm" className="h-9 px-5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white">
-                        {saving ? "..." : "Post"}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-2.5">
-                        <Button
-                          onClick={() => setShowNoteInput(true)}
-                          className="flex-1 h-12 font-black text-sm uppercase tracking-widest text-white shadow-xl active:scale-[0.97] transition-all rounded-2xl group relative overflow-hidden"
-                          style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}dd)` }}
-                          disabled={saving}
-                        >
-                          <span className="relative z-10">{getPickLabel(winner)}</span>
-                          <div className="absolute inset-0 bg-white/10 translate-y-12 group-hover:translate-y-0 transition-transform duration-300" />
-                        </Button>
-                        
-                        {!showShareCard && (
-                          <button
-                            onClick={() => setShowShareCard(true)}
-                            className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-all active:scale-90 flex-shrink-0"
-                            title="Share Externally"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                            </svg>
-                          </button>
-                        )}
-
-                        {/* Share as community Post — only when the wheel
-                            has been saved and has a wheelId to link back to. */}
-                        {wheelId && (
-                          <button
-                            onClick={shareAsPost}
-                            className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-90 flex-shrink-0"
-                            title="Share to community feed"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Entity Hub Actions — only for media/content winners */}
-                      {winner?.type === "entity" && (
-                        winner?.payload?.entityId ||
-                        winner?.payload?.slug ||
-                        winner?.entityId ||
-                        winner?.slug
-                      ) && (
-                        <div className={`grid ${
-                          (winner?.payload?.entityId || winner?.entityId) &&
-                          (winner?.payload?.slug || winner?.slug)
-                            ? "grid-cols-2"
-                            : "grid-cols-1"
-                        } gap-2.5 items-center`}>
-                          {(winner?.payload?.entityId || winner?.entityId) && (
-                            <AddToListButton
-                              type={winner.payload?.entityType || winner.entityType}
-                              entityId={winner.payload?.entityId || winner.entityId}
-                              name={winner.text}
-                              slug={winner.payload?.slug || winner.slug}
-                              image={winner.image}
-                            />
-                          )}
-                          {(winner?.payload?.slug || winner?.slug) && (
-                            <a
-                              href={getEntityUrl(
-                                winner.payload?.entityType || winner.entityType || "",
-                                winner.payload?.slug || winner.slug || "",
-                                winner.payload?.wheelId || winner.wheelId || ""
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                              </svg>
-                              Explore
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── Elimination / Tournament Mode & Remove Actions ── */}
-                  {!wheelData.removeWinnerAfterSpin && (
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                      {/* One-Click Tournament Mode: Remove Winner & Spin Next */}
+              {/* Row 2: Wheel Management [Remove from Wheel] [Remove All] */}
+              {!wheelData.removeWinnerAfterSpin && (
+                <div className="pt-2 border-t border-border/60">
+                  {hasDuplicates ? (
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => removeWinnerAndSpinNext(false)}
-                        disabled={remainingAfterRemoval === 0}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-700 active:scale-[0.98] transition-all shadow-sm shadow-rose-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title="Eliminate winner and spin again immediately"
+                        onClick={() => removeWinner(false)}
+                        className="h-10 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="Remove only this single instance"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        <span>Remove & Spin Next</span>
-                        <span className="ml-1 px-1.5 py-0.5 rounded-md bg-black/20 text-[10px] font-bold">
-                          {remainingAfterRemoval} left
-                        </span>
+                        <Trash2 size={14} />
+                        <span className="truncate">Remove from Wheel</span>
                       </button>
-
-                      {/* Secondary Remove Only (or Dropdown if duplicate copies exist) */}
-                      <div className="relative shrink-0 flex justify-end" ref={removeMenuRef}>
-                        {hasDuplicates ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => setShowRemoveMenu((prev) => !prev)}
-                              className="inline-flex items-center justify-center gap-1 h-10 px-3 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-700"
-                              title="More remove options"
-                            >
-                              <span>Remove</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="6 9 12 15 18 9" />
-                              </svg>
-                            </button>
-
-                            {showRemoveMenu && (
-                              <div className="absolute bottom-full right-0 mb-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-30">
-                                <button
-                                  type="button"
-                                  onClick={() => { setShowRemoveMenu(false); removeWinner(false); }}
-                                  className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                >
-                                  Remove this one only
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setShowRemoveMenu(false); removeWinner(true); }}
-                                  className="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors border-t border-gray-100 dark:border-gray-700"
-                                >
-                                  Remove all matching copies
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => removeWinner(false)}
-                            className="inline-flex items-center justify-center gap-1 h-10 px-3 rounded-xl text-xs font-bold text-gray-500 hover:text-rose-600 dark:text-gray-400 dark:hover:text-rose-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            title="Remove without spinning again"
-                          >
-                            <span>Remove Only</span>
-                          </button>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeWinner(true)}
+                        className="h-10 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        title={`Remove all ${duplicateCount} copies from wheel`}
+                      >
+                        <Trash2 size={14} />
+                        <span className="truncate">Remove All ({duplicateCount})</span>
+                      </button>
                     </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removeWinner(false)}
+                      className="w-full h-10 rounded-xl hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="Remove winner from wheel"
+                    >
+                      <Trash2 size={14} />
+                      <span>Remove from Wheel</span>
+                    </button>
                   )}
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
-      )}
-
-    </>
+      </div>
+    </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : null;
 };
 
 export default WinnerPopup;

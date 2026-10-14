@@ -10,9 +10,10 @@ import Post from "@models/post";
 import UnifiedList from "@models/unifiedlist";
 import Comment from "@models/comment";
 import { sessionUserId } from "@/utils/SessionData";
-import { createNotification } from "@/lib/notificationService";
+import { createNotification, enqueueNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
+import { refreshEntityHotScore } from "@lib/hotScore";
 
 export async function PATCH(req) {
   const ip = getIpFromRequest(req);
@@ -101,7 +102,7 @@ export async function PATCH(req) {
           }
 
           if (recipientId && String(recipientId) !== String(userId)) {
-            await createNotification({
+            enqueueNotification({
               recipientId,
               senderId: userId,
               type: "LIKE",
@@ -124,17 +125,20 @@ export async function PATCH(req) {
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
+      refreshEntityHotScore(Wheel, entityObjectId).catch(() => {});
     } else if (entityType === "post" && likeCountDelta !== 0) {
       await Post.updateOne(
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
+      refreshEntityHotScore(Post, entityObjectId).catch(() => {});
     } else if (entityType === "list" && likeCountDelta !== 0) {
       await UnifiedList.updateOne(
         { _id: entityObjectId },
         { $inc: { likeCount: likeCountDelta } }
       );
       syncListIndexedState(entityObjectId).catch(() => {});
+      refreshEntityHotScore(UnifiedList, entityObjectId).catch(() => {});
     }
 
     // Count only the reactions matching the toggled type, using an indexed

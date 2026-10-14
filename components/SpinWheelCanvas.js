@@ -87,7 +87,7 @@ export default function SpinWheelCanvas({
 
   // Preloaded image cache for canvas drawing
   const imageCacheRef = useRef(new Map());
-  const [, forceUpdate] = useState({});
+  const [imagesLoadedVersion, setImagesLoadedVersion] = useState(0);
 
   // 1. Measure container size with ResizeObserver for responsive & fullscreen sharp rendering
   useEffect(() => {
@@ -131,13 +131,13 @@ export default function SpinWheelCanvas({
         img.crossOrigin = "anonymous";
         img.onload = () => {
           imageCacheRef.current.set(uri, img);
-          forceUpdate({});
+          setImagesLoadedVersion((v) => v + 1);
         };
         img.onerror = () => {
           const fallbackImg = new Image();
           fallbackImg.onload = () => {
             imageCacheRef.current.set(uri, fallbackImg);
-            forceUpdate({});
+            setImagesLoadedVersion((v) => v + 1);
           };
           fallbackImg.src = uri;
         };
@@ -329,7 +329,7 @@ export default function SpinWheelCanvas({
     uniformFontSize = Math.max(8, Math.min(targetBaseFontSize, uniformFontSize));
 
     return { totalWeight, slices, uniformFontSize };
-  }, [data, backgroundColors, textColors, containerSize, innerRadius, fontSize]);
+  }, [data, backgroundColors, textColors, containerSize, innerRadius, fontSize, imagesLoadedVersion]);
 
   // 4. Render Wheel onto Canvas (HiDPI / Retina Crisp)
   const drawWheel = useCallback(() => {

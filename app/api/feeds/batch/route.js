@@ -55,7 +55,7 @@ async function fetchSingleFeed(feedReq) {
     // Determine if there are more items beyond this batch
     const hasMore = items.length > limit;
     const nextItem = hasMore ? items[limit] : null;
-    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+    const nextCursor = nextItem ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
     // Return only the requested limit
     return {

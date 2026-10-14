@@ -2,7 +2,8 @@
 
 import { memo } from "react";
 import Link from "next/link";
-import { MessageCircle, Layers } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MessageCircle, Layers, GitFork } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { getListUrl } from "@utils/UrlHandler";
@@ -26,11 +27,59 @@ function getItemTitle(item) {
 function ListPostCard({ list }) {
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
+  const router = useRouter();
   const url = getListUrl(list);
-  const previewItems = (list.items || []).slice(0, 4);
+  const items = list.items || [];
+  const previewItems = items.slice(0, 3);
   const hasImages = previewItems.some((item) => getItemImage(item));
   const authorName = list.authorName || "Someone";
-  const itemCount = list.itemCount ?? list.items?.length ?? 0;
+  const itemCount = list.itemCount ?? items.length ?? 0;
+  const remainingCount = itemCount > 3 ? itemCount - 3 : 0;
+
+  const handleFixList = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session) {
+      openLoginPrompt?.("Sign in to remix and customize this list");
+      return;
+    }
+
+    try {
+      const LS_DRAFT_KEY = "SpinpapaListDraft";
+      const ts = Date.now();
+      const draft = {
+        name: `${list.name || "List"} (Remix)`,
+        description: list.description || "",
+        format: list.format || "standard",
+        tierConfig: list.tierConfig,
+        isPublic: true,
+        items: items.map((it, idx) => ({
+          draftId: `remix-${ts}-${idx}`,
+          type: it.type || (it.entityId ? "entity" : "word"),
+          word: it.word || it.name,
+          wordData: it.wordData || it.image,
+          entityType: it.entityType,
+          entityId: it.entityId,
+          name: it.name || it.word,
+          slug: it.slug,
+          image: it.image || it.wordData,
+          tier: it.tier || null,
+        })),
+        forkedFrom: {
+          listId: String(list.id || list._id),
+          name: list.name,
+          username: authorName,
+        },
+        updatedAt: ts,
+      };
+      localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draft));
+      router.push("/lists/create");
+    } catch (err) {
+      console.error("Failed to fork list:", err);
+      router.push(url);
+    }
+  };
 
   return (
     <article className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0 sm:rounded-2xl sm:border sm:border-border/60 sm:px-5 sm:py-5">
@@ -114,39 +163,56 @@ function ListPostCard({ list }) {
                 );
               })}
             </div>
-            {/* List badge */}
-            <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
+            {/* List badge & remaining count pill */}
+            <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
               <Layers className="h-3 w-3" />
-              {itemCount} item{itemCount !== 1 ? "s" : ""}
+              <span>{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
+              {remainingCount > 0 && (
+                <span className="text-white/70 font-semibold border-l border-white/20 pl-1.5">
+                  +{remainingCount} more
+                </span>
+              )}
             </div>
           </div>
         </Link>
       )}
 
-      {/* Footer: Engagement actions */}
-      <div className="flex flex-wrap items-center gap-2 px-4 sm:px-0">
-        <ReactionButton
-          entityType="list"
-          entityId={list.id || list._id}
-          reactionType="like"
-          initialCount={list.likeCount || 0}
-          reactedByCurrentUser={false}
-          isLoggedIn={!!session}
-          openLoginPrompt={openLoginPrompt}
-        />
+      {/* Footer: Engagement actions & Fix This List CTA */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-0">
+        <div className="flex items-center gap-2">
+          <ReactionButton
+            entityType="list"
+            entityId={list.id || list._id}
+            reactionType="like"
+            initialCount={list.likeCount || 0}
+            reactedByCurrentUser={false}
+            isLoggedIn={!!session}
+            openLoginPrompt={openLoginPrompt}
+          />
 
-        <SharePopup variant="buttoned" url={url} />
+          <SharePopup variant="buttoned" url={url} />
 
-        <Link
-          href={url}
-          className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-medium leading-none text-foreground shadow-sm transition hover:bg-accent md:h-9"
+          <Link
+            href={url}
+            className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-medium leading-none text-foreground shadow-sm transition hover:bg-accent md:h-9"
+          >
+            <MessageCircle size={15} />
+            <span className="text-sm md:hidden">{list.commentCount || 0}</span>
+            <span className="hidden md:inline">
+              {list.commentCount > 0 ? `${list.commentCount} Comments` : "Comment"}
+            </span>
+          </Link>
+        </div>
+
+        {/* Primary Viral Trigger: Remix this list */}
+        <button
+          onClick={handleFixList}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1 text-xs font-bold transition-all active:scale-95 md:h-9 md:text-sm"
+          title="Remix and customize your own ranking"
         >
-          <MessageCircle size={15} />
-          <span className="text-sm md:hidden">{list.commentCount || 0}</span>
-          <span className="hidden md:inline">
-            {list.commentCount > 0 ? `${list.commentCount} Comments` : "Comment"}
-          </span>
-        </Link>
+          <GitFork className="w-3.5 h-3.5" />
+          <span>Remix this List</span>
+        </button>
       </div>
     </article>
   );

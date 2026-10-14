@@ -9,6 +9,7 @@ import { compressImage } from "@utils/imageCompression";
 import { getListUrl } from "@utils/UrlHandler";
 import { normalizeTag } from "@lib/slug";
 import Image from "next/image";
+import DestinationSelector from "@components/DestinationSelector";
 
 function stripHtml(raw) {
   if (!raw) return "";
@@ -104,6 +105,7 @@ function CreatePostForm() {
   const wheelShareTitle = searchParams.get("wheelTitle");
   const wheelShareId = searchParams.get("wheelId");
   const postId = searchParams.get("postId");
+  const spinTimestamp = searchParams.get("_spin_ts");
 
   const { data: session, status } = useSession();
   
@@ -127,6 +129,30 @@ function CreatePostForm() {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState("");
+
+  const [entities, setEntities] = useState(() => {
+    const list = [];
+    if (cr_id || cr_slug || cr_title) {
+      list.push({
+        type: cr_type || "anime",
+        externalId: cr_id ? String(cr_id) : "",
+        slug: cr_slug || "",
+        title: wheelShareTitle || cr_title || "",
+        image: cr_image || null,
+        segmentCount: 0,
+      });
+    } else if (cr_entity_id || cr_entity_slug || cr_entity_title) {
+      list.push({
+        type: cr_entity_type || "anime",
+        externalId: cr_entity_id ? String(cr_entity_id) : "",
+        slug: cr_entity_slug || "",
+        title: cr_entity_title || "",
+        image: cr_entity_image || null,
+        segmentCount: 0,
+      });
+    }
+    return list;
+  });
 
   const [ogMeta, setOgMeta] = useState(null);
   const [ogLoading, setOgLoading] = useState(false);
@@ -217,6 +243,11 @@ function CreatePostForm() {
             setWasOriginallyPublic(isPub);
             if (Array.isArray(post.tags)) {
               setExplicitTags(post.tags);
+            }
+            if (Array.isArray(post.entities) && post.entities.length > 0) {
+              setEntities(post.entities);
+            } else if (post.contentRef) {
+              setEntities([post.contentRef]);
             }
             setOgMeta(post.ogMeta || null);
           } else {
@@ -311,16 +342,60 @@ function CreatePostForm() {
 
   // Pre-fill composer when sharing a wheel spin result.
   useEffect(() => {
-    if (initialLoadDone && spinResult && !text) {
+    if (spinResult) {
       const cleanResult = stripHtml(spinResult);
       const wheelName = wheelShareTitle || cr_title || "a wheel";
-      setText(`🎉 I spun "${wheelName}" and got: ${cleanResult}`);
-      if (spinImage) {
-        setImage(spinImage);
-        setImagePreview(spinImage);
+      const spinText = `🎉 I spun "${wheelName}" and got: ${cleanResult}`;
+
+      // Check if a client-generated trophy card was saved in sessionStorage
+      let customShareCard = null;
+      try {
+        customShareCard = sessionStorage.getItem("spinpapa-share-card");
+        if (customShareCard) {
+          sessionStorage.removeItem("spinpapa-share-card");
+        }
+      } catch (e) {
+        console.warn("Could not read spinpapa-share-card from sessionStorage", e);
+      }
+
+      // If user navigated here via a spin result, clear any stale draft from earlier sessions
+      try {
+        sessionStorage.removeItem("post-draft");
+      } catch (e) {
+        console.warn("Could not clear post-draft", e);
+      }
+
+      setText(spinText);
+      const finalImage = customShareCard || spinImage || "";
+      setImage(finalImage);
+      setImagePreview(finalImage);
+
+      // Re-anchor entities to the fresh spin result
+      const freshEntities = [];
+      if (cr_id || cr_slug || cr_title) {
+        freshEntities.push({
+          type: cr_type || "anime",
+          externalId: cr_id ? String(cr_id) : "",
+          slug: cr_slug || "",
+          title: wheelShareTitle || cr_title || "",
+          image: cr_image || null,
+          segmentCount: 0,
+        });
+      } else if (cr_entity_id || cr_entity_slug || cr_entity_title) {
+        freshEntities.push({
+          type: cr_entity_type || "anime",
+          externalId: cr_entity_id ? String(cr_entity_id) : "",
+          slug: cr_entity_slug || "",
+          title: cr_entity_title || "",
+          image: cr_entity_image || null,
+          segmentCount: 0,
+        });
+      }
+      if (freshEntities.length > 0) {
+        setEntities(freshEntities);
       }
     }
-  }, [initialLoadDone, spinResult, spinImage, wheelShareTitle, cr_title, text]);
+  }, [spinResult, spinImage, wheelShareTitle, cr_title, spinTimestamp, cr_id, cr_slug, cr_image, cr_type, cr_entity_id, cr_entity_slug, cr_entity_title, cr_entity_image, cr_entity_type]);
 
   // Handle URL flags (?poll=true, ?poll=vs, ?image=1) from fast teaser or external links
   useEffect(() => {
@@ -341,13 +416,19 @@ function CreatePostForm() {
   }, [initialLoadDone, postId, searchParams]);
 
   useEffect(() => {
+    // Only restore previous draft if NOT opening with a fresh spin result
+    if (spinResult) return;
+
     const draft = sessionStorage.getItem("post-draft");
     if (draft && !text) {
       setText(draft);
-    } else if (initialTag && !draft) {
+    } else if (initialTag && !draft && !cr_id && !cr_slug) {
+      // If NOT attached to a concrete TopicPage, pre-fill tag as fallback;
+      // when cr_id / cr_slug is present, DestinationSelector already displays the topic badge
+      // and the backend automatically inherits parent tags, giving the user a clean slate.
       setText(` #${initialTag.toLowerCase().replace(/\s+/g, "") } `);
     }
-  }, [initialTag]);
+  }, [initialTag, spinResult, cr_id, cr_slug]);
 
   useEffect(() => {
     if (text) {
@@ -622,45 +703,29 @@ function CreatePostForm() {
         finalImageVariants = null;
       }
 
-      // Prefer the wheel we span on as the primary contentRef, but fall back
-      // to an entity segment or any other source passed via query params.
-      const wheelContentRef = (cr_type === "wheel" && cr_id) ? {
-        type: "wheel",
-        externalId: cr_id,
-        slug: cr_slug || "",
-        title: wheelShareTitle || cr_title || "",
-        image: cr_image || null,
-      } : null;
-
-      const entityContentRef = (cr_entity_type && cr_entity_id) ? {
-        type: cr_entity_type,
-        externalId: cr_entity_id,
-        slug: cr_entity_slug || "",
-        title: cr_entity_title || "",
-        image: cr_entity_image || null,
-      } : ((cr_type && cr_type !== "wheel" && cr_id) ? {
-        type: cr_type,
-        externalId: cr_id,
-        slug: cr_slug || "",
-        title: cr_title || "",
-        image: cr_image || null,
-      } : null);
-
-      // If we detected an internal wheel/list from text, let it win.
+      // Multi-entity array from DestinationSelector (or internal link detected)
       const isInternal = ogMeta?.internalId && (ogMeta.type === "wheel" || ogMeta.type === "list");
-      const finalContentRef = isInternal ? {
-        type: ogMeta.type,
-        externalId: ogMeta.internalId,
-        slug: ogMeta.url,
-        title: ogMeta.title,
-        image: ogMeta.image,
-      } : (wheelContentRef || entityContentRef || null);
+      const finalEntities = entities.length > 0
+        ? entities
+        : (isInternal
+            ? [{
+                type: ogMeta.type,
+                externalId: ogMeta.internalId,
+                slug: ogMeta.url,
+                title: ogMeta.title,
+                image: ogMeta.image,
+                segmentCount: 0,
+              }]
+            : []);
+
+      const finalContentRef = finalEntities.length > 0 ? finalEntities[0] : null;
 
       const payload = {
         content: rawText,
         image: finalImageUrl,
         imageVariants: finalImageVariants,
         contentRef: finalContentRef,
+        entities: finalEntities,
         hasPoll,
         pollOptions: hasPoll
           ? finalPollOptions
@@ -736,22 +801,17 @@ function CreatePostForm() {
       </div>
       
       <div className="bg-card border border-border sm:rounded-2xl rounded-xl shadow-sm overflow-hidden">
-        {cr_title && (
-          <div className="px-4 py-2 bg-muted/30 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground whitespace-nowrap">Posting about</span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent border border-border truncate max-w-[200px]">
-                {cr_image && (
-                  <img src={cr_image} alt="" className="w-3 h-3 rounded-full object-cover shrink-0" />
-                )}
-                <span className="text-xs font-bold text-foreground truncate">{cr_title}</span>
-              </div>
-            </div>
-            {cr_type && (
-              <span className="text-[10px] font-medium text-muted-foreground/60 capitalize italic">{cr_type}</span>
-            )}
-          </div>
-        )}
+        {/* Destination / Topic Anchor Selector */}
+        <div className="px-4 py-3 sm:px-5 border-b border-border/40 bg-muted/10">
+          <DestinationSelector
+            value={entities}
+            onChange={setEntities}
+            locked={Boolean(cr_id && cr_type && cr_type !== "wheel")}
+            onAddTagFallback={(tag) => {
+              setText((prev) => `${prev.trim()} #${tag} `);
+            }}
+          />
+        </div>
         
         <form onSubmit={handleSubmit}>
           <div className="p-4 sm:p-5 flex gap-3 sm:gap-4">

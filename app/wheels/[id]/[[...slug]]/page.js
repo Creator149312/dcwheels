@@ -33,7 +33,7 @@ const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), {
 export const revalidate = 604800; // 7 days
 
 const WHEEL_PAGE_PROJECTION =
-  "title description content data wheelData wheelPreview tags relatedTopics slug indexed isPublic userId createdBy createdAt updatedAt authorHandle authorName authorProfileImage likeCount commentCount";
+  "title description content data wheelData wheelPreview tags relatedTopics slug indexed isPublic userId createdBy createdAt updatedAt authorHandle authorName authorProfileImage likeCount commentCount forkedFrom diffRatio";
 
 /**
  * React.cache() dedupes the identifier lookup between generateMetadata and the body.
@@ -254,6 +254,7 @@ export default async function UnifiedWheelPage({ params }) {
             wheelPresetSettings={pageData.wheel.wheelData}
             wheelTitle={pageData.wheel.title}
             wheelPreview={pageData.wheel.wheelPreview}
+            wheelSlug={pageData.wheel.slug || urlSlugSuffix}
             relatedWheelsSlot={<SidebarDiscovery initialTopics={sidebarTopics} isTrending={false} />}
             wheelId={wheelIdStr}
           />

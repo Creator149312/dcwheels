@@ -9,10 +9,11 @@ import Wheel from "@models/wheel";
 import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@/utils/SessionData";
 import mongoose from "mongoose";
-import { createNotification } from "@/lib/notificationService";
+import { createNotification, enqueueNotification } from "@/lib/notificationService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
 import { validateContentSafety } from "@lib/contentSafety";
+import { refreshEntityHotScore } from "@lib/hotScore";
 
 // ✅ Create a new comment or reply
 export async function POST(req) {
@@ -61,11 +62,14 @@ export async function POST(req) {
     try {
       if (entityType === "post") {
         await Post.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        refreshEntityHotScore(Post, entityId).catch(() => {});
       } else if (entityType === "wheel" || entityType === "uwheel") {
         await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        refreshEntityHotScore(Wheel, entityId).catch(() => {});
       } else if (entityType === "list") {
         await UnifiedList.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
         syncListIndexedState(entityId).catch(() => {});
+        refreshEntityHotScore(UnifiedList, entityId).catch(() => {});
       }
     } catch (countErr) {
       console.error("Error updating comment count:", countErr);
@@ -106,7 +110,7 @@ export async function POST(req) {
       }
 
       if (recipientId && String(recipientId) !== String(userId)) {
-        await createNotification({
+        enqueueNotification({
           recipientId,
           senderId: userId,
           type: parentCommentId ? "REPLY" : "COMMENT",

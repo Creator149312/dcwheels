@@ -2,6 +2,8 @@ import { callOpenAI } from "@components/actions/actions";
 import { sessionUserId } from "@utils/SessionData";
 import { aiGate } from "@lib/aiGate";
 
+export const maxDuration = 30;
+
 // Fallback palette used when the model's output can't be parsed into
 // 4 valid hex codes. Keeps the wheel visually consistent instead of
 // breaking the whole Smart Wheel flow over a decorative miss.

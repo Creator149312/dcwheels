@@ -16,13 +16,14 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { normalizeTag } from "@lib/slug";
 
 const MAX_TAGS = 8;
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LEN = 1;
 
 function normalise(s) {
-  return (typeof s === "string" ? s : "").trim().toLowerCase();
+  return normalizeTag(s);
 }
 
 export default function TagInput({ value, onChange, placeholder }) {
@@ -74,7 +75,9 @@ export default function TagInput({ value, onChange, placeholder }) {
         setFetchError(false);
         setSuggestions(filtered);
         setOpen(filtered.length > 0);
-        setHighlight(filtered.length > 0 ? 0 : -1);
+        // Do NOT auto-highlight index 0. User's typed text always has priority on Enter/comma
+        // unless they explicitly press Down Arrow or click a suggestion.
+        setHighlight(-1);
       } catch (err) {
         if (err.name !== "AbortError") {
           // Swallow network errors — the user can still press Enter to

@@ -25,6 +25,14 @@ const DecisionLogSchema = new Schema(
     entitySlug: { type: String, default: "" }, // e.g. "550-fight-club" — for /[type]/[slug] links
     // DecisionLog is intentionally an append-only spin ledger. User progress
     // for content entities is tracked separately in UserEntityStatus.
+
+    // Retention / TTL: Automatically expire logs after 180 days to avoid unbounded growth
+    // and MongoDB index bloat while keeping recent history intact for feeds and analytics.
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 180 days
+      index: { expires: 0 },
+    },
   },
   { timestamps: true }
 );

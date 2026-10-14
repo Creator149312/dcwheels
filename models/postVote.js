@@ -15,7 +15,15 @@ const postVoteSchema = new Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
+      default: null,
+      index: true,
+    },
+    guestId: {
+      type: String,
+      required: false,
+      default: null,
+      trim: true,
       index: true,
     },
     optionId: {
@@ -26,8 +34,11 @@ const postVoteSchema = new Schema(
   { timestamps: true }
 );
 
-// Prevent multiple votes by the same user on a single post
-postVoteSchema.index({ postId: 1, userId: 1 }, { unique: true });
+// Prevent duplicate votes:
+// 1) By the same registered user on a post (sparse allows docs where userId is null)
+postVoteSchema.index({ postId: 1, userId: 1 }, { unique: true, sparse: true });
+// 2) By the same anonymous guest on a post (sparse allows docs where guestId is null)
+postVoteSchema.index({ postId: 1, guestId: 1 }, { unique: true, sparse: true });
 
 const PostVote = models.PostVote || mongoose.model("PostVote", postVoteSchema);
 

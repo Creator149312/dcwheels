@@ -14,7 +14,8 @@ export default function CategorySpotlightRail({ title = "Trending This Week", it
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      {/* Mobile: horizontal snap-scroll with peek | Desktop: 4-col grid */}
+      <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 -mx-3 px-3 scrollbar-hide sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:pb-0">
         {items.slice(0, 4).map((item, idx) => {
           const rank = idx + 1;
           const targetUrl = item.url || `/${type}/${item.slug}`;
@@ -22,7 +23,7 @@ export default function CategorySpotlightRail({ title = "Trending This Week", it
           return (
             <div
               key={item.id || item.slug}
-              className="group relative flex flex-col bg-background/80 hover:bg-muted/40 rounded-xl overflow-hidden border border-border/50 hover:border-primary/40 transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
+              className="group relative flex flex-col shrink-0 w-[44%] snap-start sm:w-auto sm:shrink bg-background/80 hover:bg-muted/40 rounded-xl overflow-hidden border border-border/50 hover:border-primary/40 transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
             >
               {/* Entire Card Clickable Link */}
               <Link

@@ -22,7 +22,7 @@ export async function GET(req) {
     
     const items = allItems.slice(0, limit);
     const nextItem = allItems.length > limit ? allItems[limit] : null;
-    const nextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+    const nextCursor = nextItem ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
 
     const res = NextResponse.json({ 
       items, 

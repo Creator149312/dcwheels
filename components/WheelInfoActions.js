@@ -7,13 +7,14 @@ import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import QuickSaveButton from "@components/QuickSaveButton";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
-import { MessageSquare, Code2, ArrowLeftRight, QrCode } from "lucide-react";
+import { MessageSquare, Code2, ArrowLeftRight, QrCode, BarChart2 } from "lucide-react";
 import { timeAgo } from "@utils/HelperFunctions";
 
-// Lazy-load on interaction only — removes embed and QR form from
+// Lazy-load on interaction only — removes embed, QR and stats modal from
 // the initial JS parse path, cutting TBT.
 const EmbedCodePopup = dynamic(() => import("@components/EmbedCodePopup"), { ssr: false });
 const QRCodeModal = dynamic(() => import("@components/QRCodeModal"), { ssr: false });
+const WheelSpinStatsModal = dynamic(() => import("@components/WheelSpinStatsModal"), { ssr: false });
 
 function formatCount(n) {
   if (!n || n === 0) return "0";
@@ -53,6 +54,7 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
   const [commentCount, setCommentCount] = useState(initialMeta?.commentCount || 0);
   const [showEmbed, setShowEmbed] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showSpinStats, setShowSpinStats] = useState(false);
 
   const displayCreator = authorHandle || "Community";
 
@@ -132,7 +134,15 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
             <span>{formatCount(engagement.view_count)} views</span>
             <span className="opacity-40">•</span>
-            <span>{formatCount(engagement.spin_count)} spins</span>
+            <button
+              type="button"
+              onClick={() => setShowSpinStats(true)}
+              className="inline-flex items-center gap-1 hover:text-primary transition font-medium group cursor-pointer"
+              title="View Spin Distribution & Pro Analytics"
+            >
+              <span>{formatCount(engagement.spin_count)} spins</span>
+              <BarChart2 className="w-3 h-3 text-muted-foreground group-hover:text-primary transition" />
+            </button>
           </div>
         </div>
 
@@ -212,6 +222,15 @@ export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType 
           url={typeof window !== "undefined" ? window.location.href : `https://spinpapa.com/wheels/${wheelSlug || wheelId}`}
           title={wheelTitle}
           onClose={() => setShowQR(false)}
+        />
+      )}
+
+      {showSpinStats && (
+        <WheelSpinStatsModal
+          isOpen={showSpinStats}
+          onClose={() => setShowSpinStats(false)}
+          wheelId={wheelId}
+          wheelTitle={wheelTitle}
         />
       )}
     </div>

@@ -65,6 +65,11 @@ const userSchema = new Schema(
       default: "user",
       index: true,
     },
+    isPro: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     bio: {
       type: String,
       default: "",

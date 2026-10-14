@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { incrementWheelSpinCount } from "@lib/wheelAnalytics";
+import { checkRateLimit, getIpFromRequest } from "@lib/rateLimit";
 
 export async function POST(request) {
   try {
+    const ip = getIpFromRequest(request);
+    const { limited } = await checkRateLimit(ip, "/api/wheel-analytics/spin");
+    if (limited) {
+      // Silently accept to avoid breaking client-side spin flow
+      return NextResponse.json({ ok: true, throttled: true }, { status: 200 });
+    }
+
     const { wheelId, segmentLabel } = await request.json();
 
     if (!wheelId) {

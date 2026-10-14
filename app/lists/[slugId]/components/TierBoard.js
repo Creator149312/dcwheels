@@ -23,6 +23,9 @@ export default function TierBoard({
 
   const [draggedItemId, setDraggedItemId] = useState(null);
   const [activeItemMenuId, setActiveItemMenuId] = useState(null);
+  // Mobile / Touch ergonomic Tap-to-Place state
+  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [brokenImages, setBrokenImages] = useState(() => new Set());
 
   // Group items by tier
   const tieredItems = {};
@@ -75,41 +78,73 @@ export default function TierBoard({
 
     onReorder?.(updated);
     setActiveItemMenuId(null);
+    setSelectedItemId(null);
+  };
+
+  const handleImageError = (itemId) => {
+    setBrokenImages((prev) => {
+      const next = new Set(prev);
+      next.add(String(itemId));
+      return next;
+    });
   };
 
   const renderItemCard = (item) => {
+    const itemIdStr = String(item._id);
     const isEntity = item.type === "entity";
     const isWord = item.type === "word";
     const title = isWord ? item.word : item.name;
-    const thumbnail = isEntity
+    const rawThumbnail = isEntity
       ? item.image
       : isWord && (item.wordData?.startsWith("data:image") || item.wordData?.startsWith("http"))
       ? item.wordData
       : null;
+    const isImageBroken = brokenImages.has(itemIdStr);
+    const thumbnail = !isImageBroken ? rawThumbnail : null;
     const initialLetter = (title || "?").charAt(0).toUpperCase();
 
-    const isMenuOpen = activeItemMenuId === String(item._id);
+    const isMenuOpen = activeItemMenuId === itemIdStr;
+    const isSelected = selectedItemId === itemIdStr;
 
     return (
       <div
-        key={String(item._id)}
+        key={itemIdStr}
         draggable={isOwner}
-        onDragStart={(e) => handleDragStart(e, String(item._id))}
-        className={`relative group/card flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-xl overflow-hidden bg-card border border-border/80 shadow-xs transition-all select-none ${
-          isOwner ? "cursor-grab active:cursor-grabbing hover:border-primary/50" : ""
-        }`}
+        onDragStart={(e) => handleDragStart(e, itemIdStr)}
+        onClick={() => {
+          if (!isOwner) return;
+          // Toggle selection for Tap-to-Place on mobile & desktop
+          setSelectedItemId((prev) => (prev === itemIdStr ? null : itemIdStr));
+          setActiveItemMenuId(null);
+        }}
+        className={`relative group/card flex-shrink-0 w-20 sm:w-24 aspect-[3/4] rounded-xl overflow-hidden bg-card border shadow-xs transition-all select-none touch-manipulation ${
+          isSelected
+            ? "ring-2 ring-primary border-primary scale-105 z-20 shadow-md"
+            : "border-border/80 hover:border-primary/50"
+        } ${isOwner ? "cursor-pointer sm:cursor-grab active:cursor-grabbing" : ""}`}
       >
         {thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={thumbnail}
             alt={title}
+            onError={() => handleImageError(itemIdStr)}
             className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300 pointer-events-none"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/40 font-black text-xl text-muted-foreground uppercase">
-            {initialLetter}
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted via-muted/60 to-muted/30 p-2 font-black text-xl text-muted-foreground uppercase text-center">
+            <span>{initialLetter}</span>
+            <span className="text-[9px] font-semibold tracking-wider text-muted-foreground/60 line-clamp-1 mt-1">
+              {title}
+            </span>
+          </div>
+        )}
+
+        {/* Selected badge cue */}
+        {isSelected && (
+          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-sm bg-primary text-primary-foreground text-[8px] font-black uppercase tracking-wider z-20 shadow-xs animate-in fade-in zoom-in-90 duration-150">
+            Selected
           </div>
         )}
 
@@ -126,9 +161,9 @@ export default function TierBoard({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setActiveItemMenuId(isMenuOpen ? null : String(item._id));
+              setActiveItemMenuId(isMenuOpen ? null : itemIdStr);
             }}
-            className="absolute top-1 right-1 w-6 h-6 rounded-md bg-black/70 hover:bg-black text-white flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity z-10"
+            className="absolute top-1 right-1 w-6 h-6 rounded-md bg-black/70 hover:bg-black text-white flex items-center justify-center opacity-80 sm:opacity-0 group-hover/card:opacity-100 transition-opacity z-10"
             title="Move to tier"
           >
             <MoreVertical size={12} />
@@ -149,7 +184,10 @@ export default function TierBoard({
                 <button
                   key={t.key}
                   type="button"
-                  onClick={() => moveItemToTier(item._id, t.key)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveItemToTier(item._id, t.key);
+                  }}
                   className="px-1 py-1 rounded text-[10px] font-black text-white text-center shadow-xs hover:opacity-90 active:scale-95 transition-all"
                   style={{ backgroundColor: t.color }}
                 >
@@ -159,7 +197,10 @@ export default function TierBoard({
             </div>
             <button
               type="button"
-              onClick={() => moveItemToTier(item._id, null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                moveItemToTier(item._id, null);
+              }}
               className="mt-1 px-1 py-0.5 rounded text-[9px] font-bold text-muted-foreground hover:bg-muted text-center"
             >
               Unranked
@@ -207,12 +248,27 @@ export default function TierBoard({
               </div>
 
               {/* Items Container for this Tier */}
-              <div className="flex-1 p-2 sm:p-3 flex flex-wrap gap-2 sm:gap-3 items-center min-h-[90px] bg-muted/10">
+              <div
+                onClick={() => {
+                  if (selectedItemId && isOwner) {
+                    moveItemToTier(selectedItemId, tier.key);
+                  }
+                }}
+                className={`flex-1 p-2 sm:p-3 flex flex-wrap gap-2 sm:gap-3 items-center min-h-[90px] transition-colors ${
+                  selectedItemId
+                    ? "bg-primary/[0.04] cursor-pointer ring-1 ring-inset ring-primary/20 hover:bg-primary/[0.08]"
+                    : "bg-muted/10"
+                }`}
+              >
                 {rowItems.length > 0 ? (
                   rowItems.map((item) => renderItemCard(item))
                 ) : (
                   <div className="w-full py-4 text-center text-xs text-muted-foreground/40 italic select-none">
-                    {isOwner ? "Drag items here or tap an item to place in this tier" : "No items in this tier yet"}
+                    {selectedItemId
+                      ? `👉 Tap here to place selected item in ${tier.label}`
+                      : isOwner
+                      ? "Drag items here or tap an item to place in this tier"
+                      : "No items in this tier yet"}
                   </div>
                 )}
               </div>
@@ -225,7 +281,16 @@ export default function TierBoard({
       <div
         onDragOver={handleDragOver}
         onDrop={(e) => handleDrop(e, null)}
-        className="rounded-2xl border border-dashed border-border p-4 bg-muted/20"
+        onClick={() => {
+          if (selectedItemId && isOwner) {
+            moveItemToTier(selectedItemId, null);
+          }
+        }}
+        className={`rounded-2xl border border-dashed p-4 transition-colors ${
+          selectedItemId
+            ? "border-primary/40 bg-primary/[0.02] cursor-pointer hover:bg-primary/[0.05]"
+            : "border-border bg-muted/20"
+        }`}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -235,7 +300,11 @@ export default function TierBoard({
             </h3>
           </div>
           <span className="text-[11px] text-muted-foreground/60">
-            {isOwner ? "Drag or tap items into tiers above" : ""}
+            {selectedItemId
+              ? "Tap here to move selected item to Unranked"
+              : isOwner
+              ? "Drag or tap an item, then tap any tier to place"
+              : ""}
           </span>
         </div>
 

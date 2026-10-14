@@ -8,22 +8,25 @@ export default function CategoryCommunityFeed({
   initialFeedItems = [],
   initialFeedCursor = null,
   activeTag = null,
+  hideComposer = false,
 }) {
   return (
     <div className="w-full">
       {/* 1. In-Feed Composer Contextually Pre-tagged with the Category */}
-      <div className="mb-4">
-        <CreatePostTeaser
-          defaultTag={activeTag || type}
-          className="shadow-sm"
-        />
-      </div>
+      {!hideComposer && (
+        <div className="mb-4">
+          <CreatePostTeaser
+            defaultTag={activeTag || type}
+            className="shadow-sm"
+          />
+        </div>
+      )}
 
-      {/* 2. Infinite Stream of Posts and Wheels for this Category */}
+      {/* 2. Infinite Stream of Posts, Wheels, and Lists for this Category */}
       <InfiniteFeedStream
         type={type}
         tag={activeTag || null}
-        docType="post,wheel"
+        docType="post,wheel,list"
         initialItems={initialFeedItems}
         initialNextCursor={initialFeedCursor}
       />

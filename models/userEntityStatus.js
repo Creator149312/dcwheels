@@ -41,11 +41,13 @@ const UserEntityStatusSchema = new Schema(
       trim: true,
     },
 
-    // Current progress status. Kept minimal on purpose.
+    // Current progress status. Kept minimal on purpose:
+    // UserEntityStatus strictly tracks completed/favorite items ("done").
+    // Unmarking deletes the document. "want" is accepted for backward compatibility with legacy rows.
     status: {
       type: String,
-      enum: ["want", "done"],
-      default: "want",
+      enum: ["done", "want"],
+      default: "done",
       required: true,
     },
   },

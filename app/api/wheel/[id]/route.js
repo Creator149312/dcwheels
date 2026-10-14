@@ -182,19 +182,19 @@ export async function GET(request, { params }) {
     const { id } = params;
     await connectMongoDB();
 
-    let list = null;
+    let wheel = null;
     if (mongoose.Types.ObjectId.isValid(id)) {
-      list = await Wheel.findById(id).lean();
+      wheel = await Wheel.findById(id).lean();
     }
-    if (!list) {
-      list = await Wheel.findOne({ slug: id }).lean();
+    if (!wheel) {
+      wheel = await Wheel.findOne({ slug: id }).lean();
     }
 
-    if (!list) {
+    if (!wheel || wheel.isPublic === false) {
       return NextResponse.json({ error: "Wheel not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ list }, { status: 200 });
+    return NextResponse.json({ wheel, list: wheel }, { status: 200 });
   } catch (e) {
     console.error("GET /api/wheel/[id] failed:", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

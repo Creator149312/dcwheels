@@ -321,23 +321,63 @@ export default function ListDetailClient({ initialList, listId, listOwnerId }) {
     }
   }
 
-  // ✅ Batch reorder / tier update
-  async function handleItemsReorder(newItems) {
-    setList((prev) => ({ ...prev, items: newItems }));
+  // Refs for debouncing item reorder sync (prevents write amplification during rapid drag-and-drop)
+  const reorderTimerRef = useRef(null);
+  const pendingReorderItemsRef = useRef(null);
 
-    try {
-      const res = await fetch(`/api/unifiedlist/${listId}/items`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: newItems }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.list) setList((prev) => ({ ...prev, ...data.list }));
+  // Flush any pending reorder sync on unmount so changes are never lost on fast navigation
+  useEffect(() => {
+    return () => {
+      if (reorderTimerRef.current) {
+        clearTimeout(reorderTimerRef.current);
       }
-    } catch (e) {
-      console.error("Failed to reorder items:", e);
+      if (pendingReorderItemsRef.current) {
+        const payload = JSON.stringify({ items: pendingReorderItemsRef.current });
+        // Use sendBeacon for guaranteed delivery on unmount/unload, fallback to fetch
+        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: "application/json" });
+          navigator.sendBeacon(`/api/unifiedlist/${listId}/items`, blob);
+        } else {
+          fetch(`/api/unifiedlist/${listId}/items`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      }
+    };
+  }, [listId]);
+
+  // ✅ Batch reorder / tier update with 600ms trailing debounce
+  async function handleItemsReorder(newItems) {
+    // 1. Instant local optimistic update for 60fps responsiveness
+    setList((prev) => ({ ...prev, items: newItems }));
+    pendingReorderItemsRef.current = newItems;
+
+    // 2. Clear previous pending sync timer
+    if (reorderTimerRef.current) {
+      clearTimeout(reorderTimerRef.current);
     }
+
+    // 3. Debounce network PUT by 600ms
+    reorderTimerRef.current = setTimeout(async () => {
+      const itemsToSync = pendingReorderItemsRef.current;
+      if (!itemsToSync) return;
+
+      try {
+        const res = await fetch(`/api/unifiedlist/${listId}/items`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: itemsToSync }),
+        });
+        if (res.ok) {
+          pendingReorderItemsRef.current = null;
+        }
+      } catch (e) {
+        console.error("Failed to reorder items:", e);
+      }
+    }, 600);
   }
 
   // ✅ Switch view mode (and persist default format if owner)

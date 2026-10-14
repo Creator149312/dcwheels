@@ -71,7 +71,14 @@ export async function GET(request) {
         displayName: t.displayName,
         count: t.wheelCount,
       }));
-      return NextResponse.json({ tags: results });
+      return NextResponse.json(
+        { tags: results },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+          },
+        }
+      );
     }
 
     // Fallback: Tag collection empty (pre-seed) — aggregate raw Wheel.tags.
@@ -85,7 +92,14 @@ export async function GET(request) {
       { $project: { _id: 0, name: "$_id", count: 1 } },
     ]);
 
-    return NextResponse.json({ tags: results });
+    return NextResponse.json(
+      { tags: results },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (err) {
     console.error("[tags/autocomplete] failed:", err);
     return NextResponse.json({ tags: [], error: "Autocomplete failed" }, { status: 500 });

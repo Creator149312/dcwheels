@@ -26,6 +26,8 @@ export default function WheelPlayerControls({
   isEditingActive,
   wheelTitle,
   wheelDescription,
+  wheelId,
+  authorHandle,
 }) {
   const toggleMute = () => {
     setMuted((prev) => !prev);
@@ -122,6 +124,16 @@ export default function WheelPlayerControls({
             className="min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
             onClick={(e) => {
               saveWheelData(segData, wheelData);
+              if (typeof window !== "undefined" && wheelId) {
+                try {
+                  const raw = window.localStorage.getItem("SpinpapaWheel");
+                  if (raw) {
+                    const parsed = JSON.parse(raw);
+                    parsed.forkedFrom = { wheelId: String(wheelId), authorHandle: authorHandle || null };
+                    window.localStorage.setItem("SpinpapaWheel", JSON.stringify(parsed));
+                  }
+                } catch {}
+              }
               window.location.href = "/wheels/create";
             }}
             aria-label="Edit wheel entries"

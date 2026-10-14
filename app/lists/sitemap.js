@@ -19,6 +19,8 @@ export default async function sitemap() {
     .limit(1000)
     .lean();
 
+  console.log(`[Sitemap] Lists count: ${lists.length}`);
+
   return lists.map((list) => ({
     url: `${BASE_URL}${getListUrl(list)}`.trim(),
     lastModified: list.updatedAt ? new Date(list.updatedAt) : new Date(),

@@ -5,6 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Ensure to set your API key in environment variables
 });
 
+export const maxDuration = 30;
+
 export async function POST(req) {
   const blocked = await aiGate(req);
   if (blocked) return blocked;
@@ -12,11 +14,14 @@ export async function POST(req) {
   const { prompt, wordCount } = await req.json();
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: `Generate an array of ${wordCount} words without numbering related to: "${prompt}".` }],
-      max_tokens: 50,
-    });
+    const response = await openai.chat.completions.create(
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: `Generate an array of ${wordCount} words without numbering related to: "${prompt}".` }],
+        max_tokens: 50,
+      },
+      { signal: AbortSignal.timeout(20000) }
+    );
 
     const words = response.choices[0].message.content
       .split(',')

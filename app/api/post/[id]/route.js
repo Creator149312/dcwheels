@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
 import PostVote from "@models/postVote";
 import { sessionUser } from "@utils/SessionData";
 import { cleanupBlobAssets } from "@lib/blob-cleanup";
 import { validateContentSafety } from "@lib/contentSafety";
+import { updateTagCounts } from "@lib/tagUpdateHelper";
 
 const POST_API_PROJECTION =
-  "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
+  "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef entities hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
 
 /**
  * GET /api/post/[id]
@@ -66,11 +67,11 @@ export async function PATCH(req, { params }) {
     }
 
     const { id } = params;
-    const { content, image, imageVariants, hasPoll, pollOptions, tags, isPublic, ogMeta } = await req.json();
+    const { content, image, imageVariants, contentRef, entities, hasPoll, pollOptions, tags, isPublic, ogMeta } = await req.json();
 
     await connectMongoDB();
 
-    const post = await Post.findById(id).select("userId authorName isDeleted");
+    const post = await Post.findById(id).select("userId authorName isDeleted isPublic shadowBanned tags");
 
     if (!post) {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
@@ -180,6 +181,24 @@ export async function PATCH(req, { params }) {
         : [];
     }
     if (tags !== undefined) updateData.tags = tags;
+    if (entities !== undefined) {
+      updateData.entities = Array.isArray(entities)
+        ? entities.slice(0, 3).map((e) => ({
+            type: e.type || "",
+            externalId: e.externalId ? String(e.externalId) : "",
+            slug: e.slug || "",
+            title: e.title || "",
+            image: e.image || null,
+            segmentCount: Number(e.segmentCount) || 0,
+          }))
+        : [];
+      if (updateData.entities.length > 0) {
+        updateData.contentRef = updateData.entities[0];
+      }
+    } else if (contentRef !== undefined) {
+      updateData.contentRef = contentRef || null;
+      if (contentRef) updateData.entities = [contentRef];
+    }
     if (isPublic !== undefined) {
       // 🛡️ SEO & Social Permanence Policy (One-way publish door):
       // A post that is already public cannot be reverted to private.
@@ -196,7 +215,21 @@ export async function PATCH(req, { params }) {
 
     await Post.updateOne({ _id: id }, { $set: updateData });
 
+    // Asynchronously synchronize tag discovery counts if tags or visibility changed
+    if (tags !== undefined) {
+      const isLive = (updateData.isPublic ?? post.isPublic) && !post.isDeleted && !post.shadowBanned;
+      if (isLive) {
+        const oldTags = post.tags || [];
+        const newTags = Array.isArray(tags) ? tags : [];
+        const added = newTags.filter((t) => !oldTags.includes(t));
+        const removed = oldTags.filter((t) => !newTags.includes(t));
+        if (added.length > 0) updateTagCounts(added, 1, "askCount").catch(() => {});
+        if (removed.length > 0) updateTagCounts(removed, -1, "askCount").catch(() => {});
+      }
+    }
+
     revalidateTag(`profile-${post.userId}`);
+    revalidatePath(`/posts/${id}`);
 
     return NextResponse.json({ message: "Post updated", id });
   } catch (err) {
@@ -215,7 +248,7 @@ export async function DELETE(req, { params }) {
     const { id } = params;
     await connectMongoDB();
 
-    const post = await Post.findById(id).select("userId authorName isDeleted hasPoll image").lean();
+    const post = await Post.findById(id).select("userId authorName isDeleted isPublic shadowBanned hasPoll image tags").lean();
 
     if (!post) {
       return NextResponse.json({ message: "Post not found" }, { status: 404 });
@@ -233,7 +266,14 @@ export async function DELETE(req, { params }) {
 
     await Post.updateOne({ _id: id }, { $set: { isDeleted: true, isPublic: false } });
 
+    // Decrement tag discovery counters asynchronously if post was live
+    const wasLive = post.isPublic !== false && !post.isDeleted && !post.shadowBanned;
+    if (wasLive && Array.isArray(post.tags) && post.tags.length > 0) {
+      updateTagCounts(post.tags, -1, "askCount").catch(() => {});
+    }
+
     revalidateTag(`profile-${post.userId}`);
+    revalidatePath(`/posts/${id}`);
 
     // Clean up orphaned poll votes — no value keeping them after deletion
     if (post.hasPoll) {

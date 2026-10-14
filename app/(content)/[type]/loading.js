@@ -1,32 +1,55 @@
+import { FeedSkeleton } from "@app/(content)/_shared/SuspendedSections";
+
+export function SpotlightRailSkeleton() {
+  return (
+    <section className="mb-4 sm:mb-6">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="w-3.5 h-3.5 rounded-full bg-muted/60 animate-pulse" />
+        <div className="h-4 w-44 bg-muted/60 rounded animate-pulse" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="flex flex-col bg-background/80 rounded-xl overflow-hidden border border-border/50 shadow-sm"
+          >
+            <div className="aspect-[3/4] w-full bg-muted/60 animate-pulse" />
+            <div className="p-2 sm:p-2.5 space-y-1.5">
+              <div className="h-3.5 w-3/4 bg-muted/60 rounded animate-pulse" />
+              <div className="h-2.5 w-1/3 bg-muted/50 rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function ComposerSkeleton() {
+  return (
+    <div className="mb-4 border-y sm:border border-border/50 bg-background sm:rounded-2xl p-3 sm:p-4">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-muted/60 animate-pulse shrink-0" />
+        <div className="h-9 flex-1 rounded-full bg-muted/50 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function TopicListLoading() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Hero skeleton */}
-      <div className="h-72 md:h-[420px] bg-muted animate-pulse" />
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header skeleton */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6 md:mb-8">
-          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="h-8 w-24 bg-muted rounded-full animate-pulse" />
-            <div className="h-8 w-24 bg-muted rounded-full animate-pulse" />
-            <div className="h-8 w-24 bg-muted rounded-full animate-pulse" />
-            <div className="h-8 w-32 bg-muted rounded-full animate-pulse" />
-          </div>
-        </div>
-
-        {/* Grid skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="aspect-[3/4] bg-muted rounded-xl animate-pulse" />
-              <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
-              <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
+    <div className="mx-auto max-w-2xl px-0 py-2 sm:py-6">
+      {/* 1. 4-Card Spotlight Rail Skeleton */}
+      <div className="px-3 sm:px-0">
+        <SpotlightRailSkeleton />
       </div>
+
+      {/* 2. Composer Teaser Skeleton */}
+      <ComposerSkeleton />
+
+      {/* 3. Feed Stream Skeleton */}
+      <FeedSkeleton />
     </div>
   );
 }

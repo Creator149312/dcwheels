@@ -9,6 +9,9 @@ import apiConfig from "@utils/ApiUrlConfig";
 import { isAdminEmail } from "@utils/auth/isAdmin";
 import { ensureSavedListExists } from "@lib/savedList";
 import { checkActionRateLimit, clearActionRateLimit } from "@lib/rateLimit";
+import { cookies } from "next/headers";
+import { claimGuestVotes } from "@lib/guestClaim";
+import { GUEST_COOKIE_NAME } from "@/middleware";
 
 const validateForm = async (data) => {
   let err = {};
@@ -114,18 +117,20 @@ export const authOptions = {
         token.mongoId = user.mongoId || token.mongoId;
         token.username = user.username || token.username;
         token.role = user.role || token.role;
+        token.isPro = user.isPro || token.isPro || false;
 
         if (!token.mongoId) {
           try {
             await connectMongoDB();
             const dbUser = await User.findOne({ email: user.email?.toLowerCase()?.trim() })
-              .select("_id role username")
+              .select("_id role username isPro")
               .lean();
             if (dbUser) {
               token.mongoId = dbUser._id.toString();
               token.username = dbUser.username;
               token.role =
                 dbUser.role || (isAdminEmail(user.email) ? "admin" : "user");
+              token.isPro = Boolean(dbUser.isPro || dbUser.role === "admin");
             }
           } catch {
             // Non-fatal — session.user.id will just be undefined; fallback by email will be used
@@ -136,6 +141,9 @@ export const authOptions = {
       // Ensure a sensible default even if the lookup branches above miss.
       if (!token.role) {
         token.role = isAdminEmail(token.email || user?.email) ? "admin" : "user";
+      }
+      if (token.role === "admin") {
+        token.isPro = true;
       }
 
       return token;
@@ -150,6 +158,7 @@ export const authOptions = {
       if (token?.role) {
         session.user.role = token.role;
       }
+      session.user.isPro = Boolean(token?.isPro || token?.role === "admin");
       return session;
     },
     async signIn({ user, account }) {
@@ -187,7 +196,16 @@ export const authOptions = {
           user.mongoId = existingUser._id.toString();
           user.username = existingUser.username;
           user.role = existingUser.role || (isAdminEmail(normalizedEmail) ? "admin" : "user");
+          user.isPro = Boolean(existingUser.isPro || user.role === "admin");
           user.email = normalizedEmail;
+
+          // Asynchronously claim any anonymous votes cast prior to login
+          try {
+            const guestId = cookies().get(GUEST_COOKIE_NAME)?.value;
+            if (guestId) {
+              claimGuestVotes(guestId, user.id);
+            }
+          } catch {}
 
           return true;
         } catch (error) {
@@ -196,6 +214,15 @@ export const authOptions = {
         }
       } else if (account.provider === "credentials") {
         if (user.emailVerified) {
+          // Asynchronously claim any anonymous votes cast prior to credentials login
+          try {
+            const guestId = cookies().get(GUEST_COOKIE_NAME)?.value;
+            const targetUserId = user._id?.toString?.() || user.id;
+            if (guestId && targetUserId) {
+              claimGuestVotes(guestId, targetUserId);
+            }
+          } catch {}
+
           return user;
         } else {
           return null;

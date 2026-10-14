@@ -13,6 +13,10 @@ export const metadata = {
   },
 };
 
+// ISR: re-generate at most once per 60s instead of on every request.
+// Cached at the edge so subsequent visitors don't hit the DB.
+export const revalidate = 60;
+
 const WHEELS_PAGE_SIZE = 8;
 
 export default async function WheelsPage() {
@@ -26,7 +30,7 @@ export default async function WheelsPage() {
   const items = allItems.slice(0, WHEELS_PAGE_SIZE);
   const nextItem = allItems.length > WHEELS_PAGE_SIZE ? allItems[WHEELS_PAGE_SIZE] : null;
   const initialNextCursor = nextItem
-    ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}`
+    ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}`
     : null;
 
   return (

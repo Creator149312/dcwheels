@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@lib/mongodb";
 import Page from "@models/page";
 import "@models/wheel";
+import { apiError } from "@/lib/apiHelpers";
 
 // Cache public wheel listing for 2 minutes at the CDN edge
 export const revalidate = 120;
@@ -36,10 +37,6 @@ export async function GET(req) {
 
     return NextResponse.json({ wheels: formatted }, { status: 200 });
   } catch (err) {
-    console.error("GET /api/wheel/all error:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch wheels", details: err.message },
-      { status: 500 }
-    );
+    return apiError(err, "Failed to fetch wheels");
   }
 }

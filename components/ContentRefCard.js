@@ -26,7 +26,7 @@ const TYPE_LABELS = {
  * Renders an optional 20x20px micro-avatar or category icon,
  * with Threads/Instagram-style inline entity hub link.
  */
-export default function ContentRefCard({ href, title, type, image }) {
+export default function ContentRefCard({ href, title, type, image, compact = false }) {
   const [imgError, setImgError] = useState(false);
   const label = TYPE_LABELS[type] || type || "Topic";
   const IconComponent = TYPE_ICONS[type] || Hash;
@@ -34,11 +34,15 @@ export default function ContentRefCard({ href, title, type, image }) {
   return (
     <a
       href={href}
-      className="group inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full border border-border/80 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-all text-foreground max-w-full touch-manipulation shadow-2xs hover:shadow-xs"
+      className={`group inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 transition-all text-foreground touch-manipulation shadow-2xs hover:shadow-xs ${
+        compact
+          ? "px-2.5 py-0.5 text-xs max-w-[160px] sm:max-w-[210px]"
+          : "px-3 py-1 sm:py-1.5 max-w-full"
+      }`}
     >
       {/* 20x20px Micro Thumbnail or Fallback Icon */}
       {image && !imgError ? (
-        <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 border border-border/60 bg-muted">
+        <div className="relative w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden shrink-0 border border-border/60 bg-muted">
           <img
             src={image}
             alt={title || label}
@@ -50,19 +54,24 @@ export default function ContentRefCard({ href, title, type, image }) {
           />
         </div>
       ) : (
-        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary shrink-0 group-hover:scale-110 transition-transform">
-          <IconComponent size={12} />
+        <div className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary/10 text-primary shrink-0 group-hover:scale-110 transition-transform">
+          <IconComponent size={compact ? 10 : 12} />
         </div>
       )}
 
-      <span className="text-xs font-extrabold uppercase tracking-wider text-primary shrink-0">
-        {label}
-      </span>
-      <span className="text-xs text-muted-foreground/40 shrink-0">•</span>
+      {!compact && (
+        <>
+          <span className="text-xs font-extrabold uppercase tracking-wider text-primary shrink-0">
+            {label}
+          </span>
+          <span className="text-xs text-muted-foreground/40 shrink-0">•</span>
+        </>
+      )}
+
       <span className="text-xs sm:text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
         {title || "Untitled"}
       </span>
-      <ChevronRight size={14} className="text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-transform shrink-0 ml-0.5" />
+      <ChevronRight size={12} className="text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-transform shrink-0 ml-0.5" />
     </a>
   );
 }

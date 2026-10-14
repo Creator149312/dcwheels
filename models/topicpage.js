@@ -71,7 +71,14 @@ const TopicPageSchema = new Schema(
     tags: {
       type: [String],
       default: [],
-      set: (tags) => tags.map((tag) => tag.toLowerCase().trim()),
+      set: (tags) => {
+        const { normalizeTag } = require("@lib/slug");
+        return Array.isArray(tags)
+          ? tags
+              .map((tag) => (typeof tag === "string" ? normalizeTag(tag) : tag))
+              .filter(Boolean)
+          : tags;
+      },
     },
     details: {
       studio: String, // anime

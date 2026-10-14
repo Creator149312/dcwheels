@@ -1,143 +1,128 @@
 import { unstable_cache } from "next/cache";
 import { connectMongoDB } from "@/lib/mongodb";
 import TopicPage from "@/models/topicpage";
-import { slugify } from "@utils/HelperFunctions";
-import {
-  fetchAnime,
-  fetchMovies,
-  fetchGames,
-  fetchCharacters,
-} from "./TopicPagesHelperFunctions";
-import { isCleanText, isTopicDocSafe } from "@/lib/contentSafety";
 
-const SPOTLIGHT_REVALIDATE = 86400; // 24 hours
+const SPOTLIGHT_REVALIDATE = 604800; // 7 days
 
-const _fetchSpotlightUncached = async (type) => {
-  try {
-    if (type === "movie") {
-      const movies = await fetchMovies({ page: 1, sortBy: "popularity.desc" });
-      if (movies && movies.length > 0) {
-        return movies
-          .filter((m) => !m.adult && isCleanText(m.title))
-          .slice(0, 4)
-          .map((m) => ({
-            id: m.id,
-            title: m.title,
-            slug: `${m.id}-${slugify(m.title)}`,
-            image: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-            rating: m.vote_average ? (m.vote_average / 2).toFixed(1) : null,
-            subtitle: m.release_date?.slice(0, 4) || null,
-          }));
-      }
-    }
+// Configure your fixed slugs / URLs here for each category
+export const SPOTLIGHT_SLUGS = {
+  game: [
+    "415171-valorant",
+    "779-roblox",
+    "22509-minecraft",
+    "415-clash-royale",
+  ],
+  anime: [
+    "20-naruto",
+    "21355-re-zero-kara-hajimeru-isekai-seikatsu",
+    "127230-chainsaw-man",
+    "113415-jujutsu-kaisen",
+  ],
+  character: [
+    "17-naruto-uzumaki",
+    "246-gokuu-son",
+    "40-luffy-monkey",
+    "127691-satoru-gojou",
+  ],
+  movie: [
+    "969681-spider-man-brand-new-day",
+    "1153576-street-fighter",
+    "1058424-hope",
+    "1248832-digger",
 
-    if (type === "anime") {
-      const anime = await fetchAnime({ page: 1, perPage: 8, sort: "TRENDING_DESC" });
-      if (anime && anime.length > 0) {
-        return anime
-          .filter((a) => !a.isAdult)
-          .map((a) => {
-            const title = a.title?.english || a.title?.romaji || "Anime";
-            return {
-              id: a.id,
-              title,
-              slug: `${a.id}-${slugify(title)}`,
-              image: a.coverImage?.large,
-              rating: a.averageScore ? (a.averageScore / 20).toFixed(1) : null,
-              genre: a.genres?.[0] || null,
-              subtitle: a.startDate?.year ? String(a.startDate.year) : null,
-            };
-          })
-          .filter(isTopicDocSafe)
-          .slice(0, 4);
-      }
-    }
+    // Add your 4 movie slugs here (e.g. from TopicPage DB)
+  ],
+};
 
-    if (type === "game") {
-      const games = await fetchGames({ page: 1, page_size: 8, ordering: "-added" });
-      if (games && games.length > 0) {
-        return games
-          .filter((g) => {
-            const isAdultEsrb = g.esrb_rating?.slug === "adults-only";
-            const hasAdultTag = (g.tags || []).some((t) => {
-              const name = (t.name || "").toLowerCase();
-              return name === "nsfw" || name === "sexual content" || name === "erotic" || name === "hentai";
-            });
-            return !isAdultEsrb && !hasAdultTag && isCleanText(g.name) && isCleanText(g.slug);
-          })
-          .slice(0, 4)
-          .map((g) => ({
-            id: g.id,
-            title: g.name,
-            slug: `${g.id}-${g.slug}`,
-            image: g.background_image,
-            rating: g.rating ? g.rating.toFixed(1) : null,
-            genre: g.genres?.[0]?.name || null,
-            subtitle: g.released?.slice(0, 4) || null,
-          }));
-      }
-    }
-
-    if (type === "character") {
-      const chars = await fetchCharacters({ page: 1, perPage: 8, sort: "FAVOURITES_DESC" });
-      if (chars && chars.length > 0) {
-        return chars
-          .slice(0, 4)
-          .map((c) => {
-            const name = c.name?.full || c.name?.native || "Character";
-            return {
-              id: c.id,
-              title: name,
-              slug: `${c.id}-${slugify(name)}`,
-              image: c.image?.large,
-              subtitle: c.gender || null,
-            };
-          });
-      }
-    }
-  } catch (err) {
-    console.error(`[_fetchSpotlightUncached ${type}] external API error:`, err);
+function pickString(value) {
+  // TopicPage fields like title can be stored as objects ({ default, english, ... })
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    return (
+      value.default ||
+      value.english ||
+      value.romaji ||
+      value.localized ||
+      value.original ||
+      ""
+    );
   }
+  return String(value);
+}
 
-  // Fallback to highest-traction TopicPage in MongoDB
+function formatTopic(doc, type) {
+  const title = pickString(doc.title);
+  const likes = doc.reactions?.like || 0;
+  const ratingAvg =
+    doc.rating?.count > 0
+      ? Math.round((doc.rating.totalScore / doc.rating.count) * 10) / 10
+      : null;
+
+  return {
+    id: String(doc.relatedId || doc._id),
+    name: title,
+    title,
+    slug: pickString(doc.slug),
+    image: pickString(doc.cover),
+    coverImage: pickString(doc.cover),
+    description: pickString(doc.description),
+    subtitle: doc.details?.releaseYear ? String(doc.details.releaseYear) : "",
+    genre: Array.isArray(doc.tags) && doc.tags.length > 0 ? doc.tags[0] : "",
+    rating: ratingAvg,
+    // Live engagement signals that actually exist on TopicPage docs
+    postsCount: 0,
+    wheelsCount: doc.wheels || 0,
+    listsCount: 0,
+    likesCount: likes,
+    followersCount: doc.followers || 0,
+    type,
+  };
+}
+
+async function _fetchSpotlightUncached(type) {
+  await connectMongoDB();
+
+  const targetSlugs = SPOTLIGHT_SLUGS[type];
+  if (!targetSlugs || targetSlugs.length === 0) return [];
+
+  // Helper: if someone pastes a full path like "/game/415171-valorant" or "415171-valorant", clean it to just the slug
+  const cleanSlugs = targetSlugs.map((s) => s.replace(/^\/[^/]+\//, "").trim());
+
   try {
-    await connectMongoDB();
-    const fallbackPages = await TopicPage.find({
+    const docs = await TopicPage.find({
       type,
-      cover: { $exists: true, $ne: null },
-      slug: { $exists: true, $ne: null },
+      slug: { $in: cleanSlugs },
     })
-      .sort({ wheels: -1, updatedAt: -1 })
-      .limit(8)
-      .select("title slug type cover relatedId details wheels tags description")
+      .select(
+        "title slug cover description tags details wheels followers reactions rating relatedId",
+      )
       .lean();
 
-    if (fallbackPages.length > 0) {
-      return fallbackPages
-        .filter(isTopicDocSafe)
-        .slice(0, 4)
-        .map((p) => ({
-          id: p.relatedId,
-          title:
-            p.title?.default ||
-            p.title?.english ||
-            p.title?.romaji ||
-            p.title?.localized ||
-            "Topic",
-          slug: p.slug,
-          image: p.cover,
-          subtitle: p.details?.releaseYear ? String(p.details.releaseYear) : null,
-        }));
-    }
-  } catch (err) {
-    console.error(`[_fetchSpotlightUncached ${type}] db fallback error:`, err);
-  }
+    // Map to our format
+    const formatted = docs.map((doc) => formatTopic(doc, type));
 
-  return [];
-};
+    // Sort by live engagement (highest first), preserving curated order on ties
+    const originalOrder = new Map(cleanSlugs.map((s, i) => [s, i]));
+    const score = (t) =>
+      (t.wheelsCount || 0) + (t.followersCount || 0) + (t.likesCount || 0);
+    formatted.sort((a, b) => {
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      return (
+        (originalOrder.get(a.slug) ?? 0) - (originalOrder.get(b.slug) ?? 0)
+      );
+    });
+
+    return formatted;
+  } catch (err) {
+    console.error(`[Spotlight] Error fetching ${type} spotlight:`, err);
+    return [];
+  }
+}
 
 export const getCachedSpotlight = unstable_cache(
   _fetchSpotlightUncached,
-  ["category-top-spotlight"],
-  { revalidate: SPOTLIGHT_REVALIDATE, tags: ["category-top-spotlight"] }
+  ["category-top-spotlight-v8"],
+  { revalidate: SPOTLIGHT_REVALIDATE, tags: ["category-top-spotlight"] },
 );

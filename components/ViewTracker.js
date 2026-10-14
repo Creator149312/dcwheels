@@ -4,7 +4,8 @@ import { useEffect } from "react";
 
 // 1-in-N probabilistic sample. The bulk of Vercel function cost on cached
 // content pages comes from this single endpoint.
-const SAMPLE_RATE = 1;
+// Setting SAMPLE_RATE = 5 eliminates ~80% of unnecessary serverless invocations.
+const SAMPLE_RATE = 5;
 
 /**
  * Tiny client component that POSTs a view-tracking ping on mount.

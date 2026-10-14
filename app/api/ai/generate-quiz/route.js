@@ -8,6 +8,8 @@ import User from "@models/user";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+export const maxDuration = 30;
+
 const MONTHLY_LIMIT = 20;
 
 export async function POST(req) {
@@ -102,12 +104,15 @@ Generate ${n} questions now. Output JSON only.`;
 
     while (attempts < 3 && !segments) {
       attempts++;
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 300 * n,
-        temperature: 0.7,
-      });
+      const response = await openai.chat.completions.create(
+        {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 300 * n,
+          temperature: 0.7,
+        },
+        { signal: AbortSignal.timeout(20000) }
+      );
 
       const raw = (response.choices[0].message?.content ?? "").trim();
 

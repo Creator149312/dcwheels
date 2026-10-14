@@ -85,21 +85,14 @@ const ListSchema = new Schema(
       type: [String],
       default: [],
       index: true,
-      set: (tags) =>
-        Array.isArray(tags)
+      set: (tags) => {
+        const { normalizeTag } = require("@lib/slug");
+        return Array.isArray(tags)
           ? tags
-              .map((t) =>
-                typeof t === "string"
-                  ? t
-                      .toLowerCase()
-                      .trim()
-                      .replace(/\s+/g, "-") // spaces → hyphens
-                      .replace(/[^a-z0-9-]/g, "") // strip non-url chars
-                      .replace(/^-+|-+$/g, "") // trim leading/trailing hyphens
-                  : t
-              )
-              .filter(Boolean) // drop any tags that normalised to empty string
-          : tags,
+              .map((t) => (typeof t === "string" ? normalizeTag(t) : t))
+              .filter(Boolean)
+          : tags;
+      },
     },
 
     items: {
@@ -164,6 +157,7 @@ const ListSchema = new Schema(
       userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
     forkCount: { type: Number, default: 0, min: 0 },
+    diffRatio: { type: Number, default: 0, min: 0, max: 1 },
 
     commentCount: { type: Number, default: 0, min: 0 }, // denormalized from Comment; kept here for fast feed/page reads
     likeCount: { type: Number, default: 0, min: 0 }, // denormalized from Reaction; kept here for fast feed/page reads
@@ -176,6 +170,13 @@ const ListSchema = new Schema(
       index: true,
     },
     indexed: { type: Boolean, default: false, index: true },
+
+    // Logarithmic Epoch-Based HotScore (createdAtSeconds + log10(points) * 43200)
+    hotScore: {
+      type: Number,
+      default: () => Math.floor(Date.now() / 1000),
+      index: true,
+    },
   },
   { timestamps: true }
 );
@@ -193,6 +194,10 @@ ListSchema.index(
 // list document for the user to find a matching items.entityId.
 // Multikey index: Mongo expands the items array automatically.
 ListSchema.index({ userId: 1, "items.entityId": 1 });
+ListSchema.index(
+  { "items.entityId": 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isSystem: false, isPublic: true } }
+);
 ListSchema.index({ tags: 1 });
 ListSchema.index(
   { "forkedFrom.listId": 1 },
@@ -202,6 +207,10 @@ ListSchema.index(
 // Partial compound for public list discovery feeds filtered by tag or userId.
 ListSchema.index(
   { tags: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isSystem: false, isPublic: true } }
+);
+ListSchema.index(
+  { isPublic: 1, hotScore: -1, _id: -1 },
   { partialFilterExpression: { isDeleted: false, isSystem: false, isPublic: true } }
 );
 ListSchema.index(

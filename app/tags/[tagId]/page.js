@@ -132,7 +132,7 @@ export default async function TagDetailPage({ params }) {
     });
     initialItems = initialData.slice(0, FEED_PAGE_SIZE);
     const nextItem = initialData.length > FEED_PAGE_SIZE ? initialData[FEED_PAGE_SIZE] : null;
-    initialNextCursor = nextItem ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
+    initialNextCursor = nextItem ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}` : null;
   } catch (err) {
     console.error(`Tag feed error for "${canonical}":`, err);
     // Degrade gracefully: render the tag space with an empty feed so users

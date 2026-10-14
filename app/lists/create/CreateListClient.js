@@ -22,6 +22,7 @@ import { getListUrl } from "@utils/UrlHandler";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import CreateItemPanel from "./components/CreateItemPanel";
 import DraftItemsEditor from "./components/DraftItemsEditor";
+import TagInput from "@components/TagInput";
 
 const LS_DRAFT_KEY = "SpinpapaListDraft";
 
@@ -41,6 +42,7 @@ export default function CreateListClient() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [tags, setTags] = useState([]);
   const [format, setFormat] = useState("standard"); // "standard" | "tiered"
   const [tierConfig, setTierConfig] = useState(DEFAULT_TIERS);
   const [isPublic, setIsPublic] = useState(true);
@@ -51,9 +53,41 @@ export default function CreateListClient() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [forkedFrom, setForkedFrom] = useState(null); // { listId, name, username }
 
-  // 1. Restore from localStorage on mount (including drafts sent from wheels or previously saved)
+  // 1. Restore from localStorage or from ?remix= query param on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const remixParam = searchParams.get("remix") || searchParams.get("fork");
+
+    if (remixParam) {
+      // Fetch parent list to hydrate remix directly
+      fetch(`/api/unifiedlist/${remixParam}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.list) {
+            const parent = data.list;
+            const ts = Date.now();
+            setName(parent.name || "");
+            setDescription(parent.description || "");
+            if (Array.isArray(parent.tags)) setTags(parent.tags);
+            if (["standard", "tiered"].includes(parent.format)) setFormat(parent.format);
+            if (parent.tierConfig?.length) setTierConfig(parent.tierConfig);
+            setForkedFrom({
+              listId: String(parent.id || parent._id),
+              name: parent.name,
+              username: parent.ownerUsername || null,
+            });
+            const hydrated = (parent.items || []).map((it, idx) => ({
+              ...it,
+              draftId: `remix-${ts}-${idx}`,
+            }));
+            setItems(hydrated);
+          }
+        })
+        .catch((err) => console.warn("Failed fetching remix source:", err))
+        .finally(() => setHasLoadedDraft(true));
+      return;
+    }
 
     try {
       const saved = localStorage.getItem(LS_DRAFT_KEY);
@@ -62,6 +96,7 @@ export default function CreateListClient() {
         if (parsed && typeof parsed === "object") {
           if (parsed.name) setName(parsed.name);
           if (parsed.description) setDescription(parsed.description);
+          if (Array.isArray(parsed.tags)) setTags(parsed.tags);
           if (parsed.format && ["standard", "tiered"].includes(parsed.format)) {
             setFormat(parsed.format);
           }
@@ -89,7 +124,7 @@ export default function CreateListClient() {
     } finally {
       setHasLoadedDraft(true);
     }
-  }, []);
+  }, [searchParams]);
 
   // 2. Auto-save draft changes to localStorage (debounced) + instant sync on app background
   const saveDraftToStorage = useCallback(() => {
@@ -102,6 +137,7 @@ export default function CreateListClient() {
       const draftObj = {
         name,
         description,
+        tags,
         format,
         tierConfig,
         isPublic,
@@ -113,7 +149,7 @@ export default function CreateListClient() {
     } catch (e) {
       console.warn("Failed to save draft to localStorage:", e);
     }
-  }, [name, description, format, tierConfig, isPublic, items, forkedFrom, hasLoadedDraft]);
+  }, [name, description, tags, format, tierConfig, isPublic, items, forkedFrom, hasLoadedDraft]);
 
   useEffect(() => {
     if (!hasLoadedDraft || typeof window === "undefined") return;
@@ -181,6 +217,7 @@ export default function CreateListClient() {
   const handleResetDraft = () => {
     setName("");
     setDescription("");
+    setTags([]);
     setFormat("standard");
     setTierConfig(DEFAULT_TIERS);
     setIsPublic(true);
@@ -221,6 +258,7 @@ export default function CreateListClient() {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim(),
+          tags,
           isPublic,
           format,
           tierConfig: format === "tiered" ? tierConfig : undefined,
@@ -310,8 +348,7 @@ export default function CreateListClient() {
         <div className="mb-5 flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/5 px-3 py-2 text-xs text-foreground">
           <GitFork size={14} className="text-violet-500 shrink-0" />
           <span className="flex-1 min-w-0 truncate">
-            Remixing <strong>{forkedFrom.name || "a list"}</strong>
-            {forkedFrom.username && <> by @{forkedFrom.username}</>}. Your changes won&apos;t affect the original.
+            Remixing from {forkedFrom.username ? `@${forkedFrom.username}` : (forkedFrom.name || "original list")}. Your changes save as a new creation.
           </span>
         </div>
       )}
@@ -414,6 +451,18 @@ export default function CreateListClient() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add notes, context, or why you ranked these items this way..."
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-y min-h-[80px]"
+              />
+            </div>
+
+            {/* Tags Input */}
+            <div>
+              <label className="block text-xs font-bold text-foreground mb-1.5">
+                Tags <span className="text-muted-foreground font-normal">(Optional, press Enter or comma to add)</span>
+              </label>
+              <TagInput
+                value={tags}
+                onChange={setTags}
+                placeholder="e.g. anime, horror, top-10, movies..."
               />
             </div>
           </div>

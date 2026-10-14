@@ -58,7 +58,8 @@ export async function GET(req) {
     if (nextItem) {
       const isNextCat = nextItem._feedStage === "cat" || isCatCursor;
       const stagePrefix = isNextCat ? "cat|" : "";
-      nextCursor = `${stagePrefix}${nextItem.createdAt}|${nextItem._id || nextItem.id}|${nextListOffset}`;
+      const cursorScore = userId ? nextItem.createdAt : (nextItem.hotScore ?? nextItem.createdAt);
+      nextCursor = `${stagePrefix}${cursorScore}|${nextItem._id || nextItem.id}|${nextListOffset}`;
     }
 
     const res = NextResponse.json({ 

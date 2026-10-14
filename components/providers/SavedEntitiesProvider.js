@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useSession } from "next-auth/react";
+import ListPickerModal from "@components/ListPickerModal";
 
 /**
  * SavedEntitiesProvider — global, session-scoped cache of every entity the
@@ -62,6 +63,7 @@ export function SavedEntitiesProvider({ children }) {
   // null = not loaded yet.
   const [lists, setLists] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activePickerEntity, setActivePickerEntity] = useState(null);
   const fetchedRef = useRef(false);
   const hydratedFromCacheRef = useRef(false);
 
@@ -150,6 +152,11 @@ export function SavedEntitiesProvider({ children }) {
         requestLoad();
         return membershipMap.get(String(entityId)) || new Set();
       },
+      openPicker: (entity) => {
+        ensureLoaded();
+        setActivePickerEntity(entity);
+      },
+      closePicker: () => setActivePickerEntity(null),
       addSaved: (entityId, ref) =>
         setLists((prev) =>
           (prev ?? []).map((l) =>
@@ -176,6 +183,13 @@ export function SavedEntitiesProvider({ children }) {
   return (
     <SavedEntitiesContext.Provider value={value}>
       {children}
+      {activePickerEntity && (
+        <ListPickerModal
+          isOpen={!!activePickerEntity}
+          entity={activePickerEntity}
+          onClose={() => setActivePickerEntity(null)}
+        />
+      )}
     </SavedEntitiesContext.Provider>
   );
 }

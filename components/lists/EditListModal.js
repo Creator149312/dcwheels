@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import TagInput from "@components/TagInput";
 
 export default function EditListModal({ isOpen, onClose, list, isSystem = false, onSave }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [format, setFormat] = useState("standard");
-  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,7 +17,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
       setName(list.name || "");
       setDescription(list.description || "");
       setFormat(list.format || "standard");
-      setTagInput(Array.isArray(list.tags) ? list.tags.join(", ") : "");
+      setTags(Array.isArray(list.tags) ? list.tags : []);
     }
   }, [list]);
 
@@ -26,14 +27,7 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
     setIsSaving(true);
     setError("");
     try {
-      const tagArray = tagInput
-        ? tagInput
-            .split(",")
-            .map((t) => t.trim().toLowerCase())
-            .filter((t) => t.length > 0)
-        : [];
-
-      await onSave({ name, description, tags: tagArray, format });
+      await onSave({ name, description, tags, format });
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -139,17 +133,15 @@ export default function EditListModal({ isOpen, onClose, list, isSystem = false,
           {!isSystem && (
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
-                Tags (comma separated)
+                Tags
               </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2.5 rounded-lg border bg-card border-border text-foreground hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
+              <TagInput
+                value={tags}
+                onChange={setTags}
                 placeholder="e.g. watchlist, favorites, 2024"
               />
               <p className="text-xs text-muted-foreground mt-1.5 opacity-80">
-                Tags help others discover your public lists in Tag Spaces.
+                Tags help others discover your public lists in Tag Spaces. Press Enter or comma to add.
               </p>
             </div>
           )}

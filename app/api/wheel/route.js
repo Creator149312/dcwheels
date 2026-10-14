@@ -9,6 +9,9 @@ import { cleanupBlobAssets } from "@lib/blob-cleanup";
 import { createImmutableGlobalSlug } from "@utils/UrlHandler";
 import { syncWheelIndexedState } from "@lib/wheelIndexGate";
 import { validateContentSafety, validateWheelSegmentsSafety } from "@lib/contentSafety";
+import { calculateDiffRatio } from "@lib/contentDiff";
+import TopicPage from "@models/topicpage";
+import { normalizeTag } from "@lib/slug";
 
 // Strip base64 images from segment data before persisting to DB.
 // Blob URLs (https://...) are kept; data:image/... strings are removed.
@@ -42,7 +45,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Invalid session: missing user id" }, { status: 401 });
     }
 
-    const { title, description, data, wheelData, relatedTopics, tags, type } =
+    const { title, description, data, wheelData, relatedTopics, tags, type, forkedFromWheelId } =
       await request.json();
     let vlt = validateListTitle(title);
     let vld = validateListDescription(description);
@@ -77,6 +80,64 @@ export async function POST(request) {
         const idForSlug = new mongoose.Types.ObjectId().toString();
         const slug = await createImmutableGlobalSlug({ title, id: idForSlug });
 
+        // Lineage & Canonical Fork Filter:
+        // If this wheel was created by remixing/editing an existing wheel,
+        // compute the originality difference ratio against the parent segments.
+        let forkedFromData = undefined;
+        let diffRatio = 0;
+
+        if (forkedFromWheelId && mongoose.Types.ObjectId.isValid(forkedFromWheelId)) {
+          const parentWheel = await Wheel.findById(forkedFromWheelId)
+            .select("_id data authorHandle isPublic")
+            .lean();
+
+          if (parentWheel && parentWheel.isPublic !== false) {
+            forkedFromData = {
+              wheelId: parentWheel._id,
+              authorHandle: parentWheel.authorHandle || null,
+            };
+            diffRatio = calculateDiffRatio(parentWheel.data || [], data || []);
+          }
+        }
+
+        // Inherit TopicPage canonical slug and top tags when created from a Topic Page (relatedTopics)
+        const normalizedWheelTags = Array.isArray(tags)
+          ? tags
+              .map((t) => (typeof t === "string" ? normalizeTag(t) : t))
+              .filter(Boolean)
+          : [];
+
+        if (Array.isArray(relatedTopics) && relatedTopics.length > 0) {
+          try {
+            const firstTopic = relatedTopics[0];
+            if (firstTopic?.type && firstTopic?.id) {
+              const matchedTopic = await TopicPage.findOne({
+                type: firstTopic.type,
+                relatedId: firstTopic.id,
+              })
+                .select("slug tags")
+                .lean();
+
+              if (matchedTopic) {
+                if (matchedTopic.slug) {
+                  const s = normalizeTag(matchedTopic.slug);
+                  if (s && !normalizedWheelTags.includes(s)) normalizedWheelTags.push(s);
+                }
+                if (Array.isArray(matchedTopic.tags)) {
+                  for (const t of matchedTopic.tags.slice(0, 4)) {
+                    const norm = normalizeTag(t);
+                    if (norm && !normalizedWheelTags.includes(norm)) {
+                      normalizedWheelTags.push(norm);
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Inheriting wheel TopicPage tags failed:", e);
+          }
+        }
+
         const creationData = await Wheel.create({
           _id: idForSlug,
           title,
@@ -89,12 +150,11 @@ export async function POST(request) {
           wheelData,
           ...(type && ["basic", "quiz"].includes(type) ? { wheelType: type } : {}),
           relatedTopics: Array.isArray(relatedTopics) ? relatedTopics : [],
+          ...(forkedFromData ? { forkedFrom: forkedFromData, diffRatio } : {}),
           // Tags are lowercased + trimmed by the schema setter; we still
           // filter out non-strings and empties here as a defensive layer
           // against malformed client payloads.
-          tags: Array.isArray(tags)
-            ? tags.filter((t) => typeof t === "string" && t.trim().length > 0)
-            : [],
+          tags: normalizedWheelTags,
         });
 
         // Evaluate and sync wheel indexed state

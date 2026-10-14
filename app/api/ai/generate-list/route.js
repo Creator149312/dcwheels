@@ -2,6 +2,8 @@ import { callOpenAI } from "@components/actions/actions";
 import { sessionUserId } from "@utils/SessionData";
 import { aiGate } from "@lib/aiGate";
 
+export const maxDuration = 30;
+
 export async function POST(req) {
   const blocked = await aiGate(req);
   if (blocked) return blocked;

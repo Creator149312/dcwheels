@@ -68,11 +68,28 @@ function QuickSaveButton({
     trackAffinity(entityType, "save");
 
     const prevRef = savedRef;
+    const memberListIds = savedEntities ? savedEntities.getMemberListIds(entityId) : new Set();
+
+    // ── YOUTUBE-STYLE AMBIGUITY RESOLUTION ─────────────────────────────
+    // If this item is present in MULTIPLE lists (> 1), clicking un-save
+    // would be ambiguous. Open the list picker modal so the user can choose
+    // which list(s) to remove it from or keep it in.
+    if (prevRef && memberListIds.size > 1 && savedEntities?.openPicker) {
+      savedEntities.openPicker({
+        entityId,
+        entityType,
+        name: itemTitle,
+        slug: itemSlug,
+        image: itemImage,
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (prevRef) {
-        // ── UNSAVE ─────────────────────────────────────────────────────
+        // ── UNSAVE (Single list membership) ────────────────────────────
         setSaved(null, prevRef.listId); // optimistic
         const res = await fetch(
           `/api/unifiedlist/${prevRef.listId}/items/${prevRef.itemId}`,

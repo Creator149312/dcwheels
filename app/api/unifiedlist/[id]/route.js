@@ -213,6 +213,9 @@ export async function PUT(req, { params }) {
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);  // bust unstable_cache entry in lib/lists.js
+    if (list.slug) {
+      revalidateTag(`list-${list.slug}`);
+    }
     if (list.userId) {
       revalidateTag(`profile-${list.userId}`);
     }
@@ -286,6 +289,9 @@ export async function DELETE(req, { params }) {
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
+    if (list.slug) {
+      revalidateTag(`list-${list.slug}`);
+    }
     if (list.userId) {
       revalidateTag(`profile-${list.userId}`);
     }
@@ -393,6 +399,9 @@ export async function PATCH(req, { params }) {
     revalidatePath(`/lists/${id}`);
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
+    if (list.slug) {
+      revalidateTag(`list-${list.slug}`);
+    }
     if (list.userId) {
       revalidateTag(`profile-${list.userId}`);
     }

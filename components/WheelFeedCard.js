@@ -42,9 +42,9 @@ function WheelFeedCard({ wheel }) {
   if (isHidden) return null;
 
   return (
-    <div className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-4 sm:border sm:border-border/60 sm:rounded-2xl sm:px-5 sm:py-6 transition-all duration-200 hover:bg-card hover:shadow-xs dark:hover:bg-muted/30 sm:mb-0">
+    <div className="border-b border-border/40 bg-card/60 dark:bg-muted/20 sm:shadow-2xs py-3 sm:border sm:border-border/60 sm:rounded-2xl sm:px-5 sm:py-4 sm:mb-0">
       {/* Header: Author + Time + Menu */}
-      <div className="flex items-center justify-between gap-2 mb-3 px-4 sm:px-0">
+      <div className="flex items-center justify-between gap-2 mb-2 px-4 sm:px-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary">
             {firstLetter}
@@ -53,7 +53,7 @@ function WheelFeedCard({ wheel }) {
             <div className="flex items-center gap-1.5 text-sm">
               <Link
                 href={`/u/${encodeURIComponent(authorHandle.toLowerCase())}`}
-                className="font-bold text-foreground hover:underline transition truncate"
+                className="font-bold text-foreground hover:underline truncate"
                 title={authorName}
               >
                 {authorName}
@@ -82,73 +82,70 @@ function WheelFeedCard({ wheel }) {
         />
       </div>
 
-      {/* Sleek Compact Media Badge with Large Wheel Graphic */}
-      <Link
-        href={wheelUrl}
-        className="group flex flex-row items-center gap-3.5 sm:gap-5 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/30 hover:bg-muted/60 border border-border/50 hover:border-primary/40 transition-all duration-200 shadow-2xs hover:shadow-xs mx-0 sm:mx-0"
-      >
-        {/* Large Wheel Image Container */}
-        <div className="relative flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 rounded-lg sm:rounded-xl bg-background/90 border border-border/50 overflow-hidden flex items-center justify-center p-1.5 shadow-inner">
-          {imgSrc ? (
-            <Image
-              src={imgSrc}
-              alt={wheel.title}
-              width={160}
-              height={160}
-              className="w-full h-full object-contain drop-shadow-md group-hover:rotate-12 group-hover:scale-105 transition-transform duration-500 ease-out"
-              onError={() => {
-                if (imgSrc !== wheel.wheelPreview && wheel.wheelPreview) {
-                  setImgSrc(wheel.wheelPreview);
-                } else {
-                  setImgSrc(null);
-                }
-              }}
-            />
-          ) : (
-            <span className="text-3xl sm:text-4xl font-black text-muted-foreground/30 group-hover:scale-110 transition-transform">
-              {wheel.title?.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
+      {/* Wheel Title & Description */}
+      <div className="mb-2.5 px-4 sm:px-0">
+        <Link href={wheelUrl} className="block">
+          <h2 className="font-extrabold text-foreground text-base sm:text-lg leading-snug hover:text-primary">
+            {wheel.title}
+          </h2>
+        </Link>
+        {wheel.description && (
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+            {wheel.description}
+          </p>
+        )}
+      </div>
 
-        {/* Info Column */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
-          <div>
-            <h3 className="font-bold text-foreground text-base sm:text-lg leading-snug group-hover:text-primary transition-colors line-clamp-2">
-              {wheel.title}
-            </h3>
-            {wheel.description ? (
-              <p className="text-sm sm:text-[15px] text-muted-foreground line-clamp-2 leading-relaxed mt-1">
-                {wheel.description}
-              </p>
+      {/* Vertical Feed-Optimized Wheel Showcase (Zero-canvas static graphic with CTA pill) */}
+      <div className="px-4 sm:px-0">
+        <Link
+          href={wheelUrl}
+          className="relative block w-full aspect-square max-w-[200px] sm:max-w-[220px] max-h-[220px] mx-auto rounded-2xl bg-muted/20 border border-border/50 overflow-hidden p-2 sm:p-2.5"
+        >
+          {/* Wheel Graphic Container */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {imgSrc ? (
+              <Image
+                src={imgSrc}
+                alt={wheel.title}
+                width={220}
+                height={220}
+                className="w-full h-full object-contain drop-shadow-md"
+                onError={() => {
+                  if (imgSrc !== wheel.wheelPreview && wheel.wheelPreview) {
+                    setImgSrc(wheel.wheelPreview);
+                  } else {
+                    setImgSrc(null);
+                  }
+                }}
+              />
             ) : (
-              <p className="text-xs sm:text-sm text-muted-foreground/60 italic mt-1">
-                Tap to spin this custom wheel
-              </p>
+              <div className="w-32 h-32 rounded-full border-4 border-dashed border-border/60 flex items-center justify-center">
+                <span className="text-3xl font-black text-muted-foreground/30">
+                  {wheel.title?.charAt(0).toUpperCase()}
+                </span>
+              </div>
             )}
-          </div>
 
-          {/* Bottom Action Row */}
-          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border/30">
-            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Interactive Wheel
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-2xs group-hover:bg-primary/90 group-active:scale-95 transition-all">
-              <Play size={11} fill="currentColor" /> Spin
-            </span>
+            {/* Floating Pill CTA */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background/90 dark:bg-card/90 backdrop-blur-md border border-border/80 text-foreground font-black text-xs tracking-wide shadow-lg">
+                <Play size={11} fill="currentColor" />
+                <span>SPIN WHEEL</span>
+              </span>
+            </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      </div>
 
       {/* Tags */}
       {wheel.tags && wheel.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-4 sm:px-0 mt-3">
+        <div className="flex flex-wrap gap-1.5 px-4 sm:px-0 mt-2.5 pt-1">
           {wheel.tags.slice(0, 3).map((tag) => (
             <Link
               key={tag}
               href={`/tags/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 transition"
+              className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-0.5 bg-primary/10 text-primary"
             >
               #{tag}
             </Link>

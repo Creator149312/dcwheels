@@ -83,9 +83,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid entityType" }, { status: 400 });
     }
 
-    if (!["want", "done"].includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-    }
+    // UserEntityStatus strictly records completion ("done").
+    // Removing from watched/played is handled via DELETE.
+    const normalizedStatus = status === "done" ? "done" : "done";
 
     const row = await UserEntityStatus.findOneAndUpdate(
       { userId, entityId: String(entityId) },
@@ -93,7 +93,7 @@ export async function POST(req) {
         $set: {
           entityType,
           name: String(name).slice(0, 200),
-          status,
+          status: normalizedStatus,
           updatedAt: new Date(),
         },
         $setOnInsert: {

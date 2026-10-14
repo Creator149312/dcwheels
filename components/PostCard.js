@@ -68,6 +68,7 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
   const [showComments, setShowComments] = useState(defaultOpenComments);
   const [commentCount, setCommentCount] = useState(post.commentCount || 0);
   const [showSpinModal, setShowSpinModal] = useState(false);
+  const [defendPrompt, setDefendPrompt] = useState(null);
 
   // Top-right post menu
   const [menuOpen, setMenuOpen] = useState(false);
@@ -213,35 +214,89 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
       {/* Dilemma Viewer (for polls) */}
       {post.hasPoll && post.pollOptions?.length > 0 && (
         <div className="mb-5 px-4 sm:px-0">
-          <DilemmaViewer post={post} postId={post._id || post.id} />
+          <DilemmaViewer
+            post={post}
+            postId={post._id || post.id}
+            initialVotedOptionId={post.userVotedOptionId || null}
+            onVoteSuccess={(optionText) => {
+              setDefendPrompt(optionText || "your pick");
+              setShowComments(true);
+            }}
+          />
+
+          {/* Defend Your Take viral prompt */}
+          {defendPrompt && (
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs sm:text-sm animate-in fade-in slide-in-from-top-1">
+              <span className="font-medium text-foreground">
+                Voted for <span className="font-bold text-primary">&ldquo;{defendPrompt}&rdquo;</span>? Defend your take in the comments!
+              </span>
+              <button
+                onClick={() => {
+                  setShowComments(true);
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("comment-form:focus"));
+                  }, 150);
+                }}
+                className="shrink-0 font-bold text-primary hover:underline ml-2"
+              >
+                Comment &rarr;
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
-      {post.contentRef && (
-        !currentContextId || (
-          String(post.contentRef.externalId) !== String(currentContextId) &&
-          (!post.contentRef.slug || String(post.contentRef.slug) !== String(currentContextId))
-        )
-      ) && (
-        <div className="px-4 sm:px-0 mb-4">
-          <ContentRefCard
-            href={
-              post.contentRef.type === "wheel"
-                ? getWheelUrl({ _id: post.contentRef.externalId, slug: post.contentRef.slug })
-                : post.contentRef.type === "list"
-                  ? getListUrl({ id: post.contentRef.externalId, slug: post.contentRef.slug })
-                  : `/${post.contentRef.type}/${post.contentRef.slug || encodeURIComponent(post.contentRef.externalId)}`
-            }
-            image={post.contentRef.image}
-            title={post.contentRef.title}
-            type={post.contentRef.type}
-          />
-        </div>
-      )}
+      {(() => {
+        const rawEntities = Array.isArray(post.entities) && post.entities.length > 0
+          ? post.entities
+          : (post.contentRef ? [post.contentRef] : []);
+
+        const visibleEntities = currentContextId
+          ? rawEntities.filter(
+              (e) =>
+                String(e.externalId) !== String(currentContextId) &&
+                (!e.slug || String(e.slug) !== String(currentContextId))
+            )
+          : rawEntities;
+
+        if (visibleEntities.length === 0) return null;
+
+        const isMulti = visibleEntities.length > 1;
+
+        return (
+          <div className="px-4 sm:px-0 mb-4 flex flex-wrap items-center gap-1.5">
+            {visibleEntities.map((entity, idx) => (
+              <span
+                key={`${entity.type}-${entity.externalId || entity.slug || idx}`}
+                className="inline-flex items-center gap-1.5"
+              >
+                <ContentRefCard
+                  href={
+                    entity.type === "wheel"
+                      ? getWheelUrl({ _id: entity.externalId, slug: entity.slug })
+                      : entity.type === "list"
+                        ? getListUrl({ id: entity.externalId, slug: entity.slug })
+                        : `/${entity.type}/${entity.slug || encodeURIComponent(entity.externalId)}`
+                  }
+                  image={entity.image}
+                  title={entity.title}
+                  type={entity.type}
+                  compact={isMulti}
+                />
+                {idx < visibleEntities.length - 1 && (
+                  <span className="text-[11px] font-black uppercase text-muted-foreground/60 tracking-wider px-0.5">
+                    vs
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* OG Link Preview Card */}
-      {!post.image && !post.hasPoll && !post.contentRef && post.ogMeta && (
+      {!post.image && !post.hasPoll && !post.contentRef && (!post.entities || post.entities.length === 0) && post.ogMeta && (
         <div className="px-4 sm:px-0 mb-4">
           <Link 
             href={post.ogMeta.url}

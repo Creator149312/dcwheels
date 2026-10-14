@@ -5,22 +5,27 @@ import { aiGate } from "@lib/aiGate";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+export const maxDuration = 30;
+
 export async function POST(req) {
   const blocked = await aiGate(req);
   if (blocked) return blocked;
 
   const { prompt } = await req.json();
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `Return 1 relevant anime name in camel case as a string for the wheel titled: "${prompt}".`,
-        },
-      ],
-      max_tokens: 100,
-    });
+    const response = await openai.chat.completions.create(
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: `Return 1 relevant anime name in camel case as a string for the wheel titled: "${prompt}".`,
+          },
+        ],
+        max_tokens: 100,
+      },
+      { signal: AbortSignal.timeout(20000) }
+    );
 
     const tagsText = response.choices[0].message.content.trim();
     // Parse array from AI response

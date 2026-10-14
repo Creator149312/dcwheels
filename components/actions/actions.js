@@ -1275,12 +1275,16 @@ export async function getWheelMeta(wheelId, userId = null) {
  * - Errors during logging are caught and printed, but do not affect the API response.
  */
 export async function callOpenAI(userId, prompt, options, promptToStoreInDB) {
-  // Call OpenAI
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    ...options,
-  });
+  // Call OpenAI with a 25-second timeout to prevent serverless execution hangs
+  const signal = options?.signal || AbortSignal.timeout(25000);
+  const response = await openai.chat.completions.create(
+    {
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      ...options,
+    },
+    { signal }
+  );
 
   //only store in ApiLog DB if user is not Admin
   if (userId !== "66dc4f8b2e40c86cdae0ea48") {

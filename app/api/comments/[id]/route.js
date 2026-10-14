@@ -10,6 +10,7 @@ import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@/utils/SessionData";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
+import { refreshEntityHotScore } from "@lib/hotScore";
 
 // ✅ Edit a comment
 export async function PATCH(req, { params }) {
@@ -107,11 +108,14 @@ export async function DELETE(req, { params }) {
       ];
       if (comment.entityType === "post") {
         await Post.updateOne({ _id: comment.entityId }, decrementStage);
+        refreshEntityHotScore(Post, comment.entityId).catch(() => {});
       } else if (comment.entityType === "wheel" || comment.entityType === "uwheel") {
         await Wheel.updateOne({ _id: comment.entityId }, decrementStage);
+        refreshEntityHotScore(Wheel, comment.entityId).catch(() => {});
       } else if (comment.entityType === "list") {
         await UnifiedList.updateOne({ _id: comment.entityId }, decrementStage);
         syncListIndexedState(comment.entityId).catch(() => {});
+        refreshEntityHotScore(UnifiedList, comment.entityId).catch(() => {});
       }
     } catch (countErr) {
       console.error("Error decrementing comment count:", countErr);

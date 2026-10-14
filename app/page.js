@@ -17,7 +17,7 @@ export default async function Home() {
   const nextItem = allItems.slice(FEED_PAGE_SIZE).find((i) => (i._docType || i.docType) !== "list") || null;
   const hasList = items.some(i => i.docType === "list" || i._docType === "list");
   const initialNextCursor = nextItem
-    ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`
+    ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`
     : null;
 
   return (

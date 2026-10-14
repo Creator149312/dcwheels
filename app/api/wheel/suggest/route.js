@@ -67,7 +67,15 @@ export async function GET(request) {
       })),
     ].slice(0, MAX_SUGGESTIONS);
 
-    return NextResponse.json({ suggestions, error: null }, { status: 200 });
+    return NextResponse.json(
+      { suggestions, error: null },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Suggest error:", error);
     return NextResponse.json(

@@ -8,6 +8,7 @@ import { sessionUserId } from "@utils/SessionData";
 import { createImmutableGlobalSlug, getListUrl } from "@utils/UrlHandler";
 import { syncListIndexedState } from "@lib/listIndexGate";
 import { validateContentSafety, validateListItemsSafety } from "@lib/contentSafety";
+import { calculateDiffRatio } from "@lib/contentDiff";
 
 // GET returns the logged-in user's lists, paginated. The route is private
 // and session-driven; we keep max-age=0 so mutations are reflected immediately,
@@ -292,16 +293,18 @@ export async function POST(req) {
 
     // Only link lineage to a source the user is allowed to see.
     let forkSource = null;
+    let diffRatio = 0;
     if (forkedFromListId && mongoose.Types.ObjectId.isValid(forkedFromListId)) {
       const src = await UnifiedList.findOne({
         _id: forkedFromListId,
         isDeleted: { $ne: true },
         isSystem: { $ne: true },
       })
-        .select("_id userId isPublic slug")
+        .select("_id userId isPublic slug items")
         .lean();
       if (src && (src.isPublic !== false || String(src.userId) === String(userId))) {
         forkSource = src;
+        diffRatio = calculateDiffRatio(src.items || [], sanitizedItems || []);
       }
     }
 
@@ -322,7 +325,7 @@ export async function POST(req) {
       slug,
       format: listFormat,
       ...(Array.isArray(tierConfig) && tierConfig.length > 0 ? { tierConfig } : {}),
-      ...(forkSource ? { forkedFrom: { listId: forkSource._id, userId: forkSource.userId } } : {}),
+      ...(forkSource ? { forkedFrom: { listId: forkSource._id, userId: forkSource.userId }, diffRatio } : {}),
     });
 
     if (forkSource && String(forkSource.userId) !== String(userId)) {

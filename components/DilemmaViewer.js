@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { trackAffinity } from "@utils/affinity";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { Share2, Sparkles } from "lucide-react";
+
+// Lazy-load share modal on click to keep initial bundle light
+const DilemmaShareModal = dynamic(() => import("./DilemmaShareModal"), { ssr: false });
 
 /**
  * DilemmaViewer — displays a post's poll options as clickable dilemma cards
@@ -14,12 +19,14 @@ import Link from "next/link";
  * - Anonymous user clicks → bars reveal immediately (optimistic +1), signup nudge appears
  * - Logged-in user clicks → API call, vote persisted
  */
-export default function DilemmaViewer({ post, postId }) {
+export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVotedOptionId = null }) {
   const { data: session } = useSession();
   const openLoginPrompt = useLoginPrompt();
 
-  const [voted, setVoted] = useState(false);
+  const [voted, setVoted] = useState(() => !!initialVotedOptionId || !!post?.userVotedOptionId);
+  const [selectedOptionId, setSelectedOptionId] = useState(() => initialVotedOptionId || post?.userVotedOptionId || null);
   const [loading, setLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   // optionId picked by an anonymous user — triggers optimistic reveal
   const [optimisticPick, setOptimisticPick] = useState(null);
   const [voteCounts, setVoteCounts] = useState(
@@ -52,12 +59,7 @@ export default function DilemmaViewer({ post, postId }) {
     // (tracked in localStorage — the warm feed personalizes on their next visit).
     trackAffinity(post?.contentRef?.type || "anime", "vote");
 
-    // Anonymous: show optimistic result + nudge, don't hit the API yet
-    if (!session?.user) {
-      setOptimisticPick(optionId);
-      return;
-    }
-
+    // Frictionless voting: both registered users and guest sessions register their vote via the API.
     setLoading(true);
     try {
       const res = await fetch(`/api/post/${postId}/vote`, {
@@ -73,13 +75,20 @@ export default function DilemmaViewer({ post, postId }) {
         );
         setVoteCounts(newCounts);
         setOptimisticPick(null);
+        setSelectedOptionId(optionId);
         setVoted(true);
         toast.success("Vote recorded!");
+        const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
+        onVoteSuccess?.(chosen?.text || "");
       } else if (res.status === 409) {
+        setSelectedOptionId(optionId);
         setVoted(true);
         toast("You already voted on this poll");
+        const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
+        onVoteSuccess?.(chosen?.text || "");
       } else {
-        throw new Error("Failed to vote");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to vote");
       }
     } catch (err) {
       toast.error(err.message);
@@ -114,6 +123,8 @@ export default function DilemmaViewer({ post, postId }) {
         )}
 
         {post.pollOptions.map((option, idx) => {
+          const optId = String(option._id ?? idx);
+          const isSelected = selectedOptionId && String(selectedOptionId) === optId;
           const count = displayCounts[option._id] || 0;
           const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
           const hasImage = !!option.image;
@@ -132,7 +143,9 @@ export default function DilemmaViewer({ post, postId }) {
                     : "min-h-[48px] sm:min-h-[56px] px-3.5 py-3 sm:p-4 flex items-center justify-between bg-card"
                 }
                 ${
-                  !revealBars
+                  isSelected
+                    ? "border-primary shadow-sm ring-2 ring-primary/20"
+                    : !revealBars
                     ? "border-border hover:border-primary/60 hover:shadow-md hover:bg-primary/[0.02] active:scale-[0.98]"
                     : "border-border/80 cursor-default"
                 }
@@ -197,18 +210,23 @@ export default function DilemmaViewer({ post, postId }) {
               {/* Percentage & Vote Count Badge (after reveal) */}
               {revealBars && (
                 <div
-                  className={`relative z-10 flex items-center gap-2 ${
+                  className={`z-20 flex items-center gap-2 ${
                     hasImage
-                      ? "border-white/10 absolute top-2 right-2 m-0 p-0 border-none"
+                      ? "absolute top-2.5 left-2.5 m-0 p-0"
                       : isTwoOptions
-                      ? "justify-between border-t border-border/60 mt-2 pt-1"
-                      : "shrink-0 justify-end"
+                      ? "relative z-10 justify-between border-t border-border/60 mt-2 pt-1"
+                      : "relative z-10 shrink-0 justify-end"
                   }`}
                 >
+                  {isSelected && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                      Your vote
+                    </span>
+                  )}
                   <span
                     className={`font-black text-xs sm:text-sm ${
                       hasImage
-                        ? "bg-black/75 text-white px-2 py-0.5 rounded-md backdrop-blur-sm"
+                        ? "bg-black/80 text-white px-2.5 py-1 rounded-lg backdrop-blur-md shadow-md border border-white/20"
                         : "text-primary"
                     }`}
                   >
@@ -243,13 +261,64 @@ export default function DilemmaViewer({ post, postId }) {
 
       {/* ── Confirmed vote feedback ───────────────────────────────────────── */}
       {voted && (
-        <p className="text-center text-xs text-muted-foreground pt-1">
-          ✓ Vote recorded — {totalVotes.toLocaleString()}{" "}
-          {totalVotes === 1 ? "person has" : "people have"} voted
-        </p>
+        <div className="space-y-2.5 pt-1">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-xs text-muted-foreground">
+              ✓ Vote recorded — {totalVotes.toLocaleString()}{" "}
+              {totalVotes === 1 ? "person has" : "people have"} voted
+            </p>
+
+            {/* 1-Click Viral Share Card Trigger */}
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition border border-primary/20 hover:border-primary/40 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Share Verdict Card</span>
+            </button>
+          </div>
+
+          {/* Gentle, non-blocking upsell for guests after they participate */}
+          {!session?.user && (
+            <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/40 border border-border/50 text-xs">
+              <span className="text-muted-foreground truncate">
+                Save your votes & build your Fandom Passport:
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openLoginPrompt?.()}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Log in
+                </button>
+                <span className="text-muted-foreground/40">•</span>
+                <Link
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Sign up
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* ── Anonymous nudge ───────────────────────────────────────────────── */}
+      {/* ── Share Verdict Card Modal ──────────────────────────────────────── */}
+      {showShareModal && (
+        <DilemmaShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          postTitle={post?.title || post?.content || "Pop Culture Dilemma"}
+          options={post?.pollOptions || []}
+          voteCounts={displayCounts}
+          selectedOptionId={selectedOptionId}
+        />
+      )}
+
+      {/* ── Fallback nudge (if any optimistic state pending) ───────────────── */}
       {optimisticPick && !voted && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div>

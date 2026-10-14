@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { connectMongoDB } from "@lib/mongodb";
 import Post from "@models/post";
+import TopicPage from "@models/topicpage";
 import { sessionUser } from "@utils/SessionData";
 import { shadowBanUser } from "@lib/shadowBan";
 import { validateContentSafety } from "@lib/contentSafety";
+import { normalizeTag } from "@lib/slug";
 // Posts per minute that triggers a shadow-ban (rate limit)
 const RATE_LIMIT_PER_MINUTE = 10;
 
@@ -31,6 +33,7 @@ export async function POST(req) {
       image = null,
       imageVariants = null,
       contentRef = null,
+      entities = null,
       hasPoll = false,
       pollOptions = [],
       tags = [],
@@ -118,6 +121,120 @@ export async function POST(req) {
       }
     }
 
+    // ── Entity & Topic Anchor Normalization ─────────────────────────────────
+    let finalEntities = Array.isArray(entities)
+      ? entities
+          .filter((e) => e && (e.externalId || e.slug || e.title))
+          .slice(0, 3)
+          .map((e) => ({
+            type: e.type || "",
+            externalId: e.externalId ? String(e.externalId) : "",
+            slug: e.slug || "",
+            title: e.title || "",
+            image: e.image || null,
+            segmentCount: Number(e.segmentCount) || 0,
+          }))
+      : [];
+
+    let finalContentRef = contentRef;
+    if (!finalContentRef && finalEntities.length > 0) {
+      finalContentRef = finalEntities[0];
+    } else if (finalContentRef && finalEntities.length === 0) {
+      finalEntities = [finalContentRef];
+    }
+
+    const normalizedTags = Array.isArray(tags)
+      ? tags
+          .map((t) => (typeof t === "string" ? normalizeTag(t) : t))
+          .filter(Boolean)
+      : [];
+
+    // If post is created within a parent TopicPage (contentRef is provided),
+    // automatically inherit the parent Topic's canonical slug and top genre/meta tags.
+    // This allows users to enjoy a clean-slate writing experience without having to type repetitive tags,
+    // while ensuring the post surfaces in topic feeds and tag spaces with zero external API calls.
+    if (finalContentRef?.type && (finalContentRef.slug || finalContentRef.externalId)) {
+      try {
+        const topicQuery = finalContentRef.slug
+          ? { slug: finalContentRef.slug }
+          : { type: finalContentRef.type, relatedId: finalContentRef.externalId };
+
+        const parentTopic = await TopicPage.findOne(topicQuery)
+          .select("slug tags type")
+          .lean();
+
+        if (parentTopic) {
+          const inherited = [];
+          if (parentTopic.slug) {
+            inherited.push(normalizeTag(parentTopic.slug));
+          }
+          if (Array.isArray(parentTopic.tags)) {
+            // Inherit up to 4 top genre/theme tags to keep indexing crisp and prevent tag bloat
+            for (const t of parentTopic.tags.slice(0, 4)) {
+              const norm = normalizeTag(t);
+              if (norm && !inherited.includes(norm)) {
+                inherited.push(norm);
+              }
+            }
+          }
+
+          // Merge without duplicates
+          for (const t of inherited) {
+            if (!normalizedTags.includes(t)) {
+              normalizedTags.push(t);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Inheriting TopicPage tags failed:", err);
+      }
+    }
+
+    // Safety-net fallback: If no entities were chosen, but user provided tags,
+    // check if any tag exactly matches a canonical TopicPage slug and auto-bind.
+    if (finalEntities.length === 0 && !finalContentRef && normalizedTags.length > 0) {
+      try {
+        const matchedTopic = await TopicPage.findOne({
+          slug: { $in: normalizedTags },
+        })
+          .select("type relatedId slug title cover tags")
+          .lean();
+
+        if (matchedTopic) {
+          const autoRef = {
+            type: matchedTopic.type,
+            externalId: String(matchedTopic.relatedId),
+            slug: matchedTopic.slug,
+            title:
+              matchedTopic.title?.default ||
+              matchedTopic.title?.english ||
+              matchedTopic.title?.romaji ||
+              matchedTopic.slug,
+            image: matchedTopic.cover || null,
+            segmentCount: 0,
+          };
+          finalContentRef = autoRef;
+          finalEntities = [autoRef];
+
+          // Inherit tags from matched topic as well
+          const matchedSlug = normalizeTag(matchedTopic.slug);
+          if (matchedSlug && !normalizedTags.includes(matchedSlug)) {
+            normalizedTags.unshift(matchedSlug);
+          }
+          if (Array.isArray(matchedTopic.tags)) {
+            for (const t of matchedTopic.tags.slice(0, 4)) {
+              const norm = normalizeTag(t);
+              if (norm && !normalizedTags.includes(norm)) {
+                normalizedTags.push(norm);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("TopicPage tag fallback match failed:", e);
+      }
+    }
+
     // Create post
     const post = new Post({
       userId: user._id,
@@ -132,7 +249,8 @@ export async function POST(req) {
             lg: imageVariants.lg || image || null,
           }
         : null,
-      contentRef: contentRef || null,
+      contentRef: finalContentRef || null,
+      entities: finalEntities,
       hasPoll: !!hasPoll,
       pollOptions: hasPoll
         ? pollOptions.map((opt) => ({
@@ -147,11 +265,7 @@ export async function POST(req) {
             voteCount: 0,
           }))
         : [],
-      tags: Array.isArray(tags)
-        ? tags
-            .map((t) => (typeof t === "string" ? t.toLowerCase().trim() : t))
-            .filter(Boolean)
-        : [],
+      tags: normalizedTags,
       isPublic: !!isPublic,
       ogMeta,
       shadowBanned: shouldShadowBan,

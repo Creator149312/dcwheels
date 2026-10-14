@@ -94,21 +94,14 @@ const wheelSchema = new Schema(
     tags: {
       type: [String],
       default: [],
-      set: (tags) =>
-        Array.isArray(tags)
+      set: (tags) => {
+        const { normalizeTag } = require("@lib/slug");
+        return Array.isArray(tags)
           ? tags
-              .map((t) =>
-                typeof t === "string"
-                  ? t
-                      .toLowerCase()
-                      .trim()
-                      .replace(/\s+/g, "-")        // spaces → hyphens
-                      .replace(/[^a-z0-9-]/g, "")  // strip non-url chars
-                      .replace(/^-+|-+$/g, "")      // trim leading/trailing hyphens
-                  : t
-              )
-              .filter(Boolean) // drop any tags that normalised to empty string
-          : tags,
+              .map((t) => (typeof t === "string" ? normalizeTag(t) : t))
+              .filter(Boolean)
+          : tags;
+      },
     },
     //new field Added Related To
     //
@@ -165,6 +158,22 @@ const wheelSchema = new Schema(
     // SEO & Content fields from legacy Page model
     content: [{ type: Object, default: {} }],
     indexed: { type: Boolean, default: false },
+
+    // Logarithmic Epoch-Based HotScore (createdAtSeconds + log10(points) * 43200)
+    hotScore: {
+      type: Number,
+      default: () => Math.floor(Date.now() / 1000),
+      index: true,
+    },
+
+    // Remix / Fork Tracking (Canonical Fork Filter):
+    // If a user clicks "Remix Wheel", we link back to the parent wheel.
+    // diffRatio records how much the remix modified the original slices (0.0 to 1.0).
+    forkedFrom: {
+      wheelId: { type: Schema.Types.ObjectId, ref: 'Wheel', default: null },
+      authorHandle: { type: String, default: null },
+    },
+    diffRatio: { type: Number, default: 0, min: 0, max: 1 },
   },
   {
     timestamps: true,
@@ -201,6 +210,11 @@ wheelSchema.index({ tags: 1, isPublic: 1, likeCount: -1 });
 // so it is smaller and faster than the full compound above.
 wheelSchema.index(
   { tags: 1, isPublic: 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, isPublic: true } }
+);
+
+wheelSchema.index(
+  { isPublic: 1, hotScore: -1, _id: -1 },
   { partialFilterExpression: { isDeleted: false, isPublic: true } }
 );
 

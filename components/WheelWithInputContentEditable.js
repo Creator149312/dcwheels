@@ -6,7 +6,7 @@ import WheelPlayerControls from "./WheelPlayerControls";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Edit2, X } from "lucide-react";
+import { Edit2, X, GitFork } from "lucide-react";
 
 // Lightweight, zero-dependency, Retina-crisp native canvas wheel
 const Wheel = dynamic(() => import("./SpinWheelCanvas"), {
@@ -42,6 +42,7 @@ const WheelWithInputContentEditable = ({
   wheelPresetSettings,
   wheelTitle: pageWheelTitle,
   wheelPreview: pageWheelPreview,
+  wheelSlug = "",
   wheelTypeProp = "basic",
   relatedWheelsSlot,
   wheelId = null,
@@ -77,7 +78,52 @@ const WheelWithInputContentEditable = ({
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [forkedFrom, setForkedFrom] = useState(null);
   const wheelContainerRef = useRef(null);
+
+  // Read forkedFrom from localStorage or ?remix= query parameter on creation page
+  useEffect(() => {
+    if (typeof window === "undefined" || !isWheelsCreatePage) return;
+
+    const remixParam = searchParams.get("remix");
+    if (remixParam) {
+      fetch(`/api/wheel/${remixParam}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((result) => {
+          if (result?.wheel) {
+            const parent = result.wheel;
+            const forked = {
+              wheelId: String(remixParam),
+              authorHandle: parent.authorHandle || null,
+            };
+            setForkedFrom(forked);
+            try {
+              const raw = window.localStorage.getItem("SpinpapaWheel") || "{}";
+              const parsed = JSON.parse(raw);
+              parsed.forkedFrom = forked;
+              if (Array.isArray(parent.data) && parent.data.length > 0) {
+                parsed.data = parent.data;
+                setSegData(parent.data);
+              }
+              if (parent.title) parsed.title = parent.title;
+              window.localStorage.setItem("SpinpapaWheel", JSON.stringify(parsed));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem("SpinpapaWheel");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.forkedFrom?.wheelId) {
+          setForkedFrom(parsed.forkedFrom);
+        }
+      }
+    } catch {}
+  }, [isWheelsCreatePage, searchParams, setSegData]);
 
   // Memoize slice and background colors so new array references aren't created on every render
   const wheelBackgroundColors = useMemo(() => {
@@ -215,6 +261,18 @@ const WheelWithInputContentEditable = ({
 
   return (
     <>
+      {/* Subtle Remix Banner on Wheel Creation */}
+      {isWheelsCreatePage && forkedFrom?.wheelId && (
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 mb-2">
+          <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">
+            <GitFork size={14} className="text-primary shrink-0" />
+            <span className="flex-1 min-w-0 truncate">
+              Remixing from {forkedFrom.authorHandle ? `@${forkedFrom.authorHandle}` : "original wheel"}. Your changes save as a new creation.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-12 xl:grid-cols-8 gap-x-2 gap-y-1 max-w-7xl mx-auto px-0 sm:px-2 mt-2">
         <div
           ref={wheelContainerRef}
@@ -248,6 +306,7 @@ const WheelWithInputContentEditable = ({
               mustSpin={mustSpin}
               onSpinAgain={handleSpinClick}
               wheelId={wheelId}
+              wheelSlug={wheelSlug}
               wheelPreview={pageWheelPreview}
             />
           )}
@@ -279,7 +338,7 @@ const WheelWithInputContentEditable = ({
               innerBorderColor="white"
               fontWeight="normal"
               spinDuration={(wheelData?.spinDuration || 5) / (MAX_SPIN_TIME || 5)}
-              fontSize={wheelData?.fontSize || segTxtfontSize}
+              fontSize={wheelData?.fontSize && Number(wheelData.fontSize) > 1 ? Number(wheelData.fontSize) : undefined}
               backgroundColors={wheelBackgroundColors}
               textColors={wheelTextColors}
               onTick={playTick}
@@ -331,6 +390,8 @@ const WheelWithInputContentEditable = ({
             isEditingActive={currentPath === "/" || isWheelsCreatePage || isEditMode}
             wheelTitle={pageWheelTitle}
             wheelDescription={wheelData?.description}
+            wheelId={wheelId}
+            authorHandle={wheelPresetSettings?.authorHandle}
           />
         </div>
 

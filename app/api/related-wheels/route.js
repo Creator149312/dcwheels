@@ -2,6 +2,7 @@
 import { connectMongoDB } from "@lib/mongodb";
 import Wheel from "@models/wheel";
 import { NextResponse } from "next/server";
+import { apiError, isValidObjectId } from "@/lib/apiHelpers";
 
 export async function GET(req) {
   await connectMongoDB();
@@ -15,6 +16,10 @@ export async function GET(req) {
     return NextResponse.json({ error: "Tags required" }, { status: 400 });
   }
 
+  if (currentId && !isValidObjectId(currentId)) {
+    return NextResponse.json({ error: "Invalid wheel ID format" }, { status: 400 });
+  }
+
   const tagArray = tagsParam.split(",");
 
   try {
@@ -23,11 +28,10 @@ export async function GET(req) {
       query._id = { $ne: currentId }; // exclude current wheel
     }
 
-    const related = await Wheel.find(query).limit(10).exec();
+    const related = await Wheel.find(query).limit(10).lean();
 
-    // console.log("Related wheels" + related);
     return NextResponse.json(related);
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return apiError(err, "Failed to fetch related wheels");
   }
 }

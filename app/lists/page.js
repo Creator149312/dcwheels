@@ -26,7 +26,7 @@ export default async function ListsPage() {
   const items = allItems.slice(0, LISTS_PAGE_SIZE);
   const nextItem = allItems.length > LISTS_PAGE_SIZE ? allItems[LISTS_PAGE_SIZE] : null;
   const initialNextCursor = nextItem
-    ? `${nextItem.createdAt}|${nextItem._id || nextItem.id}`
+    ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}`
     : null;
 
   return (

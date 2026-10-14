@@ -1,20 +1,25 @@
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { connectMongoDB } from "@/lib/mongodb";
 import Post from "@models/post";
 import User from "@models/user";
+import PostVote from "@models/postVote";
 import PostCard from "@components/PostCard";
 import mongoose from "mongoose";
 import dynamicLoader from "next/dynamic";
 import { getPostUrl } from "@utils/UrlHandler";
 import { sessionUser } from "@utils/SessionData";
 import { isPostAdEligible } from "@/lib/adEligibility";
+import { GUEST_COOKIE_NAME } from "@/middleware";
 
 const AdsUnit = dynamicLoader(() => import("@components/ads/AdsUnit"), {
   ssr: false,
 });
 
-export const dynamic = "force-dynamic";
+// ISR: Cache public post pages and revalidate on demand or every 5 minutes.
+// Eliminates cold/warm serverless function execution and DB hits on high-volume reads.
+export const revalidate = 300;
 
 // Deduplicate database queries between generateMetadata and SinglePostPage during a single request
 const getPostAndAuthor = cache(async (id) => {
@@ -28,7 +33,7 @@ const getPostAndAuthor = cache(async (id) => {
   const requestingUserId = sessionData?.userId?.toString?.() || sessionData?.userId;
 
   const POST_PAGE_PROJECTION =
-    "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
+    "userId content hasTruncation authorName authorHandle authorImage title image imageVariants ogMeta contentRef entities hasPoll pollOptions isPublic isDeleted shadowBanned indexed createdAt updatedAt likeCount commentCount tags";
 
   const unrestrictedPost = await Post.findById(id)
     .select(POST_PAGE_PROJECTION)
@@ -44,7 +49,30 @@ const getPostAndAuthor = cache(async (id) => {
     ? await User.findById(unrestrictedPost.userId).select("name avatar").lean()
     : null;
 
-  return { post: unrestrictedPost, author };
+  // Resolve whether the current user (registered OR guest) has already voted on this post's poll
+  let userVotedOptionId = null;
+  if (unrestrictedPost.hasPoll) {
+    let voteQuery = null;
+    if (requestingUserId) {
+      voteQuery = { postId: unrestrictedPost._id, userId: requestingUserId };
+    } else {
+      const guestId = cookies().get(GUEST_COOKIE_NAME)?.value;
+      if (guestId) {
+        voteQuery = { postId: unrestrictedPost._id, guestId };
+      }
+    }
+
+    if (voteQuery) {
+      const existingVote = await PostVote.findOne(voteQuery)
+        .select("optionId")
+        .lean();
+      if (existingVote) {
+        userVotedOptionId = String(existingVote.optionId);
+      }
+    }
+  }
+
+  return { post: { ...unrestrictedPost, userVotedOptionId }, author };
 });
 
 export async function generateMetadata({ params }) {

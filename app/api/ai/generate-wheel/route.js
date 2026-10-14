@@ -5,6 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+export const maxDuration = 30;
+
 // Strip leading numbering ("1.", "1)", "-", "*"), surrounding quotes, and
 // any stray markdown emphasis the model sometimes wraps individual items in.
 function sanitizeWord(raw) {
@@ -108,7 +110,8 @@ async function generateValidJsonResponse(userPrompt, wordCount, optimize = false
         // failed, forcing the user to retry.
         max_tokens: 600,
         temperature: 0.7,
-      });
+      },
+      { signal: AbortSignal.timeout(15000) });
 
       const rawContent = response.choices?.[0]?.message?.content || "";
       const parsed = parseModelJson(rawContent);

@@ -4,6 +4,8 @@ import { aiGate } from "@lib/aiGate";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+export const maxDuration = 30;
+
 export async function POST(req) {
   const blocked = await aiGate(req);
   if (blocked) return blocked;
@@ -12,16 +14,19 @@ export async function POST(req) {
   // console.log("Rewrite Prompt Received");
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `${prompt}`,
-        },
-      ],
-      max_tokens: 300,
-    });
+    const response = await openai.chat.completions.create(
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: `${prompt}`,
+          },
+        ],
+        max_tokens: 300,
+      },
+      { signal: AbortSignal.timeout(20000) }
+    );
 
     const rewrittenText = response.choices[0].message.content.trim();
     // console.log("Rewritten Text = ", rewrittenText);

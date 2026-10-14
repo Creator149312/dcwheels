@@ -25,18 +25,18 @@ export async function generateMetadata({ params }) {
 
   const isPublic = list.isPublic ?? true;
 
-  // Privacy check: private lists are only visible to their owner.
+  // Session-free metadata: Private lists return noindex robots metadata
+  // without calling getServerSession, preserving ISR / edge caching for public lists.
+  // Ownership verification is enforced in ListDetailPage body.
   if (!isPublic && !list.isSystem) {
-    const session = await getServerSession(authOptions);
-    const sessionUserId = session?.user?.id ? String(session.user.id) : null;
-    const listUserId = list.userId ? String(list.userId) : null;
-    if (!sessionUserId || !listUserId || sessionUserId !== listUserId) {
-      return {
-        title: "List Not Found",
-        description: "The requested list does not exist.",
-        robots: "noindex",
-      };
-    }
+    return {
+      title: "Private List",
+      description: "This list is private.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
   }
 
   const title = list.name ? `${list.name}` : "User List";

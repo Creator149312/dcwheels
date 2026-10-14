@@ -91,7 +91,7 @@ const postSchema = new Schema(
     contentRef: {
       type: {
         type: String,
-        enum: ["anime", "movie", "game", "wheel", "character", ""],
+        enum: ["anime", "movie", "game", "wheel", "character", "list", ""],
       },
       externalId: String,  // e.g. "21" (AniList ID)
       slug: String,        // e.g. "1291608-dhurandhar" — full URL slug
@@ -101,6 +101,32 @@ const postSchema = new Schema(
         type: Number,
         default: 0,
       },
+    },
+
+    // Multi-entity anchor array (e.g. cross-fandom debates / VS polls, max 3)
+    entities: {
+      type: [
+        {
+          type: {
+            type: String,
+            enum: ["anime", "movie", "game", "wheel", "character", "list", ""],
+          },
+          externalId: String,
+          slug: String,
+          title: String,
+          image: String,
+          segmentCount: {
+            type: Number,
+            default: 0,
+          },
+          _id: false,
+        },
+      ],
+      default: [],
+      validate: [
+        (v) => !v || v.length <= 3,
+        "A post can reference at most 3 topics",
+      ],
     },
     
     // OpenGraph Link Preview metadata
@@ -132,16 +158,14 @@ const postSchema = new Schema(
       type: [String],
       default: [],
       index: true,
-      set: (tags) =>
-        Array.isArray(tags)
+      set: (tags) => {
+        const { normalizeTag } = require("@lib/slug");
+        return Array.isArray(tags)
           ? tags
-              .map((t) =>
-                typeof t === "string"
-                  ? t.toLowerCase().trim().replace(/\s+/g, "-")
-                  : t
-              )
+              .map((t) => (typeof t === "string" ? normalizeTag(t) : t))
               .filter(Boolean)
-          : tags,
+          : tags;
+      },
     },
     
     // Engagement metrics
@@ -195,6 +219,13 @@ const postSchema = new Schema(
       index: true,
     },
     indexed: { type: Boolean, default: false },
+
+    // Logarithmic Epoch-Based HotScore (createdAtSeconds + log10(points) * 43200)
+    hotScore: {
+      type: Number,
+      default: () => Math.floor(Date.now() / 1000),
+      index: true,
+    },
   },
   { timestamps: true }
 );
@@ -220,6 +251,11 @@ postSchema.pre("save", function (next) {
       .slice(0, 100);
   }
 
+  if (this.isNew && !this.hotScore) {
+    const ts = this.createdAt ? new Date(this.createdAt).getTime() : Date.now();
+    this.hotScore = Math.floor(ts / 1000);
+  }
+
   next();
 });
 
@@ -235,7 +271,17 @@ postSchema.index(
 );
 
 postSchema.index(
+  { isPublic: 1, hotScore: -1, _id: -1 },
+  { partialFilterExpression: { isDeleted: false, shadowBanned: false, isPublic: true } }
+);
+
+postSchema.index(
   { "contentRef.externalId": 1, "contentRef.type": 1, createdAt: -1 },
+  { partialFilterExpression: { isDeleted: false, shadowBanned: false, isPublic: true } }
+);
+
+postSchema.index(
+  { "entities.externalId": 1, "entities.type": 1, createdAt: -1 },
   { partialFilterExpression: { isDeleted: false, shadowBanned: false, isPublic: true } }
 );
 

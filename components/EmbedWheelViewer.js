@@ -102,7 +102,7 @@ export default function EmbedWheelViewer({
             innerBorderColor="white"
             fontWeight="normal"
             spinDuration={wheelData.spinDuration / MAX_SPIN_TIME}
-            fontSize={segTxtfontSize}
+            fontSize={wheelData?.fontSize && Number(wheelData.fontSize) > 1 ? Number(wheelData.fontSize) : undefined}
             backgroundColors={data.map(
               (d) => d?.style?.backgroundColor || "#EE4040"
             )}

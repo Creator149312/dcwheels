@@ -275,18 +275,12 @@ export async function PUT(req, { params }) {
     revalidatePath(getListUrl(list));
     revalidateTag(`list-${id}`);
 
+    // Return a trimmed confirmation instead of echoing all 250 item subdocuments
     return NextResponse.json(
       {
         message: "Items reordered",
-        list: {
-          id: list._id,
-          name: list.name,
-          userId: list.userId,
-          description: list.description,
-          format: list.format || "standard",
-          tierConfig: list.tierConfig,
-          items: list.items,
-        },
+        updatedAt: list.updatedAt,
+        itemCount: list.items.length,
       },
       { status: 200 }
     );
