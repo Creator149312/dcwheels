@@ -74,8 +74,7 @@ function ListShelf({ list }) {
 
   const totalItems = list.itemCount ?? list.items?.length ?? 0;
   const authorName = list.authorName || "Someone";
-  const previewItems = list.items.slice(0, 4);
-  const mobilePreviewItems = list.items.slice(0, 6);
+  const previewItems = list.items.slice(0, 5);
 
   return (
     <article className="mb-4 sm:mb-8 bg-muted/20 border-y sm:border border-border/40 sm:rounded-2xl py-4 sm:p-5 px-2 sm:px-4">
@@ -132,42 +131,23 @@ function ListShelf({ list }) {
         )}
       </div>
 
-      {/* Desktop: 4 items + CTA */}
+      {/* Desktop: 5 preview items */}
       <div className="hidden sm:grid sm:grid-cols-5 sm:gap-2 pb-2" style={{ contain: "layout style paint" }}>
         {previewItems.map((item, idx) => (
           <ListCarouselItem key={item._id || idx} item={item} />
         ))}
-        <Link
-          href={getListUrl(list)}
-          className="flex flex-col items-center justify-center p-4 text-center border border-dashed border-border/60 rounded-xl hover:bg-accent/20 transition-colors group"
-        >
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase">See all {totalItems} items</p>
-        </Link>
       </div>
 
-      {/* Mobile: Smooth Horizontal Swipe Track with peek cue + End Card */}
+      {/* Mobile: Smooth Horizontal Swipe Track with peek cue */}
       <div
         className="flex items-stretch gap-2.5 overflow-x-auto pb-2 sm:hidden snap-x snap-mandatory px-2 -mx-2 scrollbar-hide"
         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
       >
-        {mobilePreviewItems.map((item, idx) => (
+        {previewItems.map((item, idx) => (
           <div key={item._id || idx} className="w-[125px] flex-shrink-0 snap-start">
             <ListCarouselItem item={item} />
           </div>
         ))}
-        <Link
-          href={getListUrl(list)}
-          className="w-[110px] flex-shrink-0 snap-start flex flex-col items-center justify-center p-3 text-center border border-dashed border-border/60 rounded-xl bg-background/50 hover:bg-accent/20 active:scale-95 transition-all group"
-        >
-          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-            <ChevronRight className="w-5 h-5" />
-          </div>
-          <p className="text-[11px] font-black text-foreground uppercase tracking-tight">See all</p>
-          <p className="text-[10px] font-bold text-muted-foreground mt-0.5">{totalItems} items</p>
-        </Link>
       </div>
     </article>
   );
