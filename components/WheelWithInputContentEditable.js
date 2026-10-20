@@ -6,7 +6,7 @@ import WheelPlayerControls from "./WheelPlayerControls";
 import { useWheelState } from "./useWheelState";
 import { useQuizState } from "./useQuizState";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Edit2, X, GitFork } from "lucide-react";
+import { Edit2, X } from "lucide-react";
 
 // Lightweight, zero-dependency, Retina-crisp native canvas wheel
 const Wheel = dynamic(() => import("./SpinWheelCanvas"), {
@@ -261,18 +261,6 @@ const WheelWithInputContentEditable = ({
 
   return (
     <>
-      {/* Subtle Remix Banner on Wheel Creation */}
-      {isWheelsCreatePage && forkedFrom?.wheelId && (
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 mb-2">
-          <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">
-            <GitFork size={14} className="text-primary shrink-0" />
-            <span className="flex-1 min-w-0 truncate">
-              Remixing from {forkedFrom.authorHandle ? `@${forkedFrom.authorHandle}` : "original wheel"}. Your changes save as a new creation.
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="grid lg:grid-cols-12 xl:grid-cols-8 gap-x-2 gap-y-1 max-w-7xl mx-auto px-0 sm:px-2 mt-2">
         <div
           ref={wheelContainerRef}

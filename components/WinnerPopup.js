@@ -280,10 +280,10 @@ const WinnerPopup = ({
             <X size={18} />
           </button>
 
-          {/* Main Stage Container: Fixed consistent height so switching Share never jumps the modal height */}
-          <div className="min-h-[260px] sm:min-h-[275px] flex flex-col justify-center mb-4 min-w-0">
+          {/* Main Stage Container: Dynamic natural height — expands smoothly only when needed */}
+          <div className="flex flex-col justify-center mb-5 min-w-0">
             {!showShareCard ? (
-              <div className="text-center w-full min-w-0 animate-in fade-in duration-200">
+              <div className="text-center w-full min-w-0 py-3 sm:py-4 animate-in fade-in duration-200">
                 <p
                   className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2 sm:mb-3 opacity-70 truncate px-1"
                   style={{ color: winnerColor }}
@@ -305,7 +305,7 @@ const WinnerPopup = ({
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-3 px-2 min-w-0 py-1">
-                    {winner?.image ? (
+                    {winner?.image && (
                       <div className="relative group w-fit max-w-full">
                         <img
                           src={winner.image}
@@ -313,19 +313,8 @@ const WinnerPopup = ({
                           className="w-[125px] h-[125px] sm:w-[140px] sm:h-[140px] object-cover rounded-2xl shadow-xl border-4 border-background transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
-                    ) : (
-                      /* Text-only winner decorative badge to balance vertical space */
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-md border border-border/80 my-1"
-                        style={{
-                          background: `radial-gradient(circle at 30% 30%, ${winnerColor}30, ${winnerColor}10)`,
-                          borderColor: `${winnerColor}40`,
-                        }}
-                      >
-                        🎯
-                      </div>
                     )}
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight drop-shadow-xs break-words w-full">
+                    <h2 className="text-2xl sm:text-3xl font-black text-foreground leading-tight tracking-tight drop-shadow-xs break-words w-full">
                       {formatWinnerText(winner)}
                     </h2>
                   </div>
