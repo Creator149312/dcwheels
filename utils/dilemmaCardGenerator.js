@@ -18,20 +18,105 @@ function stripHtml(value) {
 }
 
 /**
+ * Clean and format post content / title into a concise debate headline.
+ * Cuts cleanly at word boundaries instead of slicing words mid-character.
+ */
+function formatDebateTitle(rawText, maxChars = 85) {
+  if (!rawText) return "Who Takes The Crown?";
+  let text = stripHtml(rawText).replace(/[\r\n]+/g, " ").trim();
+
+  // If text is within limit, return directly
+  if (text.length <= maxChars) return text;
+
+  // Truncate at word boundary
+  const sub = text.slice(0, maxChars);
+  const lastSpace = sub.lastIndexOf(" ");
+  if (lastSpace > 35) {
+    return sub.slice(0, lastSpace).trim() + "…";
+  }
+  return sub.trim() + "…";
+}
+
+/**
+ * Canvas text wrapping helper (up to maxLines).
+ * Returns an array of lines fitted within maxWidth.
+ */
+function wrapCanvasText(ctx, text, maxWidth, maxLines = 2) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let currentLine = "";
+
+  for (let i = 0; i < words.length; i++) {
+    const testLine = currentLine ? `${currentLine} ${words[i]}` : words[i];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = words[i];
+      if (lines.length === maxLines - 1) {
+        // Last allowed line: append remainder and truncate cleanly if needed
+        const remainingWords = words.slice(i).join(" ");
+        let finalLine = remainingWords;
+        while (ctx.measureText(finalLine + "…").width > maxWidth && finalLine.includes(" ")) {
+          finalLine = finalLine.slice(0, finalLine.lastIndexOf(" "));
+        }
+        lines.push(finalLine !== remainingWords ? finalLine + "…" : finalLine);
+        return lines;
+      }
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return lines;
+}
+
+/**
+ * Draws an image with object-fit: cover into a given bounding rectangle,
+ * properly preserving aspect ratio without distortion or stretching.
+ */
+function drawImageCover(ctx, img, x, y, width, height) {
+  const imgWidth = img.naturalWidth || img.width;
+  const imgHeight = img.naturalHeight || img.height;
+  if (!imgWidth || !imgHeight) return;
+
+  const targetRatio = width / height;
+  const imgRatio = imgWidth / imgHeight;
+
+  let sourceWidth = imgWidth;
+  let sourceHeight = imgHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (imgRatio > targetRatio) {
+    // Image is wider than target area: crop sides
+    sourceWidth = imgHeight * targetRatio;
+    sourceX = (imgWidth - sourceWidth) / 2;
+  } else {
+    // Image is taller than target area: crop top/bottom
+    sourceHeight = imgWidth / targetRatio;
+    sourceY = (imgHeight - sourceHeight) / 2;
+  }
+
+  ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+
+/**
  * Draws rounded image or color placeholder
  */
-async function drawOptionCard(ctx, { x, y, width, height, option, percentage, isVoted, vsColor }) {
+async function drawOptionCard(ctx, { x, y, width, height, option, percentage, isVoted, vsColor, isCompact = false }) {
   ctx.save();
 
   // Background box
   ctx.fillStyle = "#161d2d";
-  roundRect(ctx, x, y, width, height, 24);
+  roundRect(ctx, x, y, width, height, isCompact ? 18 : 24);
   ctx.fill();
 
   // If selected/voted option, highlight border
   ctx.strokeStyle = isVoted ? "#6366f1" : "rgba(255, 255, 255, 0.12)";
-  ctx.lineWidth = isVoted ? 5 : 2;
-  roundRect(ctx, x, y, width, height, 24);
+  ctx.lineWidth = isVoted ? (isCompact ? 4 : 5) : 2;
+  roundRect(ctx, x, y, width, height, isCompact ? 18 : 24);
   ctx.stroke();
 
   // Option Image if present
@@ -39,14 +124,14 @@ async function drawOptionCard(ctx, { x, y, width, height, option, percentage, is
     const img = await loadImageSafe(option.image);
     if (img) {
       ctx.save();
-      roundRect(ctx, x, y, width, height, 24);
+      roundRect(ctx, x, y, width, height, isCompact ? 18 : 24);
       ctx.clip();
-      ctx.drawImage(img, x, y, width, height);
+      drawImageCover(ctx, img, x, y, width, height);
 
       // Gradient overlay for contrast
-      const gradient = ctx.createLinearGradient(x, y + height * 0.3, x, y + height);
-      gradient.addColorStop(0, "rgba(0,0,0,0.1)");
-      gradient.addColorStop(0.7, "rgba(0,0,0,0.75)");
+      const gradient = ctx.createLinearGradient(x, y + height * 0.2, x, y + height);
+      gradient.addColorStop(0, "rgba(0,0,0,0.05)");
+      gradient.addColorStop(0.55, "rgba(0,0,0,0.65)");
       gradient.addColorStop(1, "rgba(0,0,0,0.92)");
       ctx.fillStyle = gradient;
       ctx.fillRect(x, y, width, height);
@@ -55,15 +140,16 @@ async function drawOptionCard(ctx, { x, y, width, height, option, percentage, is
   }
 
   // Progress percentage fill bar at the bottom
-  const barHeight = 12;
+  const barHeight = isCompact ? 10 : 12;
+  const barBottomPadding = isCompact ? 18 : 26;
   const fillWidth = Math.max(12, (width * percentage) / 100);
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-  roundRect(ctx, x + 16, y + height - 28, width - 32, barHeight, 6);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  roundRect(ctx, x + 16, y + height - barBottomPadding, width - 32, barHeight, 6);
   ctx.fill();
 
   ctx.fillStyle = isVoted ? "#6366f1" : "#38bdf8";
-  roundRect(ctx, x + 16, y + height - 28, fillWidth - 32 > 0 ? fillWidth - 32 : fillWidth, barHeight, 6);
+  roundRect(ctx, x + 16, y + height - barBottomPadding, fillWidth - 32 > 0 ? fillWidth - 32 : fillWidth, barHeight, 6);
   ctx.fill();
   ctx.restore();
 
@@ -71,39 +157,42 @@ async function drawOptionCard(ctx, { x, y, width, height, option, percentage, is
   if (isVoted) {
     ctx.save();
     ctx.fillStyle = "#6366f1";
-    roundRect(ctx, x + 16, y + 16, 120, 32, 16);
+    const badgeW = isCompact ? 100 : 120;
+    const badgeH = isCompact ? 26 : 32;
+    roundRect(ctx, x + 14, y + 14, badgeW, badgeH, 14);
     ctx.fill();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
+    ctx.font = `bold ${isCompact ? 11 : 13}px system-ui, -apple-system, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("YOUR VOTE", x + 16 + 60, y + 16 + 16);
+    ctx.fillText("YOUR VOTE", x + 14 + badgeW / 2, y + 14 + badgeH / 2);
     ctx.restore();
   }
 
   // Percentage Display
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "900 48px system-ui, -apple-system, sans-serif";
+  ctx.font = `900 ${isCompact ? 36 : 48}px system-ui, -apple-system, sans-serif`;
   ctx.shadowColor = "rgba(0,0,0,0.85)";
   ctx.shadowBlur = 12;
   ctx.textAlign = "left";
   ctx.textBaseline = "bottom";
-  ctx.fillText(`${percentage}%`, x + 20, y + height - 38);
+  ctx.fillText(`${percentage}%`, x + 18, y + height - (isCompact ? 32 : 44));
   ctx.restore();
 
   // Text title
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 26px system-ui, -apple-system, sans-serif";
+  ctx.font = `bold ${isCompact ? 22 : 26}px system-ui, -apple-system, sans-serif`;
   ctx.shadowColor = "rgba(0,0,0,0.9)";
   ctx.shadowBlur = 14;
   ctx.textAlign = "left";
   ctx.textBaseline = "bottom";
 
   const cleanText = stripHtml(option.text);
-  const truncatedText = cleanText.length > 28 ? cleanText.slice(0, 26) + "…" : cleanText;
-  ctx.fillText(truncatedText, x + 20, y + height - 92);
+  const maxChars = isCompact ? 24 : 28;
+  const truncatedText = cleanText.length > maxChars ? cleanText.slice(0, maxChars - 2) + "…" : cleanText;
+  ctx.fillText(truncatedText, x + 18, y + height - (isCompact ? 72 : 98));
   ctx.restore();
 
   ctx.restore();
@@ -182,50 +271,61 @@ export async function generateDilemmaCard({
   ctx.fillText("SPINPAPA.COM", width - 48, (isStory ? 64 : 36) + 24);
   ctx.restore();
 
-  // Post Question Title
+  // Post Question Title (Dynamic 1 or 2 lines with clean word-wrapping)
   ctx.save();
+  const titleFontSize = isStory ? 44 : 32;
+  const titleLineHeight = isStory ? 54 : 40;
+  ctx.font = `bold ${titleFontSize}px system-ui, -apple-system, sans-serif`;
   ctx.fillStyle = "#ffffff";
-  ctx.font = `bold ${isStory ? 48 : 34}px system-ui, -apple-system, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const cleanTitle = stripHtml(postTitle) || "Who Takes The Crown?";
-  const displayTitle = cleanTitle.length > 55 ? cleanTitle.slice(0, 52) + "…" : cleanTitle;
-  ctx.fillText(displayTitle, width / 2, isStory ? 200 : 120);
+
+  const cleanTitle = formatDebateTitle(postTitle, isStory ? 90 : 75);
+  const maxTitleWidth = width - 120; // 60px padding on each side
+  const titleLines = wrapCanvasText(ctx, cleanTitle, maxTitleWidth, 2);
+
+  const baseTitleY = isStory ? (titleLines.length === 1 ? 195 : 185) : (titleLines.length === 1 ? 118 : 110);
+  titleLines.forEach((line, idx) => {
+    const lineY = baseTitleY + (idx * titleLineHeight);
+    ctx.fillText(line, width / 2, lineY);
+  });
   ctx.restore();
 
   if (isStory) {
-    // ── 9:16 Story Layout (Stacked cards with central VS) ──
-    const cardWidth = width - 96;
-    const cardHeight = 520;
-    const card0Y = 320;
-    const card1Y = 960;
+    // ── 9:16 Story Layout (1080 x 1920) ──
+    // In Post Polls with images, options have aspect-square (1:1).
+    // Using a true 1:1 square for each option card:
+    const cardSize = 580; // 580 x 580 true 1:1 square
+    const cardX = (width - cardSize) / 2; // 250px centered
+    const card0Y = 270;
+    const card1Y = 920;
 
     await drawOptionCard(ctx, {
-      x: 48,
+      x: cardX,
       y: card0Y,
-      width: cardWidth,
-      height: cardHeight,
+      width: cardSize,
+      height: cardSize,
       option: opt0,
       percentage: pct0,
       isVoted: String(selectedOptionId) === String(id0),
     });
 
     await drawOptionCard(ctx, {
-      x: 48,
+      x: cardX,
       y: card1Y,
-      width: cardWidth,
-      height: cardHeight,
+      width: cardSize,
+      height: cardSize,
       option: opt1,
       percentage: pct1,
       isVoted: String(selectedOptionId) === String(id1),
     });
 
     // Central VS Badge
-    const vsY = (card0Y + cardHeight + card1Y) / 2;
+    const vsY = (card0Y + cardSize + card1Y) / 2;
     ctx.save();
     ctx.fillStyle = "#0f172a";
     ctx.beginPath();
-    ctx.arc(width / 2, vsY, 54, 0, Math.PI * 2);
+    ctx.arc(width / 2, vsY, 52, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = "#6366f1";
     ctx.lineWidth = 4;
@@ -242,21 +342,21 @@ export async function generateDilemmaCard({
     const selectedText = String(selectedOptionId) === String(id1) ? opt1.text : opt0.text;
     ctx.save();
     ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
-    roundRect(ctx, 48, 1560, width - 96, 120, 20);
+    roundRect(ctx, cardX, 1550, cardSize, 125, 22);
     ctx.fill();
     ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 26px system-ui, -apple-system, sans-serif";
+    ctx.font = "bold 25px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, width / 2, 1605);
+    ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, width / 2, 1595);
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.font = "500 20px system-ui, -apple-system, sans-serif";
-    ctx.fillText(`Vote & settle the debate on spinpapa.com`, width / 2, 1645);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+    ctx.font = "500 19px system-ui, -apple-system, sans-serif";
+    ctx.fillText(`Vote & settle the debate on spinpapa.com`, width / 2, 1636);
     ctx.restore();
 
     // Footer
@@ -264,62 +364,67 @@ export async function generateDilemmaCard({
     ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(48, height - 90);
-    ctx.lineTo(width - 48, height - 90);
+    ctx.moveTo(cardX, height - 90);
+    ctx.lineTo(cardX + cardSize, height - 90);
     ctx.stroke();
 
     ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
     ctx.font = "500 20px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`${total.toLocaleString()} community votes recorded`, 48, height - 48);
+    ctx.fillText(`${total.toLocaleString()} community votes recorded`, cardX, height - 48);
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#818cf8";
     ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
-    ctx.fillText(postUrl, width - 48, height - 48);
+    ctx.fillText(postUrl, cardX + cardSize, height - 48);
     ctx.restore();
   } else {
-    // ── 16:9 Landscape / Discord / Twitter Layout (Side by side) ──
-    const gap = 36;
-    const cardWidth = (width - 96 - gap) / 2;
-    const cardHeight = 400;
+    // ── 16:9 Landscape / Discord / Twitter Layout (1200 x 675) ──
+    // In Post Polls with images, options have aspect-square (1:1).
+    // Using true 1:1 square side-by-side:
+    const cardSize = 400; // 400 x 400 true 1:1 square
+    const gap = 48;
+    const totalContentWidth = cardSize * 2 + gap; // 848px
+    const startX = (width - totalContentWidth) / 2; // 176px centered
     const cardY = 175;
 
     await drawOptionCard(ctx, {
-      x: 48,
+      x: startX,
       y: cardY,
-      width: cardWidth,
-      height: cardHeight,
+      width: cardSize,
+      height: cardSize,
       option: opt0,
       percentage: pct0,
       isVoted: String(selectedOptionId) === String(id0),
+      isCompact: true,
     });
 
     await drawOptionCard(ctx, {
-      x: 48 + cardWidth + gap,
+      x: startX + cardSize + gap,
       y: cardY,
-      width: cardWidth,
-      height: cardHeight,
+      width: cardSize,
+      height: cardSize,
       option: opt1,
       percentage: pct1,
       isVoted: String(selectedOptionId) === String(id1),
+      isCompact: true,
     });
 
     // Central VS Badge
     const vsX = width / 2;
-    const vsY = cardY + cardHeight / 2;
+    const vsY = cardY + cardSize / 2;
     ctx.save();
     ctx.fillStyle = "#0f172a";
     ctx.beginPath();
-    ctx.arc(vsX, vsY, 44, 0, Math.PI * 2);
+    ctx.arc(vsX, vsY, 38, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = "#6366f1";
     ctx.lineWidth = 3;
     ctx.stroke();
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 24px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("VS", vsX, vsY);
@@ -327,16 +432,16 @@ export async function generateDilemmaCard({
 
     // Footer
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.font = "bold 18px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+    ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`"I voted ${stripHtml(String(selectedOptionId) === String(id1) ? opt1.text : opt0.text)}. What's your verdict?"`, 48, height - 42);
+    ctx.fillText(`"I voted ${stripHtml(String(selectedOptionId) === String(id1) ? opt1.text : opt0.text)}. What's your verdict?"`, startX, height - 42);
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#818cf8";
-    ctx.font = "bold 18px system-ui, -apple-system, sans-serif";
-    ctx.fillText(postUrl, width - 48, height - 42);
+    ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
+    ctx.fillText(postUrl, startX + totalContentWidth, height - 42);
     ctx.restore();
   }
 

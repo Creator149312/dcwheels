@@ -123,6 +123,6 @@ async function _fetchSpotlightUncached(type) {
 
 export const getCachedSpotlight = unstable_cache(
   _fetchSpotlightUncached,
-  ["category-top-spotlight-v8"],
+  ["category-top-spotlight-v9"],
   { revalidate: SPOTLIGHT_REVALIDATE, tags: ["category-top-spotlight"] },
 );

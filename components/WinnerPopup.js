@@ -23,17 +23,6 @@ function getEntityUrl(entityType, slug, wheelId) {
   return `/${entityType}/${slug}`;
 }
 
-function getPickLabel(winner) {
-  const type = winner?.entityType || winner?.payload?.entityType || "";
-  switch (type) {
-    case "movie":     return "I'm watching this! 🎬";
-    case "anime":     return "I'm watching this! 🎬";
-    case "game":      return "I'm playing this! 🎮";
-    case "character": return "I'm choosing this! ✨";
-    default:          return "I'm picking this! ⚡";
-  }
-}
-
 const WinnerPopup = ({
   winner,
   prizeNumber,
@@ -50,7 +39,7 @@ const WinnerPopup = ({
   let [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { html, wheelData, wheelTitle } = useContext(SegmentsContext);
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const openLoginPrompt = useLoginPrompt();
   const [showShareCard, setShowShareCard] = useState(false);
@@ -116,6 +105,7 @@ const WinnerPopup = ({
             winner,
             wheelTitle,
             winnerColor,
+            totalSegments: segData?.filter((s) => s?.visible !== false)?.length || segData?.length || 0,
           });
           if (card?.dataUrl) {
             generatedCardDataUrlRef.current = card.dataUrl;
@@ -243,24 +233,6 @@ const WinnerPopup = ({
     return text.slice(0, MAX_MESSAGE_LEN - 1).trimEnd() + "…";
   }
 
-  const setImgMaxWidth = (temphtml) => {
-    if (typeof document === "undefined" || !temphtml) return temphtml;
-
-    const div = document.createElement("div");
-    div.innerHTML = temphtml.text;
-
-    Array.from(div.getElementsByTagName("img")).forEach((img) => {
-      img.style.width = "100px";
-    });
-
-    return div.innerHTML;
-  };
-
-  const containsDuplicates = (element) =>
-    element
-      ? segData.filter((item) => item.text === element.text && item.id !== element.id).length > 0
-      : false;
-
   const duplicateCount = winner
     ? segData.filter((item) => item.text === winner.text && item?.visible !== false).length
     : 0;
@@ -308,102 +280,118 @@ const WinnerPopup = ({
             <X size={18} />
           </button>
 
-          {/* Winner Header & Display */}
-          <div className="text-center mb-5 min-w-0">
-            <p
-              className="text-[11px] font-bold uppercase tracking-[0.2em] mb-3 opacity-70 truncate px-1"
-              style={{ color: winnerColor }}
-              title={wheelData?.customPopupDisplayMessage || "The Winner Is..."}
-            >
-              {formatMessage(wheelData?.customPopupDisplayMessage || "The Winner Is...")}
-            </p>
+          {/* Main Stage Container: Fixed consistent height so switching Share never jumps the modal height */}
+          <div className="min-h-[260px] sm:min-h-[275px] flex flex-col justify-center mb-4 min-w-0">
+            {!showShareCard ? (
+              <div className="text-center w-full min-w-0 animate-in fade-in duration-200">
+                <p
+                  className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2 sm:mb-3 opacity-70 truncate px-1"
+                  style={{ color: winnerColor }}
+                  title={wheelData?.customPopupDisplayMessage || "The Winner Is..."}
+                >
+                  {formatMessage(wheelData?.customPopupDisplayMessage || "The Winner Is...")}
+                </p>
 
-            {winner?.type === "quiz" ? (
-              <MCQQuestion
-                questionData={{
-                  title: winner.question || winner.text || "",
-                  options: winner.options || winner.payload?.options || [],
-                  answer:
-                    (winner.options || winner.payload?.options || [])[
-                      winner.correctIndex ?? winner.payload?.correctIndex ?? 0
-                    ] || "",
-                }}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-3 px-2 min-w-0">
-                {winner?.image && (
-                  <div className="relative group w-fit max-w-full">
-                    <img
-                      src={winner.image}
-                      alt=""
-                      className="max-w-[140px] max-h-[140px] sm:max-w-[170px] sm:max-h-[170px] w-auto h-auto object-contain rounded-2xl shadow-xl border-4 border-background transition-transform duration-500 group-hover:scale-105"
-                    />
+                {winner?.type === "quiz" ? (
+                  <MCQQuestion
+                    questionData={{
+                      title: winner.question || winner.text || "",
+                      options: winner.options || winner.payload?.options || [],
+                      answer:
+                        (winner.options || winner.payload?.options || [])[
+                          winner.correctIndex ?? winner.payload?.correctIndex ?? 0
+                        ] || "",
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 px-2 min-w-0 py-1">
+                    {winner?.image ? (
+                      <div className="relative group w-fit max-w-full">
+                        <img
+                          src={winner.image}
+                          alt=""
+                          className="w-[125px] h-[125px] sm:w-[140px] sm:h-[140px] object-cover rounded-2xl shadow-xl border-4 border-background transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      /* Text-only winner decorative badge to balance vertical space */
+                      <div
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-md border border-border/80 my-1"
+                        style={{
+                          background: `radial-gradient(circle at 30% 30%, ${winnerColor}30, ${winnerColor}10)`,
+                          borderColor: `${winnerColor}40`,
+                        }}
+                      >
+                        🎯
+                      </div>
+                    )}
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight drop-shadow-xs break-words w-full">
+                      {formatWinnerText(winner)}
+                    </h2>
                   </div>
                 )}
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground leading-tight tracking-tight drop-shadow-xs break-words w-full">
-                  {formatWinnerText(winner)}
-                </h2>
               </div>
-            )}
+            ) : winner?.type !== "quiz" ? (
+              <div className="w-full animate-in fade-in zoom-in-95 duration-200">
+                <ShareableResultCard
+                  winner={winner}
+                  wheelTitle={wheelTitle}
+                  winnerColor={winnerColor}
+                  totalSegments={segData?.filter((s) => s?.visible !== false)?.length || segData?.length || 0}
+                  onCardGenerated={({ dataUrl }) => {
+                    generatedCardDataUrlRef.current = dataUrl;
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
-
-          {/* Share Card Modal/Inline Area */}
-          {showShareCard && winner?.type !== "quiz" && (
-            <div className="animate-in zoom-in-95 duration-200 mb-4">
-              <ShareableResultCard
-                winner={winner}
-                wheelTitle={wheelTitle}
-                winnerColor={winnerColor}
-                onCardGenerated={({ dataUrl }) => {
-                  generatedCardDataUrlRef.current = dataUrl;
-                }}
-              />
-            </div>
-          )}
 
           {/* Action Area */}
           {winner?.type !== "quiz" && (
-            <div className="space-y-3 pt-1">
-              {/* Row 1: Social Actions [Post to Community Feed] [Share] */}
+            <div className="space-y-2 pt-1">
+              {/* Row 1: Social Actions [Post to Community Feed] [Share Ticket] */}
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   onClick={shareAsPost}
                   disabled={isPosting}
-                  className="h-11 px-2.5 sm:px-3 rounded-2xl font-bold text-xs uppercase tracking-wider text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  className="h-10 px-3 rounded-xl font-semibold text-xs text-white shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                   style={{ background: `linear-gradient(135deg, ${winnerColor}, ${winnerColor}dd)` }}
                   title="Post result to Spinpapa Community Feed"
                 >
-                  <PenSquare size={15} />
+                  <PenSquare size={14} />
                   <span className="truncate">{isPosting ? "Preparing..." : "Post to Community"}</span>
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => setShowShareCard((prev) => !prev)}
-                  className={`h-11 px-2.5 sm:px-3 rounded-2xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm ${
+                  className={`h-10 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-xs ${
                     showShareCard
-                      ? "border-primary/50 bg-primary/10 text-primary"
+                      ? "border-primary/50 bg-primary/15 text-primary font-bold"
                       : "border-border/80 bg-muted/40 hover:bg-muted text-foreground"
                   }`}
-                  title="Generate & Share Trophy Card"
+                  title="Generate & Share Ticket Pass"
                 >
-                  <Share2 size={15} />
+                  <Share2 size={14} />
                   <span className="truncate">{showShareCard ? "Hide Share" : "Share"}</span>
                 </button>
               </div>
 
-              {/* Optional Entity Hub Extras (Save to List & Explore) */}
+              {/* Row 2: Optional Entity Hub Extras (Save to List & Explore) */}
               {isEntityWinner && (entityId || entitySlug) && (
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {entityId && (
-                    <div className="flex-1">
+                    <div className="w-full">
                       <AddToListButton
                         type={entityType}
                         entityId={entityId}
                         name={winner.text}
                         slug={entitySlug}
                         image={winner.image}
+                        rounded="rounded-xl"
+                        size="compact"
+                        className="h-10"
                       />
                     </div>
                   )}
@@ -412,7 +400,7 @@ const WinnerPopup = ({
                       href={getEntityUrl(entityType, entitySlug, entityWheelId)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 h-9 px-3 rounded-xl border border-border bg-muted/30 hover:bg-muted text-foreground text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-2xs"
+                      className="h-10 px-3 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted text-foreground text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs"
                     >
                       <ExternalLink size={13} className="text-muted-foreground" />
                       <span>Explore</span>
@@ -421,9 +409,9 @@ const WinnerPopup = ({
                 </div>
               )}
 
-              {/* Row 2: Wheel Management [Remove from Wheel] [Remove All] */}
+              {/* Row 3: Wheel Management [Remove from Wheel] [Remove All] */}
               {!wheelData.removeWinnerAfterSpin && (
-                <div className="pt-2 border-t border-border/60">
+                <div className="pt-1.5 border-t border-border/60">
                   {hasDuplicates ? (
                     <div className="grid grid-cols-2 gap-2">
                       <button

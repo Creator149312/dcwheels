@@ -91,12 +91,35 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
   // If the post is hidden (deleted by owner or hidden by user), don't render it
   if (isHidden) return null;
 
-  // Only display bottom tag pills for tags that are NOT already typed inline in the text.
-  // This avoids duplicating tags in two places (in the text vs as separate pills).
+  // Has an explicit Topic / ContentRef attached? (e.g. "GAME • Clash Royale")
+  const hasEntityAnchor = Boolean(
+    (post.entities && post.entities.length > 0) ||
+    post.contentRef?.title ||
+    post.contentRef?.slug ||
+    post.contentRef?.id ||
+    post.contentRef?.externalId
+  );
+
+  // Discovery Optimized Tag Chips:
+  // 1. Filter out internal URL routing artifacts like "415-clash-royale" (digits followed by hyphen)
+  // 2. Filter out tags already typed directly in the text body
+  // 3. If an Entity Card is already present, do not clutter with auto-inherited category tags;
+  //    only show chips if they were explicitly tagged by the user in the post content
   const visibleTags = (post.tags || []).filter((tag) => {
+    if (!tag) return false;
+    const lowerTag = String(tag).toLowerCase().trim();
+
+    // Never display slug-like numeric prefixes e.g. "415-clash-royale"
+    if (/^\d+[-_]/.test(lowerTag)) return false;
+
+    // If an entity badge already anchors the post, avoid repeating topic/genre chips unless in text
+    if (hasEntityAnchor) {
+      return false;
+    }
+
     if (!post.content) return true;
     const lowerContent = post.content.toLowerCase();
-    const formattedTag = `#${tag.toLowerCase()}`;
+    const formattedTag = `#${lowerTag}`;
     return !lowerContent.includes(formattedTag);
   });
 

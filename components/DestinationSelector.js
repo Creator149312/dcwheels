@@ -159,27 +159,8 @@ export default function DestinationSelector({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Label Row */}
-      <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-1.5 px-0.5">
-        <span className="flex items-center gap-1.5">
-          <Globe className="w-3.5 h-3.5 text-primary" />
-          <span>Post Destination</span>
-        </span>
-        <span className="text-[11px] text-muted-foreground/70">
-          {selectedEntities.length === 0
-            ? "General Feed & Profile"
-            : `${selectedEntities.length} of ${maxEntities} topics linked`}
-        </span>
-      </div>
-
-      {/* Main Bar / Selected Chips Container */}
-      <div
-        className={`flex flex-wrap items-center gap-2 p-2 rounded-xl border transition-all ${
-          isOpen || isSearching
-            ? "border-primary/50 bg-background shadow-xs ring-2 ring-primary/10"
-            : "border-border/60 bg-muted/20 hover:border-border"
-        }`}
-      >
+      {/* Sleek Threads-style Topic Selector Row */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Selected Topic Chips */}
         {selectedEntities.map((entity, idx) => {
           const Icon = TYPE_ICONS[entity.type] || Hash;
@@ -188,7 +169,7 @@ export default function DestinationSelector({
           return (
             <div
               key={`${entity.type}-${entity.externalId || entity.slug || idx}`}
-              className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-background border border-border/80 shadow-2xs text-xs font-medium text-foreground max-w-[220px] sm:max-w-[260px] truncate animate-in fade-in zoom-in-95 duration-150"
+              className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-semibold text-primary max-w-[240px] sm:max-w-[280px] truncate animate-in fade-in zoom-in-95 duration-150"
             >
               {entity.image ? (
                 <img
@@ -197,15 +178,15 @@ export default function DestinationSelector({
                   className="w-4 h-4 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
+                <Icon className="w-3.5 h-3.5 shrink-0" />
               )}
               <span className="truncate" title={entity.title}>
                 {entity.title || entity.slug}
               </span>
               {isEntityLocked ? (
                 <span
-                  title="Locked to this Topic Page"
-                  className="text-muted-foreground/60 ml-0.5 shrink-0"
+                  title="Locked to this Topic"
+                  className="text-primary/70 ml-0.5 shrink-0"
                 >
                   <Lock className="w-3 h-3" />
                 </span>
@@ -213,7 +194,7 @@ export default function DestinationSelector({
                 <button
                   type="button"
                   onClick={() => handleRemoveEntity(idx)}
-                  className="text-muted-foreground hover:text-destructive transition-colors ml-0.5 p-0.5 rounded-full hover:bg-muted"
+                  className="text-primary/70 hover:text-destructive transition-colors ml-0.5 p-0.5 rounded-full hover:bg-primary/20"
                   aria-label={`Remove ${entity.title}`}
                 >
                   <X className="w-3 h-3" />
@@ -223,7 +204,7 @@ export default function DestinationSelector({
           );
         })}
 
-        {/* Empty state pill when 0 entities */}
+        {/* Unlinked State: Simple "+ Add topic" pill button */}
         {selectedEntities.length === 0 && !isSearching && (
           <button
             type="button"
@@ -231,17 +212,16 @@ export default function DestinationSelector({
               setIsSearching(true);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-dashed border-border/70 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/80 bg-muted/40 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-2xs"
           >
-            <User className="w-3.5 h-3.5 text-muted-foreground/70" />
-            <span>My Profile (General)</span>
-            <span className="text-[10px] text-primary font-bold ml-1">+ Link to a Topic</span>
+            <Plus className="w-3 h-3 text-primary" />
+            <span>Add a topic</span>
           </button>
         )}
 
-        {/* Add / Search input field */}
+        {/* Searching inline pill */}
         {canAddMore && isSearching && (
-          <div className="flex-1 min-w-[140px] flex items-center gap-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/40 bg-background text-xs shadow-xs min-w-[200px] sm:min-w-[260px]">
             <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <input
               ref={inputRef}
@@ -253,10 +233,10 @@ export default function DestinationSelector({
               }}
               placeholder={
                 selectedEntities.length === 0
-                  ? "Search topic (e.g. Naruto, Elden Ring)..."
+                  ? "Search topic (e.g. Clash Royale, Naruto)..."
                   : "Add 2nd topic for cross-over / VS..."
               }
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden py-0.5"
+              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden py-0"
             />
             {isLoading && (
               <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />
@@ -268,15 +248,15 @@ export default function DestinationSelector({
                 setIsSearching(false);
                 setIsOpen(false);
               }}
-              className="text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
-              title="Cancel search"
+              className="text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted"
+              title="Cancel"
             >
               <X className="w-3 h-3" />
             </button>
           </div>
         )}
 
-        {/* "+ Add Topic" trigger button when not actively searching */}
+        {/* Additional topic button when 1 topic is already chosen */}
         {canAddMore && !isSearching && selectedEntities.length > 0 && (
           <button
             type="button"
@@ -284,10 +264,10 @@ export default function DestinationSelector({
               setIsSearching(true);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-dashed border-border/80 bg-muted/30 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Plus className="w-3 h-3" />
-            <span>Add VS / Topic</span>
+            <span>Add VS / 2nd Topic</span>
           </button>
         )}
       </div>

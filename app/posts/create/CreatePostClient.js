@@ -428,6 +428,18 @@ function CreatePostForm() {
       // and the backend automatically inherits parent tags, giving the user a clean slate.
       setText(` #${initialTag.toLowerCase().replace(/\s+/g, "") } `);
     }
+
+    // Auto-focus the textarea on desktop so users can start typing immediately
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      const focusTimer = setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = textareaRef.current.value.length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      }, 50);
+      return () => clearTimeout(focusTimer);
+    }
   }, [initialTag, spinResult, cr_id, cr_slug]);
 
   useEffect(() => {
@@ -801,40 +813,45 @@ function CreatePostForm() {
       </div>
       
       <div className="bg-card border border-border sm:rounded-2xl rounded-xl shadow-sm overflow-hidden">
-        {/* Destination / Topic Anchor Selector */}
-        <div className="px-4 py-3 sm:px-5 border-b border-border/40 bg-muted/10">
-          <DestinationSelector
-            value={entities}
-            onChange={setEntities}
-            locked={Boolean(cr_id && cr_type && cr_type !== "wheel")}
-            onAddTagFallback={(tag) => {
-              setText((prev) => `${prev.trim()} #${tag} `);
-            }}
-          />
-        </div>
-        
         <form onSubmit={handleSubmit}>
           <div className="p-4 sm:p-5 flex gap-3 sm:gap-4">
             <div className="shrink-0 hidden sm:block">
               <Image 
                 src={userImage} 
                 alt="Avatar" 
-                width={48} 
-                height={48} 
+                width={44} 
+                height={44} 
                 className="rounded-full bg-muted object-cover border border-border"
               />
             </div>
             
-            <div className="flex-1 min-w-0 flex flex-col pt-1">
-              <div className="flex items-center gap-2 mb-2 sm:hidden">
-                <Image 
-                  src={userImage} 
-                  alt="Avatar" 
-                  width={28} 
-                  height={28} 
-                  className="rounded-full bg-muted object-cover border border-border"
-                />
-                <span className="font-semibold text-sm">{session?.user?.name}</span>
+            <div className="flex-1 min-w-0 flex flex-col">
+              {/* Header bar: User Name & Sleek Inline Topic Pill (Threads style) */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="sm:hidden">
+                    <Image 
+                      src={userImage} 
+                      alt="Avatar" 
+                      width={28} 
+                      height={28} 
+                      className="rounded-full bg-muted object-cover border border-border"
+                    />
+                  </div>
+                  <span className="font-bold text-sm text-foreground">{session?.user?.name || "User"}</span>
+                </div>
+
+                {/* Inline Topic Pill Selector */}
+                <div className="w-full sm:w-auto">
+                  <DestinationSelector
+                    value={entities}
+                    onChange={setEntities}
+                    locked={Boolean(cr_id && cr_type && cr_type !== "wheel")}
+                    onAddTagFallback={(tag) => {
+                      setText((prev) => `${prev.trim()} #${tag} `);
+                    }}
+                  />
+                </div>
               </div>
               
               <textarea

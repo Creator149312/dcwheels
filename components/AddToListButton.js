@@ -16,7 +16,7 @@ import { Check, Bookmark, ChevronDown } from "lucide-react";
  * - Dropdown arrow opens the list picker for custom lists.
  * - After saving, the button shows "Saved" with a dropdown to add to more lists.
  */
-export default function AddToListButton({ type, entityId, name, slug, image }) {
+export default function AddToListButton({ type, entityId, name, slug, image, className = "", rounded = "rounded-full", size = "default" }) {
   const [open, setOpen] = useState(false);
   const [savedPopup, setSavedPopup] = useState({ show: false, listName: "" });
   const ctx = useEntityTracking();
@@ -108,29 +108,31 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
     setOpen(false);
   }
 
+  const isCompact = size === "sm" || size === "compact";
+
   return (
     <>
       {/* ── Split button: quick-save + list picker ────── */}
-      <div className="inline-flex rounded-full overflow-hidden shadow-sm border border-border w-full">
+      <div className={`inline-flex overflow-hidden shadow-2xs border border-border/80 w-full ${rounded} ${className}`}>
         {/* Main quick-save action */}
         <button
           onClick={quickSaveToDefault}
           disabled={isSaved || quickSaving || authStatus === "loading"}
           className={`
-            inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold
-            transition-colors duration-150 flex-1
+            inline-flex items-center justify-center gap-1.5 transition-colors duration-150 flex-1 font-semibold
+            ${isCompact ? "px-3 py-2 text-xs" : "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm"}
             ${isSaved
               ? "bg-blue-600/10 text-blue-700 dark:text-blue-400 border-r border-blue-600/20 cursor-default"
-              : "bg-muted/50 text-foreground hover:bg-muted active:scale-[0.98]"
+              : "bg-muted/40 text-foreground hover:bg-muted active:scale-[0.98]"
             }
           `}
         >
           {isSaved ? (
-            <Check size={16} strokeWidth={3} />
+            <Check size={isCompact ? 14 : 16} strokeWidth={2.5} />
           ) : (
-            <Bookmark size={16} />
+            <Bookmark size={isCompact ? 14 : 16} />
           )}
-          {isSaved ? "Saved" : quickSaving ? "Saving…" : "Save to List"}
+          <span>{isSaved ? "Saved" : quickSaving ? "Saving…" : "Save to List"}</span>
         </button>
 
         {/* Dropdown arrow to open custom list picker */}
@@ -158,11 +160,11 @@ export default function AddToListButton({ type, entityId, name, slug, image }) {
             inline-flex items-center justify-center px-2 transition-colors duration-150
             ${isSaved
               ? "bg-blue-600/10 text-blue-700 dark:text-blue-400 hover:bg-blue-600/20"
-              : "bg-muted/50 text-foreground hover:bg-muted border-l border-border"
+              : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border/80"
             }
           `}
         >
-          <ChevronDown size={16} />
+          <ChevronDown size={isCompact ? 14 : 16} />
         </button>
       </div>
 

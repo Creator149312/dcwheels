@@ -166,12 +166,18 @@ export async function POST(req) {
         if (parentTopic) {
           const inherited = [];
           if (parentTopic.slug) {
-            inherited.push(normalizeTag(parentTopic.slug));
+            // Strip leading database/route ID prefixes like "415-clash-royale" -> "clash-royale"
+            const cleanSlug = parentTopic.slug.replace(/^\d+[-_]/, "").trim();
+            const normSlug = normalizeTag(cleanSlug);
+            if (normSlug && !inherited.includes(normSlug)) {
+              inherited.push(normSlug);
+            }
           }
           if (Array.isArray(parentTopic.tags)) {
             // Inherit up to 4 top genre/theme tags to keep indexing crisp and prevent tag bloat
             for (const t of parentTopic.tags.slice(0, 4)) {
-              const norm = normalizeTag(t);
+              const cleaned = String(t).replace(/^\d+[-_]/, "").trim();
+              const norm = normalizeTag(cleaned);
               if (norm && !inherited.includes(norm)) {
                 inherited.push(norm);
               }
