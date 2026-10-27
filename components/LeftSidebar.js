@@ -172,25 +172,34 @@ export default function LeftSidebar({ isOpen, onClose }) {
         </div>
       </aside>
 
-      {/* 2. Desktop-Only Backdrop & Expanded Drawer (Triggered by Hamburger if needed) */}
+      {/* 2. Backdrop & Slide-over Drawer (Works on both Mobile and Desktop) */}
       <div
-        className={`hidden md:block fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 z-50 ${
           isOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
         }`}
         onClick={onClose}
       />
 
-      {/* 3. Desktop Drawer (Hamburger Triggered) */}
+      {/* 3. Slide-over Drawer (Hamburger Triggered) */}
       <aside
-        className={`hidden md:flex fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transition-transform duration-300 ease-in-out shadow-md flex-col ${
+        className={`fixed top-0 left-0 h-full w-72 max-w-[85vw] bg-background border-r border-border z-[80] transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Drawer header */}
-        <div className="h-14 flex items-center px-5 border-b border-border shrink-0">
-          <span className="font-black text-foreground text-base uppercase tracking-tight">
-            Spin<span className="text-primary">Papa</span>
-          </span>
+        <div className="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
+          <Link href="/" onClick={onClose} className="flex items-center gap-2">
+            <span className="font-black text-foreground text-lg uppercase tracking-tight">
+              Spin<span className="text-primary">Papa</span>
+            </span>
+          </Link>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Drawer nav with section groups */}

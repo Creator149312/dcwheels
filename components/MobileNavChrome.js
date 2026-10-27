@@ -144,11 +144,20 @@ export default function MobileNavChrome({ onToggleSidebar }) {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="h-[52px] bg-background/95 backdrop-blur-md border-b border-border relative z-50">
-          <div className="h-full px-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="h-full px-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={onToggleSidebar}
+                className="p-1.5 -ml-1 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-colors"
+                aria-label="Open navigation menu"
+              >
+                <Menu size={22} />
+              </button>
+
               <Link href="/" className="flex items-center gap-2">
                 <Image
-                  src="/spin-wheel-logo.png"
+                  src="/logo/spin-wheel-logo.png"
                   alt="logo"
                   width="32"
                   height="32"
@@ -161,7 +170,7 @@ export default function MobileNavChrome({ onToggleSidebar }) {
               </Link>
             </div>
 
-            <div className="flex items-center gap-1.5 justify-end">
+            <div className="flex items-center gap-1 justify-end">
               <div className="flex items-center h-10">
                 <NotificationBell />
               </div>
