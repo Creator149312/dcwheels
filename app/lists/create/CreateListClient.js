@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Hash,
   GitFork,
+  ChevronDown,
 } from "lucide-react";
 import { getListUrl } from "@utils/UrlHandler";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
@@ -52,6 +53,7 @@ export default function CreateListClient() {
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [forkedFrom, setForkedFrom] = useState(null); // { listId, name, username }
+  const [showDetails, setShowDetails] = useState(false);
 
   // 1. Restore from localStorage or from ?remix= query param on mount
   useEffect(() => {
@@ -128,7 +130,7 @@ export default function CreateListClient() {
 
   // 2. Auto-save draft changes to localStorage (debounced) + instant sync on app background
   const saveDraftToStorage = useCallback(() => {
-    if (!hasLoadedDraft || typeof window === "undefined") return;
+    if (!hasLoadedDraft || typeof window === "undefined" || loading) return;
     try {
       if (!name.trim() && !description.trim() && items.length === 0) {
         localStorage.removeItem(LS_DRAFT_KEY);
@@ -290,8 +292,12 @@ export default function CreateListClient() {
         localStorage.removeItem(LS_DRAFT_KEY);
       }
 
-      const targetUrl = data.url || getListUrl(data.list);
-      router.push(targetUrl);
+      const targetUrl = data.url || (data.list ? getListUrl(data.list) : null);
+      if (targetUrl && targetUrl !== "#") {
+        window.location.href = targetUrl;
+      } else {
+        router.push("/lists");
+      }
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -327,7 +333,7 @@ export default function CreateListClient() {
             type="button"
             onClick={handleSubmit}
             disabled={!name.trim() || loading}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm shadow-violet-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm shadow-violet-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -428,49 +434,77 @@ export default function CreateListClient() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Best Sci-Fi Movies of All Time"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all placeholder:text-muted-foreground/60"
                 required
               />
             </div>
 
-            {/* Description Textarea */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="listDesc" className="block text-xs font-bold text-foreground">
-                  Description <span className="text-muted-foreground font-normal">(Optional)</span>
-                </label>
-                <span className="text-[11px] text-muted-foreground">
-                  {description.length}/300
+            {/* Collapsible Details (Description & Tags) */}
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => setShowDetails((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors py-1 select-none"
+              >
+                <ChevronDown
+                  size={15}
+                  className={`transition-transform duration-200 ${
+                    showDetails || description.trim() || tags.length > 0 ? "rotate-180" : ""
+                  }`}
+                />
+                <span>
+                  {showDetails || description.trim() || tags.length > 0
+                    ? "Hide description & tags"
+                    : "+ Add description & tags (optional)"}
                 </span>
-              </div>
-              <textarea
-                id="listDesc"
-                rows={3}
-                maxLength={300}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add notes, context, or why you ranked these items this way..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-y min-h-[80px]"
-              />
-            </div>
+                {(description.trim() || tags.length > 0) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block ml-0.5" />
+                )}
+              </button>
 
-            {/* Tags Input */}
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Tags <span className="text-muted-foreground font-normal">(Optional, press Enter or comma to add)</span>
-              </label>
-              <TagInput
-                value={tags}
-                onChange={setTags}
-                placeholder="e.g. anime, horror, top-10, movies..."
-              />
+              {(showDetails || description.trim() || tags.length > 0) && (
+                <div className="space-y-3.5 mt-2.5 pt-1 border-t border-border/40 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {/* Description Textarea */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="listDesc" className="block text-xs font-bold text-foreground">
+                        Description <span className="text-muted-foreground font-normal">(Optional)</span>
+                      </label>
+                      <span className="text-[11px] text-muted-foreground">
+                        {description.length}/300
+                      </span>
+                    </div>
+                    <textarea
+                      id="listDesc"
+                      rows={3}
+                      maxLength={300}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Add notes, context, or why you ranked these items this way..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-y min-h-[80px]"
+                    />
+                  </div>
+
+                  {/* Tags Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      Tags <span className="text-muted-foreground font-normal">(Optional, press Enter or comma to add)</span>
+                    </label>
+                    <TagInput
+                      value={tags}
+                      onChange={setTags}
+                      placeholder="e.g. anime, horror, top-10, movies..."
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Quick Options Row: Tier List Checkbox & Public Visibility */}
           <div className="pt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border/60">
             {/* Tier List Checkbox */}
-            <label htmlFor="isTiered" className="flex items-center gap-2.5 cursor-pointer select-none">
+            <label htmlFor="isTiered" className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 id="isTiered"
                 type="checkbox"
