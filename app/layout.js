@@ -21,20 +21,32 @@ export const metadata = {
   description:
     "Spinpapa is the social decision hub for fandoms & pop culture. Create custom wheels, build lists, and join the debate. Spin, Talk, and Decide today!",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/apple-touch-icon.png",
+    icon: [
+      { url: "/logo/favicon.ico" },
+      { url: "/logo/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/logo/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/logo/apple-touch-icon-152x152.png", sizes: "152x152", type: "image/png" },
+      { url: "/logo/apple-touch-icon-120x120.png", sizes: "120x120", type: "image/png" },
+    ],
     other: [
       {
         rel: "icon",
-        url: "/icons/icon-192.png",
+        url: "/logo/icon-192.png",
         sizes: "192x192",
         type: "image/png",
       },
       {
         rel: "icon",
-        url: "/icons/icon-512.png",
+        url: "/logo/icon-512.png",
         sizes: "512x512",
         type: "image/png",
+      },
+      {
+        rel: "mask-icon",
+        url: "/logo/logo-mark-512.png",
       },
     ],
   },
