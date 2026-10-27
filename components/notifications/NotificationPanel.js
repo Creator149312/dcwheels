@@ -14,27 +14,37 @@ const ICONS = {
   SYSTEM: <Bell size={16} className="text-amber-500" />,
 };
 
-export default function NotificationDropdown({ onClose }) {
-  const [data, setData] = useState({ notifications: [], unreadCount: 0 });
-  const [loading, setLoading] = useState(true);
+export default function NotificationDropdown({ onClose, initialData = null }) {
+  const [data, setData] = useState(() => initialData || { notifications: [], unreadCount: 0 });
+  const [loading, setLoading] = useState(() => !initialData);
   const panelRef = useRef(null);
 
-  // Fetch notifications fully only when opened
+  // Sync if initialData is updated from parent prefetch
+  useEffect(() => {
+    if (initialData) {
+      setData(initialData);
+      setLoading(false);
+    }
+  }, [initialData]);
+
+  // Fetch / refresh notifications in background if not already provided
   useEffect(() => {
     let mounted = true;
-    fetch("/api/notifications")
-      .then((res) => res.json())
-      .then((json) => {
-        if (mounted && json.notifications) {
-          setData(json);
-        }
-      })
-      .catch((err) => console.error("Error fetching notifications", err))
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    if (!initialData) {
+      fetch("/api/notifications")
+        .then((res) => res.json())
+        .then((json) => {
+          if (mounted && json.notifications) {
+            setData(json);
+          }
+        })
+        .catch((err) => console.error("Error fetching notifications", err))
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
+    }
     return () => (mounted = false);
-  }, []);
+  }, [initialData]);
 
   // Close on outside click and Escape key
   useEffect(() => {

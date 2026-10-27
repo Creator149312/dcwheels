@@ -57,12 +57,29 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
     }
 
     // Affinity capture: a vote is a strong fandom signal. Works for guests too
-    // (tracked in localStorage — the warm feed personalizes on their next visit).
     trackAffinity(post?.contentRef?.type || "anime", "vote");
 
-    const isChangingVote = voted && selectedOptionId && String(selectedOptionId) !== String(optionId);
+    const previousSelectedId = selectedOptionId;
+    const previousVoted = voted;
+    const previousVoteCounts = { ...voteCounts };
+    const isChangingVote = voted && previousSelectedId && String(previousSelectedId) !== String(optionId);
 
-    // Frictionless voting: both registered users and guest sessions register their vote via the API.
+    // ── INSTANT OPTIMISTIC UI UPDATE ──────────────────────────────────────────
+    // Don't make user wait 5s for network round-trip; update UI immediately!
+    setSelectedOptionId(optionId);
+    setVoted(true);
+    setVoteCounts((prev) => {
+      const updated = { ...prev };
+      if (isChangingVote && previousSelectedId) {
+        updated[previousSelectedId] = Math.max(0, (updated[previousSelectedId] || 1) - 1);
+      }
+      updated[optionId] = (updated[optionId] || 0) + 1;
+      return updated;
+    });
+
+    const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
+    onVoteSuccess?.(chosen?.text || "");
+
     setLoading(true);
     try {
       const res = await fetch(`/api/post/${postId}/vote`, {
@@ -78,23 +95,19 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
         );
         setVoteCounts(newCounts);
         setOptimisticPick(null);
-        setSelectedOptionId(optionId);
-        setVoted(true);
         toast.success(isChangingVote ? "Vote updated!" : "Vote recorded!");
-        const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
-        onVoteSuccess?.(chosen?.text || "");
       } else if (res.status === 409) {
-        setSelectedOptionId(optionId);
-        setVoted(true);
         toast("You already voted on this poll");
-        const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
-        onVoteSuccess?.(chosen?.text || "");
       } else {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Failed to vote");
       }
     } catch (err) {
-      toast.error(err.message);
+      // Rollback on network failure
+      setSelectedOptionId(previousSelectedId);
+      setVoted(previousVoted);
+      setVoteCounts(previousVoteCounts);
+      toast.error(err.message || "Failed to record vote");
     } finally {
       setLoading(false);
     }

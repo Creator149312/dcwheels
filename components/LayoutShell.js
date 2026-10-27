@@ -7,6 +7,7 @@ import Navbar from "@components/navbar/Navbar";
 import MobileNavChrome from "@components/MobileNavChrome";
 import LeftSidebar from "@components/LeftSidebar";
 import AdaptiveLeaderBoardAds from "./ads/AdaptiveLeaderBoardAds";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 // Only needed on lg+ screens — mobile users never download this
 const RightSidebar = dynamic(() => import("./RightSidebar"), { ssr: false });
@@ -15,6 +16,10 @@ export default function LayoutShell({ children }) {
   const pathname = usePathname();
   const isEmbed = pathname?.startsWith("/embed/");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  // Ensure forward navigation from long feeds always lands at the top of the new page,
+  // while preserving scroll restoration on browser Back/Forward navigation.
+  useScrollRestoration();
 
   // Hooks must be declared before any early return (Rules of Hooks)
   const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), []);

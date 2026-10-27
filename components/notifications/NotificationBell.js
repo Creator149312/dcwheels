@@ -2,78 +2,62 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Bell } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
-
-// Don't import the heavy panel until the user clicks the Bell
-const NotificationPanel = dynamic(() => import("./NotificationPanel"), {
-  ssr: false,
-});
+import NotificationPanel from "./NotificationPanel";
 
 export default function NotificationBell() {
   const { data: session } = useSession();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [cachedNotifications, setCachedNotifications] = useState(null);
   const fetchedInitialRef = useRef(false);
 
-  // 1. Defer fetching the unread count until the user scrolls or interacts.
-  // This saves the database call on initial page load / LCP calculation.
+  // Pre-fetch notifications once user scrolls or moves mouse so clicking bell is instant
   useEffect(() => {
     if (!session) return;
 
-    const handleInteraction = () => {
+    const loadNotifications = () => {
       if (fetchedInitialRef.current) return;
       fetchedInitialRef.current = true;
-      setIsInteractive(true);
 
-      // Fetch the unread count immediately once they interact
       fetch("/api/notifications")
         .then((res) => res.json())
         .then((data) => {
           if (data.unreadCount !== undefined) {
             setUnreadCount(data.unreadCount);
           }
+          if (data.notifications) {
+            setCachedNotifications(data);
+          }
         })
-        .catch((err) => console.error("Error checking notifications:", err));
+        .catch((err) => console.error("Error loading notifications:", err));
 
-      // Clean up listeners
-      window.removeEventListener("scroll", handleInteraction);
-      window.removeEventListener("mousemove", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-      document.removeEventListener("visibilitychange", handleInteraction);
+      window.removeEventListener("scroll", loadNotifications);
+      window.removeEventListener("mousemove", loadNotifications);
+      window.removeEventListener("touchstart", loadNotifications);
     };
 
-    // If already interacted or scrolled, fire immediately
-    if (typeof window !== 'undefined' && (window.scrollY > 0 || fetchedInitialRef.current)) {
-      handleInteraction();
+    if (typeof window !== "undefined" && window.scrollY > 0) {
+      loadNotifications();
       return;
     }
 
-    window.addEventListener("scroll", handleInteraction, { passive: true });
-    window.addEventListener("mousemove", handleInteraction, { passive: true });
-    window.addEventListener("touchstart", handleInteraction, { passive: true });
-    window.addEventListener("keydown", handleInteraction, { passive: true });
-    document.addEventListener("visibilitychange", handleInteraction, { passive: true });
+    window.addEventListener("scroll", loadNotifications, { passive: true });
+    window.addEventListener("mousemove", loadNotifications, { passive: true });
+    window.addEventListener("touchstart", loadNotifications, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", handleInteraction);
-      window.removeEventListener("mousemove", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-      document.removeEventListener("visibilitychange", handleInteraction);
+      window.removeEventListener("scroll", loadNotifications);
+      window.removeEventListener("mousemove", loadNotifications);
+      window.removeEventListener("touchstart", loadNotifications);
     };
   }, [session]);
 
   const toggleDropdown = useCallback(() => {
     setIsOpen((prev) => !prev);
-    // If they click the bell before scrolling, force interactive load
-    if (!isInteractive) setIsInteractive(true);
-  }, [isInteractive]);
+  }, []);
 
-  // 2. OPTIMIZATION: Tab-Focus Syncing
-  // Re-check count when user switches back to this tab
+  // Sync count on tab focus
   useEffect(() => {
     if (!session) return;
 
@@ -84,6 +68,9 @@ export default function NotificationBell() {
           if (data.unreadCount !== undefined) {
             setUnreadCount(data.unreadCount);
           }
+          if (data.notifications) {
+            setCachedNotifications(data);
+          }
         })
         .catch(() => {});
     };
@@ -92,9 +79,7 @@ export default function NotificationBell() {
     return () => window.removeEventListener("focus", handleFocus);
   }, [session]);
 
-  // If there's no session, don't show the bell
-  // (Or you could show a static bell that triggers a login prompt)
-  if (!session) return <div className="w-9 h-9" />; // Placeholder to prevent layout shift
+  if (!session) return <div className="w-9 h-9" />;
 
   return (
     <div className="relative inline-flex items-center justify-center min-w-[36px] min-h-[36px]">
@@ -109,8 +94,11 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {isOpen && isInteractive && (
-        <NotificationPanel onClose={() => setIsOpen(false)} />
+      {isOpen && (
+        <NotificationPanel
+          initialData={cachedNotifications}
+          onClose={() => setIsOpen(false)}
+        />
       )}
     </div>
   );

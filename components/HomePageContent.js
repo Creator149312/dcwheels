@@ -6,14 +6,10 @@
 
 'use client';
 
-import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 import HomepageFeedsWrapper from '@components/HomepageFeedsWrapper';
 import CreatePostTeaser from "@components/CreatePostTeaser";
 
 export default function HomePageContent({ initialGlobalFeed, initialGlobalCursor }) {
-  // Restore scroll position when navigating back
-  useScrollRestoration();
-
   return (
     <div className="mx-auto max-w-2xl px-0 py-2 sm:py-6">
       <CreatePostTeaser className="mb-4" />

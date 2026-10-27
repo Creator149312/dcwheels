@@ -50,6 +50,20 @@ function writePositions(positions) {
 export function useScrollRestoration() {
   const pathname = usePathname();
   const isPopStateRef = useRef(false);
+  const latestScrollYRef = useRef(0);
+
+  // Track live scroll position passively so we can save the exact scrollY
+  // of the previous route before the browser/router resets scroll on navigation.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    latestScrollYRef.current = window.scrollY;
+
+    const onScroll = () => {
+      latestScrollYRef.current = window.scrollY;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [pathname]);
 
   // Detect back/forward navigation. The popstate event fires before React
   // re-renders the new route, so by the time the pathname effect runs the
@@ -63,9 +77,13 @@ export function useScrollRestoration() {
   }, []);
 
   // Restore scroll position only after a back/forward navigation.
-  // Normal <Link> navigations rely on Next.js to scroll to the top.
+  // Normal <Link> navigations explicitly scroll to the top so long feeds
+  // or Suspense boundaries never leave the new page scrolled down.
   useEffect(() => {
-    if (!isPopStateRef.current) return;
+    if (!isPopStateRef.current) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      return;
+    }
     isPopStateRef.current = false;
 
     const positions = readPositions();
@@ -79,12 +97,12 @@ export function useScrollRestoration() {
   }, [pathname]);
 
   // Save the scroll position for this pathname when the component unmounts
-  // or the pathname changes. We intentionally do NOT save on every scroll
-  // event to avoid main-thread jank on long feeds.
+  // or the pathname changes. We read from latestScrollYRef so we don't save
+  // the new route's scroll offset by mistake.
   useEffect(() => {
     return () => {
       const positions = readPositions();
-      positions[pathname] = window.scrollY;
+      positions[pathname] = latestScrollYRef.current;
       writePositions(positions);
     };
   }, [pathname]);

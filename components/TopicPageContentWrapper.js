@@ -7,11 +7,6 @@
 
 'use client';
 
-import { useScrollRestoration } from '@/hooks/useScrollRestoration';
-
 export default function TopicPageContentWrapper({ children }) {
-  // Restore scroll position when navigating back
-  useScrollRestoration();
-
   return children;
 }
