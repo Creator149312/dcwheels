@@ -18,12 +18,10 @@ export default function WheelPlayerControls({
   segData,
   wheelData,
   saveWheelData,
-  currentPath,
   router,
   muted,
   setMuted,
   onEditClick,
-  isEditingActive,
   wheelTitle,
   wheelDescription,
   wheelId,
@@ -107,41 +105,33 @@ export default function WheelPlayerControls({
           <span>Switch to List</span>
         </button>
 
-        {/* Edit button: 
-            1. If editing is active (Home/Create/?edit=true), show yellow button on mobile only 
-            2. Otherwise show white button that redirects to creates on all devices */}
-        {isEditingActive ? (
-          <button
-            className="lg:hidden min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all text-yellow-400 outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
-            onClick={onEditClick}
-            aria-label="Edit wheel entries"
-          >
-            <Pencil size={17} className="sm:w-[19px] sm:h-[19px]" />
-            <span className="font-bold text-xs sm:text-sm">Edit</span>
-          </button>
-        ) : (
-          <button
-            className="min-h-[36px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-white/20 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation cursor-pointer"
-            onClick={(e) => {
-              saveWheelData(segData, wheelData);
-              if (typeof window !== "undefined" && wheelId) {
-                try {
-                  const raw = window.localStorage.getItem("SpinpapaWheel");
-                  if (raw) {
-                    const parsed = JSON.parse(raw);
-                    parsed.forkedFrom = { wheelId: String(wheelId), authorHandle: authorHandle || null };
-                    window.localStorage.setItem("SpinpapaWheel", JSON.stringify(parsed));
-                  }
-                } catch {}
-              }
-              window.location.href = "/wheels/create";
-            }}
-            aria-label="Edit wheel entries"
-          >
-            <Pencil size={17} className="sm:w-[19px] sm:h-[19px]" />
-            <span className="font-medium text-xs sm:text-sm">Edit</span>
-          </button>
-        )}
+        {/* Edit button — opens the in-place Wheel Editor (Bottom Sheet on mobile, right sidebar on desktop) */}
+        <button
+          type="button"
+          className="min-h-[38px] flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-yellow-400/20 hover:bg-yellow-400/30 border border-yellow-400/40 text-yellow-300 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-white backdrop-blur-xs touch-manipulation cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window !== "undefined" && wheelId) {
+              try {
+                const raw = window.localStorage.getItem("SpinpapaWheel") || "{}";
+                const parsed = JSON.parse(raw);
+                parsed.forkedFrom = {
+                  wheelId: String(wheelId),
+                  authorHandle: authorHandle || null,
+                };
+                window.localStorage.setItem("SpinpapaWheel", JSON.stringify(parsed));
+              } catch {}
+            }
+            if (typeof onEditClick === "function") {
+              onEditClick();
+            }
+          }}
+          aria-label="Edit wheel entries"
+        >
+          <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" />
+          <span className="font-bold text-xs sm:text-sm">Edit</span>
+        </button>
 
         {/* Fullscreen Button*/}
         <button

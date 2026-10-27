@@ -8,10 +8,30 @@ import { useSession } from "next-auth/react";
 import { useLoginPrompt } from "@app/LoginPromptProvider";
 import { timeAgo } from "@utils/HelperFunctions";
 import { getListUrl, getWheelUrl, getPostUrl } from "@utils/UrlHandler";
-import { Zap, MoreHorizontal } from "lucide-react";
+import { Zap, MoreHorizontal, ChevronRight, Disc3, Film, Gamepad2, Tv, User, Layers, Hash } from "lucide-react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import ContentRefCard from "@components/ContentRefCard";
 import DilemmaViewer from "@components/DilemmaViewer";
+
+const ENTITY_TYPE_ICONS = {
+  wheel: Disc3,
+  anime: Tv,
+  movie: Film,
+  game: Gamepad2,
+  character: User,
+  list: Layers,
+};
+
+function getEntityHref(entity) {
+  if (!entity) return "#";
+  if (entity.type === "wheel") {
+    return getWheelUrl({ _id: entity.externalId || entity.id, slug: entity.slug });
+  }
+  if (entity.type === "list") {
+    return getListUrl({ id: entity.externalId || entity.id, slug: entity.slug });
+  }
+  return `/${entity.type}/${entity.slug || encodeURIComponent(entity.externalId || entity.id || "")}`;
+}
 
 /**
  * Helper to render post text with clickable hashtags (Threads/Facebook style)
@@ -91,14 +111,27 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
   // If the post is hidden (deleted by owner or hidden by user), don't render it
   if (isHidden) return null;
 
+  const rawEntities =
+    Array.isArray(post.entities) && post.entities.length > 0
+      ? post.entities
+      : post.contentRef && (post.contentRef.title || post.contentRef.slug || post.contentRef.id || post.contentRef.externalId)
+      ? [post.contentRef]
+      : [];
+
+  const visibleEntities = currentContextId
+    ? rawEntities.filter(
+        (e) =>
+          String(e.externalId || e.id) !== String(currentContextId) &&
+          (!e.slug || String(e.slug) !== String(currentContextId))
+      )
+    : rawEntities;
+
+  // Threads-style inline header anchor when the post references a single TopicPage / Wheel / List
+  const headerEntity = visibleEntities.length === 1 ? visibleEntities[0] : null;
+  const HeaderEntityIcon = headerEntity ? ENTITY_TYPE_ICONS[headerEntity.type] || Hash : null;
+
   // Has an explicit Topic / ContentRef attached? (e.g. "GAME • Clash Royale")
-  const hasEntityAnchor = Boolean(
-    (post.entities && post.entities.length > 0) ||
-    post.contentRef?.title ||
-    post.contentRef?.slug ||
-    post.contentRef?.id ||
-    post.contentRef?.externalId
-  );
+  const hasEntityAnchor = rawEntities.length > 0;
 
   // Discovery Optimized Tag Chips:
   // 1. Filter out internal URL routing artifacts like "415-clash-royale" (digits followed by hyphen)
@@ -132,24 +165,50 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="leading-tight min-w-0">
-            <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex items-center gap-1 text-sm min-w-0">
               <Link
                 href={`/u/${encodeURIComponent((post.authorHandle || post.authorName || "someone").toLowerCase())}`}
-                className="font-bold text-foreground hover:underline transition truncate"
+                className="font-bold text-foreground hover:underline transition truncate shrink-0 max-w-[140px] sm:max-w-[200px]"
                 title={displayName}
               >
                 {displayName}
               </Link>
-              <span className="text-xs text-muted-foreground/40">•</span>
+
+              {/* Threads-style inline Topic / Wheel breadcrumb: author > Clash Royale */}
+              {headerEntity && (
+                <>
+                  <ChevronRight
+                    size={14}
+                    className="text-muted-foreground/50 shrink-0 -mx-0.5"
+                  />
+                  <Link
+                    href={getEntityHref(headerEntity)}
+                    className="inline-flex items-center gap-1 font-bold text-foreground hover:text-primary hover:underline transition min-w-0 truncate max-w-[155px] sm:max-w-[260px]"
+                    title={headerEntity.title || "View topic"}
+                  >
+                    {HeaderEntityIcon && (
+                      <HeaderEntityIcon
+                        size={13}
+                        className="text-primary shrink-0"
+                      />
+                    )}
+                    <span className="truncate">
+                      {headerEntity.title || "Untitled"}
+                    </span>
+                  </Link>
+                </>
+              )}
+
+              <span className="text-xs text-muted-foreground/40 shrink-0 px-0.5">•</span>
               <Link
                 href={getPostUrl(post)}
-                className="text-xs font-semibold text-muted-foreground/60 hover:text-foreground hover:underline transition whitespace-nowrap"
+                className="text-xs font-semibold text-muted-foreground/60 hover:text-foreground hover:underline transition whitespace-nowrap shrink-0"
                 title="View post"
               >
                 {timeAgo(post.createdAt)}
               </Link>
               {isOwnPost && !post.isPublic && (
-                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                <span className="inline-flex items-center gap-0.5 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50 shrink-0">
                   Private
                 </span>
               )}
@@ -269,54 +328,30 @@ function PostCard({ post, defaultOpenComments = false, currentContextId = null }
         </div>
       )}
 
-      {/* Content Ref (if linked to anime/movie/game/wheel/list) */}
-      {(() => {
-        const rawEntities = Array.isArray(post.entities) && post.entities.length > 0
-          ? post.entities
-          : (post.contentRef ? [post.contentRef] : []);
-
-        const visibleEntities = currentContextId
-          ? rawEntities.filter(
-              (e) =>
-                String(e.externalId) !== String(currentContextId) &&
-                (!e.slug || String(e.slug) !== String(currentContextId))
-            )
-          : rawEntities;
-
-        if (visibleEntities.length === 0) return null;
-
-        const isMulti = visibleEntities.length > 1;
-
-        return (
-          <div className="px-4 sm:px-0 mb-4 flex flex-wrap items-center gap-1.5">
-            {visibleEntities.map((entity, idx) => (
-              <span
-                key={`${entity.type}-${entity.externalId || entity.slug || idx}`}
-                className="inline-flex items-center gap-1.5"
-              >
-                <ContentRefCard
-                  href={
-                    entity.type === "wheel"
-                      ? getWheelUrl({ _id: entity.externalId, slug: entity.slug })
-                      : entity.type === "list"
-                        ? getListUrl({ id: entity.externalId, slug: entity.slug })
-                        : `/${entity.type}/${entity.slug || encodeURIComponent(entity.externalId)}`
-                  }
-                  image={entity.image}
-                  title={entity.title}
-                  type={entity.type}
-                  compact={isMulti}
-                />
-                {idx < visibleEntities.length - 1 && (
-                  <span className="text-[11px] font-black uppercase text-muted-foreground/60 tracking-wider px-0.5">
-                    vs
-                  </span>
-                )}
-              </span>
-            ))}
-          </div>
-        );
-      })()}
+      {/* Multi-Entity VS Comparison Chips (Single entities are rendered in the Threads-style header above) */}
+      {visibleEntities.length > 1 && (
+        <div className="px-4 sm:px-0 mb-4 flex flex-wrap items-center gap-1.5">
+          {visibleEntities.map((entity, idx) => (
+            <span
+              key={`${entity.type}-${entity.externalId || entity.slug || idx}`}
+              className="inline-flex items-center gap-1.5"
+            >
+              <ContentRefCard
+                href={getEntityHref(entity)}
+                image={entity.image}
+                title={entity.title}
+                type={entity.type}
+                compact
+              />
+              {idx < visibleEntities.length - 1 && (
+                <span className="text-[11px] font-black uppercase text-muted-foreground/60 tracking-wider px-0.5">
+                  vs
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* OG Link Preview Card */}
       {!post.image && !post.hasPoll && !post.contentRef && (!post.entities || post.entities.length === 0) && post.ogMeta && (

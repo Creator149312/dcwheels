@@ -71,11 +71,16 @@ async function SuspendedCategoryFeed({ feedPromise, type, tag }) {
 
   const feedItems = allFeedItems.slice(0, FEED_PAGE_SIZE);
   const nextItem =
-    allFeedItems.slice(FEED_PAGE_SIZE).find((i) => (i._docType || i.docType) !== "list") ||
-    null;
-  const hasList = feedItems.some((i) => i.docType === "list" || i._docType === "list");
+    allFeedItems.slice(FEED_PAGE_SIZE).find((i) => {
+      const dt = i._docType || i.docType;
+      return dt !== "list" && dt !== "topic";
+    }) || null;
+  const hasInjectedSlot = feedItems.some((i) => {
+    const dt = i.docType || i._docType;
+    return dt === "list" || dt === "topic";
+  });
   const initialFeedCursor = nextItem
-    ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasList ? 1 : 0}`
+    ? `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasInjectedSlot ? 1 : 0}`
     : null;
 
   const initialFeedItems = JSON.parse(JSON.stringify(feedItems));

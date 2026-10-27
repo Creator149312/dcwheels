@@ -194,13 +194,15 @@ function ListPostCard({ list }) {
 
           <Link
             href={url}
-            className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-medium leading-none text-foreground shadow-sm transition hover:bg-accent md:h-9"
+            aria-label={list.commentCount > 0 ? `${list.commentCount} comments` : "Comment"}
+            className="flex min-h-[34px] sm:min-h-[36px] md:h-9 items-center gap-1.5 rounded-full border border-border bg-muted/60 hover:bg-muted px-2.5 sm:px-3 py-1.5 text-sm font-medium leading-none text-foreground shadow-xs transition"
           >
             <MessageCircle size={15} />
-            <span className="text-sm md:hidden">{list.commentCount || 0}</span>
-            <span className="hidden md:inline">
-              {list.commentCount > 0 ? `${list.commentCount} Comments` : "Comment"}
-            </span>
+            {list.commentCount > 0 && (
+              <span className="text-xs sm:text-sm font-semibold tabular-nums">
+                {list.commentCount >= 1000 ? `${(list.commentCount / 1000).toFixed(1).replace(/\.0$/, "")}K` : list.commentCount}
+              </span>
+            )}
           </Link>
         </div>
 

@@ -15,6 +15,7 @@ export async function GET(req) {
     const tag = searchParams.get("tag"); 
     const userId = searchParams.get("userId"); 
     const docType = searchParams.get("docType"); 
+    const q = searchParams.get("q"); 
 
     let showPrivate = false;
     if (userId) {
@@ -36,6 +37,7 @@ export async function GET(req) {
       tag, 
       userId, 
       docType, 
+      q,
       limit: limit + 1, 
       cursor,
       showPrivate
@@ -44,22 +46,46 @@ export async function GET(req) {
     // Return only the first 'limit' items to client
     const items = allItems.slice(0, limit);
     
-    // Cursor = first undisplayed post/wheel (cursor match is inclusive).
-    const nextItem = allItems.slice(limit).find((i) => (i._docType || i.docType) !== "list") || null;
+    // Cursor = first undisplayed item. For dedicated feeds (e.g. docType="list", "wheel", or "topic"),
+    // find the first item matching that docType. For mixed discovery feeds, skip injected
+    // shelf items ("list" / "topic") as cursors track the primary post/wheel stream.
+    const isDedicatedListFeed = docType === "list";
+    const isDedicatedTopicFeed = docType === "topic";
+    const nextItem =
+      allItems
+        .slice(limit)
+        .find((i) => {
+          const dt = i._docType || i.docType;
+          if (isDedicatedListFeed) {
+            return dt === "list";
+          }
+          if (isDedicatedTopicFeed) {
+            return dt === "topic";
+          }
+          return dt !== "list" && dt !== "topic";
+        }) || null;
     const isCatCursor = cursor && cursor.startsWith("cat|");
     const cursorParts = cursor ? cursor.split("|") : [];
     const currentListOffset = isCatCursor
       ? (parseInt(cursorParts[3], 10) || 0)
       : (parseInt(cursorParts[2], 10) || 0);
-    const hasListInPage = items.some(i => i.docType === "list" || i._docType === "list");
-    const nextListOffset = currentListOffset + (hasListInPage ? 1 : 0);
+    const hasInjectedSlot = items.some((i) => {
+      const dt = i.docType || i._docType;
+      return dt === "list" || dt === "topic";
+    });
+    const nextListOffset = currentListOffset + (hasInjectedSlot ? 1 : 0);
 
     let nextCursor = null;
     if (nextItem) {
       const isNextCat = nextItem._feedStage === "cat" || isCatCursor;
       const stagePrefix = isNextCat ? "cat|" : "";
-      const cursorScore = userId ? nextItem.createdAt : (nextItem.hotScore ?? nextItem.createdAt);
-      nextCursor = `${stagePrefix}${cursorScore}|${nextItem._id || nextItem.id}|${nextListOffset}`;
+      const cursorScore =
+        userId || isDedicatedTopicFeed
+          ? nextItem.createdAt
+          : (nextItem.hotScore ?? nextItem.createdAt);
+      nextCursor = (isDedicatedListFeed || isDedicatedTopicFeed)
+        ? `${cursorScore}|${nextItem._id || nextItem.id}`
+        : `${stagePrefix}${cursorScore}|${nextItem._id || nextItem.id}|${nextListOffset}`;
     }
 
     const res = NextResponse.json({ 

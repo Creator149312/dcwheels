@@ -234,9 +234,9 @@ const GenerateWheel = ({ url }) => {
         <Button
           variant="outline"
           onClick={() => setIsPopupVisible(true)}
-          className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm border border-input hover:bg-accent hover:text-accent-foreground text-foreground transition-all duration-150 rounded-lg cursor-pointer"
+          className="w-full h-11 sm:h-9 flex items-center justify-center gap-2 text-sm sm:text-xs font-bold shadow-sm border border-input hover:bg-accent hover:text-accent-foreground text-foreground transition-all duration-150 rounded-xl sm:rounded-lg cursor-pointer touch-manipulation"
         >
-          <Wand2 size={15} className="shrink-0 text-amber-500" />
+          <Wand2 size={17} className="sm:w-[15px] sm:h-[15px] shrink-0 text-amber-500" />
           <span>Smart Wheel</span>
         </Button>
       </DialogTrigger>

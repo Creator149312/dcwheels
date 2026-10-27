@@ -62,10 +62,12 @@ async function processImageFile(file) {
   };
 }
 
-// Memoized row — renders a clean entry with 24x24 image pill, text, and compact [⋮] settings popover
+// Memoized row — renders a clean entry with image pill, text, and controlled single-instance [⋮] settings popover
 const SegmentRow = memo(function SegmentRow({
   seg,
   index,
+  isMenuOpen,
+  onMenuOpenChange,
   fallbackColor,
   inputRef,
   onUpdateText,
@@ -114,12 +116,12 @@ const SegmentRow = memo(function SegmentRow({
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-1 py-0.5 rounded-md group hover:bg-muted/40 focus-within:bg-muted/40 transition-colors">
-      {/* 24x24 Inline Image Thumbnail Pill */}
+    <div className="flex items-center gap-2 sm:gap-1.5 px-1.5 sm:px-1 py-1.5 sm:py-0.5 rounded-lg sm:rounded-md group hover:bg-muted/40 focus-within:bg-muted/50 transition-colors border-b border-border/25 sm:border-none last:border-none">
+      {/* Inline Image Thumbnail Pill */}
       {seg.image ? (
         <div
-          className="relative w-6 h-6 rounded-md overflow-hidden shrink-0 border border-border/60 bg-muted shadow-2xs group/pill"
-          title="Image attached (Hover to change or remove)"
+          className="relative w-8 h-8 sm:w-6 sm:h-6 rounded-lg sm:rounded-md overflow-hidden shrink-0 border border-border/60 bg-muted shadow-2xs group/pill"
+          title="Image attached (Tap or hover to change or remove)"
         >
           <img
             src={seg.image}
@@ -127,13 +129,13 @@ const SegmentRow = memo(function SegmentRow({
             className="w-full h-full object-cover select-none"
           />
 
-          {/* Hover Overlay: Change or Detach */}
-          <div className="absolute inset-0 bg-black/70 opacity-0 group-hover/pill:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
+          {/* Hover/Tap Overlay: Change or Detach */}
+          <div className="absolute inset-0 bg-black/70 opacity-0 group-hover/pill:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
             <label
-              className="cursor-pointer text-white hover:text-primary p-0.5 leading-none transition-colors"
+              className="cursor-pointer text-white hover:text-primary p-1 sm:p-0.5 leading-none transition-colors"
               title="Change image"
             >
-              <ImageIcon size={10} />
+              <ImageIcon size={12} className="sm:w-[10px] sm:h-[10px]" />
               <input
                 type="file"
                 accept="image/*"
@@ -144,7 +146,7 @@ const SegmentRow = memo(function SegmentRow({
             <button
               type="button"
               onClick={(e) => onRemoveImage(e, index)}
-              className="text-white hover:text-rose-400 font-bold text-[10px] leading-none p-0.5 transition-colors cursor-pointer"
+              className="text-white hover:text-rose-400 font-bold text-xs sm:text-[10px] leading-none p-1 sm:p-0.5 transition-colors cursor-pointer"
               title="Remove image"
             >
               ✕
@@ -152,12 +154,12 @@ const SegmentRow = memo(function SegmentRow({
           </div>
         </div>
       ) : (
-        /* Blank 24x24 Image Pill */
+        /* Blank Image Pill */
         <label
-          className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center bg-muted/40 hover:bg-muted border border-border/40 hover:border-primary/50 text-muted-foreground/40 hover:text-primary transition-all cursor-pointer shadow-2xs"
+          className="w-8 h-8 sm:w-6 sm:h-6 rounded-lg sm:rounded-md shrink-0 flex items-center justify-center bg-muted/50 hover:bg-muted border border-border/50 hover:border-primary/50 text-muted-foreground/60 hover:text-primary active:scale-95 transition-all cursor-pointer shadow-2xs touch-manipulation"
           title="Add image to this entry"
         >
-          <ImageIcon size={12} strokeWidth={2} />
+          <ImageIcon size={15} className="sm:w-3 sm:h-3" strokeWidth={2} />
           <input
             type="file"
             accept="image/*"
@@ -167,7 +169,7 @@ const SegmentRow = memo(function SegmentRow({
         </label>
       )}
 
-      {/* Effortless Clean Text Input */}
+      {/* Effortless Clean Text Input (text-base on mobile prevents iOS Safari auto-zoom) */}
       <input
         ref={inputRef}
         type="text"
@@ -184,29 +186,32 @@ const SegmentRow = memo(function SegmentRow({
         }}
         onPaste={(e) => onPaste(e, index)}
         placeholder={`Option ${index + 1}`}
-        className={`flex-1 bg-transparent border-none outline-none text-xs sm:text-sm py-0.5 px-1 min-w-0 font-medium placeholder:text-muted-foreground/30 focus:ring-0 transition-opacity ${
+        className={`flex-1 bg-transparent border-none outline-none text-base sm:text-sm py-1 sm:py-0.5 px-1.5 sm:px-1 min-w-0 font-medium placeholder:text-muted-foreground/40 focus:ring-0 transition-opacity ${
           seg.visible === false
             ? "text-muted-foreground/60 line-through decoration-muted-foreground/40"
             : "text-foreground"
         }`}
       />
 
-      {/* 3-Dots Settings & Delete Popover */}
-      <DropdownMenu>
+      {/* 3-Dots Settings & Delete Popover (strictly one open at a time via parent state) */}
+      <DropdownMenu
+        open={isMenuOpen}
+        onOpenChange={(open) => onMenuOpenChange(index, open)}
+      >
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className={`relative p-1 rounded-md transition-colors cursor-pointer shrink-0 ${
-              hasCustomSettings
-                ? "text-primary hover:bg-primary/10"
-                : "text-muted-foreground/40 hover:text-foreground hover:bg-muted opacity-60 group-hover:opacity-100"
+            className={`relative w-8 h-8 sm:w-auto sm:h-auto sm:p-1 flex items-center justify-center rounded-lg sm:rounded-md transition-colors cursor-pointer shrink-0 touch-manipulation ${
+              isMenuOpen || hasCustomSettings
+                ? "text-primary bg-primary/10 sm:bg-transparent hover:bg-primary/10"
+                : "text-muted-foreground/60 sm:text-muted-foreground/40 hover:text-foreground hover:bg-muted sm:opacity-60 group-hover:opacity-100"
             }`}
             title="Option settings"
           >
-            <MoreVertical size={14} />
+            <MoreVertical size={17} className="sm:w-[14px] sm:h-[14px]" />
             {hasCustomSettings && (
               <span
-                className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary"
+                className="absolute top-1 right-1 sm:top-0.5 sm:right-0.5 w-2 h-2 sm:w-1.5 sm:h-1.5 rounded-full bg-primary"
                 title="Has custom settings (odds/color/hidden)"
               />
             )}
@@ -215,16 +220,16 @@ const SegmentRow = memo(function SegmentRow({
         <DropdownMenuContent
           align="end"
           sideOffset={5}
-          className="w-52 p-2 space-y-1.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+          className="z-[200] w-60 sm:w-52 p-2.5 sm:p-2 space-y-2 sm:space-y-1.5 rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
         >
-          <div className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">
+          <div className="text-[11px] sm:text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">
             Option Settings
           </div>
 
           {/* Odds / Weight Multiplier */}
-          <div className="flex items-center justify-between px-1 py-1 text-xs">
+          <div className="flex items-center justify-between px-1 py-1.5 sm:py-1 text-sm sm:text-xs">
             <span className="font-medium text-foreground">Odds / Weight</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 sm:gap-1">
               <button
                 type="button"
                 onClick={(e) => {
@@ -233,12 +238,12 @@ const SegmentRow = memo(function SegmentRow({
                   const curr = Math.max(1, (seg.weight ?? 1) - 1);
                   onUpdateField(index, "weight", curr);
                 }}
-                className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-xs cursor-pointer active:scale-95"
+                className="w-7 h-7 sm:w-5 sm:h-5 rounded-md sm:rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-sm sm:text-xs cursor-pointer active:scale-95 touch-manipulation"
                 title="Decrease odds"
               >
                 -
               </button>
-              <span className="w-6 text-center font-bold text-foreground text-xs select-none">
+              <span className="w-7 sm:w-6 text-center font-bold text-foreground text-sm sm:text-xs select-none">
                 {seg.weight ?? 1}x
               </span>
               <button
@@ -249,7 +254,7 @@ const SegmentRow = memo(function SegmentRow({
                   const curr = Math.min(20, (seg.weight ?? 1) + 1);
                   onUpdateField(index, "weight", curr);
                 }}
-                className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-xs cursor-pointer active:scale-95"
+                className="w-7 h-7 sm:w-5 sm:h-5 rounded-md sm:rounded flex items-center justify-center bg-muted hover:bg-muted-foreground/20 text-foreground font-bold text-sm sm:text-xs cursor-pointer active:scale-95 touch-manipulation"
                 title="Increase odds"
               >
                 +
@@ -258,9 +263,9 @@ const SegmentRow = memo(function SegmentRow({
           </div>
 
           {/* Slice Color */}
-          <div className="flex items-center justify-between px-1 py-1 text-xs">
+          <div className="flex items-center justify-between px-1 py-1.5 sm:py-1 text-sm sm:text-xs">
             <span className="font-medium text-foreground">Slice Color</span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2 sm:gap-1.5">
               {seg.color && (
                 <button
                   type="button"
@@ -269,7 +274,7 @@ const SegmentRow = memo(function SegmentRow({
                     e.stopPropagation();
                     onUpdateField(index, "color", null);
                   }}
-                  className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                  className="text-xs sm:text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                   title="Reset to theme palette"
                 >
                   Reset
@@ -279,7 +284,7 @@ const SegmentRow = memo(function SegmentRow({
                 type="color"
                 value={seg.color || fallbackColor}
                 onChange={(e) => onUpdateField(index, "color", e.target.value)}
-                className="w-5 h-5 p-0 border border-border/80 rounded cursor-pointer bg-transparent"
+                className="w-7 h-7 sm:w-5 sm:h-5 p-0 border border-border/80 rounded-md sm:rounded cursor-pointer bg-transparent"
                 title="Change slice color"
               />
             </div>
@@ -293,37 +298,50 @@ const SegmentRow = memo(function SegmentRow({
               e.stopPropagation();
               onUpdateField(index, "visible", seg.visible === false ? true : false);
             }}
-            className="w-full flex items-center justify-between px-1 py-1 rounded-md hover:bg-muted text-xs transition-colors cursor-pointer"
+            className="w-full flex items-center justify-between px-1 py-1.5 sm:py-1 rounded-md hover:bg-muted text-sm sm:text-xs transition-colors cursor-pointer touch-manipulation"
             title="Toggle visibility on the wheel"
           >
             <span className="font-medium text-foreground">Visibility</span>
             <span
-              className={`flex items-center gap-1 text-[11px] font-semibold ${
+              className={`flex items-center gap-1 text-xs sm:text-[11px] font-semibold ${
                 seg.visible !== false ? "text-emerald-500" : "text-amber-500"
               }`}
             >
-              {seg.visible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
+              {seg.visible !== false ? <Eye size={14} className="sm:w-3 sm:h-3" /> : <EyeOff size={14} className="sm:w-3 sm:h-3" />}
               {seg.visible !== false ? "Visible" : "Hidden"}
             </span>
           </button>
+
+          {seg.image && (
+            <button
+              type="button"
+              onClick={(e) => {
+                onRemoveImage(e, index);
+              }}
+              className="w-full flex items-center justify-between px-1 py-1.5 sm:py-1 rounded-md hover:bg-muted text-sm sm:text-xs text-rose-500 transition-colors cursor-pointer touch-manipulation"
+            >
+              <span className="font-medium">Remove Image</span>
+              <span className="text-xs font-bold">✕</span>
+            </button>
+          )}
 
           <div className="my-1 border-t border-border/60" />
 
           {/* Duplicate Option */}
           <DropdownMenuItem
             onClick={() => onDuplicate(index)}
-            className="flex items-center gap-2 px-1.5 py-1.5 rounded-lg text-xs cursor-pointer"
+            className="flex items-center gap-2 px-2 py-2 sm:px-1.5 sm:py-1.5 rounded-lg text-sm sm:text-xs cursor-pointer"
           >
-            <Copy size={13} className="text-muted-foreground" />
+            <Copy size={15} className="text-muted-foreground sm:w-[13px] sm:h-[13px]" />
             <span>Duplicate Option</span>
           </DropdownMenuItem>
 
           {/* Delete Option */}
           <DropdownMenuItem
             onClick={() => onDelete(index)}
-            className="flex items-center gap-2 px-1.5 py-1.5 rounded-lg text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
+            className="flex items-center gap-2 px-2 py-2 sm:px-1.5 sm:py-1.5 rounded-lg text-sm sm:text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
           >
-            <Trash2 size={13} />
+            <Trash2 size={15} className="sm:w-[13px] sm:h-[13px]" />
             <span>Delete Option</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -341,10 +359,15 @@ export default function SegmentListEditor() {
   } = useContext(SegmentsContext);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const inputRefs = useRef([]);
   const scrollContainerRef = useRef(null);
   const hiddenBatchFileInputRef = useRef(null);
   const segDataRef = useRef(segData);
+
+  const handleMenuOpenChange = useCallback((index, isOpen) => {
+    setOpenMenuIndex((prev) => (isOpen ? index : prev === index ? null : prev));
+  }, []);
 
   useEffect(() => {
     segDataRef.current = segData;
@@ -814,6 +837,8 @@ export default function SegmentListEditor() {
               key={seg.id ?? index}
               seg={seg}
               index={index}
+              isMenuOpen={openMenuIndex === index}
+              onMenuOpenChange={handleMenuOpenChange}
               fallbackColor={
                 wheelData.segColors[index % wheelData.segColors.length]
               }
@@ -832,29 +857,29 @@ export default function SegmentListEditor() {
       </div>
 
       {/* Bottom Bar: Action buttons & entry count */}
-      <div className="shrink-0 flex items-center justify-between px-0.5 pt-1 pb-0 text-[11px] text-muted-foreground select-none">
-        <div className="flex items-center gap-1">
+      <div className="shrink-0 flex items-center justify-between px-1 pt-2 pb-1 border-t border-border/40 text-xs text-muted-foreground select-none">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={addBlankOption}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-muted hover:text-foreground text-foreground font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 h-9 sm:h-7 px-3 sm:px-2 rounded-lg bg-primary/10 hover:bg-primary/15 text-primary font-bold text-xs sm:text-xs active:scale-95 transition-all cursor-pointer touch-manipulation"
           >
-            <Plus size={13} className="text-primary" />
+            <Plus size={15} className="sm:w-[13px] sm:h-[13px]" strokeWidth={2.5} />
             <span>Add Option</span>
           </button>
           <button
             type="button"
             onClick={handlePasteClipboard}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-muted hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 h-9 sm:h-7 px-3 sm:px-2 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted hover:text-foreground text-foreground font-semibold text-xs sm:text-xs active:scale-95 transition-all cursor-pointer touch-manipulation"
             title="Paste text list from clipboard"
           >
-            <Clipboard size={12} />
-            <span>Paste</span>
+            <Clipboard size={14} className="sm:w-[12px] sm:h-[12px]" />
+            <span>Paste List</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-foreground">{segData.length}</span>
+        <div className="flex items-center gap-1 text-xs">
+          <span className="font-bold text-foreground">{segData.length}</span>
           <span>{segData.length === 1 ? "entry" : "entries"}</span>
           {segData.length >= 1000 && (
             <span className="text-amber-500 font-bold ml-1">(Max 1000)</span>

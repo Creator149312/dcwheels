@@ -2,21 +2,19 @@ import { cache, Suspense } from "react";
 import ReactDOM from "react-dom";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 import { notFound, permanentRedirect } from "next/navigation";
-import { sessionUser } from "@utils/SessionData";
 import { ensureArrayOfObjects } from "@utils/HelperFunctions";
 import { getRelatedTopicPages } from "@components/actions/actions";
 import dynamic from "next/dynamic";
 import WheelInfoStatic from "@components/WheelInfoStatic";
 import Description from "@components/description/Description";
 import UniversalCommentsSection from "@components/UniversalCommentsSection";
-import ViewTracker from "@components/ViewTracker";
 import SidebarDiscovery from "@components/SidebarDiscovery";
 import { getWheelUrl, parseWheelSlugId } from "@utils/UrlHandler";
 import { connectMongoDB } from "@/lib/mongodb";
 import { isWheelAdEligible } from "@/lib/adEligibility";
 import Wheel from "@models/wheel";
 import WheelAnalytics from "@models/wheelAnalytics";
-import mongoose from "mongoose";
+import ViewTracker from "@components/ViewTracker";
 import {
   SuspendedInfoActions,
   SuspendedHubFeed,
@@ -269,7 +267,6 @@ export default async function UnifiedWheelPage({ params }) {
           wheelTitle={pageData.wheel.title}
           wheelEntityType="wheel"
           wheelSlug={pageData.wheel.slug || urlSlugSuffix} 
-          createdAt={pageData.wheel.createdAt}
           authorHandle={pageData.wheel.authorHandle}
         />
       </Suspense>

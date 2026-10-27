@@ -119,8 +119,8 @@ export default function AddToListButton({ type, entityId, name, slug, image, cla
           onClick={quickSaveToDefault}
           disabled={isSaved || quickSaving || authStatus === "loading"}
           className={`
-            inline-flex items-center justify-center gap-1.5 transition-colors duration-150 flex-1 font-semibold
-            ${isCompact ? "px-3 py-2 text-xs" : "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm"}
+            inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors duration-150 flex-1 font-semibold
+            ${isCompact ? "px-3 py-1.5 text-xs" : "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm"}
             ${isSaved
               ? "bg-blue-600/10 text-blue-700 dark:text-blue-400 border-r border-blue-600/20 cursor-default"
               : "bg-muted/40 text-foreground hover:bg-muted active:scale-[0.98]"
@@ -128,9 +128,9 @@ export default function AddToListButton({ type, entityId, name, slug, image, cla
           `}
         >
           {isSaved ? (
-            <Check size={isCompact ? 14 : 16} strokeWidth={2.5} />
+            <Check size={isCompact ? 13 : 16} strokeWidth={2.5} />
           ) : (
-            <Bookmark size={isCompact ? 14 : 16} />
+            <Bookmark size={isCompact ? 13 : 16} />
           )}
           <span>{isSaved ? "Saved" : quickSaving ? "Saving…" : "Save to List"}</span>
         </button>

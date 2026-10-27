@@ -15,29 +15,21 @@ const ContentEditableDivResult = () => {
     .join("");
 
   const sortSegments = () => {
-    let masterDiv = document.getElementById("resultDiv");
-    const divs = Array.from(masterDiv.children);
+    setResultList((prev) => {
+      if (!Array.isArray(prev) || prev.length <= 1) return prev;
+      return [...prev].sort((a, b) => {
+        const aHasImage = Boolean(a?.image);
+        const bHasImage = Boolean(b?.image);
 
-    divs.sort((a, b) => {
-      const aHasImage = a.querySelector("img") !== null;
-      const bHasImage = b.querySelector("img") !== null;
-
-      if (aHasImage && !bHasImage) {
-        return -1; // a has image, b doesn't: a goes first
-      } else if (!aHasImage && bHasImage) {
-        return 1; // a doesn't have image, b does: b goes first
-      } else {
-        return a.innerText.localeCompare(b.innerText);
-      }
+        if (aHasImage && !bHasImage) return -1;
+        if (!aHasImage && bHasImage) return 1;
+        return String(a?.text || "").localeCompare(String(b?.text || ""));
+      });
     });
-
-    divs.forEach((div) => masterDiv.appendChild(div));
-    result.current = masterDiv.innerHTML;
   };
 
   const clearResultList = () => {
     setResultList([]);
-    // result.current = '';
   };
 
   return (

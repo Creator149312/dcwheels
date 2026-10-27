@@ -98,15 +98,14 @@ export default function SharePopup({
   // ✅ Conditional button styling
   const buttonClass =
     variant === "buttoned"
-      ? "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation cursor-pointer"
+      ? "relative flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-border bg-muted/60 hover:bg-muted text-foreground text-sm font-medium transition leading-none shadow-xs min-h-[34px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation cursor-pointer"
       : "flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer";
 
   return (
     <div className="relative">
       {/* Trigger Button */}
-      <button onClick={togglePopup} className={buttonClass}>
+      <button onClick={togglePopup} className={buttonClass} aria-label="Share">
         <Share2 size={15} />
-        <span className="hidden sm:inline">Share</span>
       </button>
 
       {/* Popup */}

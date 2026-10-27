@@ -10,6 +10,7 @@ import UnifiedList from "@models/unifiedlist";
 import { sessionUserId } from "@/utils/SessionData";
 import mongoose from "mongoose";
 import { createNotification, enqueueNotification } from "@/lib/notificationService";
+import { enqueueMilestoneCheck } from "@/lib/milestoneEmailService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
 import { validateContentSafety } from "@lib/contentSafety";
@@ -61,15 +62,63 @@ export async function POST(req) {
     // Update denormalized commentCount on the parent entity
     try {
       if (entityType === "post") {
-        await Post.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        const updated = await Post.findByIdAndUpdate(
+          entityId,
+          { $inc: { commentCount: 1 } },
+          { new: true, select: "userId commentCount title content" }
+        ).lean();
         refreshEntityHotScore(Post, entityId).catch(() => {});
+
+        if (updated?.userId && updated.commentCount) {
+          enqueueMilestoneCheck({
+            userId: updated.userId,
+            entityId,
+            entityType: "post",
+            milestoneType: "COMMENT",
+            currentCount: updated.commentCount,
+            entityTitle: updated.title || updated.content?.slice(0, 60) || "Post",
+            entityUrl: `/posts/${entityId}`,
+          });
+        }
       } else if (entityType === "wheel" || entityType === "uwheel") {
-        await Wheel.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        const updated = await Wheel.findByIdAndUpdate(
+          entityId,
+          { $inc: { commentCount: 1 } },
+          { new: true, select: "userId commentCount title urlEndpoint" }
+        ).lean();
         refreshEntityHotScore(Wheel, entityId).catch(() => {});
+
+        if (updated?.userId && updated.commentCount) {
+          enqueueMilestoneCheck({
+            userId: updated.userId,
+            entityId,
+            entityType: "wheel",
+            milestoneType: "COMMENT",
+            currentCount: updated.commentCount,
+            entityTitle: updated.title || "Wheel",
+            entityUrl: updated.urlEndpoint ? `/${updated.urlEndpoint}` : `/wheels/${entityId}`,
+          });
+        }
       } else if (entityType === "list") {
-        await UnifiedList.updateOne({ _id: entityId }, { $inc: { commentCount: 1 } });
+        const updated = await UnifiedList.findByIdAndUpdate(
+          entityId,
+          { $inc: { commentCount: 1 } },
+          { new: true, select: "userId commentCount name slug" }
+        ).lean();
         syncListIndexedState(entityId).catch(() => {});
         refreshEntityHotScore(UnifiedList, entityId).catch(() => {});
+
+        if (updated?.userId && updated.commentCount) {
+          enqueueMilestoneCheck({
+            userId: updated.userId,
+            entityId,
+            entityType: "list",
+            milestoneType: "COMMENT",
+            currentCount: updated.commentCount,
+            entityTitle: updated.name || "List",
+            entityUrl: updated.slug ? `/lists/${updated.slug}` : `/lists/${entityId}`,
+          });
+        }
       }
     } catch (countErr) {
       console.error("Error updating comment count:", countErr);

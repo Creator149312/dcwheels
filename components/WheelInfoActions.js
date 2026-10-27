@@ -6,9 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import StatsBar from "@app/(content)/[type]/StatsBar";
 import QuickSaveButton from "@components/QuickSaveButton";
-import { useLoginPrompt } from "@app/LoginPromptProvider";
-import { MessageSquare, Code2, ArrowLeftRight, BarChart2 } from "lucide-react";
-import { timeAgo } from "@utils/HelperFunctions";
+import { Code2, BarChart2 } from "lucide-react";
 
 // Lazy-load on interaction only — removes embed and stats modal from
 // the initial JS parse path, cutting TBT.
@@ -37,13 +35,11 @@ function formatCount(n) {
  *
  * Props:
  *   wheelId    — MongoDB ObjectId string for the wheel
- *   createdAt  — ISO date string from the wheel document (for "X days ago")
  *   createdBy  — Creator name/username for display
  *   authorHandle — Creator username for profile link routing
  *   initialMeta — server-fetched meta: analytics, reactions, commentCount
  */
-export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", createdAt, authorHandle, initialMeta = null }) {
-  const openLoginPrompt = useLoginPrompt();
+export default function WheelInfoActions({ wheelId, wheelTitle, wheelEntityType = "wheel", wheelSlug = "", authorHandle, initialMeta = null }) {
   const { data: session } = useSession();
 
   const [engagement, setEngagement] = useState({

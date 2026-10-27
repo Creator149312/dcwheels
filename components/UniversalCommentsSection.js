@@ -82,21 +82,19 @@ export default function UniversalCommentsSection({
   useEffect(() => {
     const handleTrigger = (event) => {
       if (event.detail?.entityId === entityId) {
-        if (!session) {
-          openLoginPrompt?.();
-          return;
-        }
         setHasIntersected(true);
         setIsDrawerOpen(true);
-        // Autofocus the form after a small delay for the drawer animation
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("comment-form:focus"));
-        }, 300);
+        // Autofocus the form only if authenticated, otherwise keep drawer open for reading
+        if (session) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("comment-form:focus"));
+          }, 300);
+        }
       }
     };
     window.addEventListener("comments:open-drawer", handleTrigger);
     return () => window.removeEventListener("comments:open-drawer", handleTrigger);
-  }, [entityId, session, openLoginPrompt]);
+  }, [entityId, session]);
 
   // Initial count fetch — only when no initialCount is provided.
   // Posts/wheels/lists now carry a denormalized commentCount, so the feed
@@ -148,14 +146,12 @@ export default function UniversalCommentsSection({
       {!isDrawerOpen && !isInFeed && (
         <div 
           onClick={() => {
-            if (!session) {
-              openLoginPrompt?.();
-              return;
-            }
             setIsDrawerOpen(true);
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent("comment-form:focus"));
-            }, 300);
+            if (session) {
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent("comment-form:focus"));
+              }, 300);
+            }
           }}
           className="md:hidden flex items-center gap-3 px-4 py-2 cursor-pointer active:bg-muted/50 transition-colors"
         >

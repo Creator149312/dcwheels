@@ -65,6 +65,73 @@ export async function POST(req, { params }) {
       return NextResponse.json({ message: "This post doesn't have a poll" }, { status: 400 });
     }
 
+    // Find existing vote for this user or guest
+    const voteQuery = userId
+      ? { postId: id, userId }
+      : { postId: id, guestId };
+
+    const existingVote = await PostVote.findOne(voteQuery);
+
+    if (existingVote) {
+      const oldOptionId = String(existingVote.optionId);
+      const newOptionId = String(optionId);
+
+      // If user clicked the same option they already voted for, no-op return current options
+      if (oldOptionId === newOptionId) {
+        return NextResponse.json({
+          message: "Vote recorded",
+          changed: false,
+          options: post.pollOptions.map((opt) => ({
+            id: String(opt._id),
+            text: opt.text,
+            image: opt.image || null,
+            voteCount: opt.voteCount,
+          })),
+        });
+      }
+
+      // User is changing their vote from oldOptionId to newOptionId:
+      // 1) Update the PostVote document
+      existingVote.optionId = optionId;
+      await existingVote.save();
+
+      // 2) Decrement oldOption and increment newOption atomically
+      await Post.updateOne(
+        { _id: id, "pollOptions._id": oldOptionId },
+        { $inc: { "pollOptions.$.voteCount": -1 } }
+      );
+      const updated = await Post.findOneAndUpdate(
+        { _id: id, "pollOptions._id": newOptionId },
+        { $inc: { "pollOptions.$.voteCount": 1 } },
+        { new: true, select: "createdAt likeCount commentCount pollOptions", lean: true }
+      );
+
+      if (!updated) {
+        return NextResponse.json({ message: "Option not found" }, { status: 404 });
+      }
+
+      // Recompute and persist hotScore
+      const newHotScore = computeHotScore({
+        createdAt: updated.createdAt,
+        votes: sumPollVotes(updated.pollOptions),
+        likes: updated.likeCount || 0,
+        comments: updated.commentCount || 0,
+      });
+      Post.updateOne({ _id: id }, { $set: { hotScore: newHotScore } }).catch(() => {});
+
+      return NextResponse.json({
+        message: "Vote changed",
+        changed: true,
+        options: updated.pollOptions.map((opt) => ({
+          id: String(opt._id),
+          text: opt.text,
+          image: opt.image || null,
+          voteCount: opt.voteCount,
+        })),
+      });
+    }
+
+    // New vote:
     // Record the vote first; the dual sparse unique index prevents
     // duplicate votes even under concurrency:
     // { postId: 1, userId: 1 } (sparse) & { postId: 1, guestId: 1 } (sparse)
@@ -77,6 +144,7 @@ export async function POST(req, { params }) {
       });
     } catch (err) {
       if (err?.code === 11000) {
+        // Handled in case of a concurrent second request
         return NextResponse.json({ message: "You already voted on this poll" }, { status: 409 });
       }
       throw err;

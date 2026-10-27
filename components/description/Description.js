@@ -1,14 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import RelatedTopicLinks from "@components/RelatedTopicLinks";
-import { timeAgo } from "@utils/HelperFunctions";
-
-function formatCount(n) {
-  if (!n || n === 0) return "0";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  return n.toLocaleString();
-}
 
 /**
  * Resolves image src and label from a wheel segment item.

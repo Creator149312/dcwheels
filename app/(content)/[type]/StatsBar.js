@@ -165,15 +165,15 @@ export default function StatsBar({
       {show.comment && (
         <button
           onClick={onCommentClick}
-          className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-accent text-foreground text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation"
+          aria-label={commentCount > 0 ? `${commentCount} comments` : "Comment"}
+          className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-border bg-muted/60 hover:bg-muted text-foreground text-sm font-medium transition leading-none shadow-xs min-h-[34px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation"
         >
           <MessageCircle size={15} />
-          <span className="flex items-center">
-            <span className="text-sm md:hidden">{commentCount || 0}</span>
-            <span className="hidden md:inline">
-              {commentCount > 0 ? `${commentCount} Comments` : "Comment"}
+          {commentCount > 0 && (
+            <span className="text-xs sm:text-sm font-semibold tabular-nums">
+              {commentCount >= 1000 ? `${(commentCount / 1000).toFixed(1).replace(/\.0$/, "")}K` : commentCount}
             </span>
-          </span>
+          )}
         </button>
       )}
 

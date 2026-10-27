@@ -235,18 +235,15 @@ export async function generateDilemmaCard({
   roundRect(ctx, 16, 16, width - 32, height - 32, 32);
   ctx.stroke();
 
-  // Calculate vote totals and percentages
-  const safeOptions = options.slice(0, 2); // Best formatted for 2-way VS dilemmas
-  const opt0 = safeOptions[0] || { text: "Option A" };
-  const opt1 = safeOptions[1] || { text: "Option B" };
-  const id0 = opt0._id ?? opt0.id;
-  const id1 = opt1._id ?? opt1.id;
+  // Calculate vote totals and percentages across all valid options (up to 4)
+  const isMultiWay = options.length > 2;
+  const safeOptions = isMultiWay ? options.slice(0, 4) : options.slice(0, 2);
 
-  const count0 = voteCounts[id0] || opt0.voteCount || 0;
-  const count1 = voteCounts[id1] || opt1.voteCount || 0;
-  const total = count0 + count1;
-  const pct0 = total > 0 ? Math.round((count0 / total) * 100) : 50;
-  const pct1 = total > 0 ? 100 - pct0 : 50;
+  // Compute total votes across all options in this dilemma
+  const totalVotesAcrossAll = safeOptions.reduce((sum, opt) => {
+    const id = opt._id ?? opt.id;
+    return sum + (voteCounts[id] || opt.voteCount || 0);
+  }, 0);
 
   // Header: Brand & Title
   ctx.save();
@@ -262,7 +259,7 @@ export async function generateDilemmaCard({
   ctx.font = "bold 20px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("⚡ POP CULTURE DILEMMA", 48 + 130, (isStory ? 64 : 36) + 24);
+  ctx.fillText(isMultiWay ? "⚡ POP CULTURE SHOWDOWN" : "⚡ POP CULTURE DILEMMA", 48 + 130, (isStory ? 64 : 36) + 24);
 
   // Top right watermark
   ctx.fillStyle = "#818cf8";
@@ -273,176 +270,337 @@ export async function generateDilemmaCard({
 
   // Post Question Title (Dynamic 1 or 2 lines with clean word-wrapping)
   ctx.save();
-  const titleFontSize = isStory ? 44 : 32;
-  const titleLineHeight = isStory ? 54 : 40;
+  const titleFontSize = isStory ? 44 : (isMultiWay ? 28 : 32);
+  const titleLineHeight = isStory ? 54 : (isMultiWay ? 36 : 40);
   ctx.font = `bold ${titleFontSize}px system-ui, -apple-system, sans-serif`;
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  const cleanTitle = formatDebateTitle(postTitle, isStory ? 90 : 75);
+  const cleanTitle = formatDebateTitle(postTitle, isStory ? 90 : (isMultiWay ? 65 : 75));
   const maxTitleWidth = width - 120; // 60px padding on each side
   const titleLines = wrapCanvasText(ctx, cleanTitle, maxTitleWidth, 2);
 
-  const baseTitleY = isStory ? (titleLines.length === 1 ? 195 : 185) : (titleLines.length === 1 ? 118 : 110);
+  const baseTitleY = isStory ? (titleLines.length === 1 ? 195 : 185) : (titleLines.length === 1 ? 108 : 98);
   titleLines.forEach((line, idx) => {
     const lineY = baseTitleY + (idx * titleLineHeight);
     ctx.fillText(line, width / 2, lineY);
   });
   ctx.restore();
 
+  // Find user-selected option or default to first
+  const selectedOpt = safeOptions.find((o) => String(o._id ?? o.id) === String(selectedOptionId)) || safeOptions[0];
+  const selectedText = selectedOpt?.text || "Option";
+
   if (isStory) {
-    // ── 9:16 Story Layout (1080 x 1920) ──
-    // In Post Polls with images, options have aspect-square (1:1).
-    // Using a true 1:1 square for each option card:
-    const cardSize = 580; // 580 x 580 true 1:1 square
-    const cardX = (width - cardSize) / 2; // 250px centered
-    const card0Y = 270;
-    const card1Y = 920;
+    if (isMultiWay) {
+      // ── 9:16 Story Layout for 3 or 4 Options (2x2 Grid) ──
+      const cols = 2;
+      const count = safeOptions.length;
+      const cardSize = 440;
+      const gapX = 36;
+      const gapY = 36;
+      const gridWidth = cardSize * cols + gapX; // 916px
+      const startX = (width - gridWidth) / 2; // 82px
+      const startY = 270;
 
-    await drawOptionCard(ctx, {
-      x: cardX,
-      y: card0Y,
-      width: cardSize,
-      height: cardSize,
-      option: opt0,
-      percentage: pct0,
-      isVoted: String(selectedOptionId) === String(id0),
-    });
+      for (let i = 0; i < count; i++) {
+        const opt = safeOptions[i];
+        const id = opt._id ?? opt.id;
+        const votes = voteCounts[id] || opt.voteCount || 0;
+        const pct = totalVotesAcrossAll > 0 ? Math.round((votes / totalVotesAcrossAll) * 100) : Math.round(100 / count);
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = startX + col * (cardSize + gapX);
+        const y = startY + row * (cardSize + gapY);
 
-    await drawOptionCard(ctx, {
-      x: cardX,
-      y: card1Y,
-      width: cardSize,
-      height: cardSize,
-      option: opt1,
-      percentage: pct1,
-      isVoted: String(selectedOptionId) === String(id1),
-    });
+        await drawOptionCard(ctx, {
+          x,
+          y,
+          width: cardSize,
+          height: cardSize,
+          option: opt,
+          percentage: pct,
+          isVoted: String(selectedOptionId) === String(id),
+          isCompact: true,
+        });
+      }
 
-    // Central VS Badge
-    const vsY = (card0Y + cardSize + card1Y) / 2;
-    ctx.save();
-    ctx.fillStyle = "#0f172a";
-    ctx.beginPath();
-    ctx.arc(width / 2, vsY, 52, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#6366f1";
-    ctx.lineWidth = 4;
-    ctx.stroke();
+      // Central VS Badge in the center of the 2x2 grid (if 4 options)
+      if (count === 4) {
+        const centerGridX = width / 2;
+        const centerGridY = startY + cardSize + gapY / 2;
+        ctx.save();
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath();
+        ctx.arc(centerGridX, centerGridY, 40, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#6366f1";
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 36px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("VS", width / 2, vsY);
-    ctx.restore();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 24px system-ui, -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("VS", centerGridX, centerGridY);
+        ctx.restore();
+      }
 
-    // Verdict callout box
-    const selectedText = String(selectedOptionId) === String(id1) ? opt1.text : opt0.text;
-    ctx.save();
-    ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
-    roundRect(ctx, cardX, 1550, cardSize, 125, 22);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Verdict callout box
+      const calloutWidth = gridWidth;
+      ctx.save();
+      ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
+      roundRect(ctx, startX, 1550, calloutWidth, 125, 22);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 25px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, width / 2, 1595);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 25px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, width / 2, 1595);
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
-    ctx.font = "500 19px system-ui, -apple-system, sans-serif";
-    ctx.fillText(`Vote & settle the debate on spinpapa.com`, width / 2, 1636);
-    ctx.restore();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+      ctx.font = "500 19px system-ui, -apple-system, sans-serif";
+      ctx.fillText(`Vote & settle the debate on spinpapa.com`, width / 2, 1636);
+      ctx.restore();
 
-    // Footer
-    ctx.save();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cardX, height - 90);
-    ctx.lineTo(cardX + cardSize, height - 90);
-    ctx.stroke();
+      // Footer
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, height - 90);
+      ctx.lineTo(startX + calloutWidth, height - 90);
+      ctx.stroke();
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
-    ctx.font = "500 20px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`${total.toLocaleString()} community votes recorded`, cardX, height - 48);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.font = "500 20px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${totalVotesAcrossAll.toLocaleString()} community votes recorded`, startX, height - 48);
 
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#818cf8";
-    ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
-    ctx.fillText(postUrl, cardX + cardSize, height - 48);
-    ctx.restore();
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#818cf8";
+      ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
+      ctx.fillText(postUrl, startX + calloutWidth, height - 48);
+      ctx.restore();
+    } else {
+      // ── 9:16 Story Layout for 2 Options (VS Mode) ──
+      const opt0 = safeOptions[0] || { text: "Option A" };
+      const opt1 = safeOptions[1] || { text: "Option B" };
+      const id0 = opt0._id ?? opt0.id;
+      const id1 = opt1._id ?? opt1.id;
+      const count0 = voteCounts[id0] || opt0.voteCount || 0;
+      const count1 = voteCounts[id1] || opt1.voteCount || 0;
+      const total2 = count0 + count1;
+      const pct0 = total2 > 0 ? Math.round((count0 / total2) * 100) : 50;
+      const pct1 = total2 > 0 ? 100 - pct0 : 50;
+
+      const cardSize = 580; // 580 x 580 true 1:1 square
+      const cardX = (width - cardSize) / 2; // 250px centered
+      const card0Y = 270;
+      const card1Y = 920;
+
+      await drawOptionCard(ctx, {
+        x: cardX,
+        y: card0Y,
+        width: cardSize,
+        height: cardSize,
+        option: opt0,
+        percentage: pct0,
+        isVoted: String(selectedOptionId) === String(id0),
+      });
+
+      await drawOptionCard(ctx, {
+        x: cardX,
+        y: card1Y,
+        width: cardSize,
+        height: cardSize,
+        option: opt1,
+        percentage: pct1,
+        isVoted: String(selectedOptionId) === String(id1),
+      });
+
+      // Central VS Badge
+      const vsY = (card0Y + cardSize + card1Y) / 2;
+      ctx.save();
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.arc(width / 2, vsY, 52, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#6366f1";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 36px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("VS", width / 2, vsY);
+      ctx.restore();
+
+      // Verdict callout box
+      ctx.save();
+      ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
+      roundRect(ctx, cardX, 1550, cardSize, 125, 22);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 25px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, width / 2, 1595);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+      ctx.font = "500 19px system-ui, -apple-system, sans-serif";
+      ctx.fillText(`Vote & settle the debate on spinpapa.com`, width / 2, 1636);
+      ctx.restore();
+
+      // Footer
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cardX, height - 90);
+      ctx.lineTo(cardX + cardSize, height - 90);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.font = "500 20px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${total2.toLocaleString()} community votes recorded`, cardX, height - 48);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#818cf8";
+      ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
+      ctx.fillText(postUrl, cardX + cardSize, height - 48);
+      ctx.restore();
+    }
   } else {
     // ── 16:9 Landscape / Discord / Twitter Layout (1200 x 675) ──
-    // In Post Polls with images, options have aspect-square (1:1).
-    // Using true 1:1 square side-by-side:
-    const cardSize = 400; // 400 x 400 true 1:1 square
-    const gap = 48;
-    const totalContentWidth = cardSize * 2 + gap; // 848px
-    const startX = (width - totalContentWidth) / 2; // 176px centered
-    const cardY = 175;
+    if (isMultiWay) {
+      // 3 or 4 options in 16:9 format: 4 items side-by-side or 3 side-by-side
+      const count = safeOptions.length;
+      const cardWidth = count === 4 ? 250 : 330;
+      const cardHeight = 420;
+      const gap = count === 4 ? 16 : 24;
+      const totalWidth = count * cardWidth + (count - 1) * gap;
+      const startX = (width - totalWidth) / 2;
+      const cardY = 160;
 
-    await drawOptionCard(ctx, {
-      x: startX,
-      y: cardY,
-      width: cardSize,
-      height: cardSize,
-      option: opt0,
-      percentage: pct0,
-      isVoted: String(selectedOptionId) === String(id0),
-      isCompact: true,
-    });
+      for (let i = 0; i < count; i++) {
+        const opt = safeOptions[i];
+        const id = opt._id ?? opt.id;
+        const votes = voteCounts[id] || opt.voteCount || 0;
+        const pct = totalVotesAcrossAll > 0 ? Math.round((votes / totalVotesAcrossAll) * 100) : Math.round(100 / count);
+        const x = startX + i * (cardWidth + gap);
 
-    await drawOptionCard(ctx, {
-      x: startX + cardSize + gap,
-      y: cardY,
-      width: cardSize,
-      height: cardSize,
-      option: opt1,
-      percentage: pct1,
-      isVoted: String(selectedOptionId) === String(id1),
-      isCompact: true,
-    });
+        await drawOptionCard(ctx, {
+          x,
+          y: cardY,
+          width: cardWidth,
+          height: cardHeight,
+          option: opt,
+          percentage: pct,
+          isVoted: String(selectedOptionId) === String(id),
+          isCompact: true,
+        });
+      }
 
-    // Central VS Badge
-    const vsX = width / 2;
-    const vsY = cardY + cardSize / 2;
-    ctx.save();
-    ctx.fillStyle = "#0f172a";
-    ctx.beginPath();
-    ctx.arc(vsX, vsY, 38, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#6366f1";
-    ctx.lineWidth = 3;
-    ctx.stroke();
+      // Footer
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+      ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, startX, height - 42);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 24px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("VS", vsX, vsY);
-    ctx.restore();
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#818cf8";
+      ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
+      ctx.fillText(postUrl, startX + totalWidth, height - 42);
+      ctx.restore();
+    } else {
+      // 2 options in 16:9 (classic 1v1 VS side-by-side)
+      const opt0 = safeOptions[0] || { text: "Option A" };
+      const opt1 = safeOptions[1] || { text: "Option B" };
+      const id0 = opt0._id ?? opt0.id;
+      const id1 = opt1._id ?? opt1.id;
+      const count0 = voteCounts[id0] || opt0.voteCount || 0;
+      const count1 = voteCounts[id1] || opt1.voteCount || 0;
+      const total2 = count0 + count1;
+      const pct0 = total2 > 0 ? Math.round((count0 / total2) * 100) : 50;
+      const pct1 = total2 > 0 ? 100 - pct0 : 50;
 
-    // Footer
-    ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
-    ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`"I voted ${stripHtml(String(selectedOptionId) === String(id1) ? opt1.text : opt0.text)}. What's your verdict?"`, startX, height - 42);
+      const cardSize = 400; // 400 x 400 true 1:1 square
+      const gap = 48;
+      const totalContentWidth = cardSize * 2 + gap; // 848px
+      const startX = (width - totalContentWidth) / 2; // 176px centered
+      const cardY = 175;
 
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#818cf8";
-    ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
-    ctx.fillText(postUrl, startX + totalContentWidth, height - 42);
-    ctx.restore();
+      await drawOptionCard(ctx, {
+        x: startX,
+        y: cardY,
+        width: cardSize,
+        height: cardSize,
+        option: opt0,
+        percentage: pct0,
+        isVoted: String(selectedOptionId) === String(id0),
+        isCompact: true,
+      });
+
+      await drawOptionCard(ctx, {
+        x: startX + cardSize + gap,
+        y: cardY,
+        width: cardSize,
+        height: cardSize,
+        option: opt1,
+        percentage: pct1,
+        isVoted: String(selectedOptionId) === String(id1),
+        isCompact: true,
+      });
+
+      // Central VS Badge
+      const vsX = width / 2;
+      const vsY = cardY + cardSize / 2;
+      ctx.save();
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.arc(vsX, vsY, 38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#6366f1";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 24px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("VS", vsX, vsY);
+      ctx.restore();
+
+      // Footer
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+      ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`"I voted ${stripHtml(selectedText)}. What's your verdict?"`, startX, height - 42);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#818cf8";
+      ctx.font = "bold 17px system-ui, -apple-system, sans-serif";
+      ctx.fillText(postUrl, startX + totalContentWidth, height - 42);
+      ctx.restore();
+    }
   }
 
   const dataUrl = canvas.toDataURL("image/png", 0.95);

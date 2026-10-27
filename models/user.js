@@ -117,6 +117,12 @@ const userSchema = new Schema(
       sparse: true,
       index: true,
     },
+
+    // Email notifications preference (milestones, interactions)
+    emailNotifications: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

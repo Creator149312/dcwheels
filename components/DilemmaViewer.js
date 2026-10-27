@@ -46,7 +46,8 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
   const revealBars = voted || !!optimisticPick;
 
   const handleVote = async (optionId) => {
-    if (revealBars || loading) return;
+    // If loading or already voted for this exact option, ignore
+    if (loading || (selectedOptionId && String(selectedOptionId) === String(optionId))) return;
 
     // Haptic feedback on mobile if supported
     if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
@@ -58,6 +59,8 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
     // Affinity capture: a vote is a strong fandom signal. Works for guests too
     // (tracked in localStorage — the warm feed personalizes on their next visit).
     trackAffinity(post?.contentRef?.type || "anime", "vote");
+
+    const isChangingVote = voted && selectedOptionId && String(selectedOptionId) !== String(optionId);
 
     // Frictionless voting: both registered users and guest sessions register their vote via the API.
     setLoading(true);
@@ -77,7 +80,7 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
         setOptimisticPick(null);
         setSelectedOptionId(optionId);
         setVoted(true);
-        toast.success("Vote recorded!");
+        toast.success(isChangingVote ? "Vote updated!" : "Vote recorded!");
         const chosen = post.pollOptions.find((o) => (o._id ?? o.id) === optionId);
         onVoteSuccess?.(chosen?.text || "");
       } else if (res.status === 409) {
@@ -117,7 +120,7 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
       >
         {/* Central "VS" badge for 2-option comparisons */}
         {isTwoOptions && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-card border-2 border-primary/30 shadow-lg flex items-center justify-center text-xs sm:text-sm font-black tracking-wider text-primary pointer-events-none ring-4 ring-background">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-background border border-border/70 shadow-md flex items-center justify-center text-[11px] sm:text-xs font-black tracking-wider text-muted-foreground pointer-events-none ring-4 ring-background">
             VS
           </div>
         )}
@@ -129,32 +132,23 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
           const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
           const hasImage = !!option.image;
 
-          return (
-            <button
-              key={`${postId}-${option._id ?? idx}`}
-              onClick={() => handleVote(option._id)}
-              disabled={revealBars || loading}
-              className={`relative w-full overflow-hidden rounded-xl sm:rounded-2xl border transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/15 text-left
-                ${
-                  hasImage
-                    ? "aspect-square bg-muted"
-                    : isTwoOptions
-                    ? "min-h-[84px] sm:min-h-[110px] p-3 sm:p-4 flex flex-col justify-between bg-card"
-                    : "min-h-[48px] sm:min-h-[56px] px-3.5 py-3 sm:p-4 flex items-center justify-between bg-card"
-                }
-                ${
-                  isSelected
-                    ? "border-primary shadow-sm ring-2 ring-primary/20"
-                    : !revealBars
-                    ? "border-border hover:border-primary/60 hover:shadow-md hover:bg-primary/[0.02] active:scale-[0.98]"
-                    : "border-border/80 cursor-default"
-                }
-                disabled:cursor-not-allowed
-              `}
-            >
-              {/* Image background if option has an image */}
-              {hasImage ? (
-                <>
+          if (hasImage) {
+            return (
+              <button
+                key={`${postId}-${option._id ?? idx}`}
+                onClick={() => handleVote(option._id)}
+                disabled={loading || (isSelected && revealBars)}
+                className={`relative w-full overflow-hidden rounded-2xl border text-left flex flex-col transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card
+                  ${
+                    isSelected
+                      ? "border-primary shadow-xs ring-1 ring-primary/30"
+                      : "border-border/60 hover:border-border hover:shadow-xs active:scale-[0.985] cursor-pointer"
+                  }
+                  ${loading ? "opacity-70 cursor-not-allowed" : ""}
+                `}
+              >
+                {/* Threads-style Image Hero: clean 4:3 or 16:10 container showing the full image */}
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-muted/40 overflow-hidden shrink-0">
                   <img
                     src={option.imageVariants?.md || option.imageVariants?.sm || option.image}
                     srcSet={
@@ -162,22 +156,76 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
                         ? `${option.imageVariants.sm} 240w, ${option.imageVariants.md} 480w`
                         : undefined
                     }
-                    sizes="(max-width: 640px) 50vw, 240px"
+                    sizes="(max-width: 640px) 50vw, 360px"
                     alt={option.text}
-                    width={480}
-                    height={480}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                     decoding="async"
                   />
-                  {/* Caption gradient over image */}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-3 sm:p-4 z-10">
-                    <p className="text-white font-bold text-sm sm:text-base leading-snug line-clamp-2">
-                      {option.text}
-                    </p>
-                  </div>
-                </>
-              ) : isTwoOptions ? (
+
+                  {/* Voted check indicator pill on the image top-left */}
+                  {revealBars && isSelected && (
+                    <div className="absolute top-2 left-2 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-xs">
+                      <span>Your vote</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Option text + percentage bar below the image */}
+                <div className="relative p-2.5 sm:p-3 flex-1 flex flex-col justify-between min-w-0 overflow-hidden">
+                  <p className="text-[13px] sm:text-sm font-semibold text-foreground leading-snug line-clamp-2 mb-1.5">
+                    {option.text}
+                  </p>
+
+                  {/* Voting results progress bar */}
+                  {revealBars ? (
+                    <div className="mt-auto space-y-1">
+                      <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${
+                            isSelected ? "bg-primary" : "bg-muted-foreground/40"
+                          }`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5 font-medium">
+                        <span>{percentage}%</span>
+                        <span>{count.toLocaleString()} {count === 1 ? "vote" : "votes"}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-auto pt-0.5">
+                      <span className="text-[11px] text-muted-foreground/60 font-medium group-hover:text-primary transition-colors">
+                        Tap to vote
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          }
+
+          // Text-only poll option (standard row / card)
+          return (
+            <button
+              key={`${postId}-${option._id ?? idx}`}
+              onClick={() => handleVote(option._id)}
+              disabled={loading || (isSelected && revealBars)}
+              className={`relative w-full overflow-hidden rounded-xl sm:rounded-2xl border transition-all duration-300 group focus:outline-none focus:ring-4 focus:ring-primary/15 text-left
+                ${
+                  isTwoOptions
+                    ? "min-h-[84px] sm:min-h-[110px] p-3 sm:p-4 flex flex-col justify-between bg-card"
+                    : "min-h-[48px] sm:min-h-[56px] px-3.5 py-3 sm:p-4 flex items-center justify-between bg-card"
+                }
+                ${
+                  isSelected
+                    ? "border-primary shadow-sm ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/60 hover:shadow-md hover:bg-primary/[0.02] active:scale-[0.98] cursor-pointer"
+                }
+                ${loading ? "opacity-70 cursor-not-allowed" : ""}
+              `}
+            >
+              {isTwoOptions ? (
                 /* Two-option text card (vertical layout with VS badge) */
                 <div className="relative z-10 flex-1 flex items-center pr-1">
                   <span className="text-sm sm:text-base font-bold text-foreground leading-snug line-clamp-3">
@@ -193,17 +241,11 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
                 </div>
               )}
 
-              {/* Vote result progress fill */}
+              {/* Vote result progress fill for text option */}
               {revealBars && (
                 <div
-                  className={`absolute inset-0 transition-all duration-700 ease-out ${
-                    hasImage ? "bg-primary/25" : "bg-primary/10 dark:bg-primary/20"
-                  }`}
-                  style={
-                    hasImage
-                      ? { opacity: Math.max(0.2, percentage / 100) }
-                      : { width: `${percentage}%` }
-                  }
+                  className="absolute inset-0 transition-all duration-700 ease-out bg-primary/10 dark:bg-primary/20"
+                  style={{ width: `${percentage}%` }}
                 />
               )}
 
@@ -211,9 +253,7 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
               {revealBars && (
                 <div
                   className={`z-20 flex items-center gap-2 ${
-                    hasImage
-                      ? "absolute top-2.5 left-2.5 m-0 p-0"
-                      : isTwoOptions
+                    isTwoOptions
                       ? "relative z-10 justify-between border-t border-border/60 mt-2 pt-1"
                       : "relative z-10 shrink-0 justify-end"
                   }`}
@@ -223,16 +263,10 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
                       Your vote
                     </span>
                   )}
-                  <span
-                    className={`font-black text-xs sm:text-sm ${
-                      hasImage
-                        ? "bg-black/80 text-white px-2.5 py-1 rounded-lg backdrop-blur-md shadow-md border border-white/20"
-                        : "text-primary"
-                    }`}
-                  >
+                  <span className="font-black text-xs sm:text-sm text-primary">
                     {percentage}%
                   </span>
-                  {!hasImage && isTwoOptions && (
+                  {isTwoOptions && (
                     <span className="text-xs text-muted-foreground font-medium">
                       {count.toLocaleString()} {count === 1 ? "vote" : "votes"}
                     </span>
@@ -311,6 +345,7 @@ export default function DilemmaViewer({ post, postId, onVoteSuccess, initialVote
         <DilemmaShareModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
+          postId={postId || post?._id || post?.id}
           postTitle={post?.title || post?.content || "Pop Culture Dilemma"}
           options={post?.pollOptions || []}
           voteCounts={displayCounts}

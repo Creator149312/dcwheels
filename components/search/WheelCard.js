@@ -3,11 +3,13 @@ import { Card } from "@components/ui/card";
 import { ArrowRight, Layers } from "lucide-react";
 import { getWheelUrl } from "@utils/UrlHandler";
 
-export default function WheelCard({ item }) {
-  const segmentCount = item.data?.length || item.segmentCount || 0;
+export default function WheelCard({ item, wheel }) {
+  const doc = item || wheel;
+  if (!doc) return null;
+  const segmentCount = doc.data?.length || doc.segmentCount || 0;
 
   return (
-    <Link href={getWheelUrl(item)} className="group block touch-manipulation">
+    <Link href={getWheelUrl(doc)} className="group block touch-manipulation">
       <Card className="group relative overflow-hidden border-none bg-card shadow-sm p-3 md:p-5 lg:p-6 transition duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 active:scale-[0.99]">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 transition-colors duration-500" />
         <div className="relative flex items-center justify-between gap-3">
@@ -17,7 +19,7 @@ export default function WheelCard({ item }) {
             </div>
             <div className="truncate">
               <h2 className="text-base md:text-lg lg:text-xl font-bold text-foreground truncate mb-0.5 md:mb-1">
-                {item.title}
+                {doc.title}
               </h2>
               <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary uppercase tracking-wider">
                 {segmentCount} Segment{segmentCount !== 1 ? "s" : ""}

@@ -11,6 +11,7 @@ export function buildStandardFeed(items = [], options = {}) {
   const {
     wheelCadence = 4,   // 1 wheel every 4 slots (~25%)
     listPosition = 2,   // Batch-relative slot for the server-injected list
+    topicPosition = 5,  // Batch-relative slot for the server-injected TopicPage card (after ~5 posts)
     adInterval = 7,     // Ads every 7 items
     slotOffset = 0,     // Continue cadence from a previous batch (infinite scroll)
   } = options;
@@ -21,6 +22,7 @@ export function buildStandardFeed(items = [], options = {}) {
   const posts = [];
   const wheels = [];
   const lists = [];
+  const topics = [];
   const seen = new Set();
 
   items.forEach(item => {
@@ -30,6 +32,7 @@ export function buildStandardFeed(items = [], options = {}) {
     const type = item.docType || item._docType || "post";
     if (type === "post") posts.push(item);
     else if (type === "wheel") wheels.push(item);
+    else if (type === "topic") topics.push(item);
     else if (type === "list") {
       // Only entity lists with 5+ items are discovery-worthy.
       const hasMinItems = item.items && item.items.length >= 5;
@@ -41,13 +44,15 @@ export function buildStandardFeed(items = [], options = {}) {
   // 2. Interleave: one placement per iteration, queues only move forward,
   // so an item can never be emitted twice.
   const finalFeed = [];
-  const total = posts.length + wheels.length + lists.length;
-  let p = 0, w = 0, l = 0;
+  const total = posts.length + wheels.length + lists.length + topics.length;
+  let p = 0, w = 0, l = 0, t = 0;
   while (finalFeed.length < total) {
     const slot = slotOffset + finalFeed.length + 1;
     if (l < lists.length && finalFeed.length === listPosition) finalFeed.push(lists[l++]);
+    else if (t < topics.length && finalFeed.length === topicPosition) finalFeed.push(topics[t++]);
     else if (w < wheels.length && (slot % wheelCadence === 0 || p >= posts.length)) finalFeed.push(wheels[w++]);
     else if (p < posts.length) finalFeed.push(posts[p++]);
+    else if (t < topics.length) finalFeed.push(topics[t++]);
     else if (l < lists.length) finalFeed.push(lists[l++]);
     else finalFeed.push(wheels[w++]);
   }

@@ -35,6 +35,7 @@ const WinnerPopup = ({
   wheelId,
   wheelSlug: wheelSlugProp,
   wheelPreview,
+  containerEl = null,
 }) => {
   let [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -254,8 +255,20 @@ const WinnerPopup = ({
 
   if (!open || !mounted) return null;
 
+  const fullscreenEl =
+    typeof document !== "undefined"
+      ? document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      : null;
+
+  // In native fullscreen, portal into the fullscreen element so browser doesn't hide it behind the top layer.
+  // In normal mode, portal into document.body for clean, full-screen viewport centering.
+  const targetContainer = containerEl || fullscreenEl || (typeof document !== "undefined" ? document.body : null);
+
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       {/* Backdrop — click to close */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
@@ -442,7 +455,7 @@ const WinnerPopup = ({
     </div>
   );
 
-  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : null;
+  return targetContainer ? createPortal(modalContent, targetContainer) : null;
 };
 
 export default WinnerPopup;

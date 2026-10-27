@@ -9,26 +9,17 @@ import QuizSegmentEditor from "./QuizSegmentEditor";
 import ContentEditableDivResult from "./ContentEditableDivResult";
 import GenerateWheel from "@components/GenerateWheel";
 import SaveImportComponent from "./SaveImportComponent";
-import { Brain, List } from "lucide-react";
 import { Suspense } from "react";
-import { segmentsToHTMLTxt } from "@utils/HelperFunctions";
 import { createSegment } from "@utils/segmentUtils";
 import { compressImage } from "@utils/imageCompression";
 import toast from "react-hot-toast";
 
-// The full home-page editor — renders the tabbed interface with list/result
-// editing, quiz authoring, AI generation, and import/save controls.
-//
-// Split out from WheelEditor so it ships as its own webpack chunk. On
-// `/wheels/[slug]` and `/uwheels/[wheelId]` (where ~99% of search-driven
-// traffic lands) this entire module — including ListSelector, the segment
-// editors, the contentEditable result list, etc. — is never
-// loaded, dropping ~30-60KB of JS from the initial bundle on those routes.
-//
-// Only mounted by WheelEditor when `currentPath === "/"` and only via
-// next/dynamic, so SSR doesn't try to render any of these heavy widgets
-// before the wheel itself is interactive.
-export default function WheelEditorFull({ mustSpin, currentPath, inModal = false }) {
+export default function WheelEditorFull({
+  mustSpin,
+  currentPath,
+  inModal = false,
+  onCloseEditor = null,
+}) {
   const {
     resultList,
     segData,
@@ -43,7 +34,6 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
   const shuffleSegments = () => {
     const shuffled = [...segData].sort(() => Math.random() - 0.5);
     setSegData(shuffled);
-    html.current = segmentsToHTMLTxt(shuffled);
   };
 
   const sortSegments = () => {
@@ -58,12 +48,10 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
     });
 
     setSegData(sorted);
-    html.current = segmentsToHTMLTxt(sorted);
   };
 
   const clearAllSegments = () => {
     setSegData([]);
-    html.current = "";
   };
 
   const handleBatchImageUpload = async (e) => {
@@ -116,13 +104,9 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           (!prev[0].text || prev[0].text === "Option") &&
           !prev[0].image
         ) {
-          const updated = newSegments.slice(0, 1000);
-          html.current = segmentsToHTMLTxt(updated);
-          return updated;
+          return newSegments.slice(0, 1000);
         }
-        const updated = [...prev, ...newSegments].slice(0, 1000);
-        html.current = segmentsToHTMLTxt(updated);
-        return updated;
+        return [...prev, ...newSegments].slice(0, 1000);
       });
 
       toast.success(
@@ -135,8 +119,19 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
     }
   };
 
+  const isGenericCreateOrHome =
+    currentPath === "/" ||
+    currentPath === "/wheels/create" ||
+    currentPath?.startsWith?.("/wheels/create");
+
   return (
-    <div className={`bg-card text-card-foreground border shadow-sm p-1 lg:col-span-5 xl:col-span-3 rounded-2xl flex flex-col overflow-hidden ${inModal ? "border-none shadow-none p-0 flex-1 min-h-0" : "flex min-h-[32rem] lg:max-h-[521px]"}`}>
+    <div
+      className={`bg-card text-card-foreground border shadow-sm rounded-2xl flex flex-col overflow-hidden ${
+        inModal
+          ? "border-none shadow-none p-0 flex-1 min-h-0"
+          : "p-2 sm:p-2.5 absolute inset-0"
+      }`}
+    >
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -147,12 +142,15 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           transition: "opacity 0.3s ease",
         }}
       >
-        <TabsList className="w-full h-auto shrink-0 flex-col gap-1 bg-transparent p-0 pb-1">
+        <TabsList className="w-full h-auto shrink-0 flex-col gap-1.5 bg-transparent p-0 pb-1.5">
           <TabsListOnEditor
             segData={segData}
             resultList={resultList}
             wheelType={wheelType}
             activeTab={activeTab}
+            inModal={inModal}
+            showModeToggle={isGenericCreateOrHome || wheelType === "quiz"}
+            onCloseEditor={!inModal ? onCloseEditor : null}
             onShuffle={shuffleSegments}
             onSort={sortSegments}
             onBatchImageUpload={handleBatchImageUpload}
@@ -186,9 +184,11 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
             overflow: "hidden",
           }}
         >
-          <div className="shrink-0 my-0.5">
-            <ListSelector html={html} setSegData={setSegData} />
-          </div>
+          {isGenericCreateOrHome && (
+            <div className="shrink-0 my-1">
+              <ListSelector html={html} setSegData={setSegData} />
+            </div>
+          )}
           {wheelType === "quiz" ? (
             <div className="flex flex-col flex-1 min-h-0">
               <QuizSegmentEditor />
@@ -206,8 +206,8 @@ export default function WheelEditorFull({ mustSpin, currentPath, inModal = false
           <ContentEditableDivResult resultList={resultList} />
         </TabsContent>
       </Tabs>
-      <div className="grid grid-cols-2 gap-1.5 mt-1 shrink-0">
-        <Suspense fallback={<div className="h-10 bg-muted animate-pulse rounded-md" />}>
+      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-border/50 shrink-0">
+        <Suspense fallback={<div className="h-11 bg-muted animate-pulse rounded-lg" />}>
           <GenerateWheel url={currentPath} />
         </Suspense>
         <SaveImportComponent segments={segData} onImport={setSegData} />

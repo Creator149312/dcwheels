@@ -1,111 +1,91 @@
-import { Suspense } from "react";
-import TopicSection from "./TopicSection";
-import WheelsSection from "./WheelsSection";
-import WheelsSectionSkeleton from "./WheelsSectionSkeleton";
+import { connectMongoDB } from "@/lib/mongodb";
+import { getFeedItemsSafe } from "@/lib/feedService";
+import InfiniteFeedStream from "@components/feed/InfiniteFeedStream";
 import SearchResultsHeader from "@components/search/SearchResultsHeader";
 import SearchTabs from "@components/search/SearchTabs";
-import { fetchLocalTopics } from "./fetchLocalTopics";
-
-const perPage = 8;
 
 const TOPIC_TYPES = {
-  anime: { label: "anime" },
-  movie: { label: "movie" },
-  game: { label: "game" },
-  character: { label: "character", badgeType: "heart" },
+  topics: null,
+  anime: "anime",
+  movie: "movie",
+  game: "game",
+  character: "character",
 };
 
+const FEED_PAGE_SIZE = 8;
+
 export default async function Page({ params, searchParams }) {
+  await connectMongoDB();
+
   // Decode and sanitize the search title to prevent any double-encoding display issues
   const rawTitle = params.titlesearch;
   const searchtitle = decodeURIComponent(rawTitle);
-  const activeType = searchParams?.type || "wheels";
+  const rawType = searchParams?.type || searchParams?.tab || "top";
+  // "posts" tab is merged into "top", normalize to "top" for backwards-compatibility
+  const activeType = rawType === "wheel" ? "wheels" : rawType === "posts" ? "top" : rawType;
 
-  // Only fetch data for the active tab on initial SSR. The local-first topic
-  // endpoint returns normalized results and already includes an external API
-  // fallback, so page.js no longer needs to call AniList/TMDB/RAWG directly.
-  let wheelData = { list: [], total: 0 };
-  let topicData = { results: [], meta: { total: 0 } };
+  let docType = "post,wheel,list";
+  let feedType = null;
 
   if (activeType === "wheels") {
-    wheelData = await fetchInitialWheels(searchtitle);
-  } else if (TOPIC_TYPES[activeType]) {
-    topicData = await fetchLocalTopics({ q: searchtitle, type: activeType });
+    docType = "wheel";
+  } else if (activeType === "lists") {
+    docType = "list";
+  } else if (Object.prototype.hasOwnProperty.call(TOPIC_TYPES, activeType)) {
+    docType = "topic";
+    feedType = TOPIC_TYPES[activeType];
   }
 
-  const wheelList = wheelData.list || [];
-  const wheelTotal = wheelData.total || 0;
+  const allItems = await getFeedItemsSafe({
+    q: searchtitle,
+    type: feedType,
+    docType,
+    limit: FEED_PAGE_SIZE + 1,
+  });
 
-  // Counts for tab labels use the endpoint's total so they reflect the full
-  // local result set, not just the first page.
-  const counts = {
-    wheels: wheelTotal,
-    anime: 0,
-    movie: 0,
-    game: 0,
-    character: 0,
-    [activeType]: topicData.meta?.total || 0,
-  };
+  const items = allItems.slice(0, FEED_PAGE_SIZE);
+
+  let initialNextCursor = null;
+  if (docType === "list" || docType === "topic" || docType === "wheel") {
+    const nextItem = allItems.length > FEED_PAGE_SIZE ? allItems[FEED_PAGE_SIZE] : null;
+    if (nextItem) {
+      const scoreOrDate =
+        docType === "topic"
+          ? nextItem.createdAt
+          : nextItem.hotScore ?? nextItem.createdAt;
+      initialNextCursor = `${scoreOrDate}|${nextItem._id || nextItem.id}`;
+    }
+  } else {
+    const nextItem =
+      allItems.slice(FEED_PAGE_SIZE).find((i) => {
+        const dt = i._docType || i.docType;
+        return dt !== "list" && dt !== "topic";
+      }) || null;
+    const hasInjectedSlot = items.some((i) => {
+      const dt = i.docType || i._docType;
+      return dt === "list" || dt === "topic";
+    });
+    if (nextItem) {
+      initialNextCursor = `${nextItem.hotScore ?? nextItem.createdAt}|${nextItem._id || nextItem.id}|${hasInjectedSlot ? 1 : 0}`;
+    }
+  }
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 pb-10">
+    <main className="mx-auto max-w-2xl px-0 py-2 sm:py-6">
+      <div className="px-4 sm:px-0">
+        <SearchResultsHeader searchtitle={searchtitle} />
+        <SearchTabs rawTitle={rawTitle} activeType={activeType} />
+      </div>
 
-      <SearchResultsHeader searchtitle={searchtitle} />
-      <SearchTabs rawTitle={rawTitle} activeType={activeType} counts={counts} />
-
-      {/* Wheels tab */}
-      {activeType === "wheels" && (
-        <Suspense fallback={<WheelsSectionSkeleton count={perPage} />}>
-          <WheelsSection
-            searchtitle={searchtitle}
-            wheelList={wheelList}
-            wheelTotal={wheelTotal}
-            initialStart={perPage}
-          />
-        </Suspense>
-      )}
-
-      {/* Content tabs */}
-      {TOPIC_TYPES[activeType] && (
-        <Suspense fallback={<ContentSkeleton />}>
-          <TopicSection
-            searchtitle={searchtitle}
-            type={activeType}
-            label={TOPIC_TYPES[activeType].label}
-            initialData={topicData}
-            badgeType={TOPIC_TYPES[activeType].badgeType}
-          />
-        </Suspense>
-      )}
-
-      {/* Show skeleton instantly while client-side tab navigation is loading */}
-      {!TOPIC_TYPES[activeType] && activeType !== "wheels" && <ContentSkeleton />}
-
-    </div>
+      <InfiniteFeedStream
+        key={`${activeType}-${searchtitle}`}
+        initialItems={JSON.parse(JSON.stringify(items))}
+        initialNextCursor={initialNextCursor}
+        q={searchtitle}
+        type={feedType}
+        docType={docType}
+      />
+    </main>
   );
 }
 
-async function fetchInitialWheels(searchtitle) {
-  const { default: apiConfig } = await import("@utils/ApiUrlConfig");
-  const res = await fetch(
-    `${apiConfig.apiUrl}/wheel/search/${searchtitle}?start=0&limit=${perPage}`,
-    { next: { revalidate: 3600 } },
-  );
-  if (!res.ok) throw new Error("Failed to fetch wheels");
-  return res.json();
-}
-
-// Shown while a content section is loading (Suspense boundary)
-function ContentSkeleton() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 lg:gap-4">
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className="bg-muted rounded-lg md:rounded-xl aspect-[3/4] mb-2" />
-          <div className="h-3 bg-muted rounded mb-1 w-3/4" />
-          <div className="h-2.5 bg-muted rounded w-1/2" />
-        </div>
-      ))}
-    </div>
-  );
-}

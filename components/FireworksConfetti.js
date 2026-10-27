@@ -1,7 +1,8 @@
 'use client'
 import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
-function FireworksOverlay() {
+function FireworksOverlay({ containerEl = null }) {
   const canvasRef = useRef(null);
   const animationIdRef = useRef(null);
   const [showConfetti, setShowConfetti] = useState(true);
@@ -74,11 +75,25 @@ function FireworksOverlay() {
     }
   }, [showConfetti, animationDuration]);
 
-  return (showConfetti &&
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 60, pointerEvents: 'none' }}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
+  if (!showConfetti) return null;
+
+  const fullscreenEl =
+    typeof document !== 'undefined'
+      ? document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      : null;
+
+  const targetContainer = containerEl || fullscreenEl || (typeof document !== 'undefined' ? document.body : null);
+
+  const overlayContent = (
+    <div style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 90, pointerEvents: 'none' }}>
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
     </div>
   );
+
+  return targetContainer ? createPortal(overlayContent, targetContainer) : null;
 }
 
 export default FireworksOverlay;

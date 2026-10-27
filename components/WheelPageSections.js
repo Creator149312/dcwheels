@@ -1,4 +1,4 @@
-import { Suspense, cache } from "react";
+import { cache } from "react";
 import dynamic from "next/dynamic";
 import { getWheelMeta } from "@components/actions/actions";
 import { getFeedItemsSafe } from "@/lib/feedService";
@@ -46,7 +46,7 @@ export function HubFeedSkeleton() {
 // Async Server Components
 // ---------------------------------------------------------------------------
 
-export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, createdAt, authorHandle }) {
+export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityType, wheelSlug, authorHandle }) {
   const initialMeta = await getCachedWheelMeta(wheelId);
   return (
     <WheelInfoActions
@@ -54,7 +54,6 @@ export async function SuspendedInfoActions({ wheelId, wheelTitle, wheelEntityTyp
       wheelTitle={wheelTitle}
       wheelEntityType={wheelEntityType}
       wheelSlug={wheelSlug}
-      createdAt={createdAt}
       authorHandle={authorHandle}
       initialMeta={initialMeta}
     />

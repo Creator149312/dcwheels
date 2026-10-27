@@ -9,6 +9,7 @@ import { generateDilemmaCard } from "@utils/dilemmaCardGenerator";
 export default function DilemmaShareModal({
   isOpen,
   onClose,
+  postId,
   postTitle,
   options = [],
   voteCounts = {},
@@ -19,14 +20,16 @@ export default function DilemmaShareModal({
   const [previewUrl, setPreviewUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(true);
   const [copiedImage, setCopiedImage] = useState(false);
-  const [postUrl, setPostUrl] = useState("spinpapa.com");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const cleanUrl = window.location.href.replace(/^https?:\/\//, "");
-      setPostUrl(cleanUrl);
-    }
-  }, []);
+  // Derive canonical direct post link for sharing and card watermark
+  const canonicalPostUrl = useMemo(() => {
+    if (typeof window === "undefined") return "https://spinpapa.com";
+    return postId ? `${window.location.origin}/posts/${postId}` : window.location.href;
+  }, [postId]);
+
+  const postUrl = useMemo(() => {
+    return canonicalPostUrl.replace(/^https?:\/\//, "");
+  }, [canonicalPostUrl]);
 
   const generate = useCallback(async () => {
     if (!isOpen) return;
@@ -75,7 +78,7 @@ export default function DilemmaShareModal({
           files: [file],
           title: `Pop Culture Verdict: ${postTitle}`,
           text: `Here is where the debate stands on Spinpapa! What's your verdict?`,
-          url: window.location.href,
+          url: canonicalPostUrl,
         });
         toast.success("Shared successfully!");
       } catch (err) {
@@ -88,7 +91,7 @@ export default function DilemmaShareModal({
         await navigator.share({
           title: `Pop Culture Verdict: ${postTitle}`,
           text: `Here is where the debate stands on Spinpapa! What's your verdict?`,
-          url: window.location.href,
+          url: canonicalPostUrl,
         });
       } catch {}
     } else {
@@ -128,13 +131,13 @@ export default function DilemmaShareModal({
     const text = encodeURIComponent(
       `Settle this debate: "${postTitle}"\n\nWhat's your verdict? Vote here:`
     );
-    const url = encodeURIComponent(window.location.href);
+    const url = encodeURIComponent(canonicalPostUrl);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
   };
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(
-      `Check out this debate: "${postTitle}"\n\nWhat's your verdict?\n${window.location.href}`
+      `Check out this debate: "${postTitle}"\n\nWhat's your verdict?\n${canonicalPostUrl}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };

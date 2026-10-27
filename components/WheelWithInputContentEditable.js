@@ -13,10 +13,11 @@ const Wheel = dynamic(() => import("./SpinWheelCanvas"), {
   ssr: false,
 });
 
-// Editor + modal — used on home page (/) and wheel creation (/wheels/create). 
+// Editor + modal — used on home page (/) and wheel creation (/wheels/create),
+// or loaded on-demand when user clicks "Edit Wheel".
 // Dynamic imports prevent their chunks from being downloaded on /wheels and 
-// /uwheels routes at all.
-const WheelEditor = dynamic(() => import("./WheelEditor"), { ssr: false });
+// /uwheels routes until explicitly requested.
+const WheelEditorFull = dynamic(() => import("./WheelEditorFull"), { ssr: false });
 const WheelEditorModal = dynamic(() => import("./WheelEditorModal"), { ssr: false });
 
 // These components only render AFTER the user spins (winner !== null) or
@@ -78,8 +79,23 @@ const WheelWithInputContentEditable = ({
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [forkedFrom, setForkedFrom] = useState(null);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const wheelContainerRef = useRef(null);
+
+  // Track desktop (>=1024px) vs mobile so we only mount ONE WheelEditorFull instance
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const updateViewport = (e) => setIsDesktopViewport(e.matches);
+    setIsDesktopViewport(mq.matches);
+    if (mq.addEventListener) {
+      mq.addEventListener("change", updateViewport);
+      return () => mq.removeEventListener("change", updateViewport);
+    } else {
+      mq.addListener(updateViewport);
+      return () => mq.removeListener(updateViewport);
+    }
+  }, []);
 
   // Read forkedFrom from localStorage or ?remix= query parameter on creation page
   useEffect(() => {
@@ -96,7 +112,6 @@ const WheelWithInputContentEditable = ({
               wheelId: String(remixParam),
               authorHandle: parent.authorHandle || null,
             };
-            setForkedFrom(forked);
             try {
               const raw = window.localStorage.getItem("SpinpapaWheel") || "{}";
               const parsed = JSON.parse(raw);
@@ -113,16 +128,6 @@ const WheelWithInputContentEditable = ({
         .catch(() => {});
       return;
     }
-
-    try {
-      const raw = window.localStorage.getItem("SpinpapaWheel");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.forkedFrom?.wheelId) {
-          setForkedFrom(parsed.forkedFrom);
-        }
-      }
-    } catch {}
   }, [isWheelsCreatePage, searchParams, setSegData]);
 
   // Memoize slice and background colors so new array references aren't created on every render
@@ -157,14 +162,7 @@ const WheelWithInputContentEditable = ({
     );
   }, [data, wheelData?.maxNumberOfOptions, wheelType, quizState.answeredIndices]);
 
-  // Auto-open editor modal on mobile ONLY when explicitly requested via ?edit=true parameter
-  useEffect(() => {
-    if (isEditMode) {
-      setIsEditorOpen(true);
-    }
-  }, [isEditMode]);
-
-  // Auto-open editor modal on mobile if edit=true is present
+  // Auto-open editor when explicitly requested via ?edit=true parameter
   useEffect(() => {
     if (isEditMode) {
       setIsEditorOpen(true);
@@ -370,12 +368,10 @@ const WheelWithInputContentEditable = ({
             segData={segData}
             wheelData={wheelData}
             saveWheelData={saveWheelData}
-            currentPath={currentPath}
             router={router}
             muted={muted}
             setMuted={setMuted}
-            onEditClick={() => setIsEditorOpen(true)}
-            isEditingActive={currentPath === "/" || isWheelsCreatePage || isEditMode}
+            onEditClick={() => setIsEditorOpen((prev) => !prev)}
             wheelTitle={pageWheelTitle}
             wheelDescription={wheelData?.description}
             wheelId={wheelId}
@@ -383,34 +379,34 @@ const WheelWithInputContentEditable = ({
           />
         </div>
 
-        {/* Desktop sidebar: related wheels on content pages, full editor on home/wheels/create or if edit=true. Hidden on mobile. */}
+        {/* Desktop sidebar: related wheels on content pages by default, swaps in-place to WheelEditor when editing */}
         {!isFullScreen && (
-          <div className="hidden lg:contents">
-            {(currentPath === "/" || isWheelsCreatePage || isEditMode) ? (
-              <WheelEditor
+          <aside className="hidden lg:block relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden self-stretch">
+            {isDesktopViewport && (currentPath === "/" || isWheelsCreatePage || isEditMode || isEditorOpen) ? (
+              <WheelEditorFull
                 mustSpin={mustSpin}
                 currentPath={currentPath}
-                relatedWheelsSlot={relatedWheelsSlot}
-                isFullScreen={isFullScreen}
+                onCloseEditor={
+                  currentPath !== "/" && !isWheelsCreatePage
+                    ? () => setIsEditorOpen(false)
+                    : null
+                }
               />
             ) : (
-              <aside className="relative bg-card text-card-foreground border shadow-sm lg:col-span-5 xl:col-span-3 rounded-2xl overflow-hidden">
-                <div className="absolute inset-0 overflow-y-auto p-3">
-                  {relatedWheelsSlot}
-                </div>
-              </aside>
+              <div className="absolute inset-0 overflow-y-auto p-3">
+                {relatedWheelsSlot}
+              </div>
             )}
-          </div>
+          </aside>
         )}
 
-        {/* Mobile: Fullscreen Editor Overlay — home page, wheels/create, or if edit=true */}
-        {!isFullScreen && (currentPath === "/" || isWheelsCreatePage || isEditMode) && (
+        {/* Mobile (<lg): 88dvh Bottom Sheet Drawer — works in-place on /, /wheels/create, and /wheels/[slug] */}
+        {!isFullScreen && !isDesktopViewport && isEditorOpen && (
           <WheelEditorModal
             isOpen={isEditorOpen}
             onClose={() => setIsEditorOpen(false)}
             mustSpin={mustSpin}
             currentPath={currentPath}
-            relatedWheelsSlot={relatedWheelsSlot}
           />
         )}
       </div>

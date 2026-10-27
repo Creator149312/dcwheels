@@ -6,6 +6,7 @@ import { useFeedCache } from "@/hooks/useFeedCache";
 import PostCard from "@components/PostCard";
 import WheelFeedCard from "@components/WheelFeedCard";
 import ListShelf from "@components/feed/ListShelf";
+import TopicFeedCard from "@components/feed/TopicFeedCard";
 import VirtualizedFeed from "@components/feed/VirtualizedFeed";
 import { getFeedItemKey, buildStandardFeed, applyWarmOrder } from "@/utils/feedUtils";
 import { getAffinityShares } from "@/utils/affinity";
@@ -17,7 +18,7 @@ const AdsUnit = dynamic(() => import("@components/ads/AdsUnit"), {
   loading: () => <div className="w-full my-2 sm:my-6" style={{ minHeight: 250 }} />,
 });
 
-const FEED_LAYOUT = { adInterval: 6, wheelCadence: 4, listPosition: 2 };
+const FEED_LAYOUT = { adInterval: 6, wheelCadence: 4, listPosition: 2, topicPosition: 5 };
 const EMPTY_RELATED = [];
 
 function RelatedTopicCard({ related }) {
@@ -160,6 +161,7 @@ export default function InfiniteFeedStream({
   tag = null, 
   userId = null,
   docType = null,
+  q = null,
   relatedPages = EMPTY_RELATED, 
   initialNextCursor = null,
   currentContextId = null
@@ -178,6 +180,7 @@ export default function InfiniteFeedStream({
     tag: tag || '',
     userId: userId || '',
     docType: docType || '',
+    q: q || '',
     limit: 8,
     endpoint: '/api/feed',
     initialItems,
@@ -266,6 +269,8 @@ export default function InfiniteFeedStream({
           <WheelFeedCard wheel={item} />
         ) : item.docType === "list" ? (
           <ListShelf list={item} />
+        ) : item.docType === "topic" ? (
+          <TopicFeedCard topic={item} />
         ) : null}
       </>
     );

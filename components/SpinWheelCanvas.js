@@ -67,6 +67,7 @@ export default function SpinWheelCanvas({
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null); // Cached 2D context — avoids re-acquisition each frame
+  const offscreenCanvasRef = useRef(null); // Cached pre-rendered static wheel bitmap (wedges, text, emoji, images)
   const animFrameRef = useRef(null);
 
   // Current angle in radians (0 = 3 o'clock)
@@ -331,39 +332,37 @@ export default function SpinWheelCanvas({
     return { totalWeight, slices, uniformFontSize };
   }, [data, backgroundColors, textColors, containerSize, innerRadius, fontSize, imagesLoadedVersion]);
 
-  // 4. Render Wheel onto Canvas (HiDPI / Retina Crisp)
-  const drawWheel = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Buffer recycling: acquire the context once and cache it; only resize the
-    // canvas buffer when the target size meaningfully changes (>1px). Resizing
-    // a canvas destroys its buffer + state, so the threshold avoids GC churn
-    // during tiny layout jitter (scrollbars, fractional rem sizes).
-    let ctx = ctxRef.current;
-    if (!ctx) {
-      ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctxRef.current = ctx;
-    }
+  // 4. Pre-render Wheel onto an Offscreen Canvas Buffer
+  // Rasterizes all slices, text, emojis, image posters, and rings ONCE per data/size update.
+  // During the 60fps/120fps spin animation, this pre-rendered buffer is simply rotated
+  // and blitted via ctx.drawImage(), eliminating all per-frame text and emoji rasterization!
+  const updateOffscreenWheel = useCallback(() => {
+    if (typeof document === "undefined") return null;
 
     const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 3);
     const size = containerSize;
-
-    // Buffer dimensions
     const bufferSize = Math.floor(size * dpr);
-    if (Math.abs(canvas.width - bufferSize) > 1 || Math.abs(canvas.height - bufferSize) > 1) {
-      canvas.width = bufferSize;
-      canvas.height = bufferSize;
-      canvas.style.width = `${size}px`;
-      canvas.style.height = `${size}px`;
+
+    let offscreen = offscreenCanvasRef.current;
+    if (!offscreen) {
+      offscreen = document.createElement("canvas");
+      offscreenCanvasRef.current = offscreen;
     }
 
-    ctx.save();
-    ctx.scale(dpr, dpr);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.clearRect(0, 0, size, size);
+    if (offscreen.width !== bufferSize || offscreen.height !== bufferSize) {
+      offscreen.width = bufferSize;
+      offscreen.height = bufferSize;
+    }
+
+    const offCtx = offscreen.getContext("2d");
+    if (!offCtx) return null;
+
+    offCtx.save();
+    offCtx.setTransform(1, 0, 0, 1, 0, 0);
+    offCtx.clearRect(0, 0, bufferSize, bufferSize);
+    offCtx.scale(dpr, dpr);
+    offCtx.imageSmoothingEnabled = true;
+    offCtx.imageSmoothingQuality = "high";
 
     const centerX = size / 2;
     const centerY = size / 2;
@@ -373,56 +372,48 @@ export default function SpinWheelCanvas({
 
     const { slices, uniformFontSize } = sliceLayout();
     if (slices.length === 0) {
-      ctx.restore();
-      return;
+      offCtx.restore();
+      return offscreen;
     }
 
-    // Apply rotation angle
-    const angleOffset = currentAngleRef.current;
-
-    // A. Draw Wedges
+    // A. Draw Wedges (base angle = 0)
     slices.forEach((slice) => {
-      const sliceStart = slice.startAngle + angleOffset;
-      const sliceEnd = slice.endAngle + angleOffset;
-
-      ctx.beginPath();
-      ctx.fillStyle = slice.bg;
-      ctx.arc(centerX, centerY, radius, sliceStart, sliceEnd, false);
+      offCtx.beginPath();
+      offCtx.fillStyle = slice.bg;
+      offCtx.arc(centerX, centerY, radius, slice.startAngle, slice.endAngle, false);
       if (innerRad > 0) {
-        ctx.arc(centerX, centerY, innerRad, sliceEnd, sliceStart, true);
+        offCtx.arc(centerX, centerY, innerRad, slice.endAngle, slice.startAngle, true);
       } else {
-        ctx.lineTo(centerX, centerY);
+        offCtx.lineTo(centerX, centerY);
       }
-      ctx.closePath();
-      ctx.fill();
+      offCtx.closePath();
+      offCtx.fill();
 
       // Radial separating line
       if (radiusLineWidth > 0 && radiusLineColor !== "transparent") {
-        ctx.lineWidth = radiusLineWidth;
-        ctx.strokeStyle = radiusLineColor;
-        ctx.stroke();
+        offCtx.lineWidth = radiusLineWidth;
+        offCtx.strokeStyle = radiusLineColor;
+        offCtx.stroke();
       }
     });
 
     const rimPaddingGlobal = 8;
 
-    // B. Draw Slice Content (Natural Rectangular Posters & Crisp Radial Text)
+    // B. Draw Slice Content (Posters & Text / Emojis)
     slices.forEach((slice) => {
-      const sliceMid = slice.midAngle + angleOffset;
+      const sliceMid = slice.midAngle;
       const img = slice.imageUri ? imageCacheRef.current.get(slice.imageUri) : null;
       const hasImage = !!(img && img.naturalWidth > 0);
       const hasText = !!(slice.text && slice.text.trim().length > 0);
 
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(sliceMid);
+      offCtx.save();
+      offCtx.translate(centerX, centerY);
+      offCtx.rotate(sliceMid);
 
       const radialSpan = radius - innerRad;
-      const rimPadding = rimPaddingGlobal; // Sits 8px inside the outer perimeter rim
+      const rimPadding = rimPaddingGlobal;
 
       if (hasImage && hasText) {
-        // ── Both Image & Text on the Slice ──
-        // 1. Image sits right up near the outer rim (where the wedge is widest)
         const outerRimX = radius - rimPadding;
         const availableWedgeWidth = 2 * (outerRimX - 20) * Math.sin(slice.arc / 2);
         const maxImgWidth = Math.min(availableWedgeWidth * 0.88, radialSpan * 0.38, 52);
@@ -433,7 +424,6 @@ export default function SpinWheelCanvas({
 
         let drawW, drawH, radialLength;
         if (!isLandscape) {
-          // Portrait poster (upright along the wedge)
           drawW = Math.min(maxImgWidth, maxImgHeight * imgAspect);
           drawH = drawW / imgAspect;
           if (drawH > maxImgHeight) {
@@ -442,56 +432,46 @@ export default function SpinWheelCanvas({
           }
           radialLength = drawH;
         } else {
-          // Landscape banner (along the wedge)
           drawW = Math.min(maxImgHeight, maxImgWidth * imgAspect);
           drawH = drawW / imgAspect;
           radialLength = drawW;
         }
 
-        // Center of the image pushed out toward the rim
         const imgDist = outerRimX - radialLength / 2;
         const imgInnerBoundary = outerRimX - radialLength;
 
-        ctx.save();
-        ctx.translate(imgDist, 0);
+        offCtx.save();
+        offCtx.translate(imgDist, 0);
         if (!isLandscape) {
-          ctx.rotate(Math.PI / 2); // Stand upright across the wedge
+          offCtx.rotate(Math.PI / 2);
         }
 
-        // Clean rectangular card with 4px rounded corners (no circular clip)
-        if (typeof ctx.roundRect === "function") {
-          ctx.beginPath();
-          ctx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 4);
-          ctx.clip();
+        if (typeof offCtx.roundRect === "function") {
+          offCtx.beginPath();
+          offCtx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 4);
+          offCtx.clip();
         }
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        offCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-        // Subtle crisp border
-        ctx.beginPath();
-        if (typeof ctx.roundRect === "function") {
-          ctx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 4);
+        offCtx.beginPath();
+        if (typeof offCtx.roundRect === "function") {
+          offCtx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 4);
         } else {
-          ctx.rect(-drawW / 2, -drawH / 2, drawW, drawH);
+          offCtx.rect(-drawW / 2, -drawH / 2, drawW, drawH);
         }
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
-        ctx.stroke();
-        ctx.restore();
+        offCtx.lineWidth = 1;
+        offCtx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+        offCtx.stroke();
+        offCtx.restore();
 
-        // 2. Text runs radially along the wedge from near the hub up to the image
         const textEndX = imgInnerBoundary - 8;
-
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.font = `500 ${uniformFontSize}px ${FONT_STACK}`;
-
-        // Clean solid text — pre-truncated in sliceLayout (zero per-frame measurement)
-        ctx.fillStyle = slice.textColor;
-        ctx.fillText(slice.displayText ?? slice.text, textEndX, 0);
+        offCtx.textAlign = "right";
+        offCtx.textBaseline = "middle";
+        offCtx.font = `500 ${uniformFontSize}px ${FONT_STACK}`;
+        offCtx.fillStyle = slice.textColor;
+        offCtx.fillText(slice.displayText ?? slice.text, textEndX, 0);
 
       } else if (hasImage) {
-        // ── Image Only (No Text) ──
-        // Larger poster situated prominently in the outer section of the wedge
         const outerRimX = radius - rimPadding;
         const availableWedgeWidth = 2 * (outerRimX - 35) * Math.sin(slice.arc / 2);
         const maxImgWidth = Math.min(availableWedgeWidth * 0.90, radialSpan * 0.65, 75);
@@ -517,69 +497,120 @@ export default function SpinWheelCanvas({
 
         const imgDist = outerRimX - radialLength / 2 - 4;
 
-        ctx.save();
-        ctx.translate(imgDist, 0);
+        offCtx.save();
+        offCtx.translate(imgDist, 0);
         if (!isLandscape) {
-          ctx.rotate(Math.PI / 2);
+          offCtx.rotate(Math.PI / 2);
         }
 
-        if (typeof ctx.roundRect === "function") {
-          ctx.beginPath();
-          ctx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 5);
-          ctx.clip();
+        if (typeof offCtx.roundRect === "function") {
+          offCtx.beginPath();
+          offCtx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 5);
+          offCtx.clip();
         }
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        offCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-        ctx.beginPath();
-        if (typeof ctx.roundRect === "function") {
-          ctx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 5);
+        offCtx.beginPath();
+        if (typeof offCtx.roundRect === "function") {
+          offCtx.roundRect(-drawW / 2, -drawH / 2, drawW, drawH, 5);
         } else {
-          ctx.rect(-drawW / 2, -drawH / 2, drawW, drawH);
+          offCtx.rect(-drawW / 2, -drawH / 2, drawW, drawH);
         }
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.stroke();
-        ctx.restore();
+        offCtx.lineWidth = 1.5;
+        offCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+        offCtx.stroke();
+        offCtx.restore();
 
       } else if (hasText) {
-        // ── Text Only ──
         const textEndX = radius - 14;
-
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.font = `500 ${uniformFontSize}px ${FONT_STACK}`;
-
-        // Clean solid text — pre-truncated in sliceLayout (zero per-frame measurement)
-        ctx.fillStyle = slice.textColor;
-        ctx.fillText(slice.displayText ?? slice.text, textEndX, 0);
+        offCtx.textAlign = "right";
+        offCtx.textBaseline = "middle";
+        offCtx.font = `500 ${uniformFontSize}px ${FONT_STACK}`;
+        offCtx.fillStyle = slice.textColor;
+        offCtx.fillText(slice.displayText ?? slice.text, textEndX, 0);
       }
 
-      ctx.restore();
+      offCtx.restore();
     });
 
     // C. Outer Ring / Border
     if (outerBorderWidth > 0 && outerBorderColor !== "transparent") {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius - outerBorderWidth / 2, 0, 2 * Math.PI);
-      ctx.lineWidth = outerBorderWidth;
-      ctx.strokeStyle = outerBorderColor;
-      ctx.stroke();
+      offCtx.beginPath();
+      offCtx.arc(centerX, centerY, radius - outerBorderWidth / 2, 0, 2 * Math.PI);
+      offCtx.lineWidth = outerBorderWidth;
+      offCtx.strokeStyle = outerBorderColor;
+      offCtx.stroke();
     }
 
     // D. Inner Ring / Border
     if (innerRad > 0 && innerBorderWidth > 0 && innerBorderColor !== "transparent") {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, innerRad + innerBorderWidth / 2, 0, 2 * Math.PI);
-      ctx.lineWidth = innerBorderWidth;
-      ctx.strokeStyle = innerBorderColor;
-      ctx.stroke();
+      offCtx.beginPath();
+      offCtx.arc(centerX, centerY, innerRad + innerBorderWidth / 2, 0, 2 * Math.PI);
+      offCtx.lineWidth = innerBorderWidth;
+      offCtx.strokeStyle = innerBorderColor;
+      offCtx.stroke();
     }
 
-    // E. Draw Crisp Native Ticker / Pointer at 3 o'clock directly on Canvas
-    // (Always 100% visible, perfectly synchronized, never hidden by DOM overflow/CSS z-index)
+    offCtx.restore();
+    return offscreen;
+  }, [containerSize, sliceLayout, innerRadius, fontSize, fontWeight, fontFamily, outerBorderWidth, outerBorderColor, innerBorderWidth, innerBorderColor, radiusLineWidth, radiusLineColor]);
+
+  // 5. Blit Pre-rendered Wheel + Draw Pointer onto Main Display Canvas (60fps/120fps)
+  const drawWheel = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let ctx = ctxRef.current;
+    if (!ctx) {
+      ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctxRef.current = ctx;
+    }
+
+    const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 3);
+    const size = containerSize;
+
+    // Buffer dimensions
+    const bufferSize = Math.floor(size * dpr);
+    if (Math.abs(canvas.width - bufferSize) > 1 || Math.abs(canvas.height - bufferSize) > 1) {
+      canvas.width = bufferSize;
+      canvas.height = bufferSize;
+      canvas.style.width = `${size}px`;
+      canvas.style.height = `${size}px`;
+    }
+
+    // Ensure pre-rendered offscreen buffer exists
+    let offscreen = offscreenCanvasRef.current;
+    if (!offscreen || offscreen.width !== bufferSize || offscreen.height !== bufferSize) {
+      offscreen = updateOffscreenWheel();
+    }
+
     ctx.save();
-    ctx.translate(centerX + radius - 2, centerY);
-    // Dynamic flapper deflection angle from pin collision
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, bufferSize, bufferSize);
+
+    const centerX = bufferSize / 2;
+    const centerY = bufferSize / 2;
+
+    // A. Blit rotated pre-rendered wheel (Ultra-fast GPU texture blit)
+    if (offscreen) {
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(currentAngleRef.current);
+      ctx.drawImage(offscreen, -centerX, -centerY);
+      ctx.restore();
+    }
+
+    // B. Draw Native Ticker / Pointer at 3 o'clock (Scale coords to DPR)
+    ctx.scale(dpr, dpr);
+    const sizeScaled = size;
+    const centerScaledX = sizeScaled / 2;
+    const centerScaledY = sizeScaled / 2;
+    const padding = 10;
+    const radius = Math.max(10, sizeScaled / 2 - padding);
+
+    ctx.save();
+    ctx.translate(centerScaledX + radius - 2, centerScaledY);
     ctx.rotate((flapperAngleRef.current * Math.PI) / 180);
 
     // Subtle drop shadow behind pointer
@@ -588,15 +619,15 @@ export default function SpinWheelCanvas({
     ctx.shadowOffsetX = -2;
     ctx.shadowOffsetY = 2;
 
-    const pLen = Math.max(18, Math.min(28, radius * 0.12)); // compact length of pointer
-    const pHalf = Math.max(6, Math.min(10, radius * 0.045)); // compact half-width of base
+    const pLen = Math.max(18, Math.min(28, radius * 0.12));
+    const pHalf = Math.max(6, Math.min(10, radius * 0.045));
 
-    // Sharp pointer: base on right, sharp tip pointing inward to the left
+    // Sharp pointer
     ctx.beginPath();
-    ctx.moveTo(-pLen, 0);                 // Sharp tip penetrating into the wheel
-    ctx.lineTo(6, -pHalf);                // Top-right corner of base
-    ctx.arcTo(10, 0, 6, pHalf, 6);        // Rounded back hinge
-    ctx.lineTo(-pLen, 0);                 // Bottom-right to tip
+    ctx.moveTo(-pLen, 0);
+    ctx.lineTo(6, -pHalf);
+    ctx.arcTo(10, 0, 6, pHalf, 6);
+    ctx.lineTo(-pLen, 0);
     ctx.closePath();
 
     // Premium metallic red gradient
@@ -623,16 +654,16 @@ export default function SpinWheelCanvas({
     ctx.stroke();
 
     ctx.restore();
-
     ctx.restore();
-  }, [containerSize, sliceLayout, innerRadius, fontSize, fontWeight, fontFamily, outerBorderWidth, outerBorderColor, innerBorderWidth, innerBorderColor, radiusLineWidth, radiusLineColor]);
+  }, [containerSize, updateOffscreenWheel]);
 
-  // Redraw when layout or size changes
+  // Invalidate and re-render offscreen cache whenever layout, segments, or size change
   useEffect(() => {
+    updateOffscreenWheel();
     drawWheel();
-  }, [drawWheel]);
+  }, [updateOffscreenWheel, drawWheel]);
 
-  // 5. Spin Physics Loop (requestAnimationFrame) with Elastic Flapper Bounce
+  // 6. Spin Physics Loop (requestAnimationFrame) with Elastic Flapper Bounce
   useEffect(() => {
     if (!mustStartSpinning) {
       hasSpunRef.current = false;

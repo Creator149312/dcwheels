@@ -1,4 +1,3 @@
-import Link from "next/link";
 import WheelWithInputContentEditable from "@components/WheelWithInputContentEditable";
 
 // Wheel creation page - static to keep the rendered shell at the CDN edge

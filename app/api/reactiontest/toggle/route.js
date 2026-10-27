@@ -11,6 +11,7 @@ import UnifiedList from "@models/unifiedlist";
 import Comment from "@models/comment";
 import { sessionUserId } from "@/utils/SessionData";
 import { createNotification, enqueueNotification } from "@/lib/notificationService";
+import { enqueueMilestoneCheck } from "@/lib/milestoneEmailService";
 import { checkRateLimit, getIpFromRequest, rateLimitResponse } from "@lib/rateLimit";
 import { syncListIndexedState } from "@/lib/listIndexGate";
 import { refreshEntityHotScore } from "@lib/hotScore";
@@ -84,20 +85,31 @@ export async function PATCH(req) {
           let recipientId = null;
           let link = "";
           let modelStr = "";
+          let entityTitle = "";
 
           if (entityType === "post") {
-            const post = await Post.findById(entityObjectId).select("userId").lean();
+            const post = await Post.findById(entityObjectId).select("userId content title").lean();
             if (post?.userId) {
               recipientId = post.userId;
               link = `/posts/${entityId}`;
               modelStr = "Post";
+              entityTitle = post.title || post.content?.slice(0, 60) || "Post";
             }
           } else if (entityType === "wheel") {
-            const wheel = await Wheel.findById(entityObjectId).select("userId urlEndpoint").lean();
+            const wheel = await Wheel.findById(entityObjectId).select("userId urlEndpoint title").lean();
             if (wheel?.userId) {
               recipientId = wheel.userId;
               link = wheel.urlEndpoint ? `/${wheel.urlEndpoint}` : `/wheels/${entityId}`;
               modelStr = "Wheel";
+              entityTitle = wheel.title || "Wheel";
+            }
+          } else if (entityType === "list") {
+            const listDoc = await UnifiedList.findById(entityObjectId).select("userId slug name").lean();
+            if (listDoc?.userId) {
+              recipientId = listDoc.userId;
+              link = listDoc.slug ? `/lists/${listDoc.slug}` : `/lists/${entityId}`;
+              modelStr = "List";
+              entityTitle = listDoc.name || "List";
             }
           }
 
@@ -121,24 +133,63 @@ export async function PATCH(req) {
 
     // Update denormalized likeCount on the parent entity
     if (entityType === "wheel" && likeCountDelta !== 0) {
-      await Wheel.updateOne(
-        { _id: entityObjectId },
-        { $inc: { likeCount: likeCountDelta } }
-      );
+      const updated = await Wheel.findByIdAndUpdate(
+        entityObjectId,
+        { $inc: { likeCount: likeCountDelta } },
+        { new: true, select: "userId likeCount title urlEndpoint" }
+      ).lean();
       refreshEntityHotScore(Wheel, entityObjectId).catch(() => {});
+
+      if (likeCountDelta > 0 && updated?.userId && updated.likeCount) {
+        enqueueMilestoneCheck({
+          userId: updated.userId,
+          entityId: entityObjectId,
+          entityType: "wheel",
+          milestoneType: "LIKE",
+          currentCount: updated.likeCount,
+          entityTitle: updated.title || "Wheel",
+          entityUrl: updated.urlEndpoint ? `/${updated.urlEndpoint}` : `/wheels/${entityId}`,
+        });
+      }
     } else if (entityType === "post" && likeCountDelta !== 0) {
-      await Post.updateOne(
-        { _id: entityObjectId },
-        { $inc: { likeCount: likeCountDelta } }
-      );
+      const updated = await Post.findByIdAndUpdate(
+        entityObjectId,
+        { $inc: { likeCount: likeCountDelta } },
+        { new: true, select: "userId likeCount title content" }
+      ).lean();
       refreshEntityHotScore(Post, entityObjectId).catch(() => {});
+
+      if (likeCountDelta > 0 && updated?.userId && updated.likeCount) {
+        enqueueMilestoneCheck({
+          userId: updated.userId,
+          entityId: entityObjectId,
+          entityType: "post",
+          milestoneType: "LIKE",
+          currentCount: updated.likeCount,
+          entityTitle: updated.title || updated.content?.slice(0, 60) || "Post",
+          entityUrl: `/posts/${entityId}`,
+        });
+      }
     } else if (entityType === "list" && likeCountDelta !== 0) {
-      await UnifiedList.updateOne(
-        { _id: entityObjectId },
-        { $inc: { likeCount: likeCountDelta } }
-      );
+      const updated = await UnifiedList.findByIdAndUpdate(
+        entityObjectId,
+        { $inc: { likeCount: likeCountDelta } },
+        { new: true, select: "userId likeCount name slug" }
+      ).lean();
       syncListIndexedState(entityObjectId).catch(() => {});
       refreshEntityHotScore(UnifiedList, entityObjectId).catch(() => {});
+
+      if (likeCountDelta > 0 && updated?.userId && updated.likeCount) {
+        enqueueMilestoneCheck({
+          userId: updated.userId,
+          entityId: entityObjectId,
+          entityType: "list",
+          milestoneType: "LIKE",
+          currentCount: updated.likeCount,
+          entityTitle: updated.name || "List",
+          entityUrl: updated.slug ? `/lists/${updated.slug}` : `/lists/${entityId}`,
+        });
+      }
     }
 
     // Count only the reactions matching the toggled type, using an indexed

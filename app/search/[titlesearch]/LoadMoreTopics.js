@@ -79,9 +79,9 @@ export default function LoadMoreTopics({
             image={item.cover}
             alt={item.title}
             title={item.title}
-            badge={type === "character" ? item.worthItScore : item.rating}
-            badgeType={badgeType}
-            subtitle={buildSubtitle(item, type)}
+            badge={item.type === "character" ? item.worthItScore : item.rating}
+            badgeType={item.type === "character" ? "heart" : badgeType}
+            subtitle={buildSubtitle(item, item.type || type)}
           />
         ))}
       </div>

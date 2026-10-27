@@ -158,14 +158,14 @@ export default function SaveWheelBtn({ segmentsData }) {
           onClick={() => {
             setShowDataDialog(true);
           }}
-          className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent transition-all duration-150 rounded-lg cursor-pointer"
+          className="w-full h-11 sm:h-9 flex items-center justify-center gap-2 text-sm sm:text-xs font-bold shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent transition-all duration-150 rounded-xl sm:rounded-lg cursor-pointer touch-manipulation"
         >
           {isSaving ? (
             "Saving..."
           ) : (
             <>
               <span>Save Wheel</span>
-              <CloudUpload size={15} className="shrink-0" />
+              <CloudUpload size={17} className="sm:w-[15px] sm:h-[15px] shrink-0" />
             </>
           )}
         </Button>

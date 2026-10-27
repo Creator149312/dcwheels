@@ -72,17 +72,21 @@ export default function ReactionButton({
       disabled={loading}
       aria-pressed={reacted}
       aria-label={reacted ? "Unlike" : "Like"}
-      className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition leading-none shadow-sm min-h-[36px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation ${
+      className={`relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-sm font-medium transition leading-none shadow-xs min-h-[34px] sm:min-h-[36px] md:h-9 active:scale-95 touch-manipulation ${
         reacted
           ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
-          : "border-border bg-muted text-foreground hover:bg-accent"
+          : "border-border bg-muted/60 text-foreground hover:bg-muted"
       } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
     >
       <ThumbsUp
         size={15}
         className={`${reacted ? "fill-current" : ""} ${loading ? "animate-pulse" : ""}`}
       />
-      <span className="hidden sm:inline">{formatCount(count)}</span>
+      {count > 0 && (
+        <span className="text-xs sm:text-sm font-semibold tabular-nums">
+          {formatCount(count)}
+        </span>
+      )}
     </button>
   );
 }

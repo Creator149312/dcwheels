@@ -62,7 +62,7 @@ const ListSelector = ({ html, setSegData }) => {
         value={selectedListId || ""}
         onChange={handleListChange}
         onFocus={fetchLists}
-        className="w-full py-1 px-2.5 border border-border/60 rounded-lg bg-muted/40 hover:bg-muted/60 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer transition-colors"
+        className="w-full h-10 sm:h-8 py-1.5 sm:py-1 px-3 sm:px-2.5 border border-border/60 rounded-xl sm:rounded-lg bg-muted/40 hover:bg-muted/60 text-sm sm:text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer transition-colors touch-manipulation"
       >
         <option value="" disabled>
           {loading ? "Loading lists..." : "Select a List to Load"}

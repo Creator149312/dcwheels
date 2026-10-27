@@ -39,6 +39,7 @@ export function useFeedCache({
   tag = '',
   userId = '',
   docType = '',
+  q = '',
   limit = 8,
   endpoint = '/api/feed', // API endpoint to use
   initialItems = [],
@@ -49,7 +50,7 @@ export function useFeedCache({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(
-    initialNextCursor !== null || initialItems.length === 0
+    initialNextCursor !== null
   );
 
   // Track if initial load is done
@@ -106,22 +107,23 @@ export function useFeedCache({
           ...(tag && { tag }),
           ...(userId && { userId }),
           ...(docType && { docType }),
+          ...(q && { q }),
           ...(cursor && { cursor }),
         });
 
         const data = await requestPage(`${endpoint}?${params.toString()}`);
         const newItems = data.items || [];
         const nextCursor = data.nextCursor || null;
-        const more = data.hasMore ?? false;
+        const more = Boolean(data.hasMore && nextCursor && newItems.length > 0);
 
         // Store in cache
         if (!cursor) {
           // First load: replace cache
-          feedCache.set(type, externalId, tag, newItems, nextCursor, userId, docType);
+          feedCache.set(type, externalId, tag, newItems, nextCursor, userId, docType, q);
           setItems(newItems);
         } else {
           // Pagination: append to cache
-          feedCache.append(type, externalId, tag, newItems, nextCursor, userId, docType);
+          feedCache.append(type, externalId, tag, newItems, nextCursor, userId, docType, q);
           setItems((prev) => [...prev, ...newItems]);
         }
 
@@ -143,14 +145,14 @@ export function useFeedCache({
         if (!isSWR) setLoading(false);
       }
     },
-    [type, externalId, tag, userId, docType, limit, endpoint, requestPage]
+    [type, externalId, tag, userId, docType, q, limit, endpoint, requestPage]
   );
 
   /**
    * Load more items (infinite scroll)
    */
   const loadMore = useCallback(() => {
-    if (!hasMore || fetchingRef.current) return;
+    if (!hasMore || fetchingRef.current || !cursorRef.current) return;
 
     setLoading(true);
     fetchFeed(cursorRef.current);
@@ -160,11 +162,11 @@ export function useFeedCache({
    * Refresh feed (clear cache and reload)
    */
   const refresh = useCallback(() => {
-    feedCache.clear(type, externalId, tag, userId, docType);
+    feedCache.clear(type, externalId, tag, userId, docType, q);
     cursorRef.current = null;
     setLoading(true);
     fetchFeed(null);
-  }, [type, externalId, tag, userId, docType, fetchFeed]);
+  }, [type, externalId, tag, userId, docType, q, fetchFeed]);
 
   const retry = useCallback(() => {
     if (fetchingRef.current) return;
@@ -212,12 +214,12 @@ export function useFeedCache({
     initialLoadDone.current = true;
 
     // Try to use cached items first
-    const cachedItems = feedCache.get(type, externalId, tag, userId, docType);
+    const cachedItems = feedCache.get(type, externalId, tag, userId, docType, q);
 
     if (cachedItems && cachedItems.length > 0) {
       // Show cached items immediately
       setItems(cachedItems);
-      const lastCursor = feedCache.getLastCursor(type, externalId, tag, userId, docType);
+      const lastCursor = feedCache.getLastCursor(type, externalId, tag, userId, docType, q);
       cursorRef.current = lastCursor;
       setHasMore(lastCursor !== null);
       everFetchedRef.current = true;
@@ -227,18 +229,21 @@ export function useFeedCache({
     } else if (initialItems.length > 0) {
       // Already has initial items (SSR), don't fetch page 1
       // But we should store them in cache so they are available on next navigation
-      feedCache.set(type, externalId, tag, initialItems, initialNextCursor, userId, docType);
+      feedCache.set(type, externalId, tag, initialItems, initialNextCursor, userId, docType, q);
       // Ensure the cursorRef is synced with what we got from SSR
       cursorRef.current = initialNextCursor;
       setHasMore(initialNextCursor !== null);
       everFetchedRef.current = true;
       setLoading(false);
-    } else {
-      // No cache and no initial items: fetch from API
+    } else if (!q) {
+      // No cache and no initial items: fetch from API (except when q is set and SSR already confirmed 0 results)
       setLoading(true);
       fetchFeed(null);
+    } else {
+      setHasMore(false);
+      setLoading(false);
     }
-  }, [type, externalId, tag, userId, docType, fetchFeed, initialItems, initialNextCursor]);
+  }, [type, externalId, tag, userId, docType, q, fetchFeed, initialItems, initialNextCursor]);
 
   return {
     items,
